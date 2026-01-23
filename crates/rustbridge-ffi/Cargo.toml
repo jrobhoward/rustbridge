@@ -1,0 +1,24 @@
+[package]
+name = "rustbridge-ffi"
+description = "C ABI exports and FFI buffer management for rustbridge"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+rustbridge-core = { workspace = true }
+rustbridge-transport = { workspace = true }
+rustbridge-runtime = { workspace = true }
+rustbridge-logging = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+parking_lot = { workspace = true }
+once_cell = { workspace = true }
+dashmap = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+async-trait = "0.1"

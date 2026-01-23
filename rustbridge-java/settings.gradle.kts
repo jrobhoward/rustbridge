@@ -1,0 +1,5 @@
+rootProject.name = "rustbridge-java"
+
+include("rustbridge-core")
+include("rustbridge-ffm")
+include("rustbridge-jni")

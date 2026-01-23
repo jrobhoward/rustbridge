@@ -1,0 +1,47 @@
+# Rust/Cargo build artifacts
+/target/
+**/*.rs.bk
+
+# Cargo.lock - uncomment to include (recommended for applications, optional for libraries)
+# Cargo.lock
+
+# Claude Code local settings
+.claude/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Java build artifacts
+*.class
+*.jar
+*.war
+*.ear
+build/
+.gradle/
+!gradle-wrapper.jar
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+
+# Environment and secrets
+.env
+.env.local
+*.pem
+*.key
+
+# Test and coverage artifacts
+*.profraw
+*.profdata
+coverage/
+lcov.info

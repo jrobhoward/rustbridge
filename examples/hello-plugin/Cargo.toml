@@ -1,0 +1,24 @@
+[package]
+name = "hello-plugin"
+description = "Example rustbridge plugin"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+rustbridge-core = { workspace = true }
+rustbridge-transport = { workspace = true }
+rustbridge-ffi = { workspace = true }
+rustbridge-runtime = { workspace = true }
+rustbridge-logging = { workspace = true }
+rustbridge-macros = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+async-trait = "0.1"

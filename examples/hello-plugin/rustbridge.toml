@@ -1,0 +1,24 @@
+[plugin]
+name = "hello-plugin"
+version = "0.1.0"
+description = "Example rustbridge plugin demonstrating core functionality"
+authors = ["rustbridge team"]
+
+[messages."echo"]
+description = "Echo a message back"
+
+[messages."greet"]
+description = "Generate a greeting for a user"
+
+[messages."user.create"]
+description = "Create a new user"
+
+[messages."math.add"]
+description = "Add two numbers"
+
+[platforms]
+linux-x86_64 = "libhello_plugin.so"
+linux-aarch64 = "libhello_plugin.so"
+darwin-x86_64 = "libhello_plugin.dylib"
+darwin-aarch64 = "libhello_plugin.dylib"
+windows-x86_64 = "hello_plugin.dll"

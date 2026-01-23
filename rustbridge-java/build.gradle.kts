@@ -1,0 +1,40 @@
+plugins {
+    java
+    `java-library`
+    `maven-publish`
+}
+
+allprojects {
+    group = "com.rustbridge"
+    version = "0.1.0"
+
+    repositories {
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply(plugin = "java")
+    apply(plugin = "java-library")
+    apply(plugin = "maven-publish")
+
+    java {
+        toolchain {
+            languageVersion.set(JavaLanguageVersion.of(21))
+        }
+    }
+
+    tasks.withType<JavaCompile> {
+        options.encoding = "UTF-8"
+        options.compilerArgs.add("-Xlint:all")
+    }
+
+    tasks.withType<Test> {
+        useJUnitPlatform()
+    }
+
+    dependencies {
+        testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
+        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    }
+}

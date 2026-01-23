@@ -1,0 +1,17 @@
+[package]
+name = "rustbridge-runtime"
+description = "Tokio async runtime integration for rustbridge"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+rustbridge-core = { workspace = true }
+tokio = { workspace = true }
+thiserror = { workspace = true }
+parking_lot = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
