@@ -43,18 +43,19 @@ public class FfmPlugin implements Plugin {
     public LifecycleState getState() {
         checkNotClosed();
         try {
-            int stateCode = (int) bindings.pluginGetState().invokeExact(handle);
-            if (stateCode == 255) {
+            byte stateCode = (byte) bindings.pluginGetState().invokeExact(handle);
+            int stateCodeInt = Byte.toUnsignedInt(stateCode);
+            if (stateCodeInt == 255) {
                 throw new IllegalStateException("Invalid plugin handle");
             }
-            return LifecycleState.fromCode(stateCode);
+            return LifecycleState.fromCode(stateCodeInt);
         } catch (Throwable t) {
             throw new RuntimeException("Failed to get plugin state", t);
         }
     }
 
     @Override
-    public String call(String typeTag, String request) throws PluginException {
+    public synchronized String call(String typeTag, String request) throws PluginException {
         checkNotClosed();
 
         try {
@@ -66,9 +67,9 @@ public class FfmPlugin implements Plugin {
             MemorySegment requestSegment = arena.allocate(requestBytes.length);
             requestSegment.copyFrom(MemorySegment.ofArray(requestBytes));
 
-            // Call the plugin (arena as SegmentAllocator allocates space for the returned struct)
-            MemorySegment resultBuffer = (MemorySegment) bindings.pluginCall().invokeExact(
-                    (SegmentAllocator) arena,
+            // Call the plugin - use invoke() with arena as SegmentAllocator for return struct
+            MemorySegment resultBuffer = (MemorySegment) bindings.pluginCall().invoke(
+                    arena,  // SegmentAllocator for return value
                     handle,
                     typeTagSegment,
                     requestSegment,

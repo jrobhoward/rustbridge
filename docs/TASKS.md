@@ -29,10 +29,12 @@ This document tracks the implementation progress and upcoming tasks for the rust
 |------|--------|-------|
 | Java core interfaces | ✅ Done | Plugin, LifecycleState, LogLevel, PluginConfig |
 | FFM implementation | ✅ Done | FfmPluginLoader, FfmPlugin, NativeBindings |
+| FFM integration tests | ✅ Done | 17 passing tests - echo, greet, user.create, math.add, error handling |
+| FFM bindings fixes | ✅ Done | Fixed plugin_get_state, plugin_call struct return, synchronized access |
 | JNI fallback skeleton | ✅ Done | JniPluginLoader, JniPlugin (needs native impl) |
 | Kotlin examples | ✅ Done | BasicExample, LoggingExample, ErrorHandlingExample |
 | Log callback integration | ⬜ Todo | Upcall from Rust to Java for logging |
-| FFM integration tests | ⬜ Todo | End-to-end test with hello-plugin |
+| Panic handling verification | ✅ Done | Rust panic handling tested via invalid inputs |
 | JNI native implementation | ⬜ Todo | Rust crate for JNI bridge |
 | Gradle build setup | ⬜ Todo | Complete build configuration |
 | Java documentation | ⬜ Todo | Javadoc for all public APIs |
@@ -96,21 +98,35 @@ This document tracks the implementation progress and upcoming tasks for the rust
 
 ## Current Sprint
 
+### Recently Completed ✅
+
+1. **Java FFM integration testing** (2026-01-23)
+   - ✅ Built hello-plugin as cdylib
+   - ✅ Created comprehensive integration test suite (17 tests)
+   - ✅ Fixed FFM bindings (return types, struct returns, synchronization)
+   - ✅ Verified panic handling at FFI boundary
+   - ✅ All core functionality tested: echo, greet, user.create, math.add, errors
+
+2. **Rust 2024 Edition Migration** (2026-01-23)
+   - ✅ Migrated to Rust 2024 edition
+   - ✅ Updated MSRV to 1.85
+   - ✅ Implemented comprehensive panic handling at FFI boundary
+   - ✅ Added cargo fmt requirement to code quality checklist
+
 ### Active Tasks
 
-1. **Java FFM integration testing**
-   - Build hello-plugin, load from Java
-   - Verify call/response works end-to-end
-   - Test error handling paths
-
-2. **Refactor tests to new conventions**
+1. **Refactor tests to new conventions**
    - Move inline `mod tests` to separate files
    - Apply `subject___condition___expected` naming
    - Add FFI boundary tests
 
-3. **Log callback integration**
+2. **Log callback integration**
    - Implement FFM upcall for log callback
    - Test log forwarding from Rust to Java
+
+3. **Concurrent access improvements**
+   - Refactor FfmPlugin to use per-call arenas for true thread safety
+   - Currently synchronized - reduces concurrency
 
 ### Blocked Tasks
 
