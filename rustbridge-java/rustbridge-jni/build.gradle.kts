@@ -8,8 +8,13 @@ dependencies {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(8))
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
     withJavadocJar()
     withSourcesJar()
+}
+
+// Compile for Java 8 compatibility using Java 21 compiler
+tasks.withType<JavaCompile> {
+    options.release.set(8)
 }

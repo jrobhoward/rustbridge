@@ -14,7 +14,9 @@ rustbridge lowers the barrier for creating Rust plugins that can be loaded and c
 
 ## Features
 
-- **Cross-language interoperability**: Call Rust code from Java/Kotlin (FFM + JNI), C#, Python, and more
+- **Cross-language interoperability**: Call Rust code from Java, Kotlin, C#, Python, and more
+- **Multiple JVM implementations**: FFM for Java 21+ (modern, fast) and JNI for Java 8+ (compatibility)
+- **Kotlin-friendly**: Idiomatic Kotlin usage with data classes, extension functions, and type-safe DSL
 - **JSON-based transport**: Simple, universal data serialization
 - **OSGI-inspired lifecycle**: Structured plugin startup and shutdown
 - **Async-first**: Built on Tokio with mandatory async runtime
@@ -40,7 +42,8 @@ rustbridge/
 │   ├── rustbridge-ffm/           # FFM implementation (Java 21+)
 │   └── rustbridge-jni/           # JNI fallback (Java 8+)
 ├── examples/
-│   └── hello-plugin/             # Example plugin
+│   ├── hello-plugin/             # Example Rust plugin
+│   └── kotlin-examples/          # Kotlin usage examples
 ├── docs/
 │   ├── ARCHITECTURE.md           # System architecture
 │   ├── SKILLS.md                 # Development best practices
@@ -138,6 +141,31 @@ try (Plugin plugin = JniPluginLoader.load("libmyplugin.so")) {
     System.out.println(response);
 }
 ```
+
+### Using from Kotlin
+
+```kotlin
+import com.rustbridge.ffm.FfmPluginLoader
+
+// Data classes for type-safe requests
+data class EchoRequest(val message: String)
+data class EchoResponse(val message: String, val length: Int)
+
+// Extension function for typed calls
+inline fun <reified T> Plugin.callTyped(messageType: String, request: Any): T {
+    val gson = Gson()
+    val responseJson = call(messageType, gson.toJson(request))
+    return gson.fromJson(responseJson, T::class.java)
+}
+
+// Use block for automatic cleanup
+FfmPluginLoader.load("libmyplugin.so").use { plugin ->
+    val response = plugin.callTyped<EchoResponse>("echo", EchoRequest("Hello!"))
+    println(response.message)
+}
+```
+
+See [examples/kotlin-examples](./examples/kotlin-examples) for complete examples.
 
 ## FFI API
 

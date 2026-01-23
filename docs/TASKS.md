@@ -30,6 +30,7 @@ This document tracks the implementation progress and upcoming tasks for the rust
 | Java core interfaces | ✅ Done | Plugin, LifecycleState, LogLevel, PluginConfig |
 | FFM implementation | ✅ Done | FfmPluginLoader, FfmPlugin, NativeBindings |
 | JNI fallback skeleton | ✅ Done | JniPluginLoader, JniPlugin (needs native impl) |
+| Kotlin examples | ✅ Done | BasicExample, LoggingExample, ErrorHandlingExample |
 | Log callback integration | ⬜ Todo | Upcall from Rust to Java for logging |
 | FFM integration tests | ⬜ Todo | End-to-end test with hello-plugin |
 | JNI native implementation | ⬜ Todo | Rust crate for JNI bridge |

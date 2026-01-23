@@ -59,15 +59,16 @@ public class FfmPlugin implements Plugin {
 
         try {
             // Allocate type tag as null-terminated string
-            MemorySegment typeTagSegment = arena.allocateFrom(typeTag, StandardCharsets.UTF_8);
+            MemorySegment typeTagSegment = arena.allocateUtf8String(typeTag);
 
             // Allocate request data
             byte[] requestBytes = request.getBytes(StandardCharsets.UTF_8);
             MemorySegment requestSegment = arena.allocate(requestBytes.length);
             requestSegment.copyFrom(MemorySegment.ofArray(requestBytes));
 
-            // Call the plugin
+            // Call the plugin (arena as SegmentAllocator allocates space for the returned struct)
             MemorySegment resultBuffer = (MemorySegment) bindings.pluginCall().invokeExact(
+                    (SegmentAllocator) arena,
                     handle,
                     typeTagSegment,
                     requestSegment,
