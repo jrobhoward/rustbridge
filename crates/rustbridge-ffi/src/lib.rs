@@ -20,6 +20,7 @@
 mod buffer;
 mod exports;
 mod handle;
+mod panic_guard;
 
 pub use buffer::FfiBuffer;
 pub use handle::{PluginHandle, PluginHandleManager};

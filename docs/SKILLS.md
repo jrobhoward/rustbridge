@@ -113,6 +113,22 @@ static EMAIL_REGEX: Lazy<Regex> = Lazy::new(|| {
 
 ## Code Quality
 
+### Formatting
+
+All code must be formatted with `rustfmt` before committing:
+
+```bash
+cargo fmt --all
+```
+
+Check formatting in CI:
+
+```bash
+cargo fmt --all -- --check
+```
+
+**Important**: Always run `cargo fmt --all` before committing code. Unformatted code will be rejected in code review.
+
 ### Clippy
 
 All code must pass clippy with no warnings:

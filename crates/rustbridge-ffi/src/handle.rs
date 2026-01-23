@@ -204,6 +204,19 @@ impl PluginHandle {
     pub fn set_log_level(&self, level: rustbridge_core::LogLevel) {
         LogCallbackManager::global().set_level(level);
     }
+
+    /// Mark the plugin as failed
+    ///
+    /// This is called when a panic is caught at the FFI boundary or when
+    /// an unrecoverable error occurs. It immediately transitions the plugin
+    /// to the Failed state.
+    ///
+    /// After calling this method, the plugin will reject all further requests.
+    /// The host should call plugin_shutdown to clean up resources.
+    pub fn mark_failed(&self) {
+        tracing::error!("Marking plugin as failed due to panic or unrecoverable error");
+        self.context.set_state(LifecycleState::Failed);
+    }
 }
 
 // Plugin handles are thread-safe

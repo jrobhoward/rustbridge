@@ -41,12 +41,41 @@ Use `cargo msrv verify` to check MSRV compatibility when adding new dependencies
 
 ## Code Quality Requirements
 
+### Formatting
+
+All code must be formatted with `rustfmt` before committing:
+
+```bash
+cargo fmt --all
+```
+
+Check formatting without modifying files:
+
+```bash
+cargo fmt --all -- --check
+```
+
 ### Clippy
 
 All code must pass clippy with no warnings:
 
 ```bash
 cargo clippy --workspace --examples --tests -- -D warnings
+```
+
+### Pre-commit Checklist
+
+Before committing code, run:
+
+```bash
+# Format code
+cargo fmt --all
+
+# Check for warnings
+cargo clippy --workspace --examples --tests -- -D warnings
+
+# Run tests
+cargo test --workspace
 ```
 
 ### Forbidden Patterns in Production Code
@@ -110,6 +139,20 @@ All FFI functions must:
 3. Validate all pointer arguments before dereferencing
 4. Handle null pointers gracefully
 5. Never panic across the FFI boundary
+
+### Panic Handling at FFI Boundary
+
+**Critical**: Panics must never unwind across FFI boundaries into host language runtimes (Java/C#/Python).
+
+The framework implements comprehensive panic handling:
+
+1. **All FFI entry points** (`plugin_init`, `plugin_call`, `plugin_shutdown`) are wrapped with `catch_unwind`
+2. **Panic hook** is installed during `plugin_init` to log panics via FFI callback
+3. **Plugin state** transitions to `Failed` when a panic is caught
+4. **Error code 11** (InternalError) is returned to the host language
+5. **Panic = "unwind"** is used (NOT "abort") to allow panic recovery
+
+**Important**: Do NOT use `panic = "abort"` in profile settings - this would crash the entire host application. The default `panic = "unwind"` allows the framework to catch and handle panics gracefully.
 
 ## Build Commands
 
