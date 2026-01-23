@@ -92,6 +92,96 @@ public class FfmPlugin implements Plugin {
         return GSON.fromJson(responseJson, responseType);
     }
 
+    /**
+     * Call the plugin with a binary struct request (raw binary transport).
+     * <p>
+     * This method bypasses JSON serialization for high-performance scenarios.
+     * The request and response are fixed-size C structs.
+     *
+     * @param messageId     the binary message ID (registered with register_binary_handler)
+     * @param request       the request struct
+     * @param responseSize  expected response size in bytes
+     * @return a memory segment containing the response data
+     * @throws PluginException if the call fails
+     */
+    public synchronized MemorySegment callRaw(int messageId, BinaryStruct request, long responseSize)
+            throws PluginException {
+        checkNotClosed();
+
+        try {
+            // Call the plugin with raw binary data
+            MemorySegment resultBuffer = (MemorySegment) bindings.pluginCallRaw().invoke(
+                    arena,  // SegmentAllocator for return value
+                    handle,
+                    messageId,
+                    request.segment(),
+                    request.byteSize()
+            );
+
+            // Parse and validate the response
+            return parseRawResultBuffer(resultBuffer, responseSize);
+        } catch (PluginException e) {
+            throw e;
+        } catch (Throwable t) {
+            throw new PluginException("Native raw call failed", t);
+        }
+    }
+
+    /**
+     * Parse the RbResponse buffer from a raw plugin call.
+     */
+    private MemorySegment parseRawResultBuffer(MemorySegment responseStruct, long expectedSize)
+            throws PluginException {
+        // RbResponse layout: { error_code: u32, len: u32, capacity: u32, _padding: u32, data: *mut c_void }
+        int errorCode = responseStruct.get(ValueLayout.JAVA_INT, 0);
+        int len = responseStruct.get(ValueLayout.JAVA_INT, 4);
+        MemorySegment data = responseStruct.get(ValueLayout.ADDRESS, 16);
+
+        try {
+            if (errorCode != 0) {
+                // Error case - data contains error message
+                String errorMessage = "Unknown error";
+                if (!data.equals(MemorySegment.NULL) && len > 0) {
+                    MemorySegment slice = data.reinterpret(len);
+                    errorMessage = new String(slice.toArray(ValueLayout.JAVA_BYTE),
+                            java.nio.charset.StandardCharsets.UTF_8);
+                }
+                throw new PluginException(errorCode, errorMessage);
+            }
+
+            // Success case - copy response data to a new segment
+            if (data.equals(MemorySegment.NULL) || len == 0) {
+                throw new PluginException("Empty response from raw call");
+            }
+
+            if (len != expectedSize) {
+                throw new PluginException(String.format(
+                        "Response size mismatch: expected %d, got %d", expectedSize, len));
+            }
+
+            // Copy response data to arena-managed memory
+            MemorySegment responseData = arena.allocate(len);
+            MemorySegment sourceSlice = data.reinterpret(len);
+            responseData.copyFrom(sourceSlice);
+
+            return responseData;
+        } finally {
+            // Free the response buffer
+            freeRawResponse(responseStruct);
+        }
+    }
+
+    /**
+     * Free a raw response buffer.
+     */
+    private void freeRawResponse(MemorySegment responseStruct) {
+        try {
+            bindings.rbResponseFree().invokeExact(responseStruct);
+        } catch (Throwable t) {
+            System.err.println("Warning: Failed to free raw response: " + t.getMessage());
+        }
+    }
+
     @Override
     public void setLogLevel(LogLevel level) {
         checkNotClosed();

@@ -9,9 +9,31 @@ import java.lang.invoke.MethodHandle;
  * This class holds the method handles for calling native plugin functions.
  */
 public class NativeBindings {
+    /**
+     * Memory layout for RbResponse struct (binary transport response).
+     * <pre>
+     * struct RbResponse {
+     *     error_code: u32,  // 0 = success
+     *     len: u32,         // response data size
+     *     capacity: u32,    // allocation capacity
+     *     _padding: u32,    // alignment padding
+     *     data: *mut c_void // response data pointer
+     * }
+     * </pre>
+     */
+    public static final StructLayout RB_RESPONSE_LAYOUT = MemoryLayout.structLayout(
+            ValueLayout.JAVA_INT.withName("error_code"),
+            ValueLayout.JAVA_INT.withName("len"),
+            ValueLayout.JAVA_INT.withName("capacity"),
+            MemoryLayout.paddingLayout(4),  // Alignment for pointer
+            ValueLayout.ADDRESS.withName("data")
+    );
+
     private final MethodHandle pluginInit;
     private final MethodHandle pluginCall;
+    private final MethodHandle pluginCallRaw;
     private final MethodHandle pluginFreeBuffer;
+    private final MethodHandle rbResponseFree;
     private final MethodHandle pluginShutdown;
     private final MethodHandle pluginSetLogLevel;
     private final MethodHandle pluginGetState;
@@ -57,11 +79,31 @@ public class NativeBindings {
                 )
         );
 
+        // plugin_call_raw(handle, message_id, request, request_size) -> RbResponse
+        this.pluginCallRaw = linker.downcallHandle(
+                lookup.find("plugin_call_raw").orElseThrow(),
+                FunctionDescriptor.of(
+                        RB_RESPONSE_LAYOUT,   // return: RbResponse
+                        ValueLayout.ADDRESS,  // handle
+                        ValueLayout.JAVA_INT, // message_id
+                        ValueLayout.ADDRESS,  // request
+                        ValueLayout.JAVA_LONG // request_size
+                )
+        );
+
         // plugin_free_buffer(buffer)
         this.pluginFreeBuffer = linker.downcallHandle(
                 lookup.find("plugin_free_buffer").orElseThrow(),
                 FunctionDescriptor.ofVoid(
                         ValueLayout.ADDRESS   // buffer pointer
+                )
+        );
+
+        // rb_response_free(response)
+        this.rbResponseFree = linker.downcallHandle(
+                lookup.find("rb_response_free").orElseThrow(),
+                FunctionDescriptor.ofVoid(
+                        ValueLayout.ADDRESS   // response pointer
                 )
         );
 
@@ -101,8 +143,16 @@ public class NativeBindings {
         return pluginCall;
     }
 
+    public MethodHandle pluginCallRaw() {
+        return pluginCallRaw;
+    }
+
     public MethodHandle pluginFreeBuffer() {
         return pluginFreeBuffer;
+    }
+
+    public MethodHandle rbResponseFree() {
+        return rbResponseFree;
     }
 
     public MethodHandle pluginShutdown() {

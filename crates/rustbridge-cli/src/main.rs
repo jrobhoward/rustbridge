@@ -3,6 +3,7 @@
 //! Commands:
 //! - `rustbridge build` - Build a plugin
 //! - `rustbridge generate` - Generate host language bindings
+//! - `rustbridge generate-header` - Generate C headers from Rust structs
 //! - `rustbridge new` - Create a new plugin project
 //! - `rustbridge check` - Validate a rustbridge.toml manifest
 
@@ -10,6 +11,7 @@ use clap::{Parser, Subcommand};
 
 mod build;
 mod generate;
+mod header_gen;
 mod manifest;
 mod new;
 
@@ -69,6 +71,17 @@ enum Commands {
         #[arg(short, long)]
         manifest: Option<String>,
     },
+
+    /// Generate C header from Rust #[repr(C)] structs
+    GenerateHeader {
+        /// Path to Rust source file containing #[repr(C)] structs
+        #[arg(short, long)]
+        source: String,
+
+        /// Output path for generated C header (default: messages.h)
+        #[arg(short, long, default_value = "messages.h")]
+        output: String,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -94,6 +107,9 @@ fn main() -> anyhow::Result<()> {
         }
         Commands::Check { manifest } => {
             manifest::check(manifest)?;
+        }
+        Commands::GenerateHeader { source, output } => {
+            header_gen::run(&source, &output)?;
         }
     }
 

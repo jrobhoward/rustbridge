@@ -34,6 +34,10 @@ pub const MSG_BENCH_LARGE: u32 = 3;
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct SmallRequestRaw {
+    /// Struct version for forward compatibility
+    pub version: u8,
+    /// Reserved for alignment (must be zero)
+    pub _reserved: [u8; 3],
     /// Key to look up (fixed-size buffer for simplicity)
     pub key: [u8; 64],
     /// Length of key string
@@ -43,6 +47,9 @@ pub struct SmallRequestRaw {
 }
 
 impl SmallRequestRaw {
+    /// Current version of this struct
+    pub const VERSION: u8 = 1;
+
     /// Get key as string slice
     pub fn key_str(&self) -> &str {
         let len = self.key_len.min(64) as usize;
@@ -58,6 +65,8 @@ impl SmallRequestRaw {
         key_buf[..len].copy_from_slice(&key_bytes[..len]);
 
         Self {
+            version: Self::VERSION,
+            _reserved: [0; 3],
             key: key_buf,
             key_len: len as u32,
             flags,
@@ -71,6 +80,10 @@ impl SmallRequestRaw {
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct SmallResponseRaw {
+    /// Struct version for forward compatibility
+    pub version: u8,
+    /// Reserved for alignment (must be zero)
+    pub _reserved: [u8; 3],
     /// Value (fixed-size buffer)
     pub value: [u8; 64],
     /// Length of value string
@@ -84,6 +97,9 @@ pub struct SmallResponseRaw {
 }
 
 impl SmallResponseRaw {
+    /// Current version of this struct
+    pub const VERSION: u8 = 1;
+
     /// Create a new response
     pub fn new(value: &str, ttl_seconds: u32, cache_hit: bool) -> Self {
         let mut value_buf = [0u8; 64];
@@ -92,6 +108,8 @@ impl SmallResponseRaw {
         value_buf[..len].copy_from_slice(&value_bytes[..len]);
 
         Self {
+            version: Self::VERSION,
+            _reserved: [0; 3],
             value: value_buf,
             value_len: len as u32,
             ttl_seconds,
@@ -126,6 +144,15 @@ fn handle_bench_small_raw(_handle: &PluginHandle, request: &[u8]) -> PluginResul
     // SAFETY: We validated the size, and SmallRequestRaw is repr(C)
     let req = unsafe { &*(request.as_ptr() as *const SmallRequestRaw) };
 
+    // Validate version for forward compatibility
+    if req.version != SmallRequestRaw::VERSION {
+        return Err(rustbridge_core::PluginError::HandlerError(format!(
+            "Unsupported request version: {} (expected {})",
+            req.version,
+            SmallRequestRaw::VERSION
+        )));
+    }
+
     // Process request (same logic as JSON handler)
     let key = req.key_str();
     let value = format!("value_for_{}", key);
@@ -158,6 +185,7 @@ mod tests {
     fn SmallRequestRaw___new___creates_valid_request() {
         let req = SmallRequestRaw::new("test_key", 0x01);
 
+        assert_eq!(req.version, SmallRequestRaw::VERSION);
         assert_eq!(req.key_str(), "test_key");
         assert_eq!(req.flags, 0x01);
         assert_eq!(req.key_len, 8);
@@ -176,6 +204,7 @@ mod tests {
     fn SmallResponseRaw___new___creates_valid_response() {
         let resp = SmallResponseRaw::new("test_value", 3600, true);
 
+        assert_eq!(resp.version, SmallResponseRaw::VERSION);
         assert_eq!(resp.value_len, 10);
         assert_eq!(resp.ttl_seconds, 3600);
         assert_eq!(resp.cache_hit, 1);
@@ -183,16 +212,16 @@ mod tests {
 
     #[test]
     fn memory_layout___SmallRequestRaw___has_fixed_size() {
-        // 64 (key) + 4 (key_len) + 4 (flags) = 72 bytes
+        // 1 (version) + 3 (reserved) + 64 (key) + 4 (key_len) + 4 (flags) = 76 bytes
         let size = std::mem::size_of::<SmallRequestRaw>();
-        assert_eq!(size, 72);
+        assert_eq!(size, 76);
     }
 
     #[test]
     fn memory_layout___SmallResponseRaw___has_fixed_size() {
-        // 64 (value) + 4 (value_len) + 4 (ttl) + 1 (cache_hit) + 3 (padding) = 76 bytes
+        // 1 (version) + 3 (reserved) + 64 (value) + 4 (value_len) + 4 (ttl) + 1 (cache_hit) + 3 (padding) = 80 bytes
         let size = std::mem::size_of::<SmallResponseRaw>();
-        assert_eq!(size, 76);
+        assert_eq!(size, 80);
     }
 
     #[test]
@@ -232,6 +261,16 @@ mod tests {
         }
 
         let req = unsafe { &*(request.as_ptr() as *const SmallRequestRaw) };
+
+        // Validate version
+        if req.version != SmallRequestRaw::VERSION {
+            return Err(rustbridge_core::PluginError::HandlerError(format!(
+                "Unsupported request version: {} (expected {})",
+                req.version,
+                SmallRequestRaw::VERSION
+            )));
+        }
+
         let key = req.key_str();
         let value = format!("value_for_{}", key);
         let cache_hit = req.flags & 1 != 0;
@@ -245,5 +284,24 @@ mod tests {
         };
 
         Ok(response_bytes.to_vec())
+    }
+
+    #[test]
+    fn handler___handle_bench_small_raw___rejects_invalid_version() {
+        let mut req = SmallRequestRaw::new("my_key", 0x01);
+        req.version = 99; // Invalid version
+
+        let req_bytes = unsafe {
+            std::slice::from_raw_parts(
+                &req as *const SmallRequestRaw as *const u8,
+                std::mem::size_of::<SmallRequestRaw>(),
+            )
+        };
+
+        let result = handle_bench_small_raw_test(req_bytes);
+        assert!(result.is_err());
+
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("Unsupported request version"));
     }
 }

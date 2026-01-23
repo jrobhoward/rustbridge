@@ -714,6 +714,7 @@ dependencies = [
  "rustbridge-core",
  "serde",
  "serde_json",
+ "syn",
  "tempfile",
  "thiserror",
  "toml 0.8.23",
