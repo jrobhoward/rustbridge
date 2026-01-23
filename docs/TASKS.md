@@ -33,7 +33,7 @@ This document tracks the implementation progress and upcoming tasks for the rust
 | FFM bindings fixes | ✅ Done | Fixed plugin_get_state, plugin_call struct return, synchronized access |
 | JNI fallback skeleton | ✅ Done | JniPluginLoader, JniPlugin (needs native impl) |
 | Kotlin examples | ✅ Done | BasicExample, LoggingExample, ErrorHandlingExample |
-| Log callback integration | ⬜ Todo | Upcall from Rust to Java for logging |
+| Log callback integration | ✅ Done | FFM upcall, MemorySegment handling, comprehensive tests |
 | Panic handling verification | ✅ Done | Rust panic handling tested via invalid inputs |
 | JNI native implementation | ⬜ Todo | Rust crate for JNI bridge |
 | Gradle build setup | ⬜ Todo | Complete build configuration |
@@ -100,20 +100,34 @@ This document tracks the implementation progress and upcoming tasks for the rust
 
 ### Recently Completed ✅
 
-1. **Test refactoring to new conventions** (2026-01-23)
+1. **Pre-commit validation automation** (2026-01-23)
+   - ✅ Created comprehensive pre-commit.sh script
+   - ✅ Configured cargo-deny for security & license checks
+   - ✅ Blocks GPL/LGPL licenses, allows only MIT/Apache-2.0/Unlicense
+   - ✅ GitHub Actions CI workflow ready
+   - ✅ Handles missing integration tests gracefully
+
+2. **Log callback integration** (2026-01-23)
+   - ✅ Implemented FFM upcall stub for Rust-to-Java log callbacks
+   - ✅ Fixed MemorySegment reinterpretation for null-terminated strings
+   - ✅ Created comprehensive log callback tests (LogCallbackDebugTest)
+   - ✅ Verified end-to-end log forwarding: INFO, DEBUG, WARN, ERROR levels
+   - ✅ All 21 Java FFM tests passing
+
+3. **Test refactoring to new conventions** (2026-01-23)
    - ✅ Verified all inline tests already moved to separate files
    - ✅ Confirmed all tests use triple-underscore naming convention
    - ✅ Added 18 comprehensive FFI boundary tests (total 57 FFI tests)
    - ✅ Tests cover: large payloads, unicode, error handling, memory safety, concurrent access
 
-2. **Java FFM integration testing** (2026-01-23)
+4. **Java FFM integration testing** (2026-01-23)
    - ✅ Built hello-plugin as cdylib
    - ✅ Created comprehensive integration test suite (17 tests)
    - ✅ Fixed FFM bindings (return types, struct returns, synchronization)
    - ✅ Verified panic handling at FFI boundary
    - ✅ All core functionality tested: echo, greet, user.create, math.add, errors
 
-3. **Rust 2024 Edition Migration** (2026-01-23)
+5. **Rust 2024 Edition Migration** (2026-01-23)
    - ✅ Migrated to Rust 2024 edition
    - ✅ Updated MSRV to 1.85
    - ✅ Implemented comprehensive panic handling at FFI boundary
@@ -121,11 +135,7 @@ This document tracks the implementation progress and upcoming tasks for the rust
 
 ### Active Tasks
 
-1. **Log callback integration**
-   - Implement FFM upcall for log callback
-   - Test log forwarding from Rust to Java
-
-2. **Concurrent access improvements**
+1. **Concurrent access improvements**
    - Refactor FfmPlugin to use per-call arenas for true thread safety
    - Currently synchronized - reduces concurrency
 

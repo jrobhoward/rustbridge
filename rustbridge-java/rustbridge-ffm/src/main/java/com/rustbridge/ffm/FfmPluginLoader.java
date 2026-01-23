@@ -4,6 +4,8 @@ import com.rustbridge.*;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
@@ -97,8 +99,8 @@ public class FfmPluginLoader {
             MemorySegment configSegment = arena.allocate(configBytes.length);
             configSegment.copyFrom(MemorySegment.ofArray(configBytes));
 
-            // Prepare log callback (TODO: implement callback upcall)
-            MemorySegment logCallbackPtr = MemorySegment.NULL;
+            // Prepare log callback upcall
+            MemorySegment logCallbackPtr = createLogCallbackUpcall(linker, arena, logCallback);
 
             // Initialize the plugin
             MemorySegment handle;
@@ -179,5 +181,113 @@ public class FfmPluginLoader {
         }
 
         throw new PluginException("Could not find library: " + libraryFileName);
+    }
+
+    /**
+     * Create an upcall stub for the log callback.
+     * <p>
+     * This creates a native function pointer that can be called from Rust code.
+     * When called, it will invoke the Java LogCallback.
+     *
+     * @param linker      the native linker
+     * @param arena       the memory arena for the upcall stub lifetime
+     * @param logCallback the Java log callback (nullable)
+     * @return memory segment pointing to the upcall stub, or NULL if callback is null
+     */
+    private static MemorySegment createLogCallbackUpcall(
+            Linker linker,
+            Arena arena,
+            LogCallback logCallback) {
+
+        if (logCallback == null) {
+            return MemorySegment.NULL;
+        }
+
+        // Define the native callback signature
+        // extern "C" fn(level: u8, target: *const c_char, message: *const u8, message_len: usize)
+        FunctionDescriptor callbackDescriptor = FunctionDescriptor.ofVoid(
+                ValueLayout.JAVA_BYTE,  // level
+                ValueLayout.ADDRESS,     // target (null-terminated C string)
+                ValueLayout.ADDRESS,     // message (raw bytes)
+                ValueLayout.JAVA_LONG    // message_len
+        );
+
+        // Create a method handle for our Java callback wrapper
+        try {
+            MethodHandle wrapperHandle = MethodHandles.lookup().findStatic(
+                    FfmPluginLoader.class,
+                    "logCallbackWrapper",
+                    MethodType.methodType(
+                            void.class,
+                            LogCallback.class,
+                            byte.class,
+                            MemorySegment.class,
+                            MemorySegment.class,
+                            long.class
+                    )
+            );
+
+            // Bind the LogCallback instance to the wrapper
+            MethodHandle boundHandle = wrapperHandle.bindTo(logCallback);
+
+            // Create the upcall stub
+            return linker.upcallStub(boundHandle, callbackDescriptor, arena);
+
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new RuntimeException("Failed to create log callback upcall", e);
+        }
+    }
+
+    /**
+     * Wrapper method that bridges the native callback to the Java LogCallback.
+     * <p>
+     * This method is called from native code via the upcall stub.
+     *
+     * @param callback    the Java log callback
+     * @param level       the log level (0=Trace, 1=Debug, 2=Info, 3=Warn, 4=Error)
+     * @param targetPtr   pointer to null-terminated target string
+     * @param messagePtr  pointer to message bytes
+     * @param messageLen  length of the message
+     */
+    private static void logCallbackWrapper(
+            LogCallback callback,
+            byte level,
+            MemorySegment targetPtr,
+            MemorySegment messagePtr,
+            long messageLen) {
+
+        try {
+            // Convert level byte to LogLevel enum
+            LogLevel logLevel = LogLevel.fromCode(Byte.toUnsignedInt(level));
+
+            // Extract target as null-terminated C string
+            // Need to reinterpret as unbounded segment to read null-terminated string
+            String target;
+            if (targetPtr.equals(MemorySegment.NULL)) {
+                target = "";
+            } else {
+                MemorySegment unboundedTarget = targetPtr.reinterpret(Long.MAX_VALUE);
+                target = unboundedTarget.getUtf8String(0);
+            }
+
+            // Extract message from raw bytes
+            String message;
+            if (messagePtr.equals(MemorySegment.NULL) || messageLen == 0) {
+                message = "";
+            } else {
+                // Reinterpret to the actual message length
+                MemorySegment boundedMessage = messagePtr.reinterpret(messageLen);
+                byte[] messageBytes = boundedMessage.toArray(ValueLayout.JAVA_BYTE);
+                message = new String(messageBytes, StandardCharsets.UTF_8);
+            }
+
+            // Invoke the Java callback
+            callback.log(logLevel, target, message);
+
+        } catch (Exception e) {
+            // Don't let exceptions propagate back to native code
+            System.err.println("Error in log callback: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

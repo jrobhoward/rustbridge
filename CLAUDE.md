@@ -65,17 +65,43 @@ cargo clippy --workspace --examples --tests -- -D warnings
 
 ### Pre-commit Checklist
 
-Before committing code, run:
+**Automated Script (Recommended)**
+
+Run the automated pre-commit validation script:
+
+```bash
+./scripts/pre-commit.sh           # Full validation
+./scripts/pre-commit.sh --fast    # Skip slower tests
+```
+
+The script automatically runs:
+- `cargo fmt --all --check` - Code formatting
+- `cargo deny check` - Security advisories and license compliance
+- `cargo test --workspace --lib` - Rust unit tests
+- `cargo test --workspace --test '*'` - Rust integration tests
+- `cargo build -p hello-plugin --release` - Example builds
+- `./gradlew test` - Java/Kotlin tests (if available)
+- `cargo clippy --workspace --examples --tests -- -D warnings` - Lints
+
+**Manual Commands**
+
+If you prefer to run checks manually:
 
 ```bash
 # Format code
 cargo fmt --all
 
+# Security and license checks
+cargo deny check
+
 # Check for warnings
 cargo clippy --workspace --examples --tests -- -D warnings
 
-# Run tests
+# Run Rust tests
 cargo test --workspace
+
+# Run Java tests (from rustbridge-java directory)
+cd rustbridge-java && ./gradlew test
 ```
 
 ### Forbidden Patterns in Production Code

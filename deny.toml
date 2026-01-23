@@ -1,0 +1,79 @@
+# cargo-deny configuration
+# https://embarkstudios.github.io/cargo-deny/
+
+[advisories]
+# The path where the advisory database is cloned/fetched into
+db-path = "~/.cargo/advisory-db"
+# The url(s) of the advisory databases to use
+db-urls = ["https://github.com/rustsec/advisory-db"]
+# The lint level for crates that have been yanked from their source registry
+yanked = "deny"
+# Scope of unmaintained advisories (all, workspace, transitive, none)
+unmaintained = "none"
+# Scope of unsound advisories (all, workspace, transitive, none)
+unsound = "workspace"
+# Advisory IDs to ignore
+ignore = []
+
+[licenses]
+# List of explicitly allowed licenses
+# SPDX 2.3 license identifiers: https://spdx.org/licenses/
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "Unlicense",  # Permissive, essentially public domain
+]
+# List of explicitly disallowed licenses
+# Copyleft licenses that could affect distribution
+exceptions = [
+    { allow = ["Unicode-3.0"], crate = "unicode-ident" },
+]
+# The confidence threshold for license detection (0.0 - 1.0)
+confidence-threshold = 0.8
+
+# Clarify licenses for crates with ambiguous or missing metadata
+# [[licenses.clarify]]
+# crate = "ring"
+# expression = "MIT AND ISC AND OpenSSL"
+# license-files = [
+#     { path = "LICENSE", hash = 0xbd0eed23 }
+# ]
+
+[licenses.private]
+ignore = false
+registries = []
+
+[bans]
+# Lint level for when multiple versions of the same crate are detected
+multiple-versions = "warn"
+# Lint level for when a crate version requirement is `*`
+wildcards = "allow"
+# The graph highlighting used when creating dotgraphs for crates with multiple versions
+highlight = "all"
+# List of crates that are allowed to have multiple versions
+allow = []
+# List of explicitly disallowed crates
+deny = []
+# Certain crates/versions that should be skipped when doing duplicate detection
+skip = []
+# Similarly named crates that should be treated as different for duplicate detection
+skip-tree = []
+
+[sources]
+# Lint level for what to happen when a crate from a crate registry that is not in the allow list is encountered
+unknown-registry = "deny"
+# Lint level for what to happen when a crate from a git repository that is not in the allow list is encountered
+unknown-git = "deny"
+# List of URLs for allowed crate registries. Defaults to the crates.io index
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+# List of URLs for allowed git repositories
+allow-git = []
+
+[sources.allow-org]
+# GitHub organizations to allow git sources from
+# github = [""]
+# GitLab organizations to allow git sources from
+# gitlab = [""]
+# Bitbucket organizations to allow git sources from
+# bitbucket = [""]

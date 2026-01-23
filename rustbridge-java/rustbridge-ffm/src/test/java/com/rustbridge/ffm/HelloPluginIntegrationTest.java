@@ -338,9 +338,10 @@ class HelloPluginIntegrationTest {
     @Test
     @Order(15)
     @DisplayName("Plugin with log callback receives log messages")
-    void testLogCallback() throws PluginException {
+    void testLogCallback() throws PluginException, InterruptedException {
         // Arrange
         AtomicInteger logCount = new AtomicInteger(0);
+
         LogCallback callback = (level, target, message) -> {
             System.out.println("[" + level + "] " + target + ": " + message);
             logCount.incrementAndGet();
@@ -348,14 +349,27 @@ class HelloPluginIntegrationTest {
 
         // Close current plugin and reopen with log callback
         plugin.close();
+        plugin = null;
+
+        // Act - load plugin with callback
         plugin = FfmPluginLoader.load(PLUGIN_PATH, PluginConfig.defaults(), callback);
 
-        // Act - make some calls that should generate logs
-        plugin.setLogLevel(LogLevel.DEBUG);
-        plugin.call("echo", "{\"message\": \"test\"}");
+        // Give time for async initialization
+        Thread.sleep(500);
 
-        // Note: This test may not trigger logs depending on plugin implementation
-        // The main assertion is that the callback doesn't cause crashes
-        assertTrue(logCount.get() >= 0, "Log callback should not cause errors");
+        // Note: Due to test ordering, the global tracing subscriber may already be initialized
+        // from previous tests without a callback. The callback infrastructure is tested
+        // separately in LogCallbackDebugTest. This test verifies that loading with a callback
+        // doesn't cause crashes and the plugin remains functional.
+
+        // Verify plugin is functional
+        String response = plugin.call("echo", "{\"message\": \"test\"}");
+        assertNotNull(response);
+        assertTrue(response.contains("test"));
+
+        // If logs were received (which works when run in isolation), verify they're valid
+        if (logCount.get() > 0) {
+            System.out.println("Received " + logCount.get() + " log messages");
+        }
     }
 }

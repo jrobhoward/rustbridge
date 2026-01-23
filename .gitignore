@@ -45,3 +45,6 @@ ehthumbs.db
 *.profdata
 coverage/
 lcov.info
+
+# Personal notes and brainstorming
+ideas.txt
