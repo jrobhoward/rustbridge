@@ -363,3 +363,7 @@ pub unsafe extern "C" fn plugin_cancel_async(_handle: FfiPluginHandle, _request_
 #[cfg(test)]
 #[path = "exports/exports_tests.rs"]
 mod exports_tests;
+
+#[cfg(test)]
+#[path = "exports/ffi_boundary_tests.rs"]
+mod ffi_boundary_tests;

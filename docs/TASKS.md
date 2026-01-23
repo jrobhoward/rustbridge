@@ -100,14 +100,20 @@ This document tracks the implementation progress and upcoming tasks for the rust
 
 ### Recently Completed ✅
 
-1. **Java FFM integration testing** (2026-01-23)
+1. **Test refactoring to new conventions** (2026-01-23)
+   - ✅ Verified all inline tests already moved to separate files
+   - ✅ Confirmed all tests use triple-underscore naming convention
+   - ✅ Added 18 comprehensive FFI boundary tests (total 57 FFI tests)
+   - ✅ Tests cover: large payloads, unicode, error handling, memory safety, concurrent access
+
+2. **Java FFM integration testing** (2026-01-23)
    - ✅ Built hello-plugin as cdylib
    - ✅ Created comprehensive integration test suite (17 tests)
    - ✅ Fixed FFM bindings (return types, struct returns, synchronization)
    - ✅ Verified panic handling at FFI boundary
    - ✅ All core functionality tested: echo, greet, user.create, math.add, errors
 
-2. **Rust 2024 Edition Migration** (2026-01-23)
+3. **Rust 2024 Edition Migration** (2026-01-23)
    - ✅ Migrated to Rust 2024 edition
    - ✅ Updated MSRV to 1.85
    - ✅ Implemented comprehensive panic handling at FFI boundary
@@ -115,16 +121,11 @@ This document tracks the implementation progress and upcoming tasks for the rust
 
 ### Active Tasks
 
-1. **Refactor tests to new conventions**
-   - Move inline `mod tests` to separate files
-   - Apply `subject___condition___expected` naming
-   - Add FFI boundary tests
-
-2. **Log callback integration**
+1. **Log callback integration**
    - Implement FFM upcall for log callback
    - Test log forwarding from Rust to Java
 
-3. **Concurrent access improvements**
+2. **Concurrent access improvements**
    - Refactor FfmPlugin to use per-call arenas for true thread safety
    - Currently synchronized - reduces concurrency
 
@@ -139,8 +140,8 @@ This document tracks the implementation progress and upcoming tasks for the rust
 
 ### High Priority
 
-- [ ] End-to-end Java integration test
-- [ ] Refactor tests to separate files
+- [x] End-to-end Java integration test
+- [x] Refactor tests to separate files
 - [ ] Add CI with GitHub Actions
 - [ ] Add ASAN/MSAN testing for FFI
 
