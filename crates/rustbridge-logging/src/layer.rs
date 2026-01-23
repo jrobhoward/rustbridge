@@ -68,11 +68,7 @@ where
         self.manager.log(level, target, &message);
     }
 
-    fn enabled(
-        &self,
-        metadata: &tracing::Metadata<'_>,
-        _ctx: Context<'_, S>,
-    ) -> bool {
+    fn enabled(&self, metadata: &tracing::Metadata<'_>, _ctx: Context<'_, S>) -> bool {
         let level = Self::convert_level(metadata.level());
         self.manager.is_enabled(level)
     }
@@ -95,9 +91,8 @@ impl Visit for MessageVisitor {
     }
 
     fn record_str(&mut self, field: &Field, value: &str) {
-        if field.name() == "message" {
-            self.message = Some(value.to_string());
-        } else if self.message.is_none() {
+        // Use "message" field if present, otherwise use first field encountered
+        if field.name() == "message" || self.message.is_none() {
             self.message = Some(value.to_string());
         }
     }
@@ -120,6 +115,7 @@ pub fn init_logging() {
 }
 
 /// Initialize logging with a specific log level
+#[allow(dead_code)] // Public API for plugin authors
 pub fn init_logging_with_level(level: LogLevel) {
     LogCallbackManager::global().set_level(level);
     init_logging();

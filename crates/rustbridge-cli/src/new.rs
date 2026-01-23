@@ -1,6 +1,6 @@
 //! New project command implementation
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use std::fs;
 use std::path::Path;
 
@@ -179,7 +179,7 @@ Cargo.lock
 
 /// Convert a string to PascalCase
 fn to_pascal_case(s: &str) -> String {
-    s.split(|c| c == '-' || c == '_')
+    s.split(['-', '_'])
         .map(|word| {
             let mut chars = word.chars();
             match chars.next() {

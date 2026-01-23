@@ -120,7 +120,10 @@ pub fn check(manifest_path: Option<String>) -> Result<()> {
     let manifest = Manifest::from_file(&path)?;
     manifest.validate()?;
 
-    println!("✓ Plugin: {} v{}", manifest.plugin.name, manifest.plugin.version);
+    println!(
+        "✓ Plugin: {} v{}",
+        manifest.plugin.name, manifest.plugin.version
+    );
     println!("✓ Messages: {}", manifest.messages.len());
     println!("✓ Platforms: {}", manifest.platforms.len());
     println!("\nManifest is valid!");

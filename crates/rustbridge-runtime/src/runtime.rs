@@ -171,10 +171,12 @@ impl Drop for AsyncRuntime {
 }
 
 /// Thread-safe wrapper for optional runtime
+#[allow(dead_code)] // Reserved for future use
 pub struct RuntimeHolder {
     runtime: Mutex<Option<AsyncRuntime>>,
 }
 
+#[allow(dead_code)] // Reserved for future use
 impl RuntimeHolder {
     /// Create a new empty runtime holder
     pub fn new() -> Self {
@@ -203,7 +205,9 @@ impl RuntimeHolder {
         let guard = self.runtime.lock();
         match guard.as_ref() {
             Some(rt) => Ok(f(rt)),
-            None => Err(PluginError::RuntimeError("Runtime not initialized".to_string())),
+            None => Err(PluginError::RuntimeError(
+                "Runtime not initialized".to_string(),
+            )),
         }
     }
 

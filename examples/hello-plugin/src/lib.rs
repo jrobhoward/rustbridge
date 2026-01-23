@@ -4,7 +4,7 @@
 //! including message handling, lifecycle management, and FFI integration.
 
 use async_trait::async_trait;
-use rustbridge_core::{Plugin, PluginConfig, PluginContext, PluginError, PluginMetadata, PluginResult};
+use rustbridge_core::{Plugin, PluginContext, PluginError, PluginMetadata, PluginResult};
 use rustbridge_macros::{rustbridge_entry, Message};
 use serde::{Deserialize, Serialize};
 
@@ -186,8 +186,8 @@ rustbridge_entry!(HelloPlugin::new);
 
 // Re-export FFI functions from rustbridge-ffi
 pub use rustbridge_ffi::{
-    plugin_init, plugin_call, plugin_free_buffer, plugin_shutdown,
-    plugin_set_log_level, plugin_get_state, plugin_call_async, plugin_cancel_async,
+    plugin_call, plugin_call_async, plugin_cancel_async, plugin_free_buffer, plugin_get_state,
+    plugin_init, plugin_set_log_level, plugin_shutdown,
 };
 
 // ============================================================================

@@ -18,10 +18,7 @@ async fn HelloPlugin___echo_request___returns_message_and_length() {
     })
     .unwrap();
 
-    let response = plugin
-        .handle_request(&ctx, "echo", &request)
-        .await
-        .unwrap();
+    let response = plugin.handle_request(&ctx, "echo", &request).await.unwrap();
 
     let echo_response: EchoResponse = serde_json::from_slice(&response).unwrap();
     assert_eq!(echo_response.message, "Hello, World!");
@@ -95,9 +92,7 @@ async fn HelloPlugin___unknown_type_tag___returns_error() {
     let plugin = HelloPlugin::new();
     let ctx = create_test_context();
 
-    let result = plugin
-        .handle_request(&ctx, "unknown.type", b"{}")
-        .await;
+    let result = plugin.handle_request(&ctx, "unknown.type", b"{}").await;
 
     assert!(matches!(result, Err(PluginError::UnknownMessageType(_))));
 }

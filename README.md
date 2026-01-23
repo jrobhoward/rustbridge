@@ -41,9 +41,12 @@ rustbridge/
 │   └── rustbridge-jni/           # JNI fallback (Java 8+)
 ├── examples/
 │   └── hello-plugin/             # Example plugin
-├── SKILLS.md                     # Development best practices
-├── TESTING.md                    # Testing conventions
-└── TASKS.md                      # Project roadmap
+├── docs/
+│   ├── ARCHITECTURE.md           # System architecture
+│   ├── SKILLS.md                 # Development best practices
+│   ├── TESTING.md                # Testing conventions
+│   └── TASKS.md                  # Project roadmap
+└── CLAUDE.md                     # Project instructions for Claude Code
 ```
 
 ## Quick Start
@@ -316,15 +319,16 @@ Errors are represented with stable numeric codes:
 
 ## Documentation
 
-- [SKILLS.md](./SKILLS.md) - Development best practices and coding conventions
-- [TESTING.md](./TESTING.md) - Testing conventions and guidelines
-- [TASKS.md](./TASKS.md) - Project roadmap and task tracking
+- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) - System architecture and design decisions
+- [docs/SKILLS.md](./docs/SKILLS.md) - Development best practices and coding conventions
+- [docs/TESTING.md](./docs/TESTING.md) - Testing conventions and guidelines
+- [docs/TASKS.md](./docs/TASKS.md) - Project roadmap and task tracking
 
 ## Contributing
 
-1. Read [SKILLS.md](./SKILLS.md) for coding conventions
-2. Read [TESTING.md](./TESTING.md) for testing guidelines
-3. Check [TASKS.md](./TASKS.md) for open tasks
+1. Read [docs/SKILLS.md](./docs/SKILLS.md) for coding conventions
+2. Read [docs/TESTING.md](./docs/TESTING.md) for testing guidelines
+3. Check [docs/TASKS.md](./docs/TASKS.md) for open tasks
 4. Follow the git workflow (user controls commits)
 
 ## License

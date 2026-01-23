@@ -26,8 +26,8 @@ pub use handle::{PluginHandle, PluginHandleManager};
 
 // Re-export FFI functions for use by plugins
 pub use exports::{
-    plugin_init, plugin_call, plugin_free_buffer, plugin_shutdown,
-    plugin_set_log_level, plugin_get_state, plugin_call_async, plugin_cancel_async,
+    plugin_call, plugin_call_async, plugin_cancel_async, plugin_free_buffer, plugin_get_state,
+    plugin_init, plugin_set_log_level, plugin_shutdown,
 };
 
 // Re-export types needed for plugin implementation
@@ -38,9 +38,7 @@ pub use rustbridge_transport::{RequestEnvelope, ResponseEnvelope};
 
 /// Prelude module for convenient imports
 pub mod prelude {
-    pub use crate::{
-        FfiBuffer, PluginHandle, PluginHandleManager,
-    };
+    pub use crate::{FfiBuffer, PluginHandle, PluginHandleManager};
     pub use rustbridge_core::prelude::*;
     pub use rustbridge_logging::prelude::*;
     pub use rustbridge_runtime::prelude::*;

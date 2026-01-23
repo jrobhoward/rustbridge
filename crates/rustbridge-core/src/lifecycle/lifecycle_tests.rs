@@ -61,7 +61,11 @@ fn LifecycleState___any_state_to_failed___transition_allowed() {
     for state in states {
         let can_transition = state.can_transition_to(LifecycleState::Failed);
 
-        assert!(can_transition, "{:?} should be able to transition to Failed", state);
+        assert!(
+            can_transition,
+            "{:?} should be able to transition to Failed",
+            state
+        );
     }
 }
 
@@ -123,7 +127,11 @@ fn LifecycleState___non_active_states___cannot_handle_requests() {
     ];
 
     for state in states {
-        assert!(!state.can_handle_requests(), "{:?} should not handle requests", state);
+        assert!(
+            !state.can_handle_requests(),
+            "{:?} should not handle requests",
+            state
+        );
     }
 }
 

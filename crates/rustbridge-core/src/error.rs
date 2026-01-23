@@ -10,10 +10,7 @@ pub type PluginResult<T> = Result<T, PluginError>;
 pub enum PluginError {
     /// Plugin is not in a valid state for the requested operation
     #[error("invalid lifecycle state: expected {expected}, got {actual}")]
-    InvalidState {
-        expected: String,
-        actual: String,
-    },
+    InvalidState { expected: String, actual: String },
 
     /// Failed to initialize the plugin
     #[error("initialization failed: {0}")]

@@ -90,7 +90,9 @@ fn AsyncRuntime___shutdown___triggers_signal() {
     let runtime = AsyncRuntime::with_defaults().unwrap();
     let signal = runtime.shutdown_signal();
 
-    runtime.shutdown(std::time::Duration::from_millis(10)).unwrap();
+    runtime
+        .shutdown(std::time::Duration::from_millis(10))
+        .unwrap();
 
     assert!(signal.is_triggered());
 }
@@ -138,7 +140,9 @@ fn RuntimeHolder___shutdown___removes_runtime() {
     let holder = RuntimeHolder::new();
     holder.init(RuntimeConfig::default()).unwrap();
 
-    holder.shutdown(std::time::Duration::from_millis(10)).unwrap();
+    holder
+        .shutdown(std::time::Duration::from_millis(10))
+        .unwrap();
 
     assert!(holder.with(|_| ()).is_err());
 }

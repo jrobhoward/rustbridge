@@ -26,7 +26,10 @@ pub fn run(lang: &str, output: &str, manifest_path: Option<String>) -> Result<()
         "kotlin" => generate_java(&manifest, output)?, // Same as Java for now
         "csharp" | "c#" => generate_csharp(&manifest, output)?,
         "python" => generate_python(&manifest, output)?,
-        _ => anyhow::bail!("Unsupported language: {}. Supported: java, csharp, python", lang),
+        _ => anyhow::bail!(
+            "Unsupported language: {}. Supported: java, csharp, python",
+            lang
+        ),
     }
 
     println!("\n✓ Generation complete!");
@@ -243,7 +246,11 @@ class {class_name}Loader:
         plugin_name = plugin_name,
         version = manifest.plugin.version,
         class_name = class_name,
-        description = manifest.plugin.description.as_deref().unwrap_or("Plugin implementation"),
+        description = manifest
+            .plugin
+            .description
+            .as_deref()
+            .unwrap_or("Plugin implementation"),
         methods = generate_python_methods(manifest),
     );
 
@@ -283,7 +290,7 @@ fn generate_python_methods(manifest: &Manifest) -> String {
 
 /// Convert a string to PascalCase
 fn to_pascal_case(s: &str) -> String {
-    s.split(|c| c == '-' || c == '_')
+    s.split(['-', '_'])
         .map(|word| {
             let mut chars = word.chars();
             match chars.next() {
@@ -296,7 +303,7 @@ fn to_pascal_case(s: &str) -> String {
 
 /// Convert a type tag to a method name
 fn tag_to_method_name(tag: &str) -> String {
-    tag.replace('.', "_").replace('-', "_")
+    tag.replace(['.', '-'], "_")
 }
 
 #[cfg(test)]

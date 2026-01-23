@@ -37,7 +37,10 @@ fn PluginError___from_code_unknown___returns_internal() {
 #[test]
 fn PluginError___all_variants___have_unique_codes() {
     let errors = vec![
-        PluginError::InvalidState { expected: "a".into(), actual: "b".into() },
+        PluginError::InvalidState {
+            expected: "a".into(),
+            actual: "b".into(),
+        },
         PluginError::InitializationFailed("".into()),
         PluginError::ShutdownFailed("".into()),
         PluginError::ConfigError("".into()),
@@ -54,7 +57,11 @@ fn PluginError___all_variants___have_unique_codes() {
     let codes: Vec<u32> = errors.iter().map(|e| e.error_code()).collect();
     let unique: std::collections::HashSet<u32> = codes.iter().copied().collect();
 
-    assert_eq!(codes.len(), unique.len(), "All error codes should be unique");
+    assert_eq!(
+        codes.len(),
+        unique.len(),
+        "All error codes should be unique"
+    );
 }
 
 #[test]

@@ -2,7 +2,6 @@
 
 use crate::{LifecycleState, PluginConfig, PluginError, PluginResult};
 use async_trait::async_trait;
-use std::sync::Arc;
 
 /// Context provided to plugin operations
 pub struct PluginContext {
@@ -142,12 +141,6 @@ pub trait Plugin: Send + Sync + 'static {
         Vec::new()
     }
 }
-
-/// Type alias for a thread-safe plugin reference
-pub type PluginRef = Arc<dyn Plugin>;
-
-/// Factory function type for creating plugins
-pub type PluginFactory = fn() -> Box<dyn Plugin>;
 
 #[cfg(test)]
 #[path = "plugin/plugin_tests.rs"]

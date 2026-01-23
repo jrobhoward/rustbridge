@@ -184,8 +184,9 @@ This document tracks the implementation progress and upcoming tasks for the rust
 2. Create a branch: `feature/task-name` or `fix/issue-name`
 3. Follow [SKILLS.md](./SKILLS.md) conventions
 4. Follow [TESTING.md](./TESTING.md) for tests
-5. Submit PR with clear description
-6. Wait for review
+5. Review [ARCHITECTURE.md](./ARCHITECTURE.md) for design context
+6. Submit PR with clear description
+7. Wait for review
 
 ---
 

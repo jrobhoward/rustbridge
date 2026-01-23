@@ -4,7 +4,7 @@
 
 use crate::buffer::FfiBuffer;
 use crate::handle::{PluginHandle, PluginHandleManager};
-use rustbridge_core::{LogLevel, PluginConfig, PluginError};
+use rustbridge_core::{LogLevel, PluginConfig};
 use rustbridge_logging::{LogCallback, LogCallbackManager};
 use rustbridge_transport::ResponseEnvelope;
 use std::ffi::c_void;
@@ -255,13 +255,25 @@ pub unsafe extern "C" fn plugin_get_state(handle: FfiPluginHandle) -> u8 {
 // Type definitions for async API (for future implementation)
 
 /// Completion callback for async requests
-pub type CompletionCallbackFn =
-    extern "C" fn(context: *mut c_void, request_id: u64, data: *const u8, len: usize, error_code: u32);
+pub type CompletionCallbackFn = extern "C" fn(
+    context: *mut c_void,
+    request_id: u64,
+    data: *const u8,
+    len: usize,
+    error_code: u32,
+);
 
 /// Make an async call to the plugin (placeholder for future implementation)
 ///
+/// # Safety
+/// - `handle` must be a valid handle from `plugin_init`, or null
+/// - `type_tag` must be a valid null-terminated C string, or null
+/// - `request` must be valid for `request_len` bytes, or null if `request_len` is 0
+/// - `callback` will be invoked when the request completes
+/// - `context` is passed through to the callback
+///
 /// # Returns
-/// Request ID that can be used with plugin_cancel_async
+/// Request ID that can be used with plugin_cancel_async, or 0 if not implemented
 #[no_mangle]
 pub unsafe extern "C" fn plugin_call_async(
     _handle: FfiPluginHandle,
@@ -276,6 +288,13 @@ pub unsafe extern "C" fn plugin_call_async(
 }
 
 /// Cancel an async request (placeholder for future implementation)
+///
+/// # Safety
+/// - `handle` must be a valid handle from `plugin_init`, or null
+/// - `request_id` must be a valid request ID from `plugin_call_async`
+///
+/// # Returns
+/// `true` if cancellation was successful, `false` otherwise
 #[no_mangle]
 pub unsafe extern "C" fn plugin_cancel_async(_handle: FfiPluginHandle, _request_id: u64) -> bool {
     // TODO: Implement async cancellation

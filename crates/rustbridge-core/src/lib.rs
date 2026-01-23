@@ -59,7 +59,7 @@ impl std::fmt::Display for LogLevel {
 /// Prelude module for convenient imports
 pub mod prelude {
     pub use crate::{
-        LogLevel, LifecycleState, Plugin, PluginConfig, PluginContext, PluginError, PluginResult,
+        LifecycleState, LogLevel, Plugin, PluginConfig, PluginContext, PluginError, PluginResult,
         RequestContext, ResponseBuilder,
     };
 }

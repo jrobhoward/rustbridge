@@ -2,6 +2,47 @@
 
 This document describes the testing conventions for the rustbridge workspace.
 
+## Code Quality Requirements
+
+### Clippy
+
+All code (including tests and examples) must pass clippy cleanly:
+
+```bash
+cargo clippy --workspace --examples --tests -- -D warnings
+```
+
+This command must run with **zero warnings** before code is considered ready for review.
+
+### Use of `.unwrap()` and `.expect()` in Tests
+
+Unlike production code, tests **may** use `.unwrap()` and `.expect()` freely:
+
+```rust
+#[test]
+fn PluginConfig___from_valid_json___parses_correctly() {
+    let json = r#"{"log_level": "debug"}"#;
+
+    let config = PluginConfig::from_json(json.as_bytes()).unwrap();
+
+    assert_eq!(config.log_level, LogLevel::Debug);
+}
+```
+
+**Rationale**: Test failures should be visible and obvious. Using `.unwrap()` in tests causes a clear panic with a backtrace, making debugging easier.
+
+### Test File Clippy Configuration
+
+Test files should include the `non_snake_case` allow but do **not** need to suppress `unwrap_used`:
+
+```rust
+#![allow(non_snake_case)]
+
+use super::*;
+```
+
+The workspace Cargo.toml configures clippy to allow `.unwrap()` in test code automatically.
+
 ## File Organization
 
 ### Separate Test Files

@@ -36,9 +36,8 @@ fn AsyncBridge___call_sync___executes_async_future() {
 fn AsyncBridge___call_sync___propagates_errors() {
     let bridge = create_test_bridge();
 
-    let result: PluginResult<()> = bridge.call_sync(async {
-        Err(PluginError::HandlerError("test error".to_string()))
-    });
+    let result: PluginResult<()> =
+        bridge.call_sync(async { Err(PluginError::HandlerError("test error".to_string())) });
 
     assert!(result.is_err());
 }

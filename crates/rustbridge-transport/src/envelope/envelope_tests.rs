@@ -138,7 +138,8 @@ fn ResponseEnvelope___with_request_id___sets_id() {
 
 #[test]
 fn ResponseEnvelope___to_bytes_from_bytes___roundtrip() {
-    let original = ResponseEnvelope::success(serde_json::json!({"result": true})).with_request_id(123);
+    let original =
+        ResponseEnvelope::success(serde_json::json!({"result": true})).with_request_id(123);
 
     let bytes = original.to_bytes().unwrap();
     let decoded = ResponseEnvelope::from_bytes(&bytes).unwrap();

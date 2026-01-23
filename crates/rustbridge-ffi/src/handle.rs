@@ -6,7 +6,7 @@ use parking_lot::RwLock;
 use rustbridge_core::{
     LifecycleState, Plugin, PluginConfig, PluginContext, PluginError, PluginResult,
 };
-use rustbridge_logging::{LogCallback, LogCallbackManager};
+use rustbridge_logging::LogCallbackManager;
 use rustbridge_runtime::{AsyncBridge, AsyncRuntime, RuntimeConfig};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;

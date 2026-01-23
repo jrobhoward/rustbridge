@@ -73,6 +73,79 @@ impl PluginError {
 }
 ```
 
+### Avoiding `.unwrap()` and `.expect()`
+
+In **production code** (library crates), avoid `.unwrap()` and `.expect()`:
+
+```rust
+// BAD - will panic on failure
+let config = PluginConfig::from_json(data).unwrap();
+
+// GOOD - propagate errors
+let config = PluginConfig::from_json(data)?;
+
+// GOOD - provide default
+let config = PluginConfig::from_json(data).unwrap_or_default();
+
+// GOOD - handle explicitly
+let config = match PluginConfig::from_json(data) {
+    Ok(c) => c,
+    Err(e) => {
+        tracing::warn!("Invalid config, using defaults: {}", e);
+        PluginConfig::default()
+    }
+};
+```
+
+**When `.unwrap()` or `.expect()` is truly safe** (e.g., compile-time known values), add an allow attribute with explanation:
+
+```rust
+#[allow(clippy::unwrap_used)] // Safe: regex pattern is valid at compile time
+static EMAIL_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap()
+});
+```
+
+**Exceptions where `.unwrap()` / `.expect()` are allowed:**
+- Test code (`#[cfg(test)]` modules)
+- Examples (`examples/` directory)
+- Truly infallible operations with `#[allow(...)]` annotation
+
+## Code Quality
+
+### Clippy
+
+All code must pass clippy with no warnings:
+
+```bash
+cargo clippy --workspace --examples --tests -- -D warnings
+```
+
+This includes:
+- All library crates
+- All examples
+- All test code
+
+Run this command before considering any code complete.
+
+### Workspace Clippy Configuration
+
+The workspace `Cargo.toml` should configure strict lints:
+
+```toml
+[workspace.lints.clippy]
+unwrap_used = "warn"      # Warn on .unwrap() in production code
+expect_used = "warn"      # Warn on .expect() in production code
+panic = "warn"            # Warn on panic!() in production code
+```
+
+Individual crates inherit these with:
+
+```toml
+[lints]
+workspace = true
+```
+
 ## Code Organization
 
 ### Import Style

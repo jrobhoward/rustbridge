@@ -79,6 +79,7 @@ impl AsyncBridge {
 }
 
 /// Type alias for async completion callback used in FFI
+#[allow(dead_code)] // Reserved for future async API
 pub type CompletionCallback = extern "C" fn(
     context: *mut std::ffi::c_void,
     request_id: u64,
@@ -88,6 +89,7 @@ pub type CompletionCallback = extern "C" fn(
 );
 
 /// Pending async request tracker
+#[allow(dead_code)] // Reserved for future async API
 pub struct PendingRequest {
     pub request_id: u64,
     pub callback: CompletionCallback,
@@ -99,6 +101,7 @@ pub struct PendingRequest {
 unsafe impl Send for PendingRequest {}
 unsafe impl Sync for PendingRequest {}
 
+#[allow(dead_code)] // Reserved for future async API
 impl PendingRequest {
     /// Create a new pending request
     pub fn new(

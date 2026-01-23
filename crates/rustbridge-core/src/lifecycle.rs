@@ -11,10 +11,11 @@ use serde::{Deserialize, Serialize};
 ///                └────────────────────┘ (restart)
 ///            Any state → Failed (on error)
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LifecycleState {
     /// Plugin is installed but not yet initialized
+    #[default]
     Installed,
     /// Plugin is starting up (initializing runtime, resources)
     Starting,
@@ -82,12 +83,6 @@ impl std::fmt::Display for LifecycleState {
             LifecycleState::Stopped => write!(f, "Stopped"),
             LifecycleState::Failed => write!(f, "Failed"),
         }
-    }
-}
-
-impl Default for LifecycleState {
-    fn default() -> Self {
-        LifecycleState::Installed
     }
 }
 
