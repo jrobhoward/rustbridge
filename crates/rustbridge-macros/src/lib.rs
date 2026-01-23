@@ -9,7 +9,7 @@
 use darling::FromDeriveInput;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, ItemFn};
+use syn::{DeriveInput, ItemFn, parse_macro_input};
 
 /// Attribute for marking a struct as a rustbridge plugin
 ///
@@ -158,8 +158,8 @@ pub fn rustbridge_entry(input: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         /// FFI entry point - creates a new plugin instance
-        #[no_mangle]
-        pub extern "C" fn plugin_create() -> *mut ::std::ffi::c_void {
+        #[unsafe(no_mangle)]
+        pub unsafe extern "C" fn plugin_create() -> *mut ::std::ffi::c_void {
             let plugin: Box<dyn ::rustbridge_core::Plugin> = Box::new(#factory_path());
             let boxed: Box<Box<dyn ::rustbridge_core::Plugin>> = Box::new(plugin);
             Box::into_raw(boxed) as *mut ::std::ffi::c_void

@@ -8,12 +8,7 @@ use super::*;
 #[test]
 fn plugin_call___null_handle___returns_error() {
     unsafe {
-        let result = plugin_call(
-            ptr::null_mut(),
-            b"test\0".as_ptr() as *const _,
-            ptr::null(),
-            0,
-        );
+        let result = plugin_call(ptr::null_mut(), c"test".as_ptr(), ptr::null(), 0);
 
         assert!(result.is_error());
 
@@ -25,12 +20,7 @@ fn plugin_call___null_handle___returns_error() {
 #[test]
 fn plugin_call___invalid_handle___returns_error() {
     unsafe {
-        let result = plugin_call(
-            999 as FfiPluginHandle,
-            b"test\0".as_ptr() as *const _,
-            ptr::null(),
-            0,
-        );
+        let result = plugin_call(999 as FfiPluginHandle, c"test".as_ptr(), ptr::null(), 0);
 
         assert!(result.is_error());
 

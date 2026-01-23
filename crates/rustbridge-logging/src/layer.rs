@@ -4,9 +4,9 @@ use crate::callback::LogCallbackManager;
 use rustbridge_core::LogLevel;
 use tracing::field::{Field, Visit};
 use tracing::{Event, Level, Subscriber};
+use tracing_subscriber::Layer;
 use tracing_subscriber::layer::Context;
 use tracing_subscriber::registry::LookupSpan;
-use tracing_subscriber::Layer;
 
 /// Tracing layer that forwards log events to FFI callbacks
 pub struct FfiLoggingLayer {

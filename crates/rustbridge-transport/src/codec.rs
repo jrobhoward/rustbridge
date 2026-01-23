@@ -1,7 +1,7 @@
 //! Codec trait and JSON implementation
 
 use rustbridge_core::PluginError;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use thiserror::Error;
 
 /// Errors that can occur during encoding/decoding

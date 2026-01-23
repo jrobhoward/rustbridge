@@ -88,10 +88,12 @@ impl FfiBuffer {
     ///
     /// The buffer must contain valid data and not have been freed.
     pub unsafe fn as_slice(&self) -> &[u8] {
-        if self.data.is_null() {
-            &[]
-        } else {
-            std::slice::from_raw_parts(self.data, self.len)
+        unsafe {
+            if self.data.is_null() {
+                &[]
+            } else {
+                std::slice::from_raw_parts(self.data, self.len)
+            }
         }
     }
 
@@ -102,13 +104,15 @@ impl FfiBuffer {
     /// This must only be called once per buffer. After calling, the buffer
     /// is invalid and must not be used.
     pub unsafe fn free(&mut self) {
-        if !self.data.is_null() && self.capacity > 0 {
-            // Reconstruct the Vec and let it drop
-            let _ = Vec::from_raw_parts(self.data, self.len, self.capacity);
+        unsafe {
+            if !self.data.is_null() && self.capacity > 0 {
+                // Reconstruct the Vec and let it drop
+                let _ = Vec::from_raw_parts(self.data, self.len, self.capacity);
+            }
+            self.data = ptr::null_mut();
+            self.len = 0;
+            self.capacity = 0;
         }
-        self.data = ptr::null_mut();
-        self.len = 0;
-        self.capacity = 0;
     }
 }
 

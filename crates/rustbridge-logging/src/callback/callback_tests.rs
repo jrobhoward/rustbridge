@@ -1,8 +1,8 @@
 #![allow(non_snake_case)]
 
 use super::*;
-use std::sync::atomic::AtomicUsize;
 use std::sync::Mutex;
+use std::sync::atomic::AtomicUsize;
 
 static CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
 static CALLBACK_TEST_LOCK: Mutex<()> = Mutex::new(());

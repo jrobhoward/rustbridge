@@ -8,8 +8,8 @@ use rustbridge_core::{
 };
 use rustbridge_logging::LogCallbackManager;
 use rustbridge_runtime::{AsyncBridge, AsyncRuntime, RuntimeConfig};
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 /// Global handle manager
 static HANDLE_MANAGER: OnceCell<PluginHandleManager> = OnceCell::new();

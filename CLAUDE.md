@@ -1,10 +1,28 @@
-# rustbridge - Project Instructions
+# CLAUDE.md
 
-This document contains instructions and conventions for working on the rustbridge project.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
 rustbridge is a framework for developing Rust shared libraries callable from other languages (Java, C#, Python, etc.). It uses C ABI under the hood but abstracts the complexity.
+
+## Rust Version Policy
+
+- **Edition**: Rust 2024
+- **MSRV**: 1.85.0 (required for Rust 2024 edition)
+- **Testing**: CI should test on MSRV, stable, and nightly
+- **MSRV Update Policy**: May increase MSRV to Rust versions released ≥6 months ago (following Tokio's conservative approach)
+- **Pre-1.0 Notice**: MSRV policy may be adjusted before 1.0 release based on ecosystem needs
+
+### Dependency Versions
+
+Key dependencies follow these version ranges:
+- **tokio**: 1.43+ (LTS release with 1.70 MSRV)
+- **serde**: 1.0+ (semver compatible)
+- **clap**: 4.5+ (latest 4.x)
+- **uuid**: 1.11+ (latest 1.x)
+
+Use `cargo msrv verify` to check MSRV compatibility when adding new dependencies.
 
 ## Documentation
 
@@ -95,6 +113,8 @@ All FFI functions must:
 
 ## Build Commands
 
+### Rust
+
 ```bash
 # Build all crates
 cargo build --workspace
@@ -107,4 +127,32 @@ cargo clippy --workspace --examples --tests -- -D warnings
 
 # Build release
 cargo build --workspace --release
+
+# Build a specific crate
+cargo build -p rustbridge-core
+
+# Run tests for a specific crate
+cargo test -p rustbridge-ffi
+
+# Run a specific test
+cargo test lifecycle___installed_to_starting
+```
+
+### Java/Kotlin (optional)
+
+The `rustbridge-java/` directory contains Java/Kotlin bindings with three subprojects:
+- `rustbridge-core`: Core Java interfaces (Plugin, PluginConfig, etc.)
+- `rustbridge-ffm`: FFM-based implementation (Java 21+, recommended)
+- `rustbridge-jni`: JNI-based implementation (Java 8+, legacy fallback)
+
+```bash
+# Build Java bindings (from rustbridge-java/ directory)
+cd rustbridge-java
+./gradlew build
+
+# Run Java tests
+./gradlew test
+
+# Build a specific subproject
+./gradlew :rustbridge-ffm:build
 ```

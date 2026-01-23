@@ -63,9 +63,9 @@ pub mod prelude {
 /// ```
 #[macro_export]
 macro_rules! plugin_entry {
-    ($factory:expr) => {
-        #[no_mangle]
-        pub extern "C" fn plugin_create() -> *mut std::ffi::c_void {
+    ($factory:expr_2021) => {
+        #[unsafe(no_mangle)]
+        pub unsafe extern "C" fn plugin_create() -> *mut std::ffi::c_void {
             let plugin = Box::new($factory());
             Box::into_raw(plugin) as *mut std::ffi::c_void
         }

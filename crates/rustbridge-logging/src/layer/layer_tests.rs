@@ -1,8 +1,8 @@
 #![allow(non_snake_case)]
 
 use super::*;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use tracing_subscriber::prelude::*;
 
 static TEST_CALL_COUNT: AtomicUsize = AtomicUsize::new(0);

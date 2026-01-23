@@ -3,8 +3,8 @@
 use crate::{AsyncRuntime, ShutdownSignal};
 use rustbridge_core::{PluginError, PluginResult};
 use std::future::Future;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 /// Bridge for executing async operations from sync FFI context
 pub struct AsyncBridge {

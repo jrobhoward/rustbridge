@@ -9,10 +9,10 @@ mod callback;
 mod layer;
 
 pub use callback::{LogCallback, LogCallbackManager};
-pub use layer::{init_logging, FfiLoggingLayer};
+pub use layer::{FfiLoggingLayer, init_logging};
 pub use rustbridge_core::LogLevel;
 
 /// Prelude module for convenient imports
 pub mod prelude {
-    pub use crate::{init_logging, FfiLoggingLayer, LogCallback, LogCallbackManager, LogLevel};
+    pub use crate::{FfiLoggingLayer, LogCallback, LogCallbackManager, LogLevel, init_logging};
 }

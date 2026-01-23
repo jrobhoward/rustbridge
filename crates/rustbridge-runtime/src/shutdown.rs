@@ -1,7 +1,7 @@
 //! Graceful shutdown support
 
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::sync::broadcast;
 
 /// Handle for triggering shutdown

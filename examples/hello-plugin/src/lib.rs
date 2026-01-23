@@ -5,7 +5,7 @@
 
 use async_trait::async_trait;
 use rustbridge_core::{Plugin, PluginContext, PluginError, PluginMetadata, PluginResult};
-use rustbridge_macros::{rustbridge_entry, Message};
+use rustbridge_macros::{Message, rustbridge_entry};
 use serde::{Deserialize, Serialize};
 
 // ============================================================================

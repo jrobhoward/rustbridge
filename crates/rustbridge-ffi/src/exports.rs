@@ -28,68 +28,70 @@ pub type FfiPluginHandle = *mut c_void;
 /// - `plugin_ptr` must be a valid pointer from `plugin_create`
 /// - `config_json` must be valid for `config_len` bytes if not null
 /// - The log callback must remain valid for the lifetime of the plugin
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn plugin_init(
     plugin_ptr: *mut c_void,
     config_json: *const u8,
     config_len: usize,
     log_callback: Option<LogCallback>,
 ) -> FfiPluginHandle {
-    // Validate plugin pointer
-    if plugin_ptr.is_null() {
-        return ptr::null_mut();
-    }
-
-    // Set up logging callback
-    if let Some(cb) = log_callback {
-        LogCallbackManager::global().set_callback(Some(cb));
-    }
-
-    // Initialize logging
-    rustbridge_logging::init_logging();
-
-    // Parse configuration
-    let config = if config_json.is_null() || config_len == 0 {
-        PluginConfig::default()
-    } else {
-        let config_slice = std::slice::from_raw_parts(config_json, config_len);
-        match PluginConfig::from_json(config_slice) {
-            Ok(c) => c,
-            Err(e) => {
-                tracing::error!("Failed to parse config: {}", e);
-                return ptr::null_mut();
-            }
-        }
-    };
-
-    // Take ownership of the plugin
-    let plugin: Box<Box<dyn rustbridge_core::Plugin>> =
-        Box::from_raw(plugin_ptr as *mut Box<dyn rustbridge_core::Plugin>);
-
-    // Create the handle
-    let handle = match PluginHandle::new(*plugin, config) {
-        Ok(h) => h,
-        Err(e) => {
-            tracing::error!("Failed to create handle: {}", e);
+    unsafe {
+        // Validate plugin pointer
+        if plugin_ptr.is_null() {
             return ptr::null_mut();
         }
-    };
 
-    // Start the plugin
-    if let Err(e) = handle.start() {
-        tracing::error!("Failed to start plugin: {}", e);
-        return ptr::null_mut();
+        // Set up logging callback
+        if let Some(cb) = log_callback {
+            LogCallbackManager::global().set_callback(Some(cb));
+        }
+
+        // Initialize logging
+        rustbridge_logging::init_logging();
+
+        // Parse configuration
+        let config = if config_json.is_null() || config_len == 0 {
+            PluginConfig::default()
+        } else {
+            let config_slice = std::slice::from_raw_parts(config_json, config_len);
+            match PluginConfig::from_json(config_slice) {
+                Ok(c) => c,
+                Err(e) => {
+                    tracing::error!("Failed to parse config: {}", e);
+                    return ptr::null_mut();
+                }
+            }
+        };
+
+        // Take ownership of the plugin
+        let plugin: Box<Box<dyn rustbridge_core::Plugin>> =
+            Box::from_raw(plugin_ptr as *mut Box<dyn rustbridge_core::Plugin>);
+
+        // Create the handle
+        let handle = match PluginHandle::new(*plugin, config) {
+            Ok(h) => h,
+            Err(e) => {
+                tracing::error!("Failed to create handle: {}", e);
+                return ptr::null_mut();
+            }
+        };
+
+        // Start the plugin
+        if let Err(e) = handle.start() {
+            tracing::error!("Failed to start plugin: {}", e);
+            return ptr::null_mut();
+        }
+
+        // Register and return handle
+        let id = PluginHandleManager::global().register(handle);
+
+        // Store ID in the handle
+        if let Some(h) = PluginHandleManager::global().get(id) {
+            h.set_id(id);
+        }
+
+        id as FfiPluginHandle
     }
-
-    // Register and return handle
-    let id = PluginHandleManager::global().register(handle);
-
-    // Store ID in the handle
-    if let Some(h) = PluginHandleManager::global().get(id) {
-        h.set_id(id);
-    }
-
-    id as FfiPluginHandle
 }
 
 /// Make a synchronous call to the plugin
@@ -107,58 +109,60 @@ pub unsafe extern "C" fn plugin_init(
 /// - `handle` must be a valid handle from plugin_init
 /// - `type_tag` must be a valid null-terminated C string
 /// - `request` must be valid for `request_len` bytes
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn plugin_call(
     handle: FfiPluginHandle,
     type_tag: *const std::ffi::c_char,
     request: *const u8,
     request_len: usize,
 ) -> FfiBuffer {
-    // Validate handle
-    let id = handle as u64;
-    let plugin_handle = match PluginHandleManager::global().get(id) {
-        Some(h) => h,
-        None => return FfiBuffer::error(1, "Invalid handle"),
-    };
+    unsafe {
+        // Validate handle
+        let id = handle as u64;
+        let plugin_handle = match PluginHandleManager::global().get(id) {
+            Some(h) => h,
+            None => return FfiBuffer::error(1, "Invalid handle"),
+        };
 
-    // Parse type tag
-    let type_tag_str = if type_tag.is_null() {
-        return FfiBuffer::error(4, "Type tag is null");
-    } else {
-        match std::ffi::CStr::from_ptr(type_tag).to_str() {
-            Ok(s) => s,
-            Err(_) => return FfiBuffer::error(4, "Invalid type tag encoding"),
-        }
-    };
-
-    // Get request data
-    let request_data = if request.is_null() || request_len == 0 {
-        &[]
-    } else {
-        std::slice::from_raw_parts(request, request_len)
-    };
-
-    // Make the call
-    match plugin_handle.call(type_tag_str, request_data) {
-        Ok(response_data) => {
-            // Wrap in response envelope
-            match ResponseEnvelope::success_raw(&response_data) {
-                Ok(envelope) => match envelope.to_bytes() {
-                    Ok(bytes) => FfiBuffer::from_vec(bytes),
-                    Err(e) => FfiBuffer::error(5, &format!("Serialization error: {}", e)),
-                },
-                Err(e) => FfiBuffer::error(5, &format!("Serialization error: {}", e)),
+        // Parse type tag
+        let type_tag_str = if type_tag.is_null() {
+            return FfiBuffer::error(4, "Type tag is null");
+        } else {
+            match std::ffi::CStr::from_ptr(type_tag).to_str() {
+                Ok(s) => s,
+                Err(_) => return FfiBuffer::error(4, "Invalid type tag encoding"),
             }
-        }
-        Err(e) => {
-            let envelope = ResponseEnvelope::from_error(&e);
-            match envelope.to_bytes() {
-                Ok(bytes) => {
-                    let mut buf = FfiBuffer::from_vec(bytes);
-                    buf.error_code = e.error_code();
-                    buf
+        };
+
+        // Get request data
+        let request_data = if request.is_null() || request_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(request, request_len)
+        };
+
+        // Make the call
+        match plugin_handle.call(type_tag_str, request_data) {
+            Ok(response_data) => {
+                // Wrap in response envelope
+                match ResponseEnvelope::success_raw(&response_data) {
+                    Ok(envelope) => match envelope.to_bytes() {
+                        Ok(bytes) => FfiBuffer::from_vec(bytes),
+                        Err(e) => FfiBuffer::error(5, &format!("Serialization error: {}", e)),
+                    },
+                    Err(e) => FfiBuffer::error(5, &format!("Serialization error: {}", e)),
                 }
-                Err(se) => FfiBuffer::error(e.error_code(), &format!("{}: {}", e, se)),
+            }
+            Err(e) => {
+                let envelope = ResponseEnvelope::from_error(&e);
+                match envelope.to_bytes() {
+                    Ok(bytes) => {
+                        let mut buf = FfiBuffer::from_vec(bytes);
+                        buf.error_code = e.error_code();
+                        buf
+                    }
+                    Err(se) => FfiBuffer::error(e.error_code(), &format!("{}: {}", e, se)),
+                }
             }
         }
     }
@@ -169,10 +173,12 @@ pub unsafe extern "C" fn plugin_call(
 /// # Safety
 /// - `buffer` must be a valid FfiBuffer from plugin_call
 /// - Must only be called once per buffer
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn plugin_free_buffer(buffer: *mut FfiBuffer) {
-    if !buffer.is_null() {
-        (*buffer).free();
+    unsafe {
+        if !buffer.is_null() {
+            (*buffer).free();
+        }
     }
 }
 
@@ -187,7 +193,7 @@ pub unsafe extern "C" fn plugin_free_buffer(buffer: *mut FfiBuffer) {
 /// # Safety
 /// - `handle` must be a valid handle from plugin_init
 /// - After this call, the handle is no longer valid
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn plugin_shutdown(handle: FfiPluginHandle) -> bool {
     let id = handle as u64;
 
@@ -215,7 +221,7 @@ pub unsafe extern "C" fn plugin_shutdown(handle: FfiPluginHandle) -> bool {
 ///
 /// # Safety
 /// - `handle` must be a valid handle from plugin_init
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn plugin_set_log_level(handle: FfiPluginHandle, level: u8) {
     let id = handle as u64;
 
@@ -235,7 +241,7 @@ pub unsafe extern "C" fn plugin_set_log_level(handle: FfiPluginHandle, level: u8
 ///
 /// # Safety
 /// - `handle` must be a valid handle from plugin_init
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn plugin_get_state(handle: FfiPluginHandle) -> u8 {
     let id = handle as u64;
 
@@ -274,7 +280,7 @@ pub type CompletionCallbackFn = extern "C" fn(
 ///
 /// # Returns
 /// Request ID that can be used with plugin_cancel_async, or 0 if not implemented
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn plugin_call_async(
     _handle: FfiPluginHandle,
     _type_tag: *const std::ffi::c_char,
@@ -295,7 +301,7 @@ pub unsafe extern "C" fn plugin_call_async(
 ///
 /// # Returns
 /// `true` if cancellation was successful, `false` otherwise
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn plugin_cancel_async(_handle: FfiPluginHandle, _request_id: u64) -> bool {
     // TODO: Implement async cancellation
     false
