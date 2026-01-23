@@ -2,6 +2,7 @@
 //!
 //! These functions are the FFI entry points called by host languages.
 
+use crate::binary_types::RbResponse;
 use crate::buffer::FfiBuffer;
 use crate::handle::{PluginHandle, PluginHandleManager};
 use crate::panic_guard::catch_panic;
@@ -310,6 +311,164 @@ pub unsafe extern "C" fn plugin_get_state(handle: FfiPluginHandle) -> u8 {
         None => 255,
     }
 }
+
+// ============================================================================
+// Binary Transport Functions
+// ============================================================================
+
+/// Handler function type for binary message processing
+///
+/// Plugins that want to support binary transport must register handlers
+/// using this signature. The handler receives the request struct as raw bytes
+/// and must return response bytes (which will be wrapped in RbResponse).
+pub type BinaryMessageHandler =
+    fn(handle: &PluginHandle, request: &[u8]) -> Result<Vec<u8>, rustbridge_core::PluginError>;
+
+// Registry for binary message handlers
+//
+// This is a simple thread-local registry mapping message_id to handlers.
+// Plugins can register handlers during initialization.
+//
+// Note: For the initial benchmark, we use a simple static approach.
+// A more sophisticated implementation would use the Plugin trait.
+thread_local! {
+    static BINARY_HANDLERS: std::cell::RefCell<std::collections::HashMap<u32, BinaryMessageHandler>> =
+        std::cell::RefCell::new(std::collections::HashMap::new());
+}
+
+/// Register a binary message handler
+///
+/// Call this during plugin initialization to register handlers for
+/// binary transport message types.
+pub fn register_binary_handler(message_id: u32, handler: BinaryMessageHandler) {
+    BINARY_HANDLERS.with(|handlers| {
+        handlers.borrow_mut().insert(message_id, handler);
+    });
+}
+
+/// Make a synchronous binary call to the plugin
+///
+/// # Parameters
+/// - `handle`: Plugin handle from plugin_init
+/// - `message_id`: Numeric message identifier
+/// - `request`: Pointer to request struct
+/// - `request_size`: Size of request struct (for validation)
+///
+/// # Returns
+/// RbResponse containing the binary response (must be freed with rb_response_free)
+///
+/// # Safety
+/// - `handle` must be a valid handle from plugin_init
+/// - `request` must be valid for `request_size` bytes
+/// - The request struct must match the expected type for `message_id`
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn plugin_call_raw(
+    handle: FfiPluginHandle,
+    message_id: u32,
+    request: *const c_void,
+    request_size: usize,
+) -> RbResponse {
+    // Wrap in panic handler
+    let handle_id = handle as u64;
+    match catch_panic(
+        handle_id,
+        AssertUnwindSafe(|| unsafe {
+            plugin_call_raw_impl(handle, message_id, request, request_size)
+        }),
+    ) {
+        Ok(result) => result,
+        Err(error_buffer) => {
+            // Convert FfiBuffer error to RbResponse error
+            let msg = if error_buffer.is_error() && !error_buffer.data.is_null() {
+                // SAFETY: error buffer contains a valid string
+                let slice =
+                    unsafe { std::slice::from_raw_parts(error_buffer.data, error_buffer.len) };
+                String::from_utf8_lossy(slice).into_owned()
+            } else {
+                "Internal error (panic)".to_string()
+            };
+            // Free the original error buffer
+            let mut buf = error_buffer;
+            // SAFETY: buf is a valid FfiBuffer from catch_panic
+            unsafe { buf.free() };
+            RbResponse::error(11, &msg)
+        }
+    }
+}
+
+/// Internal implementation of plugin_call_raw (wrapped by panic handler)
+unsafe fn plugin_call_raw_impl(
+    handle: FfiPluginHandle,
+    message_id: u32,
+    request: *const c_void,
+    request_size: usize,
+) -> RbResponse {
+    // Validate handle
+    let id = handle as u64;
+    let plugin_handle = match PluginHandleManager::global().get(id) {
+        Some(h) => h,
+        None => return RbResponse::error(1, "Invalid handle"),
+    };
+
+    // Check plugin state
+    if !plugin_handle.state().can_handle_requests() {
+        return RbResponse::error(1, "Plugin not in Active state");
+    }
+
+    // Get request data
+    let request_data = if request.is_null() || request_size == 0 {
+        &[]
+    } else {
+        // SAFETY: caller guarantees request is valid for request_size bytes
+        unsafe { std::slice::from_raw_parts(request as *const u8, request_size) }
+    };
+
+    // Look up handler
+    let handler = BINARY_HANDLERS.with(|handlers| handlers.borrow().get(&message_id).copied());
+
+    match handler {
+        Some(h) => {
+            // Call the handler
+            match h(&plugin_handle, request_data) {
+                Ok(response_bytes) => {
+                    // Return raw bytes as response
+                    // The caller is responsible for interpreting the bytes as the correct struct
+                    let mut response = RbResponse::empty();
+                    let len = response_bytes.len();
+                    let capacity = response_bytes.capacity();
+                    let data = response_bytes.leak().as_mut_ptr();
+
+                    response.error_code = 0;
+                    response.len = len as u32;
+                    response.capacity = capacity as u32;
+                    response.data = data as *mut c_void;
+
+                    response
+                }
+                Err(e) => RbResponse::error(e.error_code(), &e.to_string()),
+            }
+        }
+        None => RbResponse::error(6, &format!("Unknown message ID: {}", message_id)),
+    }
+}
+
+/// Free an RbResponse returned by plugin_call_raw
+///
+/// # Safety
+/// - `response` must be a valid pointer to an RbResponse from plugin_call_raw
+/// - Must only be called once per response
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn rb_response_free(response: *mut RbResponse) {
+    unsafe {
+        if !response.is_null() {
+            (*response).free();
+        }
+    }
+}
+
+// ============================================================================
+// Async API (future implementation)
+// ============================================================================
 
 // Type definitions for async API (for future implementation)
 

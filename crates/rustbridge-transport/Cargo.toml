@@ -14,3 +14,12 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+criterion = { workspace = true }
+
+[[bench]]
+name = "json_baseline"
+harness = false
+
+[[bench]]
+name = "binary_comparison"
+harness = false

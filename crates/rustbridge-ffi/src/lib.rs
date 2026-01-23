@@ -17,18 +17,21 @@
 //! - `plugin_call_async` - Make an async request (future)
 //! - `plugin_cancel_async` - Cancel an async request (future)
 
+mod binary_types;
 mod buffer;
 mod exports;
 mod handle;
 mod panic_guard;
 
+pub use binary_types::{RbBytes, RbBytesOwned, RbResponse, RbString, RbStringOwned};
 pub use buffer::FfiBuffer;
 pub use handle::{PluginHandle, PluginHandleManager};
 
 // Re-export FFI functions for use by plugins
 pub use exports::{
-    plugin_call, plugin_call_async, plugin_cancel_async, plugin_free_buffer, plugin_get_state,
-    plugin_init, plugin_set_log_level, plugin_shutdown,
+    BinaryMessageHandler, plugin_call, plugin_call_async, plugin_call_raw, plugin_cancel_async,
+    plugin_free_buffer, plugin_get_state, plugin_init, plugin_set_log_level, plugin_shutdown,
+    rb_response_free, register_binary_handler,
 };
 
 // Re-export types needed for plugin implementation
@@ -39,7 +42,10 @@ pub use rustbridge_transport::{RequestEnvelope, ResponseEnvelope};
 
 /// Prelude module for convenient imports
 pub mod prelude {
-    pub use crate::{FfiBuffer, PluginHandle, PluginHandleManager};
+    pub use crate::{
+        FfiBuffer, PluginHandle, PluginHandleManager, RbBytes, RbBytesOwned, RbResponse, RbString,
+        RbStringOwned,
+    };
     pub use rustbridge_core::prelude::*;
     pub use rustbridge_logging::prelude::*;
     pub use rustbridge_runtime::prelude::*;
