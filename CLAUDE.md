@@ -150,9 +150,8 @@ See [docs/TESTING.md](./docs/TESTING.md) for complete guidelines.
 | `rustbridge-runtime` | Async runtime, shutdown signals |
 | `rustbridge-logging` | Tracing integration, FFI callbacks |
 | `rustbridge-macros` | Procedural macros |
-| `rustbridge-cli` | Build tool, code generation |
+| `rustbridge-cli` | Build tool, code generation, C header verification |
 | `rustbridge-bundle` | Plugin bundling (.rbp format) |
-| `rustbridge-cc` | Cross-platform C compiler detection |
 
 ## FFI Safety
 
