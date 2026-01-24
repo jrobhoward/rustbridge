@@ -311,14 +311,16 @@ struct LargeResponse {
    - SHA256 checksum verification
    - Minisign signature verification
    - MinisignVerifier using pure Java Ed25519 (Java 8+ compatible)
+10. **Schema Embedding**
+   - Schema catalog in bundle manifest with metadata
+   - Auto-generate C headers during bundle creation (--generate-header)
+   - Manual schema file embedding with auto-format detection
+   - Java API for schema extraction (getSchemas, readSchema, extractSchema)
+   - Documentation in CLAUDE.md with usage examples
 
 ### Next Up
 
-1. **Embed schemas in bundles**
-   - JSON schema for self-describing messages
-   - C headers for binary transport users
-
-2. **C# bindings** (if needed)
+1. **C# bindings** (if needed)
    - Same patterns as Java FFM
    - Port BundleLoader and MinisignVerifier to C#
 

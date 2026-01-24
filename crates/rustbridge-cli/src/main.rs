@@ -12,7 +12,7 @@ use clap::{Parser, Subcommand};
 
 mod build;
 mod bundle;
-mod generate;
+mod codegen;
 mod header_gen;
 mod keygen;
 mod manifest;
@@ -43,19 +43,10 @@ enum Commands {
         target: Option<String>,
     },
 
-    /// Generate host language bindings
+    /// Generate schemas and bindings from Rust message types
     Generate {
-        /// Target language (java, csharp, python)
-        #[arg(short, long)]
-        lang: String,
-
-        /// Output directory for generated code
-        #[arg(short, long)]
-        output: String,
-
-        /// Path to rustbridge.toml manifest
-        #[arg(short, long)]
-        manifest: Option<String>,
+        #[command(subcommand)]
+        action: GenerateAction,
     },
 
     /// Create a new rustbridge plugin project
@@ -109,6 +100,35 @@ enum Commands {
 }
 
 #[derive(Subcommand)]
+enum GenerateAction {
+    /// Generate JSON Schema from Rust message types
+    JsonSchema {
+        /// Path to Rust source file(s) containing message types
+        #[arg(short, long)]
+        input: String,
+
+        /// Output path for generated JSON schema
+        #[arg(short, long)]
+        output: String,
+    },
+
+    /// Generate Java classes from Rust message types
+    Java {
+        /// Path to Rust source file(s) containing message types
+        #[arg(short, long)]
+        input: String,
+
+        /// Output directory for generated Java classes
+        #[arg(short, long)]
+        output: String,
+
+        /// Java package name for generated classes
+        #[arg(short, long, default_value = "com.rustbridge.messages")]
+        package: String,
+    },
+}
+
+#[derive(Subcommand)]
 enum BundleAction {
     /// Create a new bundle from libraries
     Create {
@@ -143,6 +163,11 @@ enum BundleAction {
         /// Example: --generate-header src/binary_messages.rs:messages.h
         #[arg(long, value_name = "SOURCE:HEADER_NAME")]
         generate_header: Option<String>,
+
+        /// Auto-generate JSON Schema from Rust source file and embed in bundle
+        /// Example: --generate-schema src/messages.rs:schema.json
+        #[arg(long, value_name = "SOURCE:SCHEMA_NAME")]
+        generate_schema: Option<String>,
     },
 
     /// List contents of a bundle
@@ -177,13 +202,43 @@ fn main() -> anyhow::Result<()> {
         } => {
             build::run(path, release, target)?;
         }
-        Commands::Generate {
-            lang,
-            output,
-            manifest,
-        } => {
-            generate::run(&lang, &output, manifest)?;
-        }
+        Commands::Generate { action } => match action {
+            GenerateAction::JsonSchema { input, output } => {
+                use codegen::{MessageType, generate_json_schema};
+                use std::path::Path;
+
+                println!("Generating JSON Schema from {input}");
+
+                // Parse message types from Rust source
+                let messages = MessageType::parse_file(Path::new(&input))?;
+                println!("  Found {} message type(s)", messages.len());
+
+                // Generate JSON Schema
+                let schema = generate_json_schema(&messages)?;
+
+                // Write to output file
+                std::fs::write(&output, serde_json::to_string_pretty(&schema)?)?;
+                println!("  JSON Schema written to {output}");
+            }
+            GenerateAction::Java {
+                input,
+                output,
+                package,
+            } => {
+                use codegen::{MessageType, generate_java};
+                use std::path::Path;
+
+                println!("Generating Java classes from {input}");
+
+                // Parse message types from Rust source
+                let messages = MessageType::parse_file(Path::new(&input))?;
+                println!("  Found {} message type(s)", messages.len());
+
+                // Generate Java classes
+                generate_java(&messages, Path::new(&output), &package)?;
+                println!("  Java classes written to {output}");
+            }
+        },
         Commands::New { name, path } => {
             new::run(&name, path)?;
         }
@@ -209,6 +264,7 @@ fn main() -> anyhow::Result<()> {
                 schema,
                 sign_key,
                 generate_header,
+                generate_schema,
             } => {
                 // Parse library arguments (PLATFORM:PATH)
                 let libs: Vec<(String, String)> = libraries
@@ -244,6 +300,7 @@ fn main() -> anyhow::Result<()> {
                     &schemas,
                     sign_key,
                     generate_header,
+                    generate_schema,
                 )?;
             }
             BundleAction::List {

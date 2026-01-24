@@ -9,6 +9,7 @@ use std::fs;
 use std::path::Path;
 
 /// Run the bundle command.
+#[allow(clippy::too_many_arguments)]
 pub fn run(
     name: &str,
     version: &str,
@@ -17,6 +18,7 @@ pub fn run(
     schema_files: &[(String, String)],
     sign_key_path: Option<String>,
     generate_header: Option<String>,
+    generate_schema: Option<String>,
 ) -> Result<()> {
     println!("Creating bundle: {name} v{version}");
 
@@ -69,6 +71,39 @@ pub fn run(
         builder = builder
             .add_schema_file(&temp_header, header_name)
             .with_context(|| format!("Failed to add generated header: {header_name}"))?;
+    }
+
+    // Generate and add JSON Schema if requested
+    if let Some(schema_spec) = generate_schema {
+        let parts: Vec<&str> = schema_spec.splitn(2, ':').collect();
+        if parts.len() != 2 {
+            anyhow::bail!(
+                "Invalid generate-schema format: {schema_spec}. Expected SOURCE:SCHEMA_NAME"
+            );
+        }
+        let (source_file, schema_name) = (parts[0], parts[1]);
+
+        println!("  Generating JSON Schema: {source_file} -> schema/{schema_name}");
+
+        // Parse message types from Rust source
+        use crate::codegen::{MessageType, generate_json_schema};
+        let messages = MessageType::parse_file(Path::new(source_file))
+            .with_context(|| format!("Failed to parse Rust source: {source_file}"))?;
+
+        // Generate JSON Schema
+        let schema = generate_json_schema(&messages)
+            .with_context(|| format!("Failed to generate JSON Schema from {source_file}"))?;
+
+        // Write to temporary file
+        let temp_dir = tempfile::tempdir().context("Failed to create temp directory")?;
+        let temp_schema = temp_dir.path().join(schema_name);
+        fs::write(&temp_schema, serde_json::to_string_pretty(&schema)?)
+            .context("Failed to write JSON Schema to temp file")?;
+
+        // Add the generated schema to the bundle
+        builder = builder
+            .add_schema_file(&temp_schema, schema_name)
+            .with_context(|| format!("Failed to add generated schema: {schema_name}"))?;
     }
 
     // Add schema files
@@ -209,6 +244,7 @@ mod tests {
             &[],
             None, // No signing
             None, // No header generation
+            None, // No schema generation
         )
         .unwrap();
 
@@ -238,6 +274,7 @@ mod tests {
             &[],
             None, // No signing
             None, // No header generation
+            None, // No schema generation
         )
         .unwrap();
 

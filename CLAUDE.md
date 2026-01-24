@@ -87,6 +87,10 @@ rustbridge build --release
 rustbridge generate-header --output include/messages.h
 rustbridge generate-header --verify  # Verify header compiles
 
+# Code generation from Rust message types
+rustbridge generate json-schema -i src/messages.rs -o schema.json
+rustbridge generate java -i src/messages.rs -o src/main/java -p com.example.messages
+
 # Generate signing keys (one-time setup)
 rustbridge keygen --output ~/.rustbridge/signing.key
 
@@ -96,6 +100,7 @@ rustbridge bundle create --name my-plugin --version 1.0.0 \
   --lib darwin-aarch64:target/release/libmyplugin.dylib \
   --schema README.md:README.md \
   --generate-header src/binary_messages.rs:messages.h \
+  --generate-schema src/messages.rs:messages.json \
   --sign-key ~/.rustbridge/signing.key
 
 rustbridge bundle list my-plugin-1.0.0.rbp

@@ -20,6 +20,7 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 syn = { workspace = true }
+quote = { workspace = true }
 cc = "1.0"
 minisign = "0.7"
 rpassword = "7.3"
