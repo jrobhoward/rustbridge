@@ -1,4 +1,109 @@
 //! Java class generation from message types.
+//!
+//! This module generates Java POJOs (Plain Old Java Objects) from Rust message types.
+//!
+//! # Use Cases
+//!
+//! - Java/Kotlin client libraries for rustbridge plugins
+//! - Android applications consuming plugin APIs
+//! - JVM-based services integrating with Rust plugins
+//!
+//! # Generated Code
+//!
+//! For each message type, generates a Java class with:
+//! - Package declaration
+//! - Imports (Gson annotations, List if needed)
+//! - Class-level JavaDoc
+//! - Public fields with JavaDoc
+//! - `@SerializedName` annotations for JSON compatibility
+//! - Default constructor
+//! - Full constructor with all fields
+//! - Getters and setters for all fields
+//!
+//! # Naming Conventions
+//!
+//! - **Snake case → Camel case**: `user_name` becomes `userName`
+//! - **Serde rename**: `#[serde(rename = "user")]` becomes `@SerializedName("user")`
+//! - **Getters/Setters**: `getName()` / `setName(String name)`
+//!
+//! # Type Mappings
+//!
+//! | Rust | Java (required) | Java (optional) |
+//! |------|----------------|-----------------|
+//! | `String` | `String` | `String` |
+//! | `bool` | `boolean` | `Boolean` |
+//! | `i32` | `int` | `Integer` |
+//! | `i64` | `long` | `Long` |
+//! | `f64` | `double` | `Double` |
+//! | `Vec<T>` | `List<T>` | `List<T>` |
+//! | Custom | `CustomType` | `CustomType` |
+//!
+//! Note: Optional primitives use boxed types (`Integer`, `Boolean`, etc.)
+//! to allow `null` values.
+//!
+//! # Examples
+//!
+//! Input Rust:
+//! ```rust
+//! use serde::{Serialize, Deserialize};
+//!
+//! /// User profile.
+//! #[derive(Serialize, Deserialize)]
+//! pub struct UserProfile {
+//!     /// User ID.
+//!     pub id: u64,
+//!
+//!     /// Display name.
+//!     pub display_name: String,
+//!
+//!     /// Email (optional).
+//!     pub email: Option<String>,
+//! }
+//! ```
+//!
+//! Output Java:
+//! ```java
+//! package com.example;
+//!
+//! import com.google.gson.annotations.SerializedName;
+//!
+//! /**
+//!  * User profile.
+//!  */
+//! public class UserProfile {
+//!     /** User ID. */
+//!     public long id;
+//!
+//!     /** Display name. */
+//!     @SerializedName("display_name")
+//!     public String displayName;
+//!
+//!     /** Email (optional). */
+//!     public String email;
+//!
+//!     public UserProfile() {}
+//!
+//!     public UserProfile(long id, String displayName, String email) {
+//!         this.id = id;
+//!         this.displayName = displayName;
+//!         this.email = email;
+//!     }
+//!
+//!     public long getId() { return id; }
+//!     public void setId(long id) { this.id = id; }
+//!     // ... (other getters/setters)
+//! }
+//! ```
+//!
+//! # Usage
+//!
+//! ```rust,no_run
+//! use rustbridge_cli::codegen::{MessageType, generate_java};
+//! use std::path::Path;
+//!
+//! let messages = MessageType::parse_file(Path::new("src/messages.rs")).unwrap();
+//! generate_java(&messages, Path::new("src/main/java"), "com.example").unwrap();
+//! ```
 
 use super::ir::{FieldType, MessageType};
 use anyhow::{Context, Result};
@@ -307,5 +412,194 @@ mod tests {
         assert!(code.contains("public String displayName;"));
         assert!(code.contains("public String getDisplayName()"));
         assert!(code.contains("public void setDisplayName(String displayName)"));
+    }
+
+    #[test]
+    fn generate_java_class___handles_optional_primitives() {
+        let message = MessageType {
+            name: "TestMessage".to_string(),
+            docs: vec![],
+            fields: vec![Field {
+                name: "count".to_string(),
+                ty: FieldType::I32,
+                docs: vec![],
+                optional: true,
+                serde_rename: None,
+            }],
+        };
+
+        let code = generate_java_class(&message, "com.example").unwrap();
+
+        // Optional primitives should use boxed types
+        assert!(code.contains("public Integer count;"));
+        assert!(code.contains("public Integer getCount()"));
+        assert!(code.contains("public void setCount(Integer count)"));
+    }
+
+    #[test]
+    fn generate_java_class___handles_required_primitives() {
+        let message = MessageType {
+            name: "TestMessage".to_string(),
+            docs: vec![],
+            fields: vec![Field {
+                name: "count".to_string(),
+                ty: FieldType::I32,
+                docs: vec![],
+                optional: false,
+                serde_rename: None,
+            }],
+        };
+
+        let code = generate_java_class(&message, "com.example").unwrap();
+
+        // Required primitives should use primitive types
+        assert!(code.contains("public int count;"));
+        assert!(code.contains("public int getCount()"));
+        assert!(code.contains("public void setCount(int count)"));
+    }
+
+    #[test]
+    fn generate_java_class___includes_list_import_when_needed() {
+        let message = MessageType {
+            name: "TestMessage".to_string(),
+            docs: vec![],
+            fields: vec![Field {
+                name: "items".to_string(),
+                ty: FieldType::Vec(Box::new(FieldType::String)),
+                docs: vec![],
+                optional: false,
+                serde_rename: None,
+            }],
+        };
+
+        let code = generate_java_class(&message, "com.example").unwrap();
+
+        assert!(code.contains("import java.util.List;"));
+        assert!(code.contains("public List<String> items;"));
+    }
+
+    #[test]
+    fn generate_java_class___no_list_import_when_not_needed() {
+        let message = MessageType {
+            name: "TestMessage".to_string(),
+            docs: vec![],
+            fields: vec![Field {
+                name: "name".to_string(),
+                ty: FieldType::String,
+                docs: vec![],
+                optional: false,
+                serde_rename: None,
+            }],
+        };
+
+        let code = generate_java_class(&message, "com.example").unwrap();
+
+        assert!(!code.contains("import java.util.List;"));
+    }
+
+    #[test]
+    fn generate_java_class___handles_vec_of_primitives() {
+        let message = MessageType {
+            name: "TestMessage".to_string(),
+            docs: vec![],
+            fields: vec![Field {
+                name: "numbers".to_string(),
+                ty: FieldType::Vec(Box::new(FieldType::I32)),
+                docs: vec![],
+                optional: false,
+                serde_rename: None,
+            }],
+        };
+
+        let code = generate_java_class(&message, "com.example").unwrap();
+
+        // Vec of primitives should use boxed types in List
+        assert!(code.contains("public List<Integer> numbers;"));
+    }
+
+    #[test]
+    fn generate_java_class___handles_custom_types() {
+        let message = MessageType {
+            name: "TestMessage".to_string(),
+            docs: vec![],
+            fields: vec![Field {
+                name: "address".to_string(),
+                ty: FieldType::Custom("Address".to_string()),
+                docs: vec![],
+                optional: false,
+                serde_rename: None,
+            }],
+        };
+
+        let code = generate_java_class(&message, "com.example").unwrap();
+
+        assert!(code.contains("public Address address;"));
+        assert!(code.contains("public Address getAddress()"));
+    }
+
+    #[test]
+    fn generate_java_class___handles_serde_rename() {
+        let message = MessageType {
+            name: "TestMessage".to_string(),
+            docs: vec![],
+            fields: vec![Field {
+                name: "rust_name".to_string(),
+                ty: FieldType::String,
+                docs: vec![],
+                optional: false,
+                serde_rename: Some("jsonName".to_string()),
+            }],
+        };
+
+        let code = generate_java_class(&message, "com.example").unwrap();
+
+        assert!(code.contains("@SerializedName(\"jsonName\")"));
+        assert!(code.contains("public String rustName;"));
+    }
+
+    #[test]
+    fn generate_java_class___handles_multiline_docs() {
+        let message = MessageType {
+            name: "TestMessage".to_string(),
+            docs: vec!["Line 1".to_string(), "Line 2".to_string()],
+            fields: vec![Field {
+                name: "field".to_string(),
+                ty: FieldType::String,
+                docs: vec!["Field doc 1".to_string(), "Field doc 2".to_string()],
+                optional: false,
+                serde_rename: None,
+            }],
+        };
+
+        let code = generate_java_class(&message, "com.example").unwrap();
+
+        assert!(code.contains("/**\n * Line 1\n * Line 2\n */"));
+        assert!(code.contains("/**\n     * Field doc 1\n     * Field doc 2\n     */"));
+    }
+
+    #[test]
+    fn box_primitive___boxes_all_primitive_types() {
+        assert_eq!(box_primitive("boolean"), "Boolean");
+        assert_eq!(box_primitive("byte"), "Byte");
+        assert_eq!(box_primitive("short"), "Short");
+        assert_eq!(box_primitive("int"), "Integer");
+        assert_eq!(box_primitive("long"), "Long");
+        assert_eq!(box_primitive("float"), "Float");
+        assert_eq!(box_primitive("double"), "Double");
+        assert_eq!(box_primitive("char"), "Character");
+    }
+
+    #[test]
+    fn box_primitive___leaves_reference_types_unchanged() {
+        assert_eq!(box_primitive("String"), "String");
+        assert_eq!(box_primitive("CustomType"), "CustomType");
+    }
+
+    #[test]
+    fn map_type_to_java___handles_all_float_types() {
+        assert_eq!(map_type_to_java(&FieldType::F32, false), "float");
+        assert_eq!(map_type_to_java(&FieldType::F32, true), "Float");
+        assert_eq!(map_type_to_java(&FieldType::F64, false), "double");
+        assert_eq!(map_type_to_java(&FieldType::F64, true), "Double");
     }
 }

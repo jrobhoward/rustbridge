@@ -1,0 +1,322 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "AccountSettings": {
+      "description": "User account settings.\nDemonstrates nested custom types.",
+      "properties": {
+        "email_notifications": {
+          "type": "boolean"
+        },
+        "language": {
+          "type": "string"
+        },
+        "sms_notifications": {
+          "type": "boolean"
+        },
+        "timezone": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "email_notifications",
+        "sms_notifications",
+        "language",
+        "timezone"
+      ],
+      "type": "object"
+    },
+    "Address": {
+      "description": "A mailing address.",
+      "properties": {
+        "city": {
+          "type": "string"
+        },
+        "country": {
+          "type": "string"
+        },
+        "postal_code": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "street1": {
+          "type": "string"
+        },
+        "street2": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "street1",
+        "city",
+        "state",
+        "postal_code",
+        "country"
+      ],
+      "type": "object"
+    },
+    "GreetingRequest": {
+      "description": "A simple greeting request.\nThis demonstrates basic string fields and documentation preservation.",
+      "properties": {
+        "language": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "GreetingResponse": {
+      "description": "Response to a greeting request.",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "message",
+        "timestamp"
+      ],
+      "type": "object"
+    },
+    "Order": {
+      "description": "Order information.\nDemonstrates complex nested structures with multiple custom types.",
+      "properties": {
+        "billing_address": {
+          "$ref": "#/definitions/Address"
+        },
+        "created_at": {
+          "type": "integer"
+        },
+        "customer_id": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/definitions/OrderItem"
+          },
+          "type": "array"
+        },
+        "order_id": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "shipping_address": {
+          "$ref": "#/definitions/Address"
+        },
+        "status": {
+          "type": "string"
+        },
+        "total_cents": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "order_id",
+        "customer_id",
+        "items",
+        "shipping_address",
+        "total_cents",
+        "status",
+        "created_at"
+      ],
+      "type": "object"
+    },
+    "OrderItem": {
+      "description": "An item in an order.",
+      "properties": {
+        "quantity": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sku": {
+          "type": "string"
+        },
+        "unit_price_cents": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "sku",
+        "quantity",
+        "unit_price_cents"
+      ],
+      "type": "object"
+    },
+    "Product": {
+      "description": "A product in an e-commerce system.\nDemonstrates numeric types and serde rename.",
+      "properties": {
+        "categories": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "description": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "price_cents": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "quantity": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "ratings": {
+          "items": {
+            "$ref": "#/definitions/ProductRating"
+          },
+          "type": "array"
+        },
+        "sku": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "sku",
+        "name",
+        "price_cents",
+        "quantity",
+        "categories",
+        "ratings"
+      ],
+      "type": "object"
+    },
+    "ProductRating": {
+      "description": "A product rating.",
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        "stars": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "timestamp": {
+          "type": "integer"
+        },
+        "user_id": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "user_id",
+        "stars",
+        "timestamp"
+      ],
+      "type": "object"
+    },
+    "SearchRequest": {
+      "description": "Search query and filters.\nDemonstrates optional complex types.",
+      "properties": {
+        "categories": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "limit": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_price_cents": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "min_price_cents": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "offset": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "query": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "query",
+        "limit",
+        "offset"
+      ],
+      "type": "object"
+    },
+    "SearchResponse": {
+      "description": "Search results.",
+      "properties": {
+        "query_time_ms": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "results": {
+          "items": {
+            "$ref": "#/definitions/Product"
+          },
+          "type": "array"
+        },
+        "total": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "total",
+        "results",
+        "query_time_ms"
+      ],
+      "type": "object"
+    },
+    "UserProfile": {
+      "description": "User profile information.\nDemonstrates various field types including optional fields,\ncustom types, and collections.",
+      "properties": {
+        "age": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "id": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "settings": {
+          "$ref": "#/definitions/AccountSettings"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "display_name",
+        "tags",
+        "settings"
+      ],
+      "type": "object"
+    }
+  }
+}

@@ -21,6 +21,7 @@ Use `cargo msrv verify` to check MSRV compatibility when adding new dependencies
 - [docs/TESTING.md](./docs/TESTING.md) - Testing conventions and guidelines
 - [docs/TASKS.md](./docs/TASKS.md) - Project roadmap and task tracking
 - [docs/BINARY_TRANSPORT.md](./docs/BINARY_TRANSPORT.md) - Binary transport migration guide (opt-in performance feature)
+- [docs/CODE_GENERATION.md](./docs/CODE_GENERATION.md) - Code generation guide (JSON Schema, Java classes)
 
 ## Git Workflow
 
