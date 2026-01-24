@@ -3,6 +3,7 @@
 //! The [`BundleBuilder`] provides a fluent API for creating `.rbp` bundle archives.
 
 use crate::{BundleError, BundleResult, MANIFEST_FILE, Manifest, Platform};
+use minisign::SecretKey;
 use sha2::{Digest, Sha256};
 use std::fs::{self, File};
 use std::io::Write;
@@ -28,6 +29,7 @@ use zip::write::SimpleFileOptions;
 pub struct BundleBuilder {
     manifest: Manifest,
     files: Vec<BundleFile>,
+    signing_key: Option<(String, SecretKey)>, // (public_key_base64, secret_key)
 }
 
 /// A file to include in the bundle.
@@ -45,7 +47,22 @@ impl BundleBuilder {
         Self {
             manifest,
             files: Vec::new(),
+            signing_key: None,
         }
+    }
+
+    /// Set the signing key for bundle signing.
+    ///
+    /// The secret key will be used to sign all library files and the manifest.
+    /// The corresponding public key will be embedded in the manifest.
+    ///
+    /// # Arguments
+    /// * `public_key_base64` - The public key in base64 format (from the .pub file)
+    /// * `secret_key` - The secret key for signing
+    pub fn with_signing_key(mut self, public_key_base64: String, secret_key: SecretKey) -> Self {
+        self.manifest.set_public_key(public_key_base64.clone());
+        self.signing_key = Some((public_key_base64, secret_key));
+        self
     }
 
     /// Add a platform-specific library to the bundle.
@@ -177,10 +194,28 @@ impl BundleBuilder {
         zip.start_file(MANIFEST_FILE, options)?;
         zip.write_all(manifest_json.as_bytes())?;
 
+        // Sign and write manifest.json.minisig if signing is enabled
+        if let Some((ref _public_key, ref secret_key)) = self.signing_key {
+            let signature = sign_data(secret_key, manifest_json.as_bytes())?;
+            zip.start_file(format!("{MANIFEST_FILE}.minisig"), options)?;
+            zip.write_all(signature.as_bytes())?;
+        }
+
         // Write all other files
         for bundle_file in &self.files {
             zip.start_file(&bundle_file.archive_path, options)?;
             zip.write_all(&bundle_file.contents)?;
+
+            // Sign library files if signing is enabled
+            if let Some((ref _public_key, ref secret_key)) = self.signing_key {
+                // Only sign library files (in lib/ directory)
+                if bundle_file.archive_path.starts_with("lib/") {
+                    let signature = sign_data(secret_key, &bundle_file.contents)?;
+                    let sig_path = format!("{}.minisig", bundle_file.archive_path);
+                    zip.start_file(&sig_path, options)?;
+                    zip.write_all(signature.as_bytes())?;
+                }
+            }
         }
 
         zip.finish()?;
@@ -216,6 +251,20 @@ pub fn verify_sha256(data: &[u8], expected: &str) -> bool {
     let expected_hex = expected.strip_prefix("sha256:").unwrap_or(expected);
 
     actual == expected_hex
+}
+
+/// Sign data using a minisign secret key.
+///
+/// Returns the signature in minisign format (base64-encoded).
+fn sign_data(secret_key: &SecretKey, data: &[u8]) -> BundleResult<String> {
+    let signature_box = minisign::sign(
+        None, // No public key needed for signing
+        secret_key, data, None, // No trusted comment
+        None, // No untrusted comment
+    )
+    .map_err(|e| BundleError::Io(std::io::Error::other(format!("Failed to sign data: {e}"))))?;
+
+    Ok(signature_box.to_string())
 }
 
 #[cfg(test)]

@@ -25,6 +25,11 @@ pub struct Manifest {
     /// API information (optional).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub api: Option<ApiInfo>,
+
+    /// Minisign public key for signature verification (base64-encoded).
+    /// Format: "RWS..." (standard minisign public key format).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub public_key: Option<String>,
 }
 
 /// Plugin metadata.
@@ -126,6 +131,7 @@ impl Manifest {
             },
             platforms: HashMap::new(),
             api: None,
+            public_key: None,
         }
     }
 
@@ -138,6 +144,11 @@ impl Manifest {
                 checksum: format!("sha256:{checksum}"),
             },
         );
+    }
+
+    /// Set the public key for signature verification.
+    pub fn set_public_key(&mut self, public_key: String) {
+        self.public_key = Some(public_key);
     }
 
     /// Get platform info for a specific platform.

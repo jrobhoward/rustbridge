@@ -3,7 +3,9 @@
 //! Creates `.rbp` bundles from plugin libraries and manifests.
 
 use anyhow::{Context, Result};
+use minisign::{SecretKey, SecretKeyBox};
 use rustbridge_bundle::{BundleBuilder, Manifest, Platform};
+use std::fs;
 use std::path::Path;
 
 /// Run the bundle command.
@@ -13,12 +15,24 @@ pub fn run(
     libraries: &[(String, String)],
     output: Option<String>,
     schema_files: &[(String, String)],
+    sign_key_path: Option<String>,
 ) -> Result<()> {
     println!("Creating bundle: {name} v{version}");
 
     // Create manifest
     let manifest = Manifest::new(name, version);
     let mut builder = BundleBuilder::new(manifest);
+
+    // Load signing key if provided
+    if let Some(key_path) = sign_key_path {
+        println!("  Loading signing key: {key_path}");
+
+        let (public_key, secret_key) = load_signing_key(&key_path)
+            .with_context(|| format!("Failed to load signing key from {key_path}"))?;
+
+        builder = builder.with_signing_key(public_key, secret_key);
+        println!("  Bundle will be signed");
+    }
 
     // Add libraries
     for (platform_str, lib_path) in libraries {
@@ -109,6 +123,35 @@ pub fn extract(bundle_path: &str, platform: Option<String>, output_dir: &str) ->
     Ok(())
 }
 
+/// Load a signing key from a file.
+///
+/// Prompts the user for the password to decrypt the key.
+/// Returns (public_key_base64, secret_key).
+fn load_signing_key(key_path: &str) -> Result<(String, SecretKey)> {
+    // Read the secret key file
+    let key_str = fs::read_to_string(key_path).context("Failed to read key file")?;
+
+    // Parse as secret key box
+    let secret_key_box = SecretKeyBox::from_string(&key_str).context("Invalid key file format")?;
+
+    // Read the public key file (same path with .pub extension)
+    let pub_key_path = format!("{key_path}.pub");
+    let pub_key_data = fs::read_to_string(&pub_key_path)
+        .with_context(|| format!("Failed to read public key file: {pub_key_path}"))?;
+    let public_key = pub_key_data.trim().to_string();
+
+    // Prompt for password
+    println!("Enter password for signing key: ");
+    let password = rpassword::read_password().context("Failed to read password")?;
+
+    // Decrypt the key
+    let secret_key = secret_key_box
+        .into_secret_key(Some(password))
+        .map_err(|_| anyhow::anyhow!("Invalid password or corrupted key file"))?;
+
+    Ok((public_key, secret_key))
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(non_snake_case)]
@@ -138,6 +181,7 @@ mod tests {
             &libs,
             Some(output.to_string_lossy().to_string()),
             &[],
+            None, // No signing
         )
         .unwrap();
 
@@ -165,6 +209,7 @@ mod tests {
             &libs,
             Some(output.to_string_lossy().to_string()),
             &[],
+            None, // No signing
         )
         .unwrap();
 

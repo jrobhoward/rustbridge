@@ -14,6 +14,7 @@ mod build;
 mod bundle;
 mod generate;
 mod header_gen;
+mod keygen;
 mod manifest;
 mod new;
 
@@ -89,6 +90,17 @@ enum Commands {
         verify: bool,
     },
 
+    /// Generate a new minisign key pair for signing bundles
+    Keygen {
+        /// Output path for secret key (default: ~/.rustbridge/signing.key)
+        #[arg(short, long)]
+        output: Option<String>,
+
+        /// Force overwrite if key already exists
+        #[arg(short, long)]
+        force: bool,
+    },
+
     /// Create, inspect, or extract plugin bundles
     Bundle {
         #[command(subcommand)]
@@ -121,6 +133,11 @@ enum BundleAction {
         /// Example: --schema messages.h:messages.h
         #[arg(short, long, value_name = "SOURCE:ARCHIVE_NAME")]
         schema: Vec<String>,
+
+        /// Path to signing key for code signing (optional)
+        /// Example: --sign-key ~/.rustbridge/signing.key
+        #[arg(long, value_name = "KEY_PATH")]
+        sign_key: Option<String>,
     },
 
     /// List contents of a bundle
@@ -175,6 +192,9 @@ fn main() -> anyhow::Result<()> {
         } => {
             header_gen::run(&source, &output, verify)?;
         }
+        Commands::Keygen { output, force } => {
+            keygen::run(output, force)?;
+        }
         Commands::Bundle { action } => match action {
             BundleAction::Create {
                 name,
@@ -182,6 +202,7 @@ fn main() -> anyhow::Result<()> {
                 libraries,
                 output,
                 schema,
+                sign_key,
             } => {
                 // Parse library arguments (PLATFORM:PATH)
                 let libs: Vec<(String, String)> = libraries
@@ -209,7 +230,7 @@ fn main() -> anyhow::Result<()> {
                     })
                     .collect::<anyhow::Result<_>>()?;
 
-                bundle::run(&name, &version, &libs, output, &schemas)?;
+                bundle::run(&name, &version, &libs, output, &schemas, sign_key)?;
             }
             BundleAction::List {
                 bundle: bundle_path,
