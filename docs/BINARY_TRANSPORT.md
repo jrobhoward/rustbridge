@@ -150,6 +150,17 @@ rustbridge generate-header \
     --output include/messages.h
 ```
 
+Add `--verify` to validate the header compiles with a C compiler:
+
+```bash
+rustbridge generate-header \
+    --source src/messages.rs \
+    --output include/messages.h \
+    --verify
+```
+
+The `--verify` flag uses the `cc` crate to find an available C compiler (gcc, clang, or MSVC) and validates the generated header is syntactically correct. This works cross-platform on Linux, macOS, and Windows.
+
 **Generated header example:**
 
 ```c

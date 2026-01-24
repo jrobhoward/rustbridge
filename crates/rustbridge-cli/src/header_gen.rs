@@ -331,7 +331,7 @@ fn generate_header(structs: &[CStruct], constants: &[CConstant], source_name: &s
 }
 
 /// Run the header generation command
-pub fn run(source: &str, output: &str) -> Result<()> {
+pub fn run(source: &str, output: &str, verify: bool) -> Result<()> {
     let source_path = Path::new(source);
     let output_path = Path::new(output);
 
@@ -360,7 +360,135 @@ pub fn run(source: &str, output: &str) -> Result<()> {
 
     println!("Generated header: {}", output_path.display());
 
+    if verify {
+        verify_header(output_path)?;
+    }
+
     Ok(())
+}
+
+/// Verify the generated header compiles with a C compiler.
+///
+/// Uses the `cc` crate to find an available C compiler (gcc, clang, MSVC)
+/// in a cross-platform way, then invokes it with syntax-check-only flags.
+fn verify_header(header_path: &Path) -> Result<()> {
+    use std::io::Write;
+    use std::process::Command;
+
+    println!("Verifying header with C compiler...");
+
+    // Set minimal environment variables the cc crate expects
+    // SAFETY: This is a single-threaded CLI tool, so modifying environment
+    // variables is safe.
+    setup_cc_env();
+
+    // Use cc crate to find the C compiler
+    let compiler = cc::Build::new()
+        .cargo_metadata(false)
+        .opt_level(0)
+        .try_get_compiler()
+        .with_context(|| "Failed to find C compiler. Install gcc, clang, or MSVC.")?;
+
+    let cc_path = compiler.path();
+    println!("Using compiler: {}", cc_path.display());
+
+    // Create a temporary directory for the verification
+    let temp_dir = std::env::temp_dir().join("rustbridge-header-verify");
+    fs::create_dir_all(&temp_dir)
+        .with_context(|| format!("Failed to create temp dir: {}", temp_dir.display()))?;
+
+    // Create a minimal C file that includes the header
+    let test_c_path = temp_dir.join("verify_header.c");
+    let header_abs = header_path
+        .canonicalize()
+        .with_context(|| format!("Failed to resolve header path: {}", header_path.display()))?;
+
+    let test_c_content = format!(
+        r#"// Auto-generated verification file
+#include "{}"
+
+// Ensure structs are usable
+int main(void) {{
+    return 0;
+}}
+"#,
+        header_abs.display()
+    );
+
+    let mut file = fs::File::create(&test_c_path)
+        .with_context(|| format!("Failed to create test file: {}", test_c_path.display()))?;
+    file.write_all(test_c_content.as_bytes())?;
+
+    // Build compiler command with appropriate syntax-check flags
+    let mut cmd = Command::new(cc_path);
+
+    // Add compiler-specific flags for syntax checking only
+    if compiler.is_like_msvc() {
+        // MSVC: /Zs for syntax check only
+        cmd.arg("/Zs");
+    } else {
+        // GCC/Clang: -fsyntax-only
+        cmd.arg("-fsyntax-only");
+    }
+
+    cmd.arg(&test_c_path);
+
+    let output = cmd
+        .output()
+        .with_context(|| format!("Failed to execute compiler: {}", cc_path.display()))?;
+
+    // Clean up temp files (best effort)
+    let _ = fs::remove_file(&test_c_path);
+    let _ = fs::remove_dir_all(&temp_dir);
+
+    if output.status.success() {
+        println!("Header verification passed");
+        Ok(())
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        anyhow::bail!("Header verification failed:\n{}", stderr);
+    }
+}
+
+/// Set up minimal environment variables required by the cc crate.
+///
+/// The cc crate expects certain Cargo environment variables to be present.
+/// This function sets them to reasonable defaults for the current platform.
+fn setup_cc_env() {
+    // SAFETY: This is a single-threaded CLI tool, so modifying environment
+    // variables is safe. We only set them if they're not already present.
+    unsafe {
+        let target = get_current_target();
+
+        if std::env::var("TARGET").is_err() {
+            std::env::set_var("TARGET", &target);
+        }
+        if std::env::var("HOST").is_err() {
+            std::env::set_var("HOST", &target);
+        }
+        if std::env::var("OPT_LEVEL").is_err() {
+            std::env::set_var("OPT_LEVEL", "0");
+        }
+        if std::env::var("DEBUG").is_err() {
+            std::env::set_var("DEBUG", "false");
+        }
+    }
+}
+
+/// Get the current target triple based on the platform.
+fn get_current_target() -> String {
+    let arch = std::env::consts::ARCH;
+    let os = std::env::consts::OS;
+
+    match (arch, os) {
+        ("x86_64", "linux") => "x86_64-unknown-linux-gnu".to_string(),
+        ("x86_64", "macos") => "x86_64-apple-darwin".to_string(),
+        ("x86_64", "windows") => "x86_64-pc-windows-msvc".to_string(),
+        ("aarch64", "linux") => "aarch64-unknown-linux-gnu".to_string(),
+        ("aarch64", "macos") => "aarch64-apple-darwin".to_string(),
+        ("aarch64", "windows") => "aarch64-pc-windows-msvc".to_string(),
+        _ => format!("{arch}-unknown-{os}"),
+    }
 }
 
 #[cfg(test)]

@@ -81,6 +81,10 @@ enum Commands {
         /// Output path for generated C header (default: messages.h)
         #[arg(short, long, default_value = "messages.h")]
         output: String,
+
+        /// Verify the generated header compiles with a C compiler
+        #[arg(short, long)]
+        verify: bool,
     },
 }
 
@@ -108,8 +112,12 @@ fn main() -> anyhow::Result<()> {
         Commands::Check { manifest } => {
             manifest::check(manifest)?;
         }
-        Commands::GenerateHeader { source, output } => {
-            header_gen::run(&source, &output)?;
+        Commands::GenerateHeader {
+            source,
+            output,
+            verify,
+        } => {
+            header_gen::run(&source, &output, verify)?;
         }
     }
 
