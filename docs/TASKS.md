@@ -299,19 +299,28 @@ struct LargeResponse {
    - CLI commands: create, list, extract
    - SHA256 checksum verification
    - Platform detection and library extraction
+8. **Code Signing (Minisign)**
+   - Key generation: `rustbridge keygen` command
+   - Bundle signing: `--sign-key` option for bundle creation
+   - Signature verification in Java BundleLoader
+   - Secure by default (verification enabled unless explicitly disabled)
+   - Public key embedded in manifest + optional override
+9. **Java Bundle Loader**
+   - BundleLoader class with builder pattern
+   - Platform detection and library extraction
+   - SHA256 checksum verification
+   - Minisign signature verification
+   - MinisignVerifier using pure Java Ed25519 (Java 8+ compatible)
 
 ### Next Up
 
-1. **Java bundle loader**
-   - Load .rbp files in Java runtime
-   - Platform detection and library extraction
-
-2. **Embed schemas in bundles**
+1. **Embed schemas in bundles**
    - JSON schema for self-describing messages
    - C headers for binary transport users
 
-3. **C# bindings** (if needed)
+2. **C# bindings** (if needed)
    - Same patterns as Java FFM
+   - Port BundleLoader and MinisignVerifier to C#
 
 ---
 
@@ -354,6 +363,9 @@ These tasks are on hold until benchmark work is complete:
 | 2025-01 | C structs over MessagePack | Better peak performance for FFI |
 | 2025-01 | Proceed with binary transport | 7.1x latency improvement justifies complexity |
 | 2025-01 | JSON remains default, binary opt-in | Debugging ease vs performance tradeoff |
+| 2025-01 | Minisign for code signing | Simple Ed25519 signatures, good Rust support, pure Java verification |
+| 2025-01 | Sign libraries + manifest | Complete bundle integrity, public key in manifest + override option |
+| 2025-01 | Verification enabled by default | Security by default, explicit opt-out required |
 
 ---
 
