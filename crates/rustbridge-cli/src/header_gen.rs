@@ -372,9 +372,6 @@ pub fn run(source: &str, output: &str, verify: bool) -> Result<()> {
 /// Uses the `cc` crate to find an available C compiler (gcc, clang, MSVC)
 /// in a cross-platform way, then invokes it with syntax-check-only flags.
 fn verify_header(header_path: &Path) -> Result<()> {
-    use std::io::Write;
-    use std::process::Command;
-
     println!("Verifying header with C compiler...");
 
     // Set minimal environment variables the cc crate expects
@@ -403,6 +400,17 @@ fn verify_header(header_path: &Path) -> Result<()> {
         .canonicalize()
         .with_context(|| format!("Failed to resolve header path: {}", header_path.display()))?;
 
+    // Convert path to a format suitable for C #include directive:
+    // - Use forward slashes (works on all platforms in C)
+    // - Remove Windows extended-length path prefix (\\?\)
+    let header_include_path = {
+        let path_str = header_abs.to_string_lossy();
+        // Remove \\?\ prefix that Windows canonicalize() adds
+        let path_str = path_str.strip_prefix(r"\\?\").unwrap_or(&path_str);
+        // Convert backslashes to forward slashes for C compatibility
+        path_str.replace('\\', "/")
+    };
+
     let test_c_content = format!(
         r#"// Auto-generated verification file
 #include "{}"
@@ -412,20 +420,20 @@ int main(void) {{
     return 0;
 }}
 "#,
-        header_abs.display()
+        header_include_path
     );
 
-    let mut file = fs::File::create(&test_c_path)
+    // Write test file and ensure it's closed before invoking compiler
+    fs::write(&test_c_path, test_c_content.as_bytes())
         .with_context(|| format!("Failed to create test file: {}", test_c_path.display()))?;
-    file.write_all(test_c_content.as_bytes())?;
 
     // Build compiler command with appropriate syntax-check flags
-    let mut cmd = Command::new(cc_path);
+    let mut cmd = compiler.to_command();
 
     // Add compiler-specific flags for syntax checking only
     if compiler.is_like_msvc() {
-        // MSVC: /Zs for syntax check only
-        cmd.arg("/Zs");
+        // MSVC: /Zs for syntax check only, /nologo to suppress banner
+        cmd.args(["/Zs", "/nologo"]);
     } else {
         // GCC/Clang: -fsyntax-only
         cmd.arg("-fsyntax-only");
@@ -445,8 +453,16 @@ int main(void) {{
         println!("Header verification passed");
         Ok(())
     } else {
+        let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
-        anyhow::bail!("Header verification failed:\n{}", stderr);
+        let combined = if stdout.is_empty() {
+            stderr.to_string()
+        } else if stderr.is_empty() {
+            stdout.to_string()
+        } else {
+            format!("{}\n{}", stderr, stdout)
+        };
+        anyhow::bail!("Header verification failed:\n{}", combined);
     }
 }
 
