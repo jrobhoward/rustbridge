@@ -6,10 +6,12 @@
 //! - `rustbridge generate-header` - Generate C headers from Rust structs
 //! - `rustbridge new` - Create a new plugin project
 //! - `rustbridge check` - Validate a rustbridge.toml manifest
+//! - `rustbridge bundle` - Create, inspect, or extract plugin bundles
 
 use clap::{Parser, Subcommand};
 
 mod build;
+mod bundle;
 mod generate;
 mod header_gen;
 mod manifest;
@@ -86,6 +88,60 @@ enum Commands {
         #[arg(short, long)]
         verify: bool,
     },
+
+    /// Create, inspect, or extract plugin bundles
+    Bundle {
+        #[command(subcommand)]
+        action: BundleAction,
+    },
+}
+
+#[derive(Subcommand)]
+enum BundleAction {
+    /// Create a new bundle from libraries
+    Create {
+        /// Plugin name
+        #[arg(short, long)]
+        name: String,
+
+        /// Plugin version (semver)
+        #[arg(short, long)]
+        version: String,
+
+        /// Library to include: PLATFORM:PATH (can be repeated)
+        /// Example: --lib linux-x86_64:target/release/libmyplugin.so
+        #[arg(short, long = "lib", value_name = "PLATFORM:PATH")]
+        libraries: Vec<String>,
+
+        /// Output bundle path (default: <name>-<version>.rbp)
+        #[arg(short, long)]
+        output: Option<String>,
+
+        /// Schema file to include: SOURCE:ARCHIVE_NAME (can be repeated)
+        /// Example: --schema messages.h:messages.h
+        #[arg(short, long, value_name = "SOURCE:ARCHIVE_NAME")]
+        schema: Vec<String>,
+    },
+
+    /// List contents of a bundle
+    List {
+        /// Path to the bundle file
+        bundle: String,
+    },
+
+    /// Extract library from a bundle
+    Extract {
+        /// Path to the bundle file
+        bundle: String,
+
+        /// Target platform (default: current platform)
+        #[arg(short, long)]
+        platform: Option<String>,
+
+        /// Output directory for extracted library
+        #[arg(short, long, default_value = ".")]
+        output: String,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -119,6 +175,55 @@ fn main() -> anyhow::Result<()> {
         } => {
             header_gen::run(&source, &output, verify)?;
         }
+        Commands::Bundle { action } => match action {
+            BundleAction::Create {
+                name,
+                version,
+                libraries,
+                output,
+                schema,
+            } => {
+                // Parse library arguments (PLATFORM:PATH)
+                let libs: Vec<(String, String)> = libraries
+                    .iter()
+                    .map(|s| {
+                        let parts: Vec<&str> = s.splitn(2, ':').collect();
+                        if parts.len() != 2 {
+                            anyhow::bail!("Invalid library format: {s}. Expected PLATFORM:PATH");
+                        }
+                        Ok((parts[0].to_string(), parts[1].to_string()))
+                    })
+                    .collect::<anyhow::Result<_>>()?;
+
+                // Parse schema arguments (SOURCE:ARCHIVE_NAME)
+                let schemas: Vec<(String, String)> = schema
+                    .iter()
+                    .map(|s| {
+                        let parts: Vec<&str> = s.splitn(2, ':').collect();
+                        if parts.len() != 2 {
+                            anyhow::bail!(
+                                "Invalid schema format: {s}. Expected SOURCE:ARCHIVE_NAME"
+                            );
+                        }
+                        Ok((parts[0].to_string(), parts[1].to_string()))
+                    })
+                    .collect::<anyhow::Result<_>>()?;
+
+                bundle::run(&name, &version, &libs, output, &schemas)?;
+            }
+            BundleAction::List {
+                bundle: bundle_path,
+            } => {
+                bundle::list(&bundle_path)?;
+            }
+            BundleAction::Extract {
+                bundle: bundle_path,
+                platform,
+                output: output_dir,
+            } => {
+                bundle::extract(&bundle_path, platform, &output_dir)?;
+            }
+        },
     }
 
     Ok(())
