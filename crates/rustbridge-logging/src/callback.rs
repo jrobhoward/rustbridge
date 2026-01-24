@@ -3,7 +3,7 @@
 use once_cell::sync::OnceCell;
 use parking_lot::RwLock;
 use rustbridge_core::LogLevel;
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicU8, AtomicUsize, Ordering};
 
 /// FFI callback function type for logging
 ///
@@ -27,9 +27,15 @@ pub type LogCallback = extern "C" fn(
 static CALLBACK_MANAGER: OnceCell<LogCallbackManager> = OnceCell::new();
 
 /// Manager for FFI log callbacks
+///
+/// Supports multiple plugins sharing the same callback and log level.
+/// Uses reference counting to ensure the callback is only cleared when
+/// the last plugin shuts down.
 pub struct LogCallbackManager {
     callback: RwLock<Option<LogCallback>>,
     level: AtomicU8,
+    /// Number of active plugins using this callback manager
+    ref_count: AtomicUsize,
 }
 
 impl LogCallbackManager {
@@ -38,6 +44,7 @@ impl LogCallbackManager {
         Self {
             callback: RwLock::new(None),
             level: AtomicU8::new(LogLevel::Info as u8),
+            ref_count: AtomicUsize::new(0),
         }
     }
 
@@ -50,6 +57,46 @@ impl LogCallbackManager {
     pub fn set_callback(&self, callback: Option<LogCallback>) {
         let mut guard = self.callback.write();
         *guard = callback;
+    }
+
+    /// Register a plugin with the callback manager
+    ///
+    /// This increments the reference count and optionally sets the callback.
+    /// If a callback is provided and one is already set, the new callback
+    /// replaces the old one (all plugins will share the new callback).
+    ///
+    /// This should be called during plugin initialization.
+    pub fn register_plugin(&self, callback: Option<LogCallback>) {
+        // Increment reference count
+        self.ref_count.fetch_add(1, Ordering::SeqCst);
+
+        // Set callback if provided
+        if let Some(cb) = callback {
+            let mut guard = self.callback.write();
+            *guard = Some(cb);
+        }
+    }
+
+    /// Unregister a plugin from the callback manager
+    ///
+    /// This decrements the reference count. When the last plugin unregisters
+    /// (ref count reaches 0), the callback is cleared.
+    ///
+    /// This should be called during plugin shutdown.
+    pub fn unregister_plugin(&self) {
+        let prev_count = self.ref_count.fetch_sub(1, Ordering::SeqCst);
+
+        // If this was the last plugin, clear the callback
+        if prev_count == 1 {
+            let mut guard = self.callback.write();
+            *guard = None;
+            tracing::debug!("Last plugin unregistered, cleared log callback");
+        }
+    }
+
+    /// Get the current reference count (number of active plugins)
+    pub fn plugin_count(&self) -> usize {
+        self.ref_count.load(Ordering::SeqCst)
     }
 
     /// Get the current log callback

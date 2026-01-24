@@ -66,10 +66,8 @@ unsafe fn plugin_init_impl(
         return ptr::null_mut();
     }
 
-    // Set up logging callback
-    if let Some(cb) = log_callback {
-        LogCallbackManager::global().set_callback(Some(cb));
-    }
+    // Register plugin with callback manager (increments ref count)
+    LogCallbackManager::global().register_plugin(log_callback);
 
     // Initialize logging
     rustbridge_logging::init_logging();
@@ -266,13 +264,10 @@ fn plugin_shutdown_impl(handle: FfiPluginHandle) -> bool {
         }
     };
 
-    // CRITICAL: Clear log callback to prevent use-after-free crashes
-    // This is necessary because the callback is global and shared between all plugin instances.
-    // When a plugin shuts down, its callback pointer becomes invalid. If another plugin
-    // (or a reload of this plugin) tries to use it, we get a segfault.
-    // Trade-off: The last plugin to shutdown will clear callbacks for all plugins,
-    // but this is better than a crash.
-    LogCallbackManager::global().set_callback(None);
+    // Unregister plugin from callback manager (decrements ref count)
+    // The callback will only be cleared when the last plugin shuts down.
+    // This allows multiple plugins to coexist and share the same callback.
+    LogCallbackManager::global().unregister_plugin();
 
     result
 }
