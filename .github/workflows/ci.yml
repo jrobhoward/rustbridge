@@ -114,11 +114,8 @@ jobs:
 
       - name: Run cargo deny
         run: cargo deny check
-
-      - name: Run cargo audit
-        uses: rustsec/audit-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+        # Note: cargo-deny includes advisory checks (same as cargo-audit)
+        # so a separate cargo-audit step is not needed
 
   # Minimum Supported Rust Version check
   msrv:
