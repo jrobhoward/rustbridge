@@ -64,13 +64,13 @@ public class FfmPluginLoader {
     public static Plugin load(Path libraryPath, PluginConfig config, LogCallback logCallback)
             throws PluginException {
 
-        // Create arena for plugin lifetime
-        Arena arena = Arena.ofConfined();
+        // Create plugin-lifetime arena for library symbols and upcall stub (shared for concurrent access)
+        Arena pluginArena = Arena.ofShared();
 
         try {
             // Load the native library
             Linker linker = Linker.nativeLinker();
-            SymbolLookup lookup = SymbolLookup.libraryLookup(libraryPath, arena);
+            SymbolLookup lookup = SymbolLookup.libraryLookup(libraryPath, pluginArena);
 
             // Create bindings
             NativeBindings bindings = new NativeBindings(lookup, linker);
@@ -96,11 +96,11 @@ public class FfmPluginLoader {
 
             // Prepare config
             byte[] configBytes = config.toJsonBytes();
-            MemorySegment configSegment = arena.allocate(configBytes.length);
+            MemorySegment configSegment = pluginArena.allocate(configBytes.length);
             configSegment.copyFrom(MemorySegment.ofArray(configBytes));
 
             // Prepare log callback upcall
-            MemorySegment logCallbackPtr = createLogCallbackUpcall(linker, arena, logCallback);
+            MemorySegment logCallbackPtr = createLogCallbackUpcall(linker, pluginArena, logCallback);
 
             // Initialize the plugin
             MemorySegment handle;
@@ -119,13 +119,13 @@ public class FfmPluginLoader {
                 throw new PluginException("plugin_init returned null handle");
             }
 
-            return new FfmPlugin(arena, handle, bindings, logCallback);
+            return new FfmPlugin(pluginArena, handle, bindings, logCallback);
 
         } catch (PluginException e) {
-            arena.close();
+            pluginArena.close();
             throw e;
         } catch (Exception e) {
-            arena.close();
+            pluginArena.close();
             throw new PluginException("Failed to load plugin", e);
         }
     }
@@ -190,13 +190,13 @@ public class FfmPluginLoader {
      * When called, it will invoke the Java LogCallback.
      *
      * @param linker      the native linker
-     * @param arena       the memory arena for the upcall stub lifetime
+     * @param pluginArena the plugin-lifetime memory arena for the upcall stub
      * @param logCallback the Java log callback (nullable)
      * @return memory segment pointing to the upcall stub, or NULL if callback is null
      */
     private static MemorySegment createLogCallbackUpcall(
             Linker linker,
-            Arena arena,
+            Arena pluginArena,
             LogCallback logCallback) {
 
         if (logCallback == null) {
@@ -230,8 +230,8 @@ public class FfmPluginLoader {
             // Bind the LogCallback instance to the wrapper
             MethodHandle boundHandle = wrapperHandle.bindTo(logCallback);
 
-            // Create the upcall stub
-            return linker.upcallStub(boundHandle, callbackDescriptor, arena);
+            // Create the upcall stub (persists in plugin arena)
+            return linker.upcallStub(boundHandle, callbackDescriptor, pluginArena);
 
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException("Failed to create log callback upcall", e);

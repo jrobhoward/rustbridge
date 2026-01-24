@@ -292,7 +292,6 @@ class HelloPluginIntegrationTest {
 
     @Test
     @Order(14)
-    @Disabled("Synchronized calls reduce concurrency - need to refactor to use per-call arenas")
     @DisplayName("Concurrent calls are handled safely")
     void testConcurrentCalls() throws InterruptedException {
         // Arrange
