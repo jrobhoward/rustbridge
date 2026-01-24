@@ -1,5 +1,8 @@
 # rustbridge
 
+> [!WARNING]
+> This project is in early development. APIs are unstable and may change without notice.
+
 A framework for developing Rust shared libraries callable from other languages. Uses C ABI under the hood but abstracts the complexity, providing OSGI-like lifecycle, mandatory async (Tokio), logging callbacks, and JSON-based data transport.
 
 ## Overview
@@ -362,3 +365,7 @@ Errors are represented with stable numeric codes:
 ## License
 
 MIT OR Apache-2.0
+
+### Attribution
+
+This project includes software licensed under the Unicode License (Unicode-3.0). See [NOTICES](./NOTICES) for details.

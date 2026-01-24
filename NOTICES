@@ -1,0 +1,11 @@
+# NOTICES
+
+## Unicode License
+
+This project includes software that uses Unicode data licensed under the Unicode License Agreement.
+
+The `unicode-ident` crate is licensed under the Unicode License (Unicode-3.0):
+- License: https://www.unicode.org/license.txt
+- Crate: https://crates.io/crates/unicode-ident
+
+This does not change the overall license of rustbridge, which remains MIT OR Apache-2.0. The Unicode-3.0 license is compatible with both MIT and Apache-2.0.
