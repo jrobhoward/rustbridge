@@ -258,13 +258,23 @@ fn plugin_shutdown_impl(handle: FfiPluginHandle) -> bool {
     };
 
     // Shutdown with default timeout
-    match plugin_handle.shutdown(5000) {
+    let result = match plugin_handle.shutdown(5000) {
         Ok(()) => true,
         Err(e) => {
             tracing::error!("Shutdown error: {}", e);
             false
         }
-    }
+    };
+
+    // CRITICAL: Clear log callback to prevent use-after-free crashes
+    // This is necessary because the callback is global and shared between all plugin instances.
+    // When a plugin shuts down, its callback pointer becomes invalid. If another plugin
+    // (or a reload of this plugin) tries to use it, we get a segfault.
+    // Trade-off: The last plugin to shutdown will clear callbacks for all plugins,
+    // but this is better than a crash.
+    LogCallbackManager::global().set_callback(None);
+
+    result
 }
 
 /// Set the log level for a plugin

@@ -7,9 +7,11 @@
 
 mod callback;
 mod layer;
+mod reload;
 
 pub use callback::{LogCallback, LogCallbackManager};
 pub use layer::{FfiLoggingLayer, init_logging};
+pub use reload::ReloadHandle;
 pub use rustbridge_core::LogLevel;
 
 /// Prelude module for convenient imports

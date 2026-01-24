@@ -424,6 +424,67 @@ flowchart TD
 3. **Arena allocation**: Reuse buffers for repeated calls
 4. **Log level filtering**: Filter in Rust before callback
 
+## Current Limitations
+
+### Plugin Reload and Multiple Instances
+
+**Plugin Reload**: ✅ **Fully Supported**
+- Plugins can be loaded, shut down, and reloaded in the same process
+- All functionality works correctly after reload
+- Clean shutdown with proper resource cleanup
+
+**Multiple Plugin Instances**: ⚠️ **Single Plugin Per Process Recommended**
+
+While the framework can technically load multiple plugin instances, they share global logging infrastructure:
+
+**What's Shared:**
+- Log callback function pointer (global `LogCallbackManager`)
+- Tracing subscriber (process-global via `set_global_default`)
+- Dynamic log level filtering (changes affect all plugins)
+
+**Impact:**
+- Multiple plugins will use the same log callback
+- Log level changes in one plugin affect all plugins
+- The last plugin to shut down clears the callback for all plugins
+
+**Recommended Usage:**
+```java
+// ✅ RECOMMENDED: One plugin per process
+try (Plugin plugin = FfmPluginLoader.load("libmyplugin.so")) {
+    plugin.call("operation", request);
+    plugin.setLogLevel(LogLevel.DEBUG);  // Works great!
+}
+
+// ✅ SUPPORTED: Reload in same process
+plugin.close();
+Plugin reloaded = FfmPluginLoader.load("libmyplugin.so");  // Works!
+
+// ⚠️ WORKS BUT SHARES LOGGING: Multiple plugins
+try (Plugin p1 = FfmPluginLoader.load("lib1.so");
+     Plugin p2 = FfmPluginLoader.load("lib2.so")) {
+    // Both work, but share log callback and level
+}
+
+// ✅ ALTERNATIVE: One plugin per process
+// Use separate processes or containers for full isolation
+```
+
+**Why This Design?**
+
+The shared logging state is an intentional trade-off:
+- ✅ Simpler implementation for the common case (single plugin)
+- ✅ Better performance (no per-call overhead for scoped logging)
+- ✅ Reliable reload support (global state doesn't prevent reinitialization)
+- ⚠️ Multi-plugin scenarios require awareness of shared state
+
+**Future Enhancement**: If multi-plugin with isolated logging becomes a requirement, we can implement per-handle logging state. See [PLUGIN_RELOAD_STATUS.md](./PLUGIN_RELOAD_STATUS.md) for details.
+
+**Related Documentation**:
+- [Plugin Reload Status](./PLUGIN_RELOAD_STATUS.md) - Test results and detailed analysis
+- [Reload Safety Analysis](./RELOAD_SAFETY_ANALYSIS.md) - Global state inventory and considerations
+
+---
+
 ## Future Considerations
 
 ### Planned Extensions

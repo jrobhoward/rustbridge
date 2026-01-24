@@ -101,17 +101,42 @@ impl Visit for MessageVisitor {
 /// Initialize the logging system with the FFI layer
 ///
 /// This sets up tracing with the FFI logging layer. Call this once during
-/// plugin initialization.
+/// plugin initialization. Subsequent calls after the first initialization
+/// are no-ops since the subscriber is global.
 pub fn init_logging() {
+    use once_cell::sync::OnceCell;
+    use tracing_subscriber::filter::LevelFilter;
     use tracing_subscriber::prelude::*;
+    use tracing_subscriber::reload;
 
-    let layer = FfiLoggingLayer::new();
+    // Use OnceCell to ensure we only initialize once
+    static INITIALIZED: OnceCell<()> = OnceCell::new();
 
-    // Create a subscriber with the FFI layer
-    let subscriber = tracing_subscriber::registry().with(layer);
+    INITIALIZED.get_or_init(|| {
+        let layer = FfiLoggingLayer::new();
 
-    // Try to set as global default (ignore error if already set)
-    let _ = tracing::subscriber::set_global_default(subscriber);
+        // Create a reloadable level filter
+        let initial_level = LogCallbackManager::global().level();
+        let initial_filter = match initial_level {
+            LogLevel::Trace => LevelFilter::TRACE,
+            LogLevel::Debug => LevelFilter::DEBUG,
+            LogLevel::Info => LevelFilter::INFO,
+            LogLevel::Warn => LevelFilter::WARN,
+            LogLevel::Error => LevelFilter::ERROR,
+            LogLevel::Off => LevelFilter::OFF,
+        };
+
+        let (filter, reload_handle) = reload::Layer::new(initial_filter);
+
+        // Store the reload handle for later use
+        crate::reload::ReloadHandle::global().set_handle(reload_handle);
+
+        // Create subscriber with reloadable filter first, then FFI layer
+        let subscriber = tracing_subscriber::registry().with(filter).with(layer);
+
+        // Set as global default - ignore error if already set
+        let _ = tracing::subscriber::set_global_default(subscriber);
+    });
 }
 
 /// Initialize logging with a specific log level

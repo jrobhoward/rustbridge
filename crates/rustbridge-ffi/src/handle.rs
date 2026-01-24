@@ -202,7 +202,13 @@ impl PluginHandle {
 
     /// Set the log level
     pub fn set_log_level(&self, level: rustbridge_core::LogLevel) {
+        // Update the log callback manager's level
         LogCallbackManager::global().set_level(level);
+
+        // Reload the tracing subscriber's filter
+        if let Err(e) = rustbridge_logging::ReloadHandle::global().reload_level(level) {
+            tracing::warn!("Failed to reload tracing filter: {}", e);
+        }
     }
 
     /// Mark the plugin as failed
