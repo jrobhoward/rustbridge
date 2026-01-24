@@ -1,8 +1,9 @@
 package com.rustbridge.jni;
 
 import com.rustbridge.*;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * JNI-based plugin implementation for Java 8+ compatibility.
@@ -11,7 +12,8 @@ import com.google.gson.GsonBuilder;
  * Use this when FFM (Java 21+) is not available.
  */
 public class JniPlugin implements Plugin {
-    private static final Gson GSON = new GsonBuilder().create();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private final long handle;
     private final LogCallback logCallback;
@@ -55,9 +57,18 @@ public class JniPlugin implements Plugin {
 
     @Override
     public <T, R> R call(String typeTag, T request, Class<R> responseType) throws PluginException {
-        String requestJson = GSON.toJson(request);
+        String requestJson;
+        try {
+            requestJson = OBJECT_MAPPER.writeValueAsString(request);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize request", e);
+        }
         String responseJson = call(typeTag, requestJson);
-        return GSON.fromJson(responseJson, responseType);
+        try {
+            return OBJECT_MAPPER.readValue(responseJson, responseType);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to deserialize response", e);
+        }
     }
 
     @Override

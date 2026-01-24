@@ -1,29 +1,31 @@
 package com.rustbridge;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Response envelope for FFI communication.
  */
 public class ResponseEnvelope {
-    private static final Gson GSON = new GsonBuilder().create();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-    @SerializedName("status")
+    @JsonProperty("status")
     private String status;
 
-    @SerializedName("payload")
-    private JsonElement payload;
+    @JsonProperty("payload")
+    private JsonNode payload;
 
-    @SerializedName("error_code")
+    @JsonProperty("error_code")
     private Integer errorCode;
 
-    @SerializedName("error_message")
+    @JsonProperty("error_message")
     private String errorMessage;
 
-    @SerializedName("request_id")
+    @JsonProperty("request_id")
     private Long requestId;
 
     /**
@@ -41,7 +43,11 @@ public class ResponseEnvelope {
      * @return the payload JSON, or null if error
      */
     public String getPayloadJson() {
-        return payload != null ? GSON.toJson(payload) : null;
+        try {
+            return payload != null ? OBJECT_MAPPER.writeValueAsString(payload) : null;
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize payload", e);
+        }
     }
 
     /**
@@ -52,7 +58,11 @@ public class ResponseEnvelope {
      * @return the deserialized payload
      */
     public <T> T getPayload(Class<T> type) {
-        return payload != null ? GSON.fromJson(payload, type) : null;
+        try {
+            return payload != null ? OBJECT_MAPPER.treeToValue(payload, type) : null;
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to deserialize payload", e);
+        }
     }
 
     /**
@@ -89,7 +99,11 @@ public class ResponseEnvelope {
      * @return the parsed envelope
      */
     public static ResponseEnvelope fromJson(String json) {
-        return GSON.fromJson(json, ResponseEnvelope.class);
+        try {
+            return OBJECT_MAPPER.readValue(json, ResponseEnvelope.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to parse response envelope", e);
+        }
     }
 
     /**

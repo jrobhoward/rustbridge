@@ -1,8 +1,9 @@
 package com.rustbridge;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -11,7 +12,8 @@ import java.util.Map;
  * Configuration for plugin initialization.
  */
 public class PluginConfig {
-    private static final Gson GSON = new GsonBuilder().create();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private final Map<String, Object> data;
     private Integer workerThreads;
@@ -97,17 +99,21 @@ public class PluginConfig {
      * @return the JSON bytes
      */
     public byte[] toJsonBytes() {
-        JsonObject json = new JsonObject();
-        json.add("data", GSON.toJsonTree(data));
+        ObjectNode json = OBJECT_MAPPER.createObjectNode();
+        json.set("data", OBJECT_MAPPER.valueToTree(data));
 
         if (workerThreads != null) {
-            json.addProperty("worker_threads", workerThreads);
+            json.put("worker_threads", workerThreads);
         }
 
-        json.addProperty("log_level", logLevel);
-        json.addProperty("max_concurrent_ops", maxConcurrentOps);
-        json.addProperty("shutdown_timeout_ms", shutdownTimeoutMs);
+        json.put("log_level", logLevel);
+        json.put("max_concurrent_ops", maxConcurrentOps);
+        json.put("shutdown_timeout_ms", shutdownTimeoutMs);
 
-        return GSON.toJson(json).getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        try {
+            return OBJECT_MAPPER.writeValueAsBytes(json);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize config", e);
+        }
     }
 }

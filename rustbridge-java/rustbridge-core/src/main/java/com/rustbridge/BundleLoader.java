@@ -1,7 +1,9 @@
 package com.rustbridge;
 
-import com.google.gson.Gson;
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.*;
 import java.nio.file.*;
 import java.security.InvalidKeyException;
@@ -261,8 +263,13 @@ public class BundleLoader implements AutoCloseable {
         }
 
         byte[] manifestData = readZipEntry(manifestEntry);
-        Gson gson = new Gson();
-        return gson.fromJson(new String(manifestData), BundleManifest.class);
+        ObjectMapper mapper = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        try {
+            return mapper.readValue(manifestData, BundleManifest.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse bundle manifest", e);
+        }
     }
 
     /**
@@ -482,14 +489,14 @@ public class BundleLoader implements AutoCloseable {
      * Bundle manifest structure.
      */
     public static class BundleManifest {
-        @SerializedName("bundle_version")
+        @JsonProperty("bundle_version")
         public String bundleVersion;
 
         public PluginInfo plugin;
         public Map<String, PlatformInfo> platforms;
         public ApiInfo api;
 
-        @SerializedName("public_key")
+        @JsonProperty("public_key")
         public String publicKey; // Minisign public key (base64)
 
         public Map<String, SchemaInfo> schemas; // Schema files in the bundle
@@ -509,7 +516,7 @@ public class BundleLoader implements AutoCloseable {
         }
 
         public static class ApiInfo {
-            @SerializedName("min_rustbridge_version")
+            @JsonProperty("min_rustbridge_version")
             public String minRustbridgeVersion;
 
             public List<String> transports;
@@ -517,24 +524,24 @@ public class BundleLoader implements AutoCloseable {
         }
 
         public static class MessageInfo {
-            @SerializedName("type_tag")
+            @JsonProperty("type_tag")
             public String typeTag;
 
             public String description;
 
-            @SerializedName("request_schema")
+            @JsonProperty("request_schema")
             public String requestSchema;
 
-            @SerializedName("response_schema")
+            @JsonProperty("response_schema")
             public String responseSchema;
 
-            @SerializedName("message_id")
+            @JsonProperty("message_id")
             public Integer messageId;
 
-            @SerializedName("cstruct_request")
+            @JsonProperty("cstruct_request")
             public String cstructRequest;
 
-            @SerializedName("cstruct_response")
+            @JsonProperty("cstruct_response")
             public String cstructResponse;
         }
 

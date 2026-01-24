@@ -28,14 +28,18 @@ static CALLBACK_MANAGER: OnceCell<LogCallbackManager> = OnceCell::new();
 
 /// Manager for FFI log callbacks
 ///
-/// Supports multiple plugins sharing the same callback and log level.
-/// Uses reference counting to ensure the callback is only cleared when
-/// the last plugin shuts down.
+/// Each plugin can register its own log callback. The callback is cleared
+/// when the plugin that registered it shuts down to prevent use-after-free
+/// (the callback function pointer is tied to the plugin's FFI arena lifetime).
+///
+/// Log level is shared globally and persists across plugin reload cycles.
 pub struct LogCallbackManager {
     callback: RwLock<Option<LogCallback>>,
     level: AtomicU8,
     /// Number of active plugins using this callback manager
     ref_count: AtomicUsize,
+    /// Whether the current callback was registered by a plugin (vs None)
+    has_callback: std::sync::atomic::AtomicBool,
 }
 
 impl LogCallbackManager {
@@ -45,6 +49,7 @@ impl LogCallbackManager {
             callback: RwLock::new(None),
             level: AtomicU8::new(LogLevel::Info as u8),
             ref_count: AtomicUsize::new(0),
+            has_callback: std::sync::atomic::AtomicBool::new(false),
         }
     }
 
@@ -62,8 +67,11 @@ impl LogCallbackManager {
     /// Register a plugin with the callback manager
     ///
     /// This increments the reference count and optionally sets the callback.
-    /// If a callback is provided and one is already set, the new callback
-    /// replaces the old one (all plugins will share the new callback).
+    /// If a callback is provided, it replaces any existing callback.
+    ///
+    /// **Important**: The callback function pointer is tied to the plugin's
+    /// FFI arena lifetime. When the plugin shuts down, the callback becomes
+    /// invalid and must be cleared before the arena is closed.
     ///
     /// This should be called during plugin initialization.
     pub fn register_plugin(&self, callback: Option<LogCallback>) {
@@ -74,13 +82,21 @@ impl LogCallbackManager {
         if let Some(cb) = callback {
             let mut guard = self.callback.write();
             *guard = Some(cb);
+            self.has_callback
+                .store(true, std::sync::atomic::Ordering::SeqCst);
         }
     }
 
     /// Unregister a plugin from the callback manager
     ///
-    /// This decrements the reference count. When the last plugin unregisters
-    /// (ref count reaches 0), the callback is cleared.
+    /// **Critical**: This ALWAYS clears the callback to prevent use-after-free.
+    /// The callback function pointer is tied to the plugin's FFI arena, which
+    /// will be closed immediately after this function returns. If we didn't
+    /// clear the callback, any subsequent logging would call an invalid pointer.
+    ///
+    /// This means that with multiple plugins, the last one to unregister will
+    /// disable logging for any remaining plugins until they re-register a callback.
+    /// This is a safety trade-off: we prioritize crash prevention over convenience.
     ///
     /// Note: The reload handle is NOT cleared because logging initialization
     /// only happens once per process. The reload handle must persist across
@@ -88,14 +104,24 @@ impl LogCallbackManager {
     ///
     /// This should be called during plugin shutdown.
     pub fn unregister_plugin(&self) {
-        let prev_count = self.ref_count.fetch_sub(1, Ordering::SeqCst);
-
-        // If this was the last plugin, clear the callback
-        if prev_count == 1 {
+        // ALWAYS clear the callback first, before decrementing ref count.
+        // This prevents use-after-free when the plugin's arena is closed.
+        {
             let mut guard = self.callback.write();
             *guard = None;
+            self.has_callback
+                .store(false, std::sync::atomic::Ordering::SeqCst);
+        } // Write lock must be released BEFORE logging to avoid deadlock
 
+        let prev_count = self.ref_count.fetch_sub(1, Ordering::SeqCst);
+
+        if prev_count == 1 {
             tracing::debug!("Last plugin unregistered, cleared log callback");
+        } else {
+            tracing::debug!(
+                "Plugin unregistered, cleared log callback (safety). {} plugins remaining",
+                prev_count - 1
+            );
         }
     }
 

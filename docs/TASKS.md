@@ -28,42 +28,21 @@ This document tracks incomplete tasks and priorities for the rustbridge project.
 
 ---
 
-## Priority 2: Kotlin-First Migration
+## ✅ Jackson Migration (Completed)
 
-**Objective**: Migrate core serialization and transport logic to Kotlin with `kotlinx.serialization`, maintaining Java 8+ compatibility via Java facades.
+**Status**: COMPLETED
+**Date**: 2026-01-24
 
-### 2.1 Serialization Layer
+Migrated rustbridge-java from Gson 2.10.1 to Jackson 2.18.2 with jackson-module-kotlin for better Java/Kotlin interop. This was a drop-in replacement with no API changes.
 
-| Task | Priority | Effort | Notes |
-|------|----------|--------|-------|
-| Evaluate kotlinx.serialization viability | High | 1-2 days | Verify Kotlin→Java calling works, validate Java 8+ bytecode compatibility |
-| Migrate PluginConfig serialization to Kotlin | High | 2-3 days | Replace Gson with kotlinx.serialization, create Java facade |
-| Migrate message transport to Kotlin | High | 2-3 days | Move JSON serialization logic to Kotlin, test with existing Java tests |
-| Create Java serialization facades | High | 1-2 days | Wrapper functions making Kotlin serialization ergonomic from Java |
+**Changes**:
+- Updated `rustbridge-core` dependency from Gson to Jackson
+- Migrated all serialization code in `ResponseEnvelope`, `PluginConfig`, and `BundleLoader`
+- Updated `FfmPlugin` and `JniPlugin` implementations
+- All tests pass with no API changes
+- Maintained Java 8+ compatibility
 
-### 2.2 Transport & Utilities
-
-| Task | Priority | Effort | Notes |
-|------|----------|--------|-------|
-| Migrate BundleLoader to Kotlin | Medium | 2-3 days | Rewrite bundle handling in Kotlin, maintain Java API |
-| Migrate MinisignVerifier to Kotlin | Medium | 1-2 days | Rewrite signature verification in Kotlin, maintain Java API |
-| Consolidate JSON utilities in Kotlin | Medium | 1-2 days | Move JSON helpers to shared Kotlin module, Java facades |
-
-### 2.3 Build & Integration
-
-| Task | Priority | Effort | Notes |
-|------|----------|--------|-------|
-| Set up Kotlin compiler in build | Medium | 1 day | Add kotlinx.serialization dependency, Kotlin stdlib, verify MSRV compatibility |
-| Integrate Kotlin tests (Kotest/JUnit) | Medium | 1-2 days | Add Kotlin test infrastructure, mirror existing test coverage |
-| Document Kotlin-first architecture | Medium | 1-2 days | Update ARCHITECTURE.md explaining Kotlin core + Java facade pattern |
-
-### 2.4 Validation & Compatibility
-
-| Task | Priority | Effort | Notes |
-|------|----------|--------|-------|
-| Run full Java test suite against Kotlin changes | High | 1 day | Verify all existing Java tests pass without modification |
-| Java 8 compatibility verification | High | 1 day | Verify compiled Kotlin bytecode targets Java 8, test on Java 8 runtime |
-| Kotlin + Java interop edge cases | Medium | 1-2 days | Test null handling, optional parameters, error propagation |
+**Rationale**: Jackson provides better Java/Kotlin interop, active development, and is the industry standard for JSON serialization in Java ecosystems.
 
 ---
 
@@ -145,6 +124,29 @@ These tasks are explicitly deferred pending user requirements:
 ---
 
 ## Recently Completed
+
+### Log Callback Safety Fixes (2026-01-24)
+
+**What was done:**
+- Fixed RwLock deadlock in `LogCallbackManager::unregister_plugin()` when log level was DEBUG
+- Fixed use-after-free crash when multiple plugins used callbacks and one shut down
+- Updated callback manager to clear callback on ANY plugin shutdown (safety over convenience)
+- Updated `SharedCallbackMultiPluginTest` to verify new safer behavior
+
+**Root causes fixed:**
+1. **Deadlock**: `tracing::debug!()` was called while holding a write lock, causing the logging layer to try to acquire a read lock on the same RwLock
+2. **Use-after-free**: With multiple plugins, the callback from the last-registered plugin could become invalid when its arena closed, but was still stored in the global manager
+
+**Behavioral change:**
+- Callbacks are now per-plugin, not shared across multiple plugins
+- When any plugin shuts down, the callback is cleared to prevent use-after-free
+- Other active plugins continue to work, but without logging until a new callback is registered
+
+**Files changed:**
+- `crates/rustbridge-logging/src/callback.rs`
+- `rustbridge-java/rustbridge-ffm/src/test/java/com/rustbridge/ffm/SharedCallbackMultiPluginTest.java`
+
+---
 
 ### FfmPlugin Thread-Safe Concurrent Access (2026-01-24)
 

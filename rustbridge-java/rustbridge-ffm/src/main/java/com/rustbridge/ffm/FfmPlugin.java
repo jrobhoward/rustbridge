@@ -1,8 +1,9 @@
 package com.rustbridge.ffm;
 
 import com.rustbridge.*;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
@@ -39,7 +40,8 @@ import java.nio.charset.StandardCharsets;
  * @see Arena
  */
 public class FfmPlugin implements Plugin {
-    private static final Gson GSON = new GsonBuilder().create();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private final Arena pluginArena;
     private final MemorySegment handle;
@@ -113,9 +115,18 @@ public class FfmPlugin implements Plugin {
 
     @Override
     public <T, R> R call(String typeTag, T request, Class<R> responseType) throws PluginException {
-        String requestJson = GSON.toJson(request);
+        String requestJson;
+        try {
+            requestJson = OBJECT_MAPPER.writeValueAsString(request);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize request", e);
+        }
         String responseJson = call(typeTag, requestJson);
-        return GSON.fromJson(responseJson, responseType);
+        try {
+            return OBJECT_MAPPER.readValue(responseJson, responseType);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to deserialize response", e);
+        }
     }
 
     /**

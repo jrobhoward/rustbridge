@@ -1,8 +1,8 @@
 package com.rustbridge.ffm;
 
 import com.rustbridge.*;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -26,7 +26,9 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class HelloPluginIntegrationTest {
 
-    private static final Gson GSON = new GsonBuilder().create();
+    // Unused - kept for potential future use in test assertions
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     private static Path PLUGIN_PATH;
     private Plugin plugin;
 
