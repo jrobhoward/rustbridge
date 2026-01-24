@@ -317,6 +317,25 @@ pub unsafe extern "C" fn plugin_get_state(handle: FfiPluginHandle) -> u8 {
     }
 }
 
+/// Get the number of requests rejected due to concurrency limits
+///
+/// # Parameters
+/// - `handle`: Plugin handle from plugin_init
+///
+/// # Returns
+/// Number of rejected requests since plugin initialization. Returns 0 if handle is invalid.
+///
+/// # Safety
+/// - `handle` must be a valid handle from plugin_init
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn plugin_get_rejected_count(handle: FfiPluginHandle) -> u64 {
+    let id = handle as u64;
+    match PluginHandleManager::global().get(id) {
+        Some(h) => h.rejected_request_count(),
+        None => 0,
+    }
+}
+
 // ============================================================================
 // Binary Transport Functions
 // ============================================================================

@@ -18,7 +18,9 @@ Use `cargo msrv verify` to check MSRV compatibility when adding new dependencies
 
 - [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) - System architecture and design decisions
 - [docs/SKILLS.md](./docs/SKILLS.md) - Development best practices and coding conventions
-- [docs/TESTING.md](./docs/TESTING.md) - Testing conventions and guidelines
+- [docs/TESTING.md](./docs/TESTING.md) - Rust testing conventions and guidelines
+- [docs/TESTING_KOTLIN.md](./docs/TESTING_KOTLIN.md) - Kotlin testing conventions and guidelines
+- [docs/TESTING_JAVA.md](./docs/TESTING_JAVA.md) - Java testing conventions and guidelines
 - [docs/TASKS.md](./docs/TASKS.md) - Project roadmap and task tracking
 - [docs/BINARY_TRANSPORT.md](./docs/BINARY_TRANSPORT.md) - Binary transport migration guide (opt-in performance feature)
 - [docs/CODE_GENERATION.md](./docs/CODE_GENERATION.md) - Code generation guide (JSON Schema, Java classes)
@@ -146,13 +148,18 @@ let re = Regex::new(r"^\d+$").unwrap();
 
 ## Testing Conventions
 
-See [docs/TESTING.md](./docs/TESTING.md) for complete guidelines.
+**Rust**: See [docs/TESTING.md](./docs/TESTING.md) for complete guidelines.
 
-**Key points:**
-- Tests in separate files: `module/module_tests.rs`
-- Test naming: `subject___condition___expected_result` (triple underscores)
+**Kotlin**: See [docs/TESTING_KOTLIN.md](./docs/TESTING_KOTLIN.md) for complete guidelines.
+
+**Java**: See [docs/TESTING_JAVA.md](./docs/TESTING_JAVA.md) for complete guidelines.
+
+**Unified approach across all languages:**
+- Test naming: `subjectUnderTest___condition___expectedResult` (triple underscores)
 - Arrange-Act-Assert pattern with blank lines (no comments)
-- Use `#[tokio::test]` for async tests
+- Tests in separate files (Rust: `module_tests.rs`, Kotlin/Java: mirrored structure in `test/`)
+- Async support: `#[tokio::test]` (Rust), `runTest` (Kotlin), exceptions (Java)
+- Code quality: Clippy (Rust), Ktlint (Kotlin), Checkstyle (Java)
 
 ## Crate Structure
 

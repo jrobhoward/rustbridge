@@ -221,6 +221,16 @@ public class FfmPlugin implements Plugin {
     }
 
     @Override
+    public long getRejectedRequestCount() {
+        checkNotClosed();
+        try {
+            return (long) bindings.pluginGetRejectedCount().invokeExact(handle);
+        } catch (Throwable t) {
+            throw new RuntimeException("Failed to get rejected request count", t);
+        }
+    }
+
+    @Override
     public void close() {
         if (closed) {
             return;

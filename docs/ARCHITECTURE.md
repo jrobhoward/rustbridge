@@ -150,6 +150,97 @@ sequenceDiagram
     F->>F: Deallocate
 ```
 
+## Concurrency Limits and Backpressure
+
+rustbridge provides built-in protection against memory exhaustion under high concurrent request loads through configurable concurrency limits.
+
+### Configuration
+
+The `max_concurrent_ops` field in `PluginConfig` controls the maximum number of concurrent requests:
+
+- **Limited mode (`max_concurrent_ops > 0`)**: Enforces a hard limit on concurrent requests
+- **Unlimited mode (`max_concurrent_ops = 0`)**: No limit enforced (default: 1000)
+
+```rust
+let config = PluginConfig {
+    max_concurrent_ops: 100,  // Allow up to 100 concurrent requests
+    ..Default::default()
+};
+```
+
+### Implementation
+
+The concurrency limit is enforced using a Tokio semaphore in `PluginHandle`:
+
+```rust
+pub struct PluginHandle {
+    // ... other fields
+    request_limiter: Option<Arc<tokio::sync::Semaphore>>,
+    rejected_requests: AtomicU64,
+}
+```
+
+**Request flow with concurrency limiting:**
+
+1. `PluginHandle::call()` attempts to acquire a permit using `try_acquire()`
+2. If successful, the request proceeds and the permit is held during execution
+3. If failed (limit exceeded), returns `PluginError::TooManyRequests` immediately
+4. Permit is automatically released when dropped (success or error path)
+
+**Key design decisions:**
+
+- **Non-blocking (`try_acquire`)**: Provides immediate backpressure instead of queuing/blocking
+- **Fail-fast**: Callers receive errors immediately when capacity is exceeded
+- **No queuing**: Prevents unbounded memory growth from queued requests
+- **RAII permits**: Automatic cleanup ensures permits are always released
+
+### Error Handling
+
+When the concurrency limit is exceeded:
+
+1. **Rust**: Returns `PluginError::TooManyRequests` (error code 13)
+2. **FFI**: Returns error envelope with code 13
+3. **Java**: Throws `PluginException` with error code 13
+4. **Metrics**: `rejected_requests` counter is incremented
+
+Callers should implement retry with backoff or load shedding strategies.
+
+### Monitoring
+
+Query rejected request count to monitor system health and tune limits:
+
+**Rust:**
+```rust
+let count = handle.rejected_request_count();
+```
+
+**Java:**
+```java
+long count = plugin.getRejectedRequestCount();
+```
+
+### Trade-offs
+
+**Why try_acquire() instead of blocking acquire():**
+- Immediate backpressure (fail fast)
+- No thread starvation from waiting
+- Caller decides retry strategy
+- Simpler reasoning about resource usage
+
+**Why semaphore instead of atomic counter:**
+- Tokio semaphore is well-tested and efficient
+- RAII permit automatically releases
+- Handles edge cases (overflow, fairness)
+- Lock-free implementation
+
+### Tuning Recommendations
+
+1. **Start with defaults**: The default limit of 1000 is suitable for most applications
+2. **Monitor rejection rate**: High rejection rates indicate undersized limits or overload
+3. **Consider request latency**: Slower requests need lower limits to prevent memory exhaustion
+4. **Profile memory usage**: Set limits based on measured per-request memory consumption
+5. **Use unlimited mode (0) only**: When you have external rate limiting or for low-traffic scenarios
+
 ## Memory Management
 
 rustbridge uses a **"Rust allocates, host frees"** pattern for memory safety:

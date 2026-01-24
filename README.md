@@ -293,6 +293,36 @@ rustbridge check
 }
 ```
 
+**Configuration Options:**
+
+- **`worker_threads`** (optional): Number of async worker threads (default: number of CPU cores)
+- **`log_level`**: Initial log level - "trace", "debug", "info", "warn", "error", "off" (default: "info")
+- **`max_concurrent_ops`**: Maximum concurrent requests (default: 1000)
+  - Set to `0` for unlimited (use with caution - can cause memory exhaustion)
+  - Requests exceeding this limit are immediately rejected with error code 13 (TooManyRequests)
+  - Monitor rejected requests using `plugin.getRejectedRequestCount()` (Java) or `handle.rejected_request_count()` (Rust)
+- **`shutdown_timeout_ms`**: Maximum milliseconds to wait during shutdown (default: 5000)
+- **`data`** (optional): Plugin-specific configuration data (JSON object)
+
+**Example: Configuring concurrency limits in Java:**
+
+```java
+PluginConfig config = PluginConfig.defaults()
+    .maxConcurrentOps(100)  // Limit to 100 concurrent requests
+    .workerThreads(4)
+    .logLevel(LogLevel.INFO);
+
+try (Plugin plugin = FfmPluginLoader.load(pluginPath, config)) {
+    // Make calls...
+
+    // Monitor rejected requests
+    long rejectedCount = plugin.getRejectedRequestCount();
+    if (rejectedCount > 0) {
+        System.out.println("Rejected " + rejectedCount + " requests due to concurrency limit");
+    }
+}
+```
+
 ### Manifest (rustbridge.toml)
 
 ```toml
@@ -337,6 +367,7 @@ Errors are represented with stable numeric codes:
 | 10 | Timeout |
 | 11 | Internal Error |
 | 12 | FFI Error |
+| 13 | Too Many Requests (concurrency limit exceeded) |
 
 ## Target Languages
 

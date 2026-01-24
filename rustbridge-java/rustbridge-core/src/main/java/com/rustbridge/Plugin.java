@@ -47,6 +47,17 @@ public interface Plugin extends AutoCloseable {
     void setLogLevel(LogLevel level);
 
     /**
+     * Get the count of requests rejected due to concurrency limits.
+     * <p>
+     * When the plugin's {@code maxConcurrentOps} limit is exceeded, requests
+     * are immediately rejected with a TooManyRequests error. This counter tracks
+     * the total number of rejected requests since plugin initialization.
+     *
+     * @return number of rejected requests since plugin initialization
+     */
+    long getRejectedRequestCount();
+
+    /**
      * Shutdown the plugin and release resources.
      * <p>
      * This is called automatically when using try-with-resources.

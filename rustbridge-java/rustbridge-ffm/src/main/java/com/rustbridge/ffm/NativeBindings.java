@@ -37,6 +37,7 @@ public class NativeBindings {
     private final MethodHandle pluginShutdown;
     private final MethodHandle pluginSetLogLevel;
     private final MethodHandle pluginGetState;
+    private final MethodHandle pluginGetRejectedCount;
 
     /**
      * Create bindings from a symbol lookup.
@@ -133,6 +134,15 @@ public class NativeBindings {
                         ValueLayout.ADDRESS    // handle
                 )
         );
+
+        // plugin_get_rejected_count(handle) -> u64
+        this.pluginGetRejectedCount = linker.downcallHandle(
+                lookup.find("plugin_get_rejected_count").orElseThrow(),
+                FunctionDescriptor.of(
+                        ValueLayout.JAVA_LONG, // return: rejected count
+                        ValueLayout.ADDRESS    // handle
+                )
+        );
     }
 
     public MethodHandle pluginInit() {
@@ -165,5 +175,9 @@ public class NativeBindings {
 
     public MethodHandle pluginGetState() {
         return pluginGetState;
+    }
+
+    public MethodHandle pluginGetRejectedCount() {
+        return pluginGetRejectedCount;
     }
 }

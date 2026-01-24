@@ -70,6 +70,10 @@ pub struct PluginHandle {
     bridge: AsyncBridge,
     /// Handle ID (set after registration)
     id: RwLock<Option<u64>>,
+    /// Optional request limiter (None = unlimited)
+    request_limiter: Option<Arc<tokio::sync::Semaphore>>,
+    /// Counter for requests rejected due to concurrency limit
+    rejected_requests: AtomicU64,
 }
 
 impl PluginHandle {
@@ -87,6 +91,15 @@ impl PluginHandle {
         // Create the async bridge
         let bridge = AsyncBridge::new(runtime.clone());
 
+        // Create request limiter based on max_concurrent_ops
+        let request_limiter = if config.max_concurrent_ops > 0 {
+            Some(Arc::new(tokio::sync::Semaphore::new(
+                config.max_concurrent_ops,
+            )))
+        } else {
+            None // 0 means unlimited
+        };
+
         // Create plugin context
         let context = PluginContext::new(config);
 
@@ -96,6 +109,8 @@ impl PluginHandle {
             runtime,
             bridge,
             id: RwLock::new(None),
+            request_limiter,
+            rejected_requests: AtomicU64::new(0),
         })
     }
 
@@ -148,7 +163,21 @@ impl PluginHandle {
             });
         }
 
+        // Try to acquire permit (immediate, non-blocking)
+        let _permit = if let Some(sem) = &self.request_limiter {
+            match sem.try_acquire() {
+                Ok(permit) => Some(permit),
+                Err(_) => {
+                    self.rejected_requests.fetch_add(1, Ordering::Relaxed);
+                    return Err(PluginError::TooManyRequests);
+                }
+            }
+        } else {
+            None
+        };
+
         // Call the plugin handler
+        // Permit is automatically released when dropped
         self.bridge
             .call_sync(self.plugin.handle_request(&self.context, type_tag, request))
     }
@@ -222,6 +251,11 @@ impl PluginHandle {
     pub fn mark_failed(&self) {
         tracing::error!("Marking plugin as failed due to panic or unrecoverable error");
         self.context.set_state(LifecycleState::Failed);
+    }
+
+    /// Get the count of requests rejected due to concurrency limits
+    pub fn rejected_request_count(&self) -> u64 {
+        self.rejected_requests.load(Ordering::Relaxed)
     }
 }
 

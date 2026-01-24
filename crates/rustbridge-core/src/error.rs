@@ -55,6 +55,10 @@ pub enum PluginError {
     /// FFI error
     #[error("FFI error: {0}")]
     FfiError(String),
+
+    /// Too many concurrent requests
+    #[error("too many concurrent requests (limit exceeded)")]
+    TooManyRequests,
 }
 
 impl PluginError {
@@ -73,6 +77,7 @@ impl PluginError {
             PluginError::Timeout => 10,
             PluginError::Internal(_) => 11,
             PluginError::FfiError(_) => 12,
+            PluginError::TooManyRequests => 13,
         }
     }
 
@@ -93,6 +98,7 @@ impl PluginError {
             9 => PluginError::Cancelled,
             10 => PluginError::Timeout,
             12 => PluginError::FfiError(message),
+            13 => PluginError::TooManyRequests,
             _ => PluginError::Internal(message),
         }
     }

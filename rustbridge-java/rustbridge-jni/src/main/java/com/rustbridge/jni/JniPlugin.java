@@ -67,6 +67,12 @@ public class JniPlugin implements Plugin {
     }
 
     @Override
+    public long getRejectedRequestCount() {
+        checkNotClosed();
+        return nativeGetRejectedCount(handle);
+    }
+
+    @Override
     public void close() {
         if (closed) {
             return;
@@ -89,6 +95,8 @@ public class JniPlugin implements Plugin {
             throws PluginException;
 
     private static native void nativeSetLogLevel(long handle, int level);
+
+    private static native long nativeGetRejectedCount(long handle);
 
     private static native boolean nativeShutdown(long handle);
 }
