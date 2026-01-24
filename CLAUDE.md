@@ -87,9 +87,17 @@ rustbridge build --release
 rustbridge generate-header --output include/messages.h
 rustbridge generate-header --verify  # Verify header compiles
 
+# Generate signing keys (one-time setup)
+rustbridge keygen --output ~/.rustbridge/signing.key
+
 # Bundle operations
 rustbridge bundle create --name my-plugin --version 1.0.0 \
-  --lib linux-x86_64:target/release/libmyplugin.so
+  --lib linux-x86_64:target/release/libmyplugin.so \
+  --lib darwin-aarch64:target/release/libmyplugin.dylib \
+  --schema README.md:README.md \
+  --generate-header src/binary_messages.rs:messages.h \
+  --sign-key ~/.rustbridge/signing.key
+
 rustbridge bundle list my-plugin-1.0.0.rbp
 rustbridge bundle extract my-plugin-1.0.0.rbp --output ./lib
 
@@ -190,3 +198,72 @@ Memory follows "Rust allocates, host frees" pattern:
 **JSON (default)**: Universal, debuggable, no schema required. Use for most cases.
 
 **Binary (opt-in)**: 7x faster for latency-sensitive hot paths. Requires C struct definitions. See [docs/BINARY_TRANSPORT.md](./docs/BINARY_TRANSPORT.md).
+
+## Schema Embedding
+
+Bundles can include schema files for self-documenting APIs:
+
+### Automatic C Header Generation
+
+Generate and embed C headers automatically during bundle creation:
+
+```bash
+rustbridge bundle create --name my-plugin --version 1.0.0 \
+  --lib linux-x86_64:target/release/libmyplugin.so \
+  --generate-header src/binary_messages.rs:messages.h
+```
+
+This:
+1. Generates a C header from Rust `#[repr(C)]` structs
+2. Embeds it in `schema/messages.h` within the bundle
+3. Adds metadata to manifest with checksum and format
+
+### Manual Schema Files
+
+Add arbitrary schema files:
+
+```bash
+rustbridge bundle create --name my-plugin --version 1.0.0 \
+  --lib linux-x86_64:target/release/libmyplugin.so \
+  --schema api-schema.json:api-schema.json \
+  --schema README.md:README.md
+```
+
+Supported formats (auto-detected):
+- `*.h`, `*.hpp` → `c-header`
+- `*.json` → `json-schema`
+- Others → `unknown`
+
+### Accessing Schemas in Java
+
+```java
+BundleLoader loader = BundleLoader.builder()
+    .bundlePath("my-plugin-1.0.0.rbp")
+    .build();
+
+// List all schemas
+Map<String, SchemaInfo> schemas = loader.getSchemas();
+
+// Read schema content
+String header = loader.readSchema("messages.h");
+
+// Extract to file
+Path schemaPath = loader.extractSchema("messages.h", Paths.get("./include"));
+```
+
+### Bundle Manifest Schema Catalog
+
+Schemas are cataloged in the manifest:
+
+```json
+{
+  "schemas": {
+    "messages.h": {
+      "path": "schema/messages.h",
+      "format": "c-header",
+      "checksum": "sha256:abc123...",
+      "description": "C struct definitions for binary transport"
+    }
+  }
+}
+```

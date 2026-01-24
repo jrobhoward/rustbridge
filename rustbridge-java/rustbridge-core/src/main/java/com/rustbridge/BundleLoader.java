@@ -161,6 +161,91 @@ public class BundleLoader implements AutoCloseable {
         return files;
     }
 
+    /**
+     * Get all available schemas in the bundle.
+     *
+     * @return map of schema name to schema info
+     */
+    public Map<String, BundleManifest.SchemaInfo> getSchemas() {
+        if (manifest.schemas == null) {
+            return new HashMap<>();
+        }
+        return manifest.schemas;
+    }
+
+    /**
+     * Extract a schema file from the bundle.
+     *
+     * @param schemaName name of the schema (e.g., "messages.h")
+     * @param outputDir directory to extract the schema to
+     * @return path to the extracted schema file
+     * @throws IOException if extraction fails
+     */
+    public Path extractSchema(String schemaName, Path outputDir) throws IOException {
+        BundleManifest.SchemaInfo schemaInfo = manifest.schemas != null
+            ? manifest.schemas.get(schemaName)
+            : null;
+
+        if (schemaInfo == null) {
+            throw new IOException("Schema not found in bundle: " + schemaName);
+        }
+
+        // Extract the schema file
+        ZipEntry schemaEntry = zipFile.getEntry(schemaInfo.path);
+        if (schemaEntry == null) {
+            throw new IOException("Schema file not found in bundle: " + schemaInfo.path);
+        }
+
+        byte[] schemaData = readZipEntry(schemaEntry);
+
+        // Verify checksum
+        if (!verifyChecksum(schemaData, schemaInfo.checksum)) {
+            throw new IOException(
+                "Checksum verification failed for schema " + schemaName
+            );
+        }
+
+        // Write to output directory
+        Path outputPath = outputDir.resolve(schemaName);
+        Files.write(outputPath, schemaData);
+
+        return outputPath;
+    }
+
+    /**
+     * Read a schema file content as string.
+     *
+     * @param schemaName name of the schema (e.g., "messages.h")
+     * @return schema file content
+     * @throws IOException if reading fails
+     */
+    public String readSchema(String schemaName) throws IOException {
+        BundleManifest.SchemaInfo schemaInfo = manifest.schemas != null
+            ? manifest.schemas.get(schemaName)
+            : null;
+
+        if (schemaInfo == null) {
+            throw new IOException("Schema not found in bundle: " + schemaName);
+        }
+
+        // Extract the schema file
+        ZipEntry schemaEntry = zipFile.getEntry(schemaInfo.path);
+        if (schemaEntry == null) {
+            throw new IOException("Schema file not found in bundle: " + schemaInfo.path);
+        }
+
+        byte[] schemaData = readZipEntry(schemaEntry);
+
+        // Verify checksum
+        if (!verifyChecksum(schemaData, schemaInfo.checksum)) {
+            throw new IOException(
+                "Checksum verification failed for schema " + schemaName
+            );
+        }
+
+        return new String(schemaData);
+    }
+
     @Override
     public void close() throws IOException {
         zipFile.close();
@@ -407,6 +492,8 @@ public class BundleLoader implements AutoCloseable {
         @SerializedName("public_key")
         public String publicKey; // Minisign public key (base64)
 
+        public Map<String, SchemaInfo> schemas; // Schema files in the bundle
+
         public static class PluginInfo {
             public String name;
             public String version;
@@ -449,6 +536,13 @@ public class BundleLoader implements AutoCloseable {
 
             @SerializedName("cstruct_response")
             public String cstructResponse;
+        }
+
+        public static class SchemaInfo {
+            public String path;
+            public String format;
+            public String checksum;
+            public String description;
         }
     }
 }

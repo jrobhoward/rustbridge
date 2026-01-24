@@ -112,6 +112,11 @@ impl BundleBuilder {
     /// Add a schema file to the bundle.
     ///
     /// Schema files are stored in the `schema/` directory within the bundle.
+    ///
+    /// The schema format is automatically detected from the file extension:
+    /// - `.h` -> "c-header"
+    /// - `.json` -> "json-schema"
+    /// - Others -> "unknown"
     pub fn add_schema_file<P: AsRef<Path>>(
         mut self,
         source_path: P,
@@ -130,7 +135,22 @@ impl BundleBuilder {
             ))
         })?;
 
+        // Compute checksum
+        let checksum = compute_sha256(&contents);
+
+        // Detect format from extension
+        let format = detect_schema_format(archive_name);
+
         let archive_path = format!("schema/{archive_name}");
+
+        // Add to manifest
+        self.manifest.add_schema(
+            archive_name.to_string(),
+            archive_path.clone(),
+            format,
+            checksum,
+            None, // No description by default
+        );
 
         self.files.push(BundleFile {
             archive_path,
@@ -251,6 +271,17 @@ pub fn verify_sha256(data: &[u8], expected: &str) -> bool {
     let expected_hex = expected.strip_prefix("sha256:").unwrap_or(expected);
 
     actual == expected_hex
+}
+
+/// Detect schema format from file extension.
+fn detect_schema_format(filename: &str) -> String {
+    if filename.ends_with(".h") || filename.ends_with(".hpp") {
+        "c-header".to_string()
+    } else if filename.ends_with(".json") {
+        "json-schema".to_string()
+    } else {
+        "unknown".to_string()
+    }
 }
 
 /// Sign data using a minisign secret key.

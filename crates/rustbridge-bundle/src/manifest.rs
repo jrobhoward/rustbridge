@@ -30,6 +30,10 @@ pub struct Manifest {
     /// Format: "RWS..." (standard minisign public key format).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub public_key: Option<String>,
+
+    /// Schema files embedded in the bundle.
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub schemas: HashMap<String, SchemaInfo>,
 }
 
 /// Plugin metadata.
@@ -66,6 +70,23 @@ pub struct PlatformInfo {
 
     /// SHA256 checksum of the library file.
     pub checksum: String,
+}
+
+/// Schema file information.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SchemaInfo {
+    /// Relative path to the schema file within the bundle.
+    pub path: String,
+
+    /// Schema format (e.g., "c-header", "json-schema").
+    pub format: String,
+
+    /// SHA256 checksum of the schema file.
+    pub checksum: String,
+
+    /// Optional description of what this schema describes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 /// API information describing available messages.
@@ -132,6 +153,7 @@ impl Manifest {
             platforms: HashMap::new(),
             api: None,
             public_key: None,
+            schemas: HashMap::new(),
         }
     }
 
@@ -149,6 +171,26 @@ impl Manifest {
     /// Set the public key for signature verification.
     pub fn set_public_key(&mut self, public_key: String) {
         self.public_key = Some(public_key);
+    }
+
+    /// Add a schema file to the manifest.
+    pub fn add_schema(
+        &mut self,
+        name: String,
+        path: String,
+        format: String,
+        checksum: String,
+        description: Option<String>,
+    ) {
+        self.schemas.insert(
+            name,
+            SchemaInfo {
+                path,
+                format,
+                checksum,
+                description,
+            },
+        );
     }
 
     /// Get platform info for a specific platform.

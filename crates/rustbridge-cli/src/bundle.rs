@@ -16,6 +16,7 @@ pub fn run(
     output: Option<String>,
     schema_files: &[(String, String)],
     sign_key_path: Option<String>,
+    generate_header: Option<String>,
 ) -> Result<()> {
     println!("Creating bundle: {name} v{version}");
 
@@ -43,6 +44,31 @@ pub fn run(
         builder = builder
             .add_library(platform, lib_path)
             .with_context(|| format!("Failed to add library: {lib_path}"))?;
+    }
+
+    // Generate and add C header if requested
+    if let Some(header_spec) = generate_header {
+        let parts: Vec<&str> = header_spec.splitn(2, ':').collect();
+        if parts.len() != 2 {
+            anyhow::bail!(
+                "Invalid generate-header format: {header_spec}. Expected SOURCE:HEADER_NAME"
+            );
+        }
+        let (source_file, header_name) = (parts[0], parts[1]);
+
+        println!("  Generating C header: {source_file} -> schema/{header_name}");
+
+        // Generate header to a temporary file
+        let temp_dir = tempfile::tempdir().context("Failed to create temp directory")?;
+        let temp_header = temp_dir.path().join(header_name);
+
+        crate::header_gen::run(source_file, temp_header.to_str().unwrap(), false)
+            .with_context(|| format!("Failed to generate C header from {source_file}"))?;
+
+        // Add the generated header to the bundle
+        builder = builder
+            .add_schema_file(&temp_header, header_name)
+            .with_context(|| format!("Failed to add generated header: {header_name}"))?;
     }
 
     // Add schema files
@@ -182,6 +208,7 @@ mod tests {
             Some(output.to_string_lossy().to_string()),
             &[],
             None, // No signing
+            None, // No header generation
         )
         .unwrap();
 
@@ -210,6 +237,7 @@ mod tests {
             Some(output.to_string_lossy().to_string()),
             &[],
             None, // No signing
+            None, // No header generation
         )
         .unwrap();
 

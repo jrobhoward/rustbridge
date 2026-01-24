@@ -23,6 +23,6 @@ syn = { workspace = true }
 cc = "1.0"
 minisign = "0.7"
 rpassword = "7.3"
+tempfile = "3.9"
 
 [dev-dependencies]
-tempfile = "3.9"

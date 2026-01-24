@@ -138,6 +138,11 @@ enum BundleAction {
         /// Example: --sign-key ~/.rustbridge/signing.key
         #[arg(long, value_name = "KEY_PATH")]
         sign_key: Option<String>,
+
+        /// Auto-generate C header from Rust source file and embed in bundle
+        /// Example: --generate-header src/binary_messages.rs:messages.h
+        #[arg(long, value_name = "SOURCE:HEADER_NAME")]
+        generate_header: Option<String>,
     },
 
     /// List contents of a bundle
@@ -203,6 +208,7 @@ fn main() -> anyhow::Result<()> {
                 output,
                 schema,
                 sign_key,
+                generate_header,
             } => {
                 // Parse library arguments (PLATFORM:PATH)
                 let libs: Vec<(String, String)> = libraries
@@ -230,7 +236,15 @@ fn main() -> anyhow::Result<()> {
                     })
                     .collect::<anyhow::Result<_>>()?;
 
-                bundle::run(&name, &version, &libs, output, &schemas, sign_key)?;
+                bundle::run(
+                    &name,
+                    &version,
+                    &libs,
+                    output,
+                    &schemas,
+                    sign_key,
+                    generate_header,
+                )?;
             }
             BundleAction::List {
                 bundle: bundle_path,
