@@ -43,6 +43,14 @@ impl ReloadHandle {
             Err("Reload handle not initialized".to_string())
         }
     }
+
+    /// Clear the reload handle
+    ///
+    /// This should be called when the last plugin shuts down to ensure
+    /// the handle doesn't persist across plugin reload cycles.
+    pub fn clear(&self) {
+        *self.handle.lock() = None;
+    }
 }
 
 impl Default for ReloadHandle {

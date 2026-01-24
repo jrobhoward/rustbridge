@@ -70,6 +70,21 @@ pub struct AddResponse {
     pub result: i64,
 }
 
+/// Request to sleep for testing concurrency limits
+#[derive(Debug, Clone, Serialize, Deserialize, Message)]
+#[message(tag = "test.sleep")]
+pub struct SleepRequest {
+    /// Duration to sleep in milliseconds
+    pub duration_ms: u64,
+}
+
+/// Response from sleep request
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SleepResponse {
+    /// Actual duration slept in milliseconds
+    pub slept_ms: u64,
+}
+
 // ============================================================================
 // Benchmark Message Types
 // ============================================================================
@@ -227,6 +242,15 @@ impl HelloPlugin {
         })
     }
 
+    /// Handle sleep request - useful for testing concurrency limits
+    async fn handle_sleep(&self, req: SleepRequest) -> PluginResult<SleepResponse> {
+        tracing::debug!("Sleeping for {}ms", req.duration_ms);
+        tokio::time::sleep(tokio::time::Duration::from_millis(req.duration_ms)).await;
+        Ok(SleepResponse {
+            slept_ms: req.duration_ms,
+        })
+    }
+
     // ========================================================================
     // Benchmark Handlers
     // ========================================================================
@@ -381,6 +405,11 @@ impl Plugin for HelloPlugin {
                 let resp = self.handle_add(req)?;
                 Ok(serde_json::to_vec(&resp)?)
             }
+            "test.sleep" => {
+                let req: SleepRequest = serde_json::from_slice(payload)?;
+                let resp = self.handle_sleep(req).await?;
+                Ok(serde_json::to_vec(&resp)?)
+            }
             // Benchmark handlers
             "bench.small" => {
                 let req: SmallRequest = serde_json::from_slice(payload)?;
@@ -417,6 +446,7 @@ impl Plugin for HelloPlugin {
             "greet",
             "user.create",
             "math.add",
+            "test.sleep",
             "bench.small",
             "bench.medium",
             "bench.large",

@@ -407,3 +407,115 @@ Follow "Rust allocates, host frees" pattern:
 1. `plugin_call()` returns `FfiBuffer` with Rust-allocated data
 2. Host copies data to managed heap
 3. Host calls `plugin_free_buffer()` to release native memory
+
+## Plugin Reload Safety
+
+rustbridge is designed to support plugin reload cycles (load → shutdown → reload). This section documents safe patterns for global state management.
+
+### Global State in rustbridge
+
+The framework uses the following global state:
+
+1. **HANDLE_MANAGER** (`OnceCell<PluginHandleManager>`) - Stores active plugin handles in a DashMap
+2. **CALLBACK_MANAGER** (`OnceCell<LogCallbackManager>`) - Manages FFI log callbacks with reference counting
+3. **BINARY_HANDLERS** (`thread_local! HashMap`) - Stores binary message handlers per thread
+4. **ReloadHandle** - Tracing subscriber filter reload handle
+
+### Reload Safety Guarantees
+
+**Automatic cleanup on shutdown:**
+- Plugin handles are removed from HANDLE_MANAGER when `plugin_shutdown()` is called
+- Log callback is cleared when the last plugin unregisters (ref count reaches 0)
+- Binary handlers are cleared on shutdown to prevent stale handlers
+- Reload handle persists across reloads (logging only initializes once per process)
+
+**Thread-local state:**
+- Binary handlers are cleared per-thread on shutdown
+- Each thread maintains its own handler registry
+
+### Safe Global State Patterns for Plugin Authors
+
+When writing plugins, follow these patterns to ensure reload safety:
+
+**✅ GOOD: State scoped to plugin handle**
+```rust
+pub struct MyPlugin {
+    // Plugin-specific state, automatically cleaned up when plugin is dropped
+    state: Arc<RwLock<PluginState>>,
+}
+```
+
+**✅ GOOD: Resettable global state**
+```rust
+use parking_lot::RwLock;
+use std::sync::OnceLock;
+
+static MANAGER: OnceLock<RwLock<Manager>> = OnceLock::new();
+
+impl Plugin for MyPlugin {
+    async fn on_stop(&self, ctx: &PluginContext) -> PluginResult<()> {
+        // Clear the manager on shutdown
+        if let Some(manager) = MANAGER.get() {
+            *manager.write() = Manager::new(); // Reset to default state
+        }
+        Ok(())
+    }
+}
+```
+
+**❌ BAD: Non-resettable global state**
+```rust
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+// This will persist across reloads, causing incorrect behavior!
+static mut COUNTER: AtomicUsize = AtomicUsize::new(0);
+```
+
+**❌ BAD: Unclearable caches**
+```rust
+use std::collections::HashMap;
+use std::sync::OnceLock;
+
+// This cache will grow indefinitely across reloads!
+static CACHE: OnceLock<HashMap<String, Data>> = OnceLock::new();
+```
+
+### Guidelines for Plugin Developers
+
+1. **Prefer handle-scoped state** - Store state in your Plugin struct, not in globals
+2. **Use `on_stop()` for cleanup** - Reset any global state in `on_stop()`
+3. **Avoid `static mut`** - Use thread-safe primitives (`RwLock`, `Mutex`, `Atomic*`)
+4. **Document global state** - Comment why global state is needed and how it's cleaned up
+5. **Test reload cycles** - Verify your plugin works correctly across multiple load/unload cycles
+
+### Reload Cycle Testing
+
+Test your plugin with reload cycles to ensure proper cleanup:
+
+```java
+// Java test example
+@Test
+void testReloadCycle() {
+    // First load
+    FfmPlugin plugin1 = loader.load();
+    plugin1.init(config, callback);
+    plugin1.start();
+    plugin1.call("echo", request);
+    plugin1.shutdown();
+
+    // Reload same plugin
+    FfmPlugin plugin2 = loader.load();
+    plugin2.init(config, callback);
+    plugin2.start();
+    plugin2.call("echo", request); // Should work correctly
+    plugin2.shutdown();
+}
+```
+
+### Known Limitations
+
+1. **OnceCell globals persist** - The OnceCell containers themselves are never cleared (only their contents)
+2. **Static initialization order** - Rust doesn't guarantee initialization order across reloads
+3. **Platform-specific behavior** - Some platforms may cache dynamic libraries differently
+
+These limitations are acceptable for the framework's use cases. The important guarantee is that **no stale data persists** across reloads that would cause incorrect behavior.

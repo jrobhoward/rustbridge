@@ -82,6 +82,10 @@ impl LogCallbackManager {
     /// This decrements the reference count. When the last plugin unregisters
     /// (ref count reaches 0), the callback is cleared.
     ///
+    /// Note: The reload handle is NOT cleared because logging initialization
+    /// only happens once per process. The reload handle must persist across
+    /// plugin reload cycles.
+    ///
     /// This should be called during plugin shutdown.
     pub fn unregister_plugin(&self) {
         let prev_count = self.ref_count.fetch_sub(1, Ordering::SeqCst);
@@ -90,6 +94,7 @@ impl LogCallbackManager {
         if prev_count == 1 {
             let mut guard = self.callback.write();
             *guard = None;
+
             tracing::debug!("Last plugin unregistered, cleared log callback");
         }
     }

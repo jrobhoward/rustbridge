@@ -264,6 +264,9 @@ fn plugin_shutdown_impl(handle: FfiPluginHandle) -> bool {
         }
     };
 
+    // Clear binary handlers for this thread to avoid stale handlers on reload
+    clear_binary_handlers();
+
     // Unregister plugin from callback manager (decrements ref count)
     // The callback will only be cleared when the last plugin shuts down.
     // This allows multiple plugins to coexist and share the same callback.
@@ -367,6 +370,16 @@ thread_local! {
 pub fn register_binary_handler(message_id: u32, handler: BinaryMessageHandler) {
     BINARY_HANDLERS.with(|handlers| {
         handlers.borrow_mut().insert(message_id, handler);
+    });
+}
+
+/// Clear all binary message handlers
+///
+/// This should be called during plugin shutdown to ensure handlers
+/// don't persist across plugin reload cycles.
+pub(crate) fn clear_binary_handlers() {
+    BINARY_HANDLERS.with(|handlers| {
+        handlers.borrow_mut().clear();
     });
 }
 

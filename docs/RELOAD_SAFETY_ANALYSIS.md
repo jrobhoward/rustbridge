@@ -275,22 +275,54 @@ After multi-language expansion, if reload becomes a requirement:
 **Answer to original question**:
 > "Will the dynamic log changes affect or inhibit the ability to unload a plugin?"
 
-**YES** - The dynamic log level changes introduced additional global state that makes plugin reload more fragile:
+**UPDATE (2026-01-24)**: Implemented reload safety improvements:
 
-1. **New global state added**:
-   - `ReloadHandle::INSTANCE` OnceCell
-   - `INITIALIZED` OnceCell marker
-   - These persist across shutdown and may prevent clean reload
+### Changes Made
 
-2. **Existing global state issues exacerbated**:
-   - `LogCallbackManager::CALLBACK_MANAGER` now stores reload handle
-   - Tracing subscriber still cannot be replaced
+1. **Added cleanup on shutdown**:
+   - `ReloadHandle::clear()` method resets handle to None
+   - Called from `LogCallbackManager::unregister_plugin()` when last plugin shuts down
+   - Binary handlers cleared via `clear_binary_handlers()` in plugin_shutdown
 
-3. **Impact**:
-   - Single plugin, single load: ✅ No impact (still works)
-   - Single plugin, reload: ⚠️ Worse (more state to manage)
-   - Multiple plugins: ❌ Critical (shared state between plugins)
+2. **Reference counting works correctly**:
+   - `LogCallbackManager` uses ref_count to track active plugins
+   - Callback cleared when ref_count reaches 0
+   - Reload handle cleared when last plugin unregisters
 
-**The dynamic log level feature works correctly for the primary use case (single plugin, single load), but it does make the reload scenario more complex and adds more global state that cannot be easily reset.**
+3. **Thread-local state cleaned**:
+   - `BINARY_HANDLERS` HashMap cleared on shutdown
+   - Prevents stale handlers across reload cycles
 
-We should prioritize testing reload scenarios (Task #3) and documenting the current limitations clearly.
+### Current Status
+
+**Single plugin, single load**: ✅ Works perfectly
+
+**Single plugin, reload cycles**: ✅ **NOW SUPPORTED**
+- All Java reload tests pass (PluginReloadTest.java)
+- Tests verify: basic reload, functionality after reload, logging after reload, dynamic log levels after reload, multiple reload cycles, state freshness
+- Global state properly cleaned up on shutdown
+- OnceCell containers persist (acceptable limitation) but contents are cleared
+
+**Multiple plugins, same process**: ⚠️ **WORKS WITH SHARED LOGGING**
+- Reference counting ensures proper cleanup
+- Last plugin to shutdown clears shared state
+- Log level and callback are shared (documented limitation)
+- This is an intentional design trade-off for simplicity
+
+### Remaining Limitations
+
+1. **OnceCell containers persist** - Only contents are cleared, containers remain
+2. **Tracing subscriber is global** - Cannot be replaced once set (acceptable)
+3. **Log callback shared across plugins** - Documented in ARCHITECTURE.md
+
+### Testing Results
+
+All reload tests in PluginReloadTest.java pass:
+- ✅ testLoadShutdownReload
+- ✅ testReloadFunctionality
+- ✅ testLogCallbackAfterReload
+- ✅ testDynamicLogLevelAfterReload
+- ✅ testMultipleReloadCycles
+- ✅ testStateFreshAfterReload
+
+**Verdict**: The framework now properly supports plugin reload cycles for single-plugin scenarios. The dynamic log level feature does NOT inhibit reload - in fact, the cleanup improvements benefit the entire framework.

@@ -57,17 +57,18 @@ class ConcurrencyLimitTest {
                 .maxConcurrentOps(2);
 
         try (Plugin plugin = FfmPluginLoader.load(PLUGIN_PATH.toString(), config)) {
-            ExecutorService executor = Executors.newFixedThreadPool(10);
+            ExecutorService executor = Executors.newFixedThreadPool(15);
             AtomicInteger successCount = new AtomicInteger(0);
             AtomicInteger errorCount = new AtomicInteger(0);
 
-            // Submit 10 concurrent requests
+            // Submit 15 requests, staggered to ensure we hit the limit
             List<Future<String>> futures = new ArrayList<>();
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 15; i++) {
                 final int id = i;
                 Future<String> future = executor.submit(() -> {
                     try {
-                        String result = plugin.call("greet", "{\"name\": \"User" + id + "\"}");
+                        // Use sleep handler to hold permits longer (300ms)
+                        String result = plugin.call("test.sleep", "{\"duration_ms\": 300}");
                         successCount.incrementAndGet();
                         return result;
                     } catch (PluginException e) {
@@ -76,30 +77,45 @@ class ConcurrencyLimitTest {
                     }
                 });
                 futures.add(future);
+
+                // Small delay to stagger requests (first few will succeed, rest will be rejected)
+                Thread.sleep(10);
             }
 
             // Wait for all to complete
             for (Future<String> future : futures) {
                 try {
-                    future.get(5, TimeUnit.SECONDS);
+                    future.get(10, TimeUnit.SECONDS);
                 } catch (ExecutionException e) {
                     // Expected - some will fail due to concurrency limit
+                } catch (TimeoutException e) {
+                    fail("Request timed out");
                 }
             }
 
             executor.shutdown();
             executor.awaitTermination(5, TimeUnit.SECONDS);
 
-            // Some should succeed, some should be rejected
-            assertTrue(successCount.get() > 0, "At least some requests should succeed");
-            assertTrue(errorCount.get() > 0, "At least some requests should be rejected");
+            System.out.println("Success: " + successCount.get() + ", Errors: " + errorCount.get());
+
+            // With limit of 2 and 15 requests staggered by 10ms with 300ms sleep each:
+            // - First 2 start immediately and hold permits for 300ms
+            // - By the time they finish, we've submitted all 15 requests (15 * 10ms = 150ms)
+            // - Most of the remaining 13 will be rejected immediately
+            // - After first 2 complete (~300ms), next batch can start but queue is mostly failed
+            // Expected: 2-4 succeed (first batch), 11-13 rejected (arrived while busy)
+            int total = successCount.get() + errorCount.get();
+            assertEquals(15, total, "Total requests should be 15");
+            assertTrue(successCount.get() >= 2 && successCount.get() <= 6,
+                "Expected 2-6 successful requests, got " + successCount.get());
+            assertTrue(errorCount.get() >= 9, "Expected at least 9 rejected requests, got " + errorCount.get());
 
             // Check rejected count
             long rejectedCount = plugin.getRejectedRequestCount();
-            assertTrue(rejectedCount > 0, "Rejected count should be greater than 0");
+            assertTrue(rejectedCount >= 9, "Rejected count should be at least 9");
             assertEquals(errorCount.get(), rejectedCount, "Error count should match rejected count");
 
-            System.out.println("Success: " + successCount.get() + ", Errors: " + errorCount.get() + ", Rejected: " + rejectedCount);
+            System.out.println("Rejected count: " + rejectedCount);
         }
     }
 
