@@ -41,3 +41,68 @@ pub enum BundleError {
     #[error("Library not found: {0}")]
     LibraryNotFound(String),
 }
+
+#[cfg(test)]
+mod tests {
+    #![allow(non_snake_case)]
+
+    use super::*;
+
+    #[test]
+    fn BundleError___io___displays_message() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
+        let err: BundleError = io_err.into();
+
+        assert!(err.to_string().contains("I/O error"));
+    }
+
+    #[test]
+    fn BundleError___invalid_manifest___displays_message() {
+        let err = BundleError::InvalidManifest("missing name".to_string());
+
+        assert_eq!(err.to_string(), "Invalid manifest: missing name");
+    }
+
+    #[test]
+    fn BundleError___checksum_mismatch___displays_all_fields() {
+        let err = BundleError::ChecksumMismatch {
+            path: "lib/test.so".to_string(),
+            expected: "sha256:expected".to_string(),
+            actual: "sha256:actual".to_string(),
+        };
+
+        let msg = err.to_string();
+        assert!(msg.contains("lib/test.so"));
+        assert!(msg.contains("sha256:expected"));
+        assert!(msg.contains("sha256:actual"));
+    }
+
+    #[test]
+    fn BundleError___unsupported_platform___displays_platform() {
+        let err = BundleError::UnsupportedPlatform("linux-arm".to_string());
+
+        assert_eq!(err.to_string(), "Platform not supported: linux-arm");
+    }
+
+    #[test]
+    fn BundleError___missing_file___displays_path() {
+        let err = BundleError::MissingFile("manifest.json".to_string());
+
+        assert_eq!(err.to_string(), "Missing required file: manifest.json");
+    }
+
+    #[test]
+    fn BundleError___library_not_found___displays_path() {
+        let err = BundleError::LibraryNotFound("/path/to/lib.so".to_string());
+
+        assert_eq!(err.to_string(), "Library not found: /path/to/lib.so");
+    }
+
+    #[test]
+    fn BundleError___from_io_error___converts() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::PermissionDenied, "access denied");
+        let bundle_err: BundleError = io_err.into();
+
+        assert!(matches!(bundle_err, BundleError::Io(_)));
+    }
+}

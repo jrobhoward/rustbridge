@@ -23,6 +23,7 @@ use zip::ZipArchive;
 /// let library_path = loader.extract_library_for_current_platform("/tmp/plugins")?;
 /// # Ok::<(), rustbridge_bundle::BundleError>(())
 /// ```
+#[derive(Debug)]
 pub struct BundleLoader {
     archive: ZipArchive<File>,
     manifest: Manifest,
@@ -197,7 +198,8 @@ mod tests {
     #![allow(non_snake_case)]
 
     use super::*;
-    use crate::builder::BundleBuilder;
+    use crate::builder::{BundleBuilder, compute_sha256};
+    use std::io::Write;
     use tempfile::TempDir;
 
     fn create_test_bundle(temp_dir: &TempDir) -> PathBuf {
@@ -219,6 +221,30 @@ mod tests {
         bundle_path
     }
 
+    fn create_multi_platform_bundle(temp_dir: &TempDir) -> PathBuf {
+        let bundle_path = temp_dir.path().join("multi.rbp");
+
+        let linux_lib = temp_dir.path().join("libtest.so");
+        let macos_lib = temp_dir.path().join("libtest.dylib");
+        let windows_lib = temp_dir.path().join("test.dll");
+        fs::write(&linux_lib, b"linux library").unwrap();
+        fs::write(&macos_lib, b"macos library").unwrap();
+        fs::write(&windows_lib, b"windows library").unwrap();
+
+        let manifest = Manifest::new("multi-platform", "2.0.0");
+        BundleBuilder::new(manifest)
+            .add_library(Platform::LinuxX86_64, &linux_lib)
+            .unwrap()
+            .add_library(Platform::DarwinAarch64, &macos_lib)
+            .unwrap()
+            .add_library(Platform::WindowsX86_64, &windows_lib)
+            .unwrap()
+            .write(&bundle_path)
+            .unwrap();
+
+        bundle_path
+    }
+
     #[test]
     fn BundleLoader___open___reads_manifest() {
         let temp_dir = TempDir::new().unwrap();
@@ -228,6 +254,63 @@ mod tests {
 
         assert_eq!(loader.manifest().plugin.name, "test-plugin");
         assert_eq!(loader.manifest().plugin.version, "1.0.0");
+    }
+
+    #[test]
+    fn BundleLoader___open___nonexistent_file___returns_error() {
+        let result = BundleLoader::open("/nonexistent/bundle.rbp");
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn BundleLoader___open___not_a_zip___returns_error() {
+        let temp_dir = TempDir::new().unwrap();
+        let fake_bundle = temp_dir.path().join("fake.rbp");
+        fs::write(&fake_bundle, b"not a zip file").unwrap();
+
+        let result = BundleLoader::open(&fake_bundle);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn BundleLoader___open___missing_manifest___returns_error() {
+        let temp_dir = TempDir::new().unwrap();
+        let bundle_path = temp_dir.path().join("no-manifest.rbp");
+
+        // Create a ZIP without manifest.json
+        let file = File::create(&bundle_path).unwrap();
+        let mut zip = zip::ZipWriter::new(file);
+        let options = zip::write::SimpleFileOptions::default();
+        zip.start_file("some-file.txt", options).unwrap();
+        zip.write_all(b"content").unwrap();
+        zip.finish().unwrap();
+
+        let result = BundleLoader::open(&bundle_path);
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(matches!(err, BundleError::MissingFile(_)));
+        assert!(err.to_string().contains("manifest.json"));
+    }
+
+    #[test]
+    fn BundleLoader___open___invalid_manifest_json___returns_error() {
+        let temp_dir = TempDir::new().unwrap();
+        let bundle_path = temp_dir.path().join("bad-manifest.rbp");
+
+        // Create a ZIP with invalid JSON in manifest
+        let file = File::create(&bundle_path).unwrap();
+        let mut zip = zip::ZipWriter::new(file);
+        let options = zip::write::SimpleFileOptions::default();
+        zip.start_file("manifest.json", options).unwrap();
+        zip.write_all(b"{ invalid json }").unwrap();
+        zip.finish().unwrap();
+
+        let result = BundleLoader::open(&bundle_path);
+
+        assert!(result.is_err());
     }
 
     #[test]
@@ -266,6 +349,30 @@ mod tests {
     }
 
     #[test]
+    fn BundleLoader___read_file___missing_file___returns_error() {
+        let temp_dir = TempDir::new().unwrap();
+        let bundle_path = create_test_bundle(&temp_dir);
+
+        let mut loader = BundleLoader::open(&bundle_path).unwrap();
+        let result = loader.read_file("nonexistent.txt");
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(matches!(err, BundleError::MissingFile(_)));
+    }
+
+    #[test]
+    fn BundleLoader___read_file___returns_bytes() {
+        let temp_dir = TempDir::new().unwrap();
+        let bundle_path = create_test_bundle(&temp_dir);
+
+        let mut loader = BundleLoader::open(&bundle_path).unwrap();
+        let contents = loader.read_file("schema/messages.h").unwrap();
+
+        assert_eq!(contents, b"// header");
+    }
+
+    #[test]
     fn BundleLoader___extract_library___verifies_checksum() {
         let temp_dir = TempDir::new().unwrap();
         let bundle_path = create_test_bundle(&temp_dir);
@@ -279,5 +386,186 @@ mod tests {
         assert!(lib_path.exists());
         let contents = fs::read(&lib_path).unwrap();
         assert_eq!(contents, b"fake library contents");
+    }
+
+    #[test]
+    fn BundleLoader___extract_library___unsupported_platform___returns_error() {
+        let temp_dir = TempDir::new().unwrap();
+        let bundle_path = create_test_bundle(&temp_dir);
+        let extract_dir = temp_dir.path().join("extracted");
+
+        let mut loader = BundleLoader::open(&bundle_path).unwrap();
+        let result = loader.extract_library(Platform::WindowsX86_64, &extract_dir);
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(matches!(err, BundleError::UnsupportedPlatform(_)));
+    }
+
+    #[test]
+    fn BundleLoader___extract_library___creates_output_directory() {
+        let temp_dir = TempDir::new().unwrap();
+        let bundle_path = create_test_bundle(&temp_dir);
+        let extract_dir = temp_dir.path().join("deep").join("nested").join("dir");
+
+        let mut loader = BundleLoader::open(&bundle_path).unwrap();
+        let lib_path = loader
+            .extract_library(Platform::LinuxX86_64, &extract_dir)
+            .unwrap();
+
+        assert!(extract_dir.exists());
+        assert!(lib_path.exists());
+    }
+
+    #[test]
+    fn BundleLoader___multi_platform___extract_each_platform() {
+        let temp_dir = TempDir::new().unwrap();
+        let bundle_path = create_multi_platform_bundle(&temp_dir);
+
+        let mut loader = BundleLoader::open(&bundle_path).unwrap();
+
+        // Verify all three platforms are supported
+        assert!(loader.manifest().supports_platform(Platform::LinuxX86_64));
+        assert!(loader.manifest().supports_platform(Platform::DarwinAarch64));
+        assert!(loader.manifest().supports_platform(Platform::WindowsX86_64));
+
+        // Extract Linux
+        let linux_dir = temp_dir.path().join("linux");
+        let linux_lib = loader
+            .extract_library(Platform::LinuxX86_64, &linux_dir)
+            .unwrap();
+        assert_eq!(fs::read(&linux_lib).unwrap(), b"linux library");
+
+        // Extract macOS
+        let macos_dir = temp_dir.path().join("macos");
+        let macos_lib = loader
+            .extract_library(Platform::DarwinAarch64, &macos_dir)
+            .unwrap();
+        assert_eq!(fs::read(&macos_lib).unwrap(), b"macos library");
+
+        // Extract Windows
+        let windows_dir = temp_dir.path().join("windows");
+        let windows_lib = loader
+            .extract_library(Platform::WindowsX86_64, &windows_dir)
+            .unwrap();
+        assert_eq!(fs::read(&windows_lib).unwrap(), b"windows library");
+    }
+
+    #[test]
+    fn BundleLoader___supports_current_platform___returns_correct_value() {
+        let temp_dir = TempDir::new().unwrap();
+        let bundle_path = create_test_bundle(&temp_dir);
+
+        let loader = BundleLoader::open(&bundle_path).unwrap();
+
+        // This test will pass on Linux x86_64, fail on other platforms
+        // which is expected behavior
+        if Platform::current() == Some(Platform::LinuxX86_64) {
+            assert!(loader.supports_current_platform());
+        }
+    }
+
+    #[test]
+    fn BundleLoader___current_platform_info___returns_info_when_supported() {
+        let temp_dir = TempDir::new().unwrap();
+        let bundle_path = create_test_bundle(&temp_dir);
+
+        let loader = BundleLoader::open(&bundle_path).unwrap();
+
+        if Platform::current() == Some(Platform::LinuxX86_64) {
+            let info = loader.current_platform_info();
+            assert!(info.is_some());
+            assert!(info.unwrap().library.contains("libtest.so"));
+        }
+    }
+
+    #[test]
+    fn roundtrip___create_and_load___preserves_all_data() {
+        let temp_dir = TempDir::new().unwrap();
+        let bundle_path = temp_dir.path().join("roundtrip.rbp");
+
+        // Create library
+        let lib_path = temp_dir.path().join("libplugin.so");
+        let lib_contents = b"roundtrip test library";
+        fs::write(&lib_path, lib_contents).unwrap();
+
+        // Create bundle with metadata
+        let mut manifest = Manifest::new("roundtrip-plugin", "3.2.1");
+        manifest.plugin.description = Some("A test plugin for roundtrip".to_string());
+        manifest.plugin.authors = vec!["Author One".to_string(), "Author Two".to_string()];
+        manifest.plugin.license = Some("MIT".to_string());
+
+        BundleBuilder::new(manifest)
+            .add_library(Platform::LinuxX86_64, &lib_path)
+            .unwrap()
+            .add_bytes("docs/README.md", b"# Documentation".to_vec())
+            .write(&bundle_path)
+            .unwrap();
+
+        // Load and verify
+        let mut loader = BundleLoader::open(&bundle_path).unwrap();
+
+        assert_eq!(loader.manifest().plugin.name, "roundtrip-plugin");
+        assert_eq!(loader.manifest().plugin.version, "3.2.1");
+        assert_eq!(
+            loader.manifest().plugin.description,
+            Some("A test plugin for roundtrip".to_string())
+        );
+        assert_eq!(loader.manifest().plugin.authors.len(), 2);
+        assert_eq!(loader.manifest().plugin.license, Some("MIT".to_string()));
+
+        // Verify checksum in manifest matches actual content
+        let platform_info = loader
+            .manifest()
+            .get_platform(Platform::LinuxX86_64)
+            .unwrap();
+        let expected_checksum = format!("sha256:{}", compute_sha256(lib_contents));
+        assert_eq!(platform_info.checksum, expected_checksum);
+
+        // Verify library extraction
+        let extract_dir = temp_dir.path().join("extract");
+        let extracted = loader
+            .extract_library(Platform::LinuxX86_64, &extract_dir)
+            .unwrap();
+        assert_eq!(fs::read(&extracted).unwrap(), lib_contents);
+    }
+
+    #[test]
+    fn roundtrip___bundle_with_schemas___preserves_schema_info() {
+        let temp_dir = TempDir::new().unwrap();
+        let bundle_path = temp_dir.path().join("schema-bundle.rbp");
+
+        let lib_path = temp_dir.path().join("libtest.so");
+        let header_path = temp_dir.path().join("messages.h");
+        let json_path = temp_dir.path().join("schema.json");
+        fs::write(&lib_path, b"lib").unwrap();
+        fs::write(&header_path, b"#pragma once").unwrap();
+        fs::write(&json_path, b"{}").unwrap();
+
+        let manifest = Manifest::new("schema-plugin", "1.0.0");
+        BundleBuilder::new(manifest)
+            .add_library(Platform::LinuxX86_64, &lib_path)
+            .unwrap()
+            .add_schema_file(&header_path, "messages.h")
+            .unwrap()
+            .add_schema_file(&json_path, "schema.json")
+            .unwrap()
+            .write(&bundle_path)
+            .unwrap();
+
+        let mut loader = BundleLoader::open(&bundle_path).unwrap();
+
+        // Verify schemas are in manifest
+        assert_eq!(loader.manifest().schemas.len(), 2);
+        assert!(loader.manifest().schemas.contains_key("messages.h"));
+        assert!(loader.manifest().schemas.contains_key("schema.json"));
+
+        // Verify schema files can be read
+        assert!(loader.has_file("schema/messages.h"));
+        assert!(loader.has_file("schema/schema.json"));
+        assert_eq!(
+            loader.read_file_string("schema/messages.h").unwrap(),
+            "#pragma once"
+        );
     }
 }

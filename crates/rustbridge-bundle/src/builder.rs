@@ -26,6 +26,7 @@ use zip::write::SimpleFileOptions;
 /// builder.write("my-plugin-1.0.0.rbp")?;
 /// # Ok::<(), rustbridge_bundle::BundleError>(())
 /// ```
+#[derive(Debug)]
 pub struct BundleBuilder {
     manifest: Manifest,
     files: Vec<BundleFile>,
@@ -33,6 +34,7 @@ pub struct BundleBuilder {
 }
 
 /// A file to include in the bundle.
+#[derive(Debug)]
 struct BundleFile {
     /// Path within the bundle archive.
     archive_path: String,
@@ -303,6 +305,7 @@ mod tests {
     #![allow(non_snake_case)]
 
     use super::*;
+    use tempfile::TempDir;
 
     #[test]
     fn compute_sha256___returns_consistent_hash() {
@@ -312,6 +315,26 @@ mod tests {
 
         assert_eq!(hash1, hash2);
         assert_eq!(hash1.len(), 64); // SHA256 is 32 bytes = 64 hex chars
+    }
+
+    #[test]
+    fn compute_sha256___different_data___different_hash() {
+        let hash1 = compute_sha256(b"hello");
+        let hash2 = compute_sha256(b"world");
+
+        assert_ne!(hash1, hash2);
+    }
+
+    #[test]
+    fn compute_sha256___empty_data___returns_valid_hash() {
+        let hash = compute_sha256(b"");
+
+        assert_eq!(hash.len(), 64);
+        // Known SHA256 of empty string
+        assert_eq!(
+            hash,
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
     }
 
     #[test]
@@ -326,8 +349,17 @@ mod tests {
     #[test]
     fn verify_sha256___rejects_invalid_checksum() {
         let data = b"hello world";
+
         assert!(!verify_sha256(data, "invalid"));
         assert!(!verify_sha256(data, "sha256:invalid"));
+    }
+
+    #[test]
+    fn verify_sha256___case_sensitive___rejects_uppercase() {
+        let data = b"hello world";
+        let checksum = compute_sha256(data).to_uppercase();
+
+        assert!(!verify_sha256(data, &checksum));
     }
 
     #[test]
@@ -338,5 +370,176 @@ mod tests {
         assert_eq!(builder.files.len(), 1);
         assert_eq!(builder.files[0].archive_path, "test.txt");
         assert_eq!(builder.files[0].contents, b"hello");
+    }
+
+    #[test]
+    fn BundleBuilder___add_bytes___multiple_files() {
+        let manifest = Manifest::new("test", "1.0.0");
+        let builder = BundleBuilder::new(manifest)
+            .add_bytes("file1.txt", b"content1".to_vec())
+            .add_bytes("file2.txt", b"content2".to_vec())
+            .add_bytes("dir/file3.txt", b"content3".to_vec());
+
+        assert_eq!(builder.files.len(), 3);
+    }
+
+    #[test]
+    fn BundleBuilder___add_library___nonexistent_file___returns_error() {
+        let manifest = Manifest::new("test", "1.0.0");
+        let result = BundleBuilder::new(manifest)
+            .add_library(Platform::LinuxX86_64, "/nonexistent/path/libtest.so");
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(matches!(err, BundleError::LibraryNotFound(_)));
+        assert!(err.to_string().contains("/nonexistent/path/libtest.so"));
+    }
+
+    #[test]
+    fn BundleBuilder___add_library___valid_file___computes_checksum() {
+        let temp_dir = TempDir::new().unwrap();
+        let lib_path = temp_dir.path().join("libtest.so");
+        fs::write(&lib_path, b"fake library").unwrap();
+
+        let manifest = Manifest::new("test", "1.0.0");
+        let builder = BundleBuilder::new(manifest)
+            .add_library(Platform::LinuxX86_64, &lib_path)
+            .unwrap();
+
+        let platform_info = builder
+            .manifest
+            .get_platform(Platform::LinuxX86_64)
+            .unwrap();
+        assert!(platform_info.checksum.starts_with("sha256:"));
+        assert_eq!(platform_info.library, "lib/linux-x86_64/libtest.so");
+    }
+
+    #[test]
+    fn BundleBuilder___add_library___multiple_platforms() {
+        let temp_dir = TempDir::new().unwrap();
+
+        let linux_lib = temp_dir.path().join("libtest.so");
+        let macos_lib = temp_dir.path().join("libtest.dylib");
+        fs::write(&linux_lib, b"linux lib").unwrap();
+        fs::write(&macos_lib, b"macos lib").unwrap();
+
+        let manifest = Manifest::new("test", "1.0.0");
+        let builder = BundleBuilder::new(manifest)
+            .add_library(Platform::LinuxX86_64, &linux_lib)
+            .unwrap()
+            .add_library(Platform::DarwinAarch64, &macos_lib)
+            .unwrap();
+
+        assert!(builder.manifest.supports_platform(Platform::LinuxX86_64));
+        assert!(builder.manifest.supports_platform(Platform::DarwinAarch64));
+        assert!(!builder.manifest.supports_platform(Platform::WindowsX86_64));
+    }
+
+    #[test]
+    fn BundleBuilder___add_schema_file___nonexistent___returns_error() {
+        let manifest = Manifest::new("test", "1.0.0");
+        let result =
+            BundleBuilder::new(manifest).add_schema_file("/nonexistent/schema.h", "schema.h");
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn BundleBuilder___add_schema_file___detects_c_header_format() {
+        let temp_dir = TempDir::new().unwrap();
+        let schema_path = temp_dir.path().join("messages.h");
+        fs::write(&schema_path, b"#include <stdint.h>").unwrap();
+
+        let manifest = Manifest::new("test", "1.0.0");
+        let builder = BundleBuilder::new(manifest)
+            .add_schema_file(&schema_path, "messages.h")
+            .unwrap();
+
+        let schema_info = builder.manifest.schemas.get("messages.h").unwrap();
+        assert_eq!(schema_info.format, "c-header");
+    }
+
+    #[test]
+    fn BundleBuilder___add_schema_file___detects_json_schema_format() {
+        let temp_dir = TempDir::new().unwrap();
+        let schema_path = temp_dir.path().join("schema.json");
+        fs::write(&schema_path, b"{}").unwrap();
+
+        let manifest = Manifest::new("test", "1.0.0");
+        let builder = BundleBuilder::new(manifest)
+            .add_schema_file(&schema_path, "schema.json")
+            .unwrap();
+
+        let schema_info = builder.manifest.schemas.get("schema.json").unwrap();
+        assert_eq!(schema_info.format, "json-schema");
+    }
+
+    #[test]
+    fn BundleBuilder___add_schema_file___unknown_format() {
+        let temp_dir = TempDir::new().unwrap();
+        let schema_path = temp_dir.path().join("schema.xyz");
+        fs::write(&schema_path, b"content").unwrap();
+
+        let manifest = Manifest::new("test", "1.0.0");
+        let builder = BundleBuilder::new(manifest)
+            .add_schema_file(&schema_path, "schema.xyz")
+            .unwrap();
+
+        let schema_info = builder.manifest.schemas.get("schema.xyz").unwrap();
+        assert_eq!(schema_info.format, "unknown");
+    }
+
+    #[test]
+    fn BundleBuilder___write___invalid_manifest___returns_error() {
+        let temp_dir = TempDir::new().unwrap();
+        let output_path = temp_dir.path().join("test.rbp");
+
+        // Manifest without any platforms is invalid
+        let manifest = Manifest::new("test", "1.0.0");
+        let result = BundleBuilder::new(manifest).write(&output_path);
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(matches!(err, BundleError::InvalidManifest(_)));
+    }
+
+    #[test]
+    fn BundleBuilder___write___creates_valid_bundle() {
+        let temp_dir = TempDir::new().unwrap();
+        let lib_path = temp_dir.path().join("libtest.so");
+        let output_path = temp_dir.path().join("test.rbp");
+        fs::write(&lib_path, b"fake library").unwrap();
+
+        let manifest = Manifest::new("test", "1.0.0");
+        BundleBuilder::new(manifest)
+            .add_library(Platform::LinuxX86_64, &lib_path)
+            .unwrap()
+            .write(&output_path)
+            .unwrap();
+
+        assert!(output_path.exists());
+
+        // Verify it's a valid ZIP
+        let file = File::open(&output_path).unwrap();
+        let archive = zip::ZipArchive::new(file).unwrap();
+        assert!(archive.len() >= 2); // manifest + library
+    }
+
+    #[test]
+    fn BundleBuilder___manifest_mut___allows_modification() {
+        let manifest = Manifest::new("test", "1.0.0");
+        let mut builder = BundleBuilder::new(manifest);
+
+        builder.manifest_mut().plugin.description = Some("Modified".to_string());
+
+        assert_eq!(
+            builder.manifest().plugin.description,
+            Some("Modified".to_string())
+        );
+    }
+
+    #[test]
+    fn detect_schema_format___hpp_extension___returns_c_header() {
+        assert_eq!(detect_schema_format("types.hpp"), "c-header");
     }
 }

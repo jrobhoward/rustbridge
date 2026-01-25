@@ -329,12 +329,32 @@ mod tests {
     }
 
     #[test]
+    fn Manifest___add_platform___overwrites_existing() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/old.so", "old");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/new.so", "new");
+
+        let info = manifest.get_platform(Platform::LinuxX86_64).unwrap();
+        assert_eq!(info.library, "lib/new.so");
+        assert_eq!(info.checksum, "sha256:new");
+    }
+
+    #[test]
     fn Manifest___validate___rejects_empty_name() {
         let manifest = Manifest::new("", "1.0.0");
         let result = manifest.validate();
 
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("plugin.name"));
+    }
+
+    #[test]
+    fn Manifest___validate___rejects_empty_version() {
+        let manifest = Manifest::new("test", "");
+        let result = manifest.validate();
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("plugin.version"));
     }
 
     #[test]
@@ -352,6 +372,86 @@ mod tests {
     }
 
     #[test]
+    fn Manifest___validate___rejects_invalid_checksum_format() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        // Manually insert platform with wrong checksum format
+        manifest.platforms.insert(
+            "linux-x86_64".to_string(),
+            PlatformInfo {
+                library: "lib/test.so".to_string(),
+                checksum: "abc123".to_string(), // Missing "sha256:" prefix
+            },
+        );
+
+        let result = manifest.validate();
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("sha256:"));
+    }
+
+    #[test]
+    fn Manifest___validate___rejects_unknown_platform() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        // Manually insert invalid platform key
+        manifest.platforms.insert(
+            "invalid-platform".to_string(),
+            PlatformInfo {
+                library: "lib/test.so".to_string(),
+                checksum: "sha256:abc123".to_string(),
+            },
+        );
+
+        let result = manifest.validate();
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("unknown platform"));
+    }
+
+    #[test]
+    fn Manifest___validate___rejects_empty_library_path() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.platforms.insert(
+            "linux-x86_64".to_string(),
+            PlatformInfo {
+                library: "".to_string(),
+                checksum: "sha256:abc123".to_string(),
+            },
+        );
+
+        let result = manifest.validate();
+
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("library path is required")
+        );
+    }
+
+    #[test]
+    fn Manifest___validate___rejects_empty_checksum() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.platforms.insert(
+            "linux-x86_64".to_string(),
+            PlatformInfo {
+                library: "lib/test.so".to_string(),
+                checksum: "".to_string(),
+            },
+        );
+
+        let result = manifest.validate();
+
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("checksum is required")
+        );
+    }
+
+    #[test]
     fn Manifest___validate___accepts_valid_manifest() {
         let mut manifest = Manifest::new("test-plugin", "1.0.0");
         manifest.add_platform(
@@ -361,6 +461,21 @@ mod tests {
         );
 
         assert!(manifest.validate().is_ok());
+    }
+
+    #[test]
+    fn Manifest___validate___accepts_all_platforms() {
+        let mut manifest = Manifest::new("all-platforms", "1.0.0");
+        for platform in Platform::all() {
+            manifest.add_platform(
+                *platform,
+                &format!("lib/{}/libtest", platform.as_str()),
+                "hash",
+            );
+        }
+
+        assert!(manifest.validate().is_ok());
+        assert_eq!(manifest.supported_platforms().len(), 6);
     }
 
     #[test]
@@ -388,6 +503,105 @@ mod tests {
     }
 
     #[test]
+    fn Manifest___json_roundtrip___preserves_all_plugin_fields() {
+        let mut manifest = Manifest::new("full-plugin", "2.3.4");
+        manifest.plugin.description = Some("Full description".to_string());
+        manifest.plugin.authors = vec!["Author 1".to_string(), "Author 2".to_string()];
+        manifest.plugin.license = Some("Apache-2.0".to_string());
+        manifest.plugin.repository = Some("https://github.com/test/repo".to_string());
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+
+        let json = manifest.to_json().unwrap();
+        let parsed = Manifest::from_json(&json).unwrap();
+
+        assert_eq!(parsed.plugin.description, manifest.plugin.description);
+        assert_eq!(parsed.plugin.authors, manifest.plugin.authors);
+        assert_eq!(parsed.plugin.license, manifest.plugin.license);
+        assert_eq!(parsed.plugin.repository, manifest.plugin.repository);
+    }
+
+    #[test]
+    fn Manifest___json_roundtrip___preserves_api_info() {
+        let mut manifest = Manifest::new("api-plugin", "1.0.0");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+        manifest.api = Some(ApiInfo {
+            min_rustbridge_version: Some("0.2.0".to_string()),
+            transports: vec!["json".to_string(), "binary".to_string()],
+            messages: vec![MessageInfo {
+                type_tag: "user.create".to_string(),
+                description: Some("Create a user".to_string()),
+                request_schema: Some("#/schemas/CreateUserRequest".to_string()),
+                response_schema: Some("#/schemas/CreateUserResponse".to_string()),
+                message_id: Some(1),
+                cstruct_request: None,
+                cstruct_response: None,
+            }],
+        });
+
+        let json = manifest.to_json().unwrap();
+        let parsed = Manifest::from_json(&json).unwrap();
+
+        let api = parsed.api.unwrap();
+        assert_eq!(api.min_rustbridge_version, Some("0.2.0".to_string()));
+        assert_eq!(api.transports, vec!["json", "binary"]);
+        assert_eq!(api.messages.len(), 1);
+        assert_eq!(api.messages[0].type_tag, "user.create");
+        assert_eq!(api.messages[0].message_id, Some(1));
+    }
+
+    #[test]
+    fn Manifest___json_roundtrip___preserves_schemas() {
+        let mut manifest = Manifest::new("schema-plugin", "1.0.0");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+        manifest.add_schema(
+            "messages.h".to_string(),
+            "schema/messages.h".to_string(),
+            "c-header".to_string(),
+            "sha256:abc".to_string(),
+            Some("C header for binary transport".to_string()),
+        );
+
+        let json = manifest.to_json().unwrap();
+        let parsed = Manifest::from_json(&json).unwrap();
+
+        assert_eq!(parsed.schemas.len(), 1);
+        let schema = parsed.schemas.get("messages.h").unwrap();
+        assert_eq!(schema.path, "schema/messages.h");
+        assert_eq!(schema.format, "c-header");
+        assert_eq!(schema.checksum, "sha256:abc");
+        assert_eq!(
+            schema.description,
+            Some("C header for binary transport".to_string())
+        );
+    }
+
+    #[test]
+    fn Manifest___json_roundtrip___preserves_public_key() {
+        let mut manifest = Manifest::new("signed-plugin", "1.0.0");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+        manifest.set_public_key("RWSxxxxxxxxxxxxxxxx".to_string());
+
+        let json = manifest.to_json().unwrap();
+        let parsed = Manifest::from_json(&json).unwrap();
+
+        assert_eq!(parsed.public_key, Some("RWSxxxxxxxxxxxxxxxx".to_string()));
+    }
+
+    #[test]
+    fn Manifest___from_json___invalid_json___returns_error() {
+        let result = Manifest::from_json("{ invalid }");
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn Manifest___from_json___missing_required_fields___returns_error() {
+        let result = Manifest::from_json(r#"{"bundle_version": "1.0"}"#);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
     fn Manifest___supported_platforms___returns_all_platforms() {
         let mut manifest = Manifest::new("test", "1.0.0");
         manifest.add_platform(Platform::LinuxX86_64, "lib/a.so", "a");
@@ -397,5 +611,23 @@ mod tests {
         assert_eq!(platforms.len(), 2);
         assert!(platforms.contains(&Platform::LinuxX86_64));
         assert!(platforms.contains(&Platform::DarwinAarch64));
+    }
+
+    #[test]
+    fn Manifest___get_platform___returns_none_for_unsupported() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+
+        assert!(manifest.get_platform(Platform::LinuxX86_64).is_some());
+        assert!(manifest.get_platform(Platform::WindowsX86_64).is_none());
+    }
+
+    #[test]
+    fn ApiInfo___default___includes_json_transport() {
+        let api = ApiInfo::default();
+
+        assert_eq!(api.transports, vec!["json"]);
+        assert!(api.messages.is_empty());
+        assert!(api.min_rustbridge_version.is_none());
     }
 }
