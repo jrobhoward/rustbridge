@@ -9,9 +9,11 @@
 # - Integration tests (when available)
 #
 # Usage:
-#   ./scripts/pre-commit.sh           # Run all checks
-#   ./scripts/pre-commit.sh --fast    # Skip slower tests
-#   CI=true ./scripts/pre-commit.sh   # CI mode (no color, verbose)
+#   ./scripts/pre-commit.sh                # Run all checks
+#   ./scripts/pre-commit.sh --fast         # Skip slower tests (integration, clippy)
+#   ./scripts/pre-commit.sh --smart        # Only test what changed
+#   ./scripts/pre-commit.sh --smart --fast # Smart + skip slow tests
+#   CI=true ./scripts/pre-commit.sh        # CI mode (no color, verbose)
 
 set -e  # Exit on first error
 
@@ -34,6 +36,13 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 FAST_MODE=false
+SMART_MODE=false
+
+# What to test (set by smart detection or defaults)
+RUN_RUST_TESTS=true
+RUN_JAVA_TESTS=true
+RUN_RUST_FMT=true
+RUN_CARGO_DENY=true
 
 # Parse arguments
 for arg in "$@"; do
@@ -42,12 +51,23 @@ for arg in "$@"; do
             FAST_MODE=true
             shift
             ;;
+        --smart)
+            SMART_MODE=true
+            shift
+            ;;
         --help)
-            echo "Usage: $0 [--fast] [--help]"
+            echo "Usage: $0 [--fast] [--smart] [--help]"
             echo ""
             echo "Options:"
-            echo "  --fast    Skip slower integration tests"
+            echo "  --fast    Skip slower tests (integration tests, clippy)"
+            echo "  --smart   Only run tests for components that changed"
             echo "  --help    Show this help message"
+            echo ""
+            echo "Examples:"
+            echo "  $0                # Full validation"
+            echo "  $0 --fast         # Quick validation (skip integration/clippy)"
+            echo "  $0 --smart        # Test only what changed"
+            echo "  $0 --smart --fast # Fastest: test only what changed, skip slow tests"
             exit 0
             ;;
     esac
@@ -89,6 +109,80 @@ print_header "rustbridge Pre-Commit Validation"
 echo ""
 
 # ============================================================================
+# Smart Mode: Detect What Changed
+# ============================================================================
+if [ "$SMART_MODE" = true ]; then
+    print_header "Detecting Changes (Smart Mode)"
+
+    # Get changed files (staged + unstaged, compared to HEAD)
+    # Use --cached for only staged, or combine both
+    CHANGED_FILES=$(git diff --name-only HEAD 2>/dev/null || true)
+    STAGED_FILES=$(git diff --name-only --cached 2>/dev/null || true)
+    ALL_CHANGES=$(echo -e "$CHANGED_FILES\n$STAGED_FILES" | sort -u | grep -v '^$' || true)
+
+    if [ -z "$ALL_CHANGES" ]; then
+        print_info "No changes detected. Running full validation."
+        echo ""
+    else
+        # Categorize changes
+        RUST_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^(crates/|plugins/|Cargo\.(toml|lock)$|deny\.toml$|\.cargo/)' || true)
+        JAVA_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^rustbridge-java/' || true)
+        SCRIPT_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^scripts/' || true)
+        CONFIG_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^(\.github/|rust-toolchain|clippy\.toml$)' || true)
+        DOCS_ONLY=$(echo "$ALL_CHANGES" | grep -vE '\.(md|txt)$' | head -1 || true)
+
+        # Determine what to run
+        if [ -n "$SCRIPT_CHANGES" ] || [ -n "$CONFIG_CHANGES" ]; then
+            # Config/script changes: run everything
+            print_info "Config or script changes detected - running full validation"
+            RUN_RUST_TESTS=true
+            RUN_JAVA_TESTS=true
+        elif [ -z "$DOCS_ONLY" ]; then
+            # Only docs changed
+            print_info "Only documentation changed - skipping tests"
+            RUN_RUST_TESTS=false
+            RUN_JAVA_TESTS=false
+            RUN_CARGO_DENY=false
+        else
+            # Selective testing based on what changed
+            if [ -z "$RUST_CHANGES" ]; then
+                print_info "No Rust changes detected - skipping Rust tests"
+                RUN_RUST_TESTS=false
+                RUN_RUST_FMT=false
+                RUN_CARGO_DENY=false
+            else
+                print_info "Rust changes detected:"
+                echo "$RUST_CHANGES" | head -5 | sed 's/^/    /'
+                [ $(echo "$RUST_CHANGES" | wc -l) -gt 5 ] && echo "    ... and more"
+            fi
+
+            if [ -z "$JAVA_CHANGES" ]; then
+                print_info "No Java/Kotlin changes detected - skipping Java tests"
+                RUN_JAVA_TESTS=false
+            else
+                print_info "Java/Kotlin changes detected:"
+                echo "$JAVA_CHANGES" | head -5 | sed 's/^/    /'
+                [ $(echo "$JAVA_CHANGES" | wc -l) -gt 5 ] && echo "    ... and more"
+            fi
+
+            # Special case: Rust FFI changes should trigger Java tests
+            # because Java tests are integration tests that use the native lib
+            if [ "$RUN_RUST_TESTS" = true ] && [ "$RUN_JAVA_TESTS" = false ]; then
+                FFI_CHANGES=$(echo "$RUST_CHANGES" | grep -E '(ffi|plugin_|FfiBuffer)' || true)
+                if [ -n "$FFI_CHANGES" ]; then
+                    print_warning "FFI changes detected - enabling Java tests for integration coverage"
+                    RUN_JAVA_TESTS=true
+                fi
+            fi
+        fi
+
+        echo ""
+        print_info "Test plan: Rust=$RUN_RUST_TESTS, Java=$RUN_JAVA_TESTS, Fmt=$RUN_RUST_FMT, Deny=$RUN_CARGO_DENY"
+        echo ""
+    fi
+fi
+
+# ============================================================================
 # 1. Check Dependencies
 # ============================================================================
 print_header "Checking Dependencies"
@@ -99,24 +193,28 @@ if ! command_exists cargo; then
 fi
 print_success "cargo found"
 
-if ! command_exists cargo-deny; then
-    print_warning "cargo-deny not found. Installing..."
-    cargo install cargo-deny || {
-        print_error "Failed to install cargo-deny"
-        exit 1
-    }
+if [ "$RUN_CARGO_DENY" = true ]; then
+    if ! command_exists cargo-deny; then
+        print_warning "cargo-deny not found. Installing..."
+        cargo install cargo-deny || {
+            print_error "Failed to install cargo-deny"
+            exit 1
+        }
+    fi
+    print_success "cargo-deny found"
 fi
-print_success "cargo-deny found"
 
-if [ -d "rustbridge-java" ]; then
+if [ "$RUN_JAVA_TESTS" = true ] && [ -d "rustbridge-java" ]; then
     if ! command_exists java; then
         print_warning "java not found. Java tests will be skipped."
+        RUN_JAVA_TESTS=false
     else
         print_success "java found"
     fi
 
     if [ ! -f "rustbridge-java/gradlew" ]; then
         print_warning "Gradle wrapper not found. Java tests will be skipped."
+        RUN_JAVA_TESTS=false
     else
         print_success "gradle wrapper found"
     fi
@@ -127,54 +225,69 @@ echo ""
 # ============================================================================
 # 2. Code Formatting
 # ============================================================================
-print_header "Checking Code Formatting (cargo fmt)"
+if [ "$RUN_RUST_FMT" = true ]; then
+    print_header "Checking Code Formatting (cargo fmt)"
 
-if ! cargo fmt --all -- --check; then
-    print_error "Code formatting check failed!"
+    if ! cargo fmt --all -- --check; then
+        print_error "Code formatting check failed!"
+        echo ""
+        print_info "Run 'cargo fmt --all' to fix formatting issues."
+        exit 1
+    fi
+    print_success "All Rust code is properly formatted"
+
     echo ""
-    print_info "Run 'cargo fmt --all' to fix formatting issues."
-    exit 1
+else
+    print_info "Skipping Rust formatting check (no Rust changes)"
+    echo ""
 fi
-print_success "All Rust code is properly formatted"
-
-echo ""
 
 # ============================================================================
 # 3. Security and License Checks
 # ============================================================================
-print_header "Running Security and License Checks (cargo deny)"
+if [ "$RUN_CARGO_DENY" = true ]; then
+    print_header "Running Security and License Checks (cargo deny)"
 
-if [ ! -f "deny.toml" ]; then
-    print_warning "deny.toml not found. Skipping cargo deny checks."
-else
-    if ! cargo deny check; then
-        print_error "cargo deny checks failed!"
-        echo ""
-        print_info "Review the issues above and update dependencies or deny.toml as needed."
-        exit 1
+    if [ ! -f "deny.toml" ]; then
+        print_warning "deny.toml not found. Skipping cargo deny checks."
+    else
+        if ! cargo deny check; then
+            print_error "cargo deny checks failed!"
+            echo ""
+            print_info "Review the issues above and update dependencies or deny.toml as needed."
+            exit 1
+        fi
+        print_success "All cargo deny checks passed"
     fi
-    print_success "All cargo deny checks passed"
-fi
 
-echo ""
+    echo ""
+else
+    print_info "Skipping cargo deny checks (no Rust changes)"
+    echo ""
+fi
 
 # ============================================================================
 # 4. Rust Unit Tests
 # ============================================================================
-print_header "Running Rust Unit Tests"
+if [ "$RUN_RUST_TESTS" = true ]; then
+    print_header "Running Rust Unit Tests"
 
-if ! cargo test --workspace --lib; then
-    print_error "Rust unit tests failed!"
-    exit 1
+    if ! cargo test --workspace --lib; then
+        print_error "Rust unit tests failed!"
+        exit 1
+    fi
+    print_success "All Rust unit tests passed"
+
+    echo ""
+else
+    print_info "Skipping Rust unit tests (no Rust changes)"
+    echo ""
 fi
-print_success "All Rust unit tests passed"
-
-echo ""
 
 # ============================================================================
 # 5. Rust Integration Tests
 # ============================================================================
-if [ "$FAST_MODE" = false ]; then
+if [ "$RUN_RUST_TESTS" = true ] && [ "$FAST_MODE" = false ]; then
     print_header "Running Rust Integration Tests"
 
     # Check if there are any integration tests
@@ -190,6 +303,9 @@ if [ "$FAST_MODE" = false ]; then
     fi
 
     echo ""
+elif [ "$RUN_RUST_TESTS" = false ]; then
+    print_info "Skipping Rust integration tests (no Rust changes)"
+    echo ""
 else
     print_info "Skipping Rust integration tests (--fast mode)"
     echo ""
@@ -198,20 +314,25 @@ fi
 # ============================================================================
 # 6. Build Example Plugins
 # ============================================================================
-print_header "Building Example Plugins"
+if [ "$RUN_RUST_TESTS" = true ]; then
+    print_header "Building Example Plugins"
 
-if ! cargo build -p hello-plugin --release; then
-    print_error "Failed to build hello-plugin"
-    exit 1
+    if ! cargo build -p hello-plugin --release; then
+        print_error "Failed to build hello-plugin"
+        exit 1
+    fi
+    print_success "hello-plugin built successfully"
+
+    echo ""
+else
+    print_info "Skipping example plugin build (no Rust changes)"
+    echo ""
 fi
-print_success "hello-plugin built successfully"
-
-echo ""
 
 # ============================================================================
 # 7. Java/Kotlin Tests
 # ============================================================================
-if [ -d "rustbridge-java" ] && [ -f "rustbridge-java/gradlew" ] && command_exists java; then
+if [ "$RUN_JAVA_TESTS" = true ] && [ -d "rustbridge-java" ] && [ -f "rustbridge-java/gradlew" ] && command_exists java; then
     print_header "Running Java/Kotlin Tests"
 
     cd rustbridge-java
@@ -223,6 +344,9 @@ if [ -d "rustbridge-java" ] && [ -f "rustbridge-java/gradlew" ] && command_exist
     print_success "All Java/Kotlin tests passed"
 
     cd "$PROJECT_ROOT"
+    echo ""
+elif [ "$RUN_JAVA_TESTS" = false ]; then
+    print_info "Skipping Java/Kotlin tests (no Java changes)"
     echo ""
 else
     print_info "Skipping Java/Kotlin tests (not available)"
@@ -251,7 +375,7 @@ fi
 # ============================================================================
 # 9. Clippy (Optional but Recommended)
 # ============================================================================
-if [ "$FAST_MODE" = false ]; then
+if [ "$RUN_RUST_TESTS" = true ] && [ "$FAST_MODE" = false ]; then
     print_header "Running Clippy (Lints)"
 
     if ! cargo clippy --workspace --examples --tests -- -D warnings; then
@@ -263,6 +387,9 @@ if [ "$FAST_MODE" = false ]; then
     print_success "All clippy checks passed"
 
     echo ""
+elif [ "$RUN_RUST_TESTS" = false ]; then
+    print_info "Skipping clippy checks (no Rust changes)"
+    echo ""
 else
     print_info "Skipping clippy checks (--fast mode)"
     echo ""
@@ -273,7 +400,12 @@ fi
 # ============================================================================
 print_header "Pre-Commit Validation Complete"
 echo ""
-print_success "All checks passed! ✨"
+if [ "$SMART_MODE" = true ]; then
+    print_success "All relevant checks passed! ✨"
+    print_info "(Smart mode: only tested changed components)"
+else
+    print_success "All checks passed! ✨"
+fi
 echo ""
 print_info "Your code is ready to commit."
 echo ""
