@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.*;
 import java.nio.file.*;
 import java.security.InvalidKeyException;
@@ -71,6 +72,17 @@ public class BundleLoader implements AutoCloseable {
     }
 
     /**
+     * Convert bytes to hex string.
+     */
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
+    /**
      * Get the bundle manifest.
      */
     public BundleManifest getManifest() {
@@ -81,7 +93,7 @@ public class BundleLoader implements AutoCloseable {
      * Extract the library for the current platform to a temporary directory.
      *
      * @return path to the extracted library
-     * @throws IOException if extraction fails
+     * @throws IOException        if extraction fails
      * @throws SignatureException if signature verification fails (when enabled)
      */
     public Path extractLibrary() throws IOException, SignatureException {
@@ -94,7 +106,7 @@ public class BundleLoader implements AutoCloseable {
      *
      * @param outputDir directory to extract the library to
      * @return path to the extracted library
-     * @throws IOException if extraction fails
+     * @throws IOException        if extraction fails
      * @throws SignatureException if signature verification fails (when enabled)
      */
     public Path extractLibrary(Path outputDir) throws IOException, SignatureException {
@@ -105,10 +117,10 @@ public class BundleLoader implements AutoCloseable {
     /**
      * Extract the library for a specific platform.
      *
-     * @param platform platform string (e.g., "linux-x86_64")
+     * @param platform  platform string (e.g., "linux-x86_64")
      * @param outputDir directory to extract the library to
      * @return path to the extracted library
-     * @throws IOException if extraction fails
+     * @throws IOException        if extraction fails
      * @throws SignatureException if signature verification fails (when enabled)
      */
     public Path extractLibrary(String platform, Path outputDir)
@@ -129,7 +141,7 @@ public class BundleLoader implements AutoCloseable {
         // Verify checksum
         if (!verifyChecksum(libData, platformInfo.checksum)) {
             throw new IOException(
-                "Checksum verification failed for " + platformInfo.library
+                    "Checksum verification failed for " + platformInfo.library
             );
         }
 
@@ -179,14 +191,14 @@ public class BundleLoader implements AutoCloseable {
      * Extract a schema file from the bundle.
      *
      * @param schemaName name of the schema (e.g., "messages.h")
-     * @param outputDir directory to extract the schema to
+     * @param outputDir  directory to extract the schema to
      * @return path to the extracted schema file
      * @throws IOException if extraction fails
      */
     public Path extractSchema(String schemaName, Path outputDir) throws IOException {
         BundleManifest.SchemaInfo schemaInfo = manifest.schemas != null
-            ? manifest.schemas.get(schemaName)
-            : null;
+                ? manifest.schemas.get(schemaName)
+                : null;
 
         if (schemaInfo == null) {
             throw new IOException("Schema not found in bundle: " + schemaName);
@@ -203,7 +215,7 @@ public class BundleLoader implements AutoCloseable {
         // Verify checksum
         if (!verifyChecksum(schemaData, schemaInfo.checksum)) {
             throw new IOException(
-                "Checksum verification failed for schema " + schemaName
+                    "Checksum verification failed for schema " + schemaName
             );
         }
 
@@ -223,8 +235,8 @@ public class BundleLoader implements AutoCloseable {
      */
     public String readSchema(String schemaName) throws IOException {
         BundleManifest.SchemaInfo schemaInfo = manifest.schemas != null
-            ? manifest.schemas.get(schemaName)
-            : null;
+                ? manifest.schemas.get(schemaName)
+                : null;
 
         if (schemaInfo == null) {
             throw new IOException("Schema not found in bundle: " + schemaName);
@@ -241,7 +253,7 @@ public class BundleLoader implements AutoCloseable {
         // Verify checksum
         if (!verifyChecksum(schemaData, schemaInfo.checksum)) {
             throw new IOException(
-                "Checksum verification failed for schema " + schemaName
+                    "Checksum verification failed for schema " + schemaName
             );
         }
 
@@ -264,7 +276,7 @@ public class BundleLoader implements AutoCloseable {
 
         byte[] manifestData = readZipEntry(manifestEntry);
         ObjectMapper mapper = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         try {
             return mapper.readValue(manifestData, BundleManifest.class);
         } catch (Exception e) {
@@ -277,12 +289,12 @@ public class BundleLoader implements AutoCloseable {
      */
     private void verifyManifestSignature() throws IOException {
         String publicKey = publicKeyOverride != null ?
-            publicKeyOverride : manifest.publicKey;
+                publicKeyOverride : manifest.publicKey;
 
         if (publicKey == null) {
             throw new IOException(
-                "Signature verification enabled but no public key available. " +
-                "Bundle must include public_key in manifest, or provide via publicKey() builder method."
+                    "Signature verification enabled but no public key available. " +
+                            "Bundle must include public_key in manifest, or provide via publicKey() builder method."
             );
         }
 
@@ -294,7 +306,7 @@ public class BundleLoader implements AutoCloseable {
         ZipEntry sigEntry = zipFile.getEntry("manifest.json.minisig");
         if (sigEntry == null) {
             throw new IOException(
-                "Signature verification enabled but manifest.json.minisig not found in bundle"
+                    "Signature verification enabled but manifest.json.minisig not found in bundle"
             );
         }
         String signature = new String(readZipEntry(sigEntry));
@@ -316,7 +328,7 @@ public class BundleLoader implements AutoCloseable {
     private void verifyLibrarySignature(String libraryPath, byte[] libraryData)
             throws IOException, SignatureException {
         String publicKey = publicKeyOverride != null ?
-            publicKeyOverride : manifest.publicKey;
+                publicKeyOverride : manifest.publicKey;
 
         if (publicKey == null) {
             throw new IOException("No public key available for signature verification");
@@ -327,7 +339,7 @@ public class BundleLoader implements AutoCloseable {
         ZipEntry sigEntry = zipFile.getEntry(sigPath);
         if (sigEntry == null) {
             throw new IOException(
-                "Signature verification enabled but " + sigPath + " not found in bundle"
+                    "Signature verification enabled but " + sigPath + " not found in bundle"
             );
         }
         String signature = new String(readZipEntry(sigEntry));
@@ -369,8 +381,8 @@ public class BundleLoader implements AutoCloseable {
 
             // Handle both "sha256:xxx" and raw "xxx" formats
             String expected = expectedChecksum.startsWith("sha256:")
-                ? expectedChecksum.substring(7)
-                : expectedChecksum;
+                    ? expectedChecksum.substring(7)
+                    : expectedChecksum;
 
             return actualChecksum.equalsIgnoreCase(expected);
         } catch (NoSuchAlgorithmException e) {
@@ -406,17 +418,6 @@ public class BundleLoader implements AutoCloseable {
         }
 
         return osName + "-" + archName;
-    }
-
-    /**
-     * Convert bytes to hex string.
-     */
-    private static String bytesToHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) {
-            sb.append(String.format("%02x", b));
-        }
-        return sb.toString();
     }
 
     /**
@@ -501,54 +502,91 @@ public class BundleLoader implements AutoCloseable {
 
         public Map<String, SchemaInfo> schemas; // Schema files in the bundle
 
+        /**
+         * Plugin metadata information.
+         */
         public static class PluginInfo {
+            /** Plugin name */
             public String name;
+            /** Plugin version */
             public String version;
+            /** Plugin description */
             public String description;
+            /** Plugin authors */
             public List<String> authors;
+            /** Plugin license */
             public String license;
+            /** Plugin repository URL */
             public String repository;
         }
 
+        /**
+         * Platform-specific library information.
+         */
         public static class PlatformInfo {
+            /** Path to the library file within the bundle */
             public String library;
+            /** SHA256 checksum of the library */
             public String checksum;
         }
 
+        /**
+         * API information for the plugin.
+         */
         public static class ApiInfo {
+            /** Minimum required rustbridge version */
             @JsonProperty("min_rustbridge_version")
             public String minRustbridgeVersion;
 
+            /** Supported transport types (e.g., "json", "cstruct") */
             public List<String> transports;
+            /** Message type definitions */
             public List<MessageInfo> messages;
         }
 
+        /**
+         * Message type information.
+         */
         public static class MessageInfo {
+            /** Message type tag (e.g., "user.create") */
             @JsonProperty("type_tag")
             public String typeTag;
 
+            /** Message description */
             public String description;
 
+            /** JSON Schema reference for the request type */
             @JsonProperty("request_schema")
             public String requestSchema;
 
+            /** JSON Schema reference for the response type */
             @JsonProperty("response_schema")
             public String responseSchema;
 
+            /** Numeric message ID for binary transport */
             @JsonProperty("message_id")
             public Integer messageId;
 
+            /** C struct name for request (binary transport) */
             @JsonProperty("cstruct_request")
             public String cstructRequest;
 
+            /** C struct name for response (binary transport) */
             @JsonProperty("cstruct_response")
             public String cstructResponse;
         }
 
+        /**
+         * Schema file information.
+         */
         public static class SchemaInfo {
+            /** Path to the schema file within the bundle */
             public String path;
+            /** Schema format (e.g., "json-schema", "c-header") */
             public String format;
+            /** SHA256 checksum of the schema file */
             public String checksum;
+            /** Schema description */
             public String description;
         }
     }

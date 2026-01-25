@@ -77,7 +77,7 @@ fun main() {
 
     val coloredConfig = PluginConfig()
         .logLevel(LogLevel.DEBUG)
-        // TODO: Add log callback support once FFM upcalls are implemented
+    // TODO: Add log callback support once FFM upcalls are implemented
 
     FfmPluginLoader.load(pluginPath, coloredConfig).use { plugin ->
         plugin.callTyped<GreetResponse>("greet", GreetRequest("Alice"))
@@ -92,7 +92,7 @@ fun main() {
     val counter = CountingLogCallback()
     val countingConfig = PluginConfig()
         .logLevel(LogLevel.INFO)
-        // TODO: Add log callback support once FFM upcalls are implemented
+    // TODO: Add log callback support once FFM upcalls are implemented
 
     FfmPluginLoader.load(pluginPath, countingConfig).use { plugin ->
         // Perform multiple operations
@@ -111,7 +111,7 @@ fun main() {
     println("\nWith log level = INFO:")
     val infoConfig = PluginConfig()
         .logLevel(LogLevel.INFO)
-        // TODO: Add log callback support once FFM upcalls are implemented
+    // TODO: Add log callback support once FFM upcalls are implemented
 
     FfmPluginLoader.load(pluginPath, infoConfig).use { plugin ->
         plugin.callTyped<GreetResponse>("greet", GreetRequest("Info Level"))
@@ -120,7 +120,7 @@ fun main() {
     println("\nWith log level = DEBUG:")
     val debugConfig = PluginConfig()
         .logLevel(LogLevel.DEBUG)
-        // TODO: Add log callback support once FFM upcalls are implemented
+    // TODO: Add log callback support once FFM upcalls are implemented
 
     FfmPluginLoader.load(pluginPath, debugConfig).use { plugin ->
         plugin.callTyped<GreetResponse>("greet", GreetRequest("Debug Level"))

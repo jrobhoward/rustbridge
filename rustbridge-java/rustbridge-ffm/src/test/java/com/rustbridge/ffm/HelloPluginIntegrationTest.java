@@ -30,7 +30,7 @@ class HelloPluginIntegrationTest {
 
     // Unused - kept for potential future use in test assertions
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     private static Path PLUGIN_PATH;
     private Plugin plugin;
 
@@ -185,7 +185,7 @@ class HelloPluginIntegrationTest {
         assertEquals(5, exception.getErrorCode(),
                 "Expected SerializationError(5), got: " + exception.getErrorCode());
         assertTrue(exception.getMessage().contains("serialization") ||
-                   exception.getMessage().contains("key must be a string"),
+                        exception.getMessage().contains("key must be a string"),
                 "Expected JSON error message, got: " + exception.getMessage());
     }
 
@@ -200,7 +200,7 @@ class HelloPluginIntegrationTest {
 
         // Should get deserialization error for missing field
         assertTrue(exception.getMessage().contains("missing field") ||
-                   exception.getMessage().contains("message"),
+                        exception.getMessage().contains("message"),
                 "Expected missing field error, got: " + exception.getMessage());
     }
 

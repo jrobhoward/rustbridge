@@ -41,15 +41,6 @@ public enum LogLevel {
     }
 
     /**
-     * Get the numeric code for this level.
-     *
-     * @return the level code
-     */
-    public int getCode() {
-        return code;
-    }
-
-    /**
      * Get the level from a numeric code.
      *
      * @param code the level code
@@ -62,5 +53,14 @@ public enum LogLevel {
             }
         }
         return OFF;
+    }
+
+    /**
+     * Get the numeric code for this level.
+     *
+     * @return the level code
+     */
+    public int getCode() {
+        return code;
     }
 }

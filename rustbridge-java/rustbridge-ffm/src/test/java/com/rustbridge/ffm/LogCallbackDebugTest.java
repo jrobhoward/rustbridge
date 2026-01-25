@@ -104,7 +104,7 @@ class LogCallbackDebugTest {
 
             // Assert
             assertTrue(afterCall >= beforeCall,
-                "Expected some logs, got " + (afterCall - beforeCall) + " new logs");
+                    "Expected some logs, got " + (afterCall - beforeCall) + " new logs");
         } catch (InterruptedException e) {
             fail("Test interrupted");
         }

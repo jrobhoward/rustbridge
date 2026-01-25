@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class ResponseEnvelope {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     @JsonProperty("status")
     private String status;
@@ -27,6 +27,20 @@ public class ResponseEnvelope {
 
     @JsonProperty("request_id")
     private Long requestId;
+
+    /**
+     * Parse a response envelope from JSON.
+     *
+     * @param json the JSON string
+     * @return the parsed envelope
+     */
+    public static ResponseEnvelope fromJson(String json) {
+        try {
+            return OBJECT_MAPPER.readValue(json, ResponseEnvelope.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to parse response envelope", e);
+        }
+    }
 
     /**
      * Check if the response indicates success.
@@ -90,20 +104,6 @@ public class ResponseEnvelope {
      */
     public Long getRequestId() {
         return requestId;
-    }
-
-    /**
-     * Parse a response envelope from JSON.
-     *
-     * @param json the JSON string
-     * @return the parsed envelope
-     */
-    public static ResponseEnvelope fromJson(String json) {
-        try {
-            return OBJECT_MAPPER.readValue(json, ResponseEnvelope.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to parse response envelope", e);
-        }
     }
 
     /**

@@ -115,6 +115,7 @@ fun main() {
                 is PluginResult.Success -> {
                     println("   ✓ $messageType: ${result.value.message}")
                 }
+
                 is PluginResult.Error -> {
                     println("   ✗ $messageType: Error ${result.exception.errorCode} - ${result.exception.message}")
                 }

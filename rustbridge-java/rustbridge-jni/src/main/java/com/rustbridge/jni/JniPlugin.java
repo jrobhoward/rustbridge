@@ -13,11 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class JniPlugin implements Plugin {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-    private final long handle;
-    private final LogCallback logCallback;
-    private volatile boolean closed = false;
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     static {
         // Load the JNI bridge library
@@ -27,6 +23,10 @@ public class JniPlugin implements Plugin {
             throw new RuntimeException("Failed to load rustbridge_jni native library", e);
         }
     }
+
+    private final long handle;
+    private final LogCallback logCallback;
+    private volatile boolean closed = false;
 
     /**
      * Create a new JNI plugin wrapper.
@@ -38,6 +38,17 @@ public class JniPlugin implements Plugin {
         this.handle = handle;
         this.logCallback = logCallback;
     }
+
+    private static native int nativeGetState(long handle);
+
+    private static native String nativeCall(long handle, String typeTag, String request)
+            throws PluginException;
+
+    private static native void nativeSetLogLevel(long handle, int level);
+
+    private static native long nativeGetRejectedCount(long handle);
+
+    private static native boolean nativeShutdown(long handle);
 
     @Override
     public LifecycleState getState() {
@@ -54,6 +65,8 @@ public class JniPlugin implements Plugin {
         checkNotClosed();
         return nativeCall(handle, typeTag, request);
     }
+
+    // Native methods (implemented in Rust)
 
     @Override
     public <T, R> R call(String typeTag, T request, Class<R> responseType) throws PluginException {
@@ -97,17 +110,4 @@ public class JniPlugin implements Plugin {
             throw new IllegalStateException("Plugin has been closed");
         }
     }
-
-    // Native methods (implemented in Rust)
-
-    private static native int nativeGetState(long handle);
-
-    private static native String nativeCall(long handle, String typeTag, String request)
-            throws PluginException;
-
-    private static native void nativeSetLogLevel(long handle, int level);
-
-    private static native long nativeGetRejectedCount(long handle);
-
-    private static native boolean nativeShutdown(long handle);
 }

@@ -30,6 +30,10 @@ Use `cargo msrv verify` to check MSRV compatibility when adding new dependencies
 
 ## Documentation
 
+- [docs/GETTING_STARTED.md](./docs/GETTING_STARTED.md) - Complete tutorial for creating your first plugin
+- [docs/ERROR_HANDLING.md](./docs/ERROR_HANDLING.md) - Error handling best practices and patterns
+- [docs/DEBUGGING.md](./docs/DEBUGGING.md) - Debugging techniques for Rust, Java, and FFI
+- [docs/PLUGIN_LIFECYCLE.md](./docs/PLUGIN_LIFECYCLE.md) - Plugin lifecycle, reload patterns, and resource cleanup
 - [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) - System architecture and design decisions
 - [docs/SKILLS.md](./docs/SKILLS.md) - Development best practices and coding conventions
 - [docs/TESTING.md](./docs/TESTING.md) - Rust testing conventions and guidelines
@@ -119,9 +123,23 @@ rustbridge generate json-schema -i src/messages.rs -o schema.json
 rustbridge generate java -i src/messages.rs -o src/main/java -p com.example.messages
 rustbridge generate-header --output include/messages.h
 
-# Bundle operations
+# Bundle operations (recommended for distribution)
+# Create bundle without signing (development)
 rustbridge bundle create --name my-plugin --version 1.0.0 \
   --lib linux-x86_64:target/release/libmyplugin.so
+
+# Create multi-platform bundle
+rustbridge bundle create --name my-plugin --version 1.0.0 \
+  --lib linux-x86_64:target/release/libmyplugin.so \
+  --lib darwin-aarch64:target/release/libmyplugin.dylib \
+  --lib windows-x86_64:target/release/myplugin.dll
+
+# Create bundle with code signing (production)
+rustbridge bundle create --name my-plugin --version 1.0.0 \
+  --lib linux-x86_64:target/release/libmyplugin.so \
+  --sign-key ~/.minisign/my-plugin.key
+
+# Inspect and extract bundles
 rustbridge bundle list my-plugin-1.0.0.rbp
 rustbridge bundle extract my-plugin-1.0.0.rbp --output ./lib
 ```

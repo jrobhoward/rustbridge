@@ -57,6 +57,8 @@ rustbridge/
 
 ## Quick Start
 
+> 📖 **New to rustbridge?** See the [complete Getting Started guide](./docs/GETTING_STARTED.md) for a step-by-step tutorial.
+
 ### Creating a Plugin (Rust)
 
 ```rust

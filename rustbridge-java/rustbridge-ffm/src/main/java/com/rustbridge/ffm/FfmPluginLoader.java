@@ -243,11 +243,11 @@ public class FfmPluginLoader {
      * <p>
      * This method is called from native code via the upcall stub.
      *
-     * @param callback    the Java log callback
-     * @param level       the log level (0=Trace, 1=Debug, 2=Info, 3=Warn, 4=Error)
-     * @param targetPtr   pointer to null-terminated target string
-     * @param messagePtr  pointer to message bytes
-     * @param messageLen  length of the message
+     * @param callback   the Java log callback
+     * @param level      the log level (0=Trace, 1=Debug, 2=Info, 3=Warn, 4=Error)
+     * @param targetPtr  pointer to null-terminated target string
+     * @param messagePtr pointer to message bytes
+     * @param messageLen length of the message
      */
     private static void logCallbackWrapper(
             LogCallback callback,

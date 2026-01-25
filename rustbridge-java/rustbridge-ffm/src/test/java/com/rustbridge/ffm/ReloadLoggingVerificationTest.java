@@ -115,7 +115,7 @@ class ReloadLoggingVerificationTest {
 
         // CRITICAL ASSERTION: Second load should capture logs
         assertTrue(secondLoadCount > 0,
-                  "CRITICAL: Logging should work after reload (got " + secondLoadCount + " logs)");
+                "CRITICAL: Logging should work after reload (got " + secondLoadCount + " logs)");
 
         System.out.println("\n✓ SUCCESS: Logging works after reload!");
     }

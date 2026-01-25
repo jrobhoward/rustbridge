@@ -72,12 +72,12 @@ class PluginReloadTest {
         try {
             Plugin plugin2 = FfmPluginLoader.load(PLUGIN_PATH.toString());
             assertEquals(LifecycleState.ACTIVE, plugin2.getState(),
-                        "Reloaded plugin should be ACTIVE");
+                    "Reloaded plugin should be ACTIVE");
 
             // Use it
             String response2 = plugin2.call("echo", "{\"message\": \"second load\"}");
             assertTrue(response2.contains("second load"),
-                      "Reloaded plugin should work correctly");
+                    "Reloaded plugin should work correctly");
 
             plugin2.close();
 
@@ -246,11 +246,11 @@ class PluginReloadTest {
 
             Plugin plugin = FfmPluginLoader.load(PLUGIN_PATH.toString());
             assertEquals(LifecycleState.ACTIVE, plugin.getState(),
-                        "Plugin should be active on load cycle " + (i + 1));
+                    "Plugin should be active on load cycle " + (i + 1));
 
             String response = plugin.call("echo", "{\"message\": \"cycle " + (i + 1) + "\"}");
             assertTrue(response.contains("cycle " + (i + 1)),
-                      "Plugin should work on cycle " + (i + 1));
+                    "Plugin should work on cycle " + (i + 1));
 
             plugin.close();
             Thread.sleep(500);

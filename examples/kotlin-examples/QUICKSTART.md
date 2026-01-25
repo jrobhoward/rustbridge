@@ -56,6 +56,7 @@ cd ../examples/kotlin-examples
 ## Expected Output
 
 ### Basic Example
+
 ```
 === rustbridge Kotlin Basic Example ===
 
@@ -88,6 +89,7 @@ Loading plugin from: /path/to/libhello_plugin.so
 ### "Could not find libhello_plugin.so"
 
 Make sure you built the plugin:
+
 ```bash
 cd ../hello-plugin
 cargo build --release
@@ -96,6 +98,7 @@ cargo build --release
 ### "Could not find rustbridge-core.jar"
 
 Build the Java libraries:
+
 ```bash
 cd ../../rustbridge-java
 ./gradlew build
@@ -104,6 +107,7 @@ cd ../../rustbridge-java
 ### "Unsupported class file major version"
 
 You need Java 21+:
+
 ```bash
 # Install Java 21 (Ubuntu/Debian)
 sudo apt install openjdk-21-jdk
@@ -118,6 +122,7 @@ export JAVA_HOME=/path/to/java-21
 ### UnsatisfiedLinkError on macOS
 
 If you get library loading errors on macOS:
+
 ```bash
 # Clear quarantine attribute
 xattr -d com.apple.quarantine ../hello-plugin/target/release/libhello_plugin.dylib

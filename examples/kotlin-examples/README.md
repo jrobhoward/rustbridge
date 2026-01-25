@@ -51,11 +51,11 @@ Then run the examples:
 
 ## Examples
 
-| File | Description |
-|------|-------------|
-| `BasicExample.kt` | Simple usage with `use` blocks, data classes |
-| `LoggingExample.kt` | Custom log callback integration |
-| `ErrorHandlingExample.kt` | Handling errors gracefully |
+| File                      | Description                                  |
+|---------------------------|----------------------------------------------|
+| `BasicExample.kt`         | Simple usage with `use` blocks, data classes |
+| `LoggingExample.kt`       | Custom log callback integration              |
+| `ErrorHandlingExample.kt` | Handling errors gracefully                   |
 
 ## Kotlin Features Demonstrated
 

@@ -41,7 +41,7 @@ import java.nio.charset.StandardCharsets;
  */
 public class FfmPlugin implements Plugin {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private final Arena pluginArena;
     private final MemorySegment handle;
@@ -135,9 +135,9 @@ public class FfmPlugin implements Plugin {
      * This method bypasses JSON serialization for high-performance scenarios.
      * The request and response are fixed-size C structs.
      *
-     * @param messageId     the binary message ID (registered with register_binary_handler)
-     * @param request       the request struct
-     * @param responseSize  expected response size in bytes
+     * @param messageId    the binary message ID (registered with register_binary_handler)
+     * @param request      the request struct
+     * @param responseSize expected response size in bytes
      * @return a memory segment containing the response data
      * @throws PluginException if the call fails
      */

@@ -48,34 +48,6 @@ public class MinisignVerifier {
     }
 
     /**
-     * Verify a minisign signature against data.
-     *
-     * @param data the data that was signed
-     * @param signatureString the minisign signature (multi-line format)
-     * @return true if the signature is valid, false otherwise
-     * @throws SignatureException if signature verification fails
-     */
-    public boolean verify(byte[] data, String signatureString) throws SignatureException {
-        try {
-            // Parse the signature
-            ParsedSignature sig = parseSignature(signatureString);
-
-            // Verify key ID matches
-            if (!Arrays.equals(this.keyId, sig.keyId)) {
-                return false;
-            }
-
-            // Verify the signature using Ed25519
-            Signature verifier = new EdDSAEngine(MessageDigest.getInstance("SHA-512"));
-            verifier.initVerify(publicKey);
-            verifier.update(data);
-            return verifier.verify(sig.signature);
-        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-            throw new SignatureException("Ed25519 verification failed", e);
-        }
-    }
-
-    /**
      * Parse a minisign public key from base64 format.
      *
      * <p>Format: 2 bytes algorithm ID + 32 bytes public key + 8 bytes key ID
@@ -90,9 +62,9 @@ public class MinisignVerifier {
 
             if (decoded.length != ALGORITHM_ID_BYTES + ED25519_PUBLIC_KEY_BYTES + KEY_ID_BYTES) {
                 throw new InvalidKeyException(
-                    "Invalid public key length: expected " +
-                    (ALGORITHM_ID_BYTES + ED25519_PUBLIC_KEY_BYTES + KEY_ID_BYTES) +
-                    ", got " + decoded.length
+                        "Invalid public key length: expected " +
+                                (ALGORITHM_ID_BYTES + ED25519_PUBLIC_KEY_BYTES + KEY_ID_BYTES) +
+                                ", got " + decoded.length
                 );
             }
 
@@ -100,16 +72,16 @@ public class MinisignVerifier {
             byte[] algorithmId = Arrays.copyOfRange(decoded, 0, ALGORITHM_ID_BYTES);
             if (!Arrays.equals(algorithmId, ED25519_ALGORITHM_ID)) {
                 throw new InvalidKeyException(
-                    "Invalid algorithm ID: expected Ed25519, got " +
-                    bytesToHex(algorithmId)
+                        "Invalid algorithm ID: expected Ed25519, got " +
+                                bytesToHex(algorithmId)
                 );
             }
 
             // Extract the 32-byte Ed25519 public key
             byte[] keyBytes = Arrays.copyOfRange(
-                decoded,
-                ALGORITHM_ID_BYTES,
-                ALGORITHM_ID_BYTES + ED25519_PUBLIC_KEY_BYTES
+                    decoded,
+                    ALGORITHM_ID_BYTES,
+                    ALGORITHM_ID_BYTES + ED25519_PUBLIC_KEY_BYTES
             );
 
             // Create EdDSA public key using i2p library
@@ -134,9 +106,9 @@ public class MinisignVerifier {
             throw new InvalidKeyException("Invalid public key length");
         }
         return Arrays.copyOfRange(
-            decoded,
-            ALGORITHM_ID_BYTES + ED25519_PUBLIC_KEY_BYTES,
-            decoded.length
+                decoded,
+                ALGORITHM_ID_BYTES + ED25519_PUBLIC_KEY_BYTES,
+                decoded.length
         );
     }
 
@@ -172,9 +144,9 @@ public class MinisignVerifier {
 
             if (decoded.length != ALGORITHM_ID_BYTES + KEY_ID_BYTES + ED25519_SIGNATURE_BYTES) {
                 throw new SignatureException(
-                    "Invalid signature length: expected " +
-                    (ALGORITHM_ID_BYTES + KEY_ID_BYTES + ED25519_SIGNATURE_BYTES) +
-                    ", got " + decoded.length
+                        "Invalid signature length: expected " +
+                                (ALGORITHM_ID_BYTES + KEY_ID_BYTES + ED25519_SIGNATURE_BYTES) +
+                                ", got " + decoded.length
                 );
             }
 
@@ -182,28 +154,67 @@ public class MinisignVerifier {
             byte[] algorithmId = Arrays.copyOfRange(decoded, 0, ALGORITHM_ID_BYTES);
             if (!Arrays.equals(algorithmId, ED25519_ALGORITHM_ID)) {
                 throw new SignatureException(
-                    "Invalid algorithm ID in signature: expected Ed25519, got " +
-                    bytesToHex(algorithmId)
+                        "Invalid algorithm ID in signature: expected Ed25519, got " +
+                                bytesToHex(algorithmId)
                 );
             }
 
             // Extract key ID
             byte[] keyId = Arrays.copyOfRange(
-                decoded,
-                ALGORITHM_ID_BYTES,
-                ALGORITHM_ID_BYTES + KEY_ID_BYTES
+                    decoded,
+                    ALGORITHM_ID_BYTES,
+                    ALGORITHM_ID_BYTES + KEY_ID_BYTES
             );
 
             // Extract signature
             byte[] signature = Arrays.copyOfRange(
-                decoded,
-                ALGORITHM_ID_BYTES + KEY_ID_BYTES,
-                decoded.length
+                    decoded,
+                    ALGORITHM_ID_BYTES + KEY_ID_BYTES,
+                    decoded.length
             );
 
             return new ParsedSignature(keyId, signature);
         } catch (IllegalArgumentException e) {
             throw new SignatureException("Invalid base64 encoding in signature", e);
+        }
+    }
+
+    /**
+     * Convert bytes to hex string for debugging.
+     */
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Verify a minisign signature against data.
+     *
+     * @param data            the data that was signed
+     * @param signatureString the minisign signature (multi-line format)
+     * @return true if the signature is valid, false otherwise
+     * @throws SignatureException if signature verification fails
+     */
+    public boolean verify(byte[] data, String signatureString) throws SignatureException {
+        try {
+            // Parse the signature
+            ParsedSignature sig = parseSignature(signatureString);
+
+            // Verify key ID matches
+            if (!Arrays.equals(this.keyId, sig.keyId)) {
+                return false;
+            }
+
+            // Verify the signature using Ed25519
+            Signature verifier = new EdDSAEngine(MessageDigest.getInstance("SHA-512"));
+            verifier.initVerify(publicKey);
+            verifier.update(data);
+            return verifier.verify(sig.signature);
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            throw new SignatureException("Ed25519 verification failed", e);
         }
     }
 
@@ -218,16 +229,5 @@ public class MinisignVerifier {
             this.keyId = keyId;
             this.signature = signature;
         }
-    }
-
-    /**
-     * Convert bytes to hex string for debugging.
-     */
-    private static String bytesToHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) {
-            sb.append(String.format("%02x", b));
-        }
-        return sb.toString();
     }
 }

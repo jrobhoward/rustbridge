@@ -49,15 +49,6 @@ public enum LifecycleState {
     }
 
     /**
-     * Get the numeric code for this state.
-     *
-     * @return the state code
-     */
-    public int getCode() {
-        return code;
-    }
-
-    /**
      * Get the state from a numeric code.
      *
      * @param code the state code
@@ -71,6 +62,15 @@ public enum LifecycleState {
             }
         }
         throw new IllegalArgumentException("Invalid state code: " + code);
+    }
+
+    /**
+     * Get the numeric code for this state.
+     *
+     * @return the state code
+     */
+    public int getCode() {
+        return code;
     }
 
     /**

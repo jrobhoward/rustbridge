@@ -133,10 +133,10 @@ class MultiplePluginTest {
             // OR each callback to only see its own logs (isolated state)
             // Let's check which one is true
             if (callback1GotPlugin1Logs && callback1GotPlugin2Logs &&
-                callback2GotPlugin1Logs && callback2GotPlugin2Logs) {
+                    callback2GotPlugin1Logs && callback2GotPlugin2Logs) {
                 System.out.println("\nResult: Log callbacks are SHARED between plugins");
             } else if (callback1GotPlugin1Logs && !callback1GotPlugin2Logs &&
-                      !callback2GotPlugin1Logs && callback2GotPlugin2Logs) {
+                    !callback2GotPlugin1Logs && callback2GotPlugin2Logs) {
                 System.out.println("\nResult: Log callbacks are ISOLATED per plugin");
             } else {
                 System.out.println("\nResult: INCONSISTENT - unexpected behavior");
@@ -227,9 +227,9 @@ class MultiplePluginTest {
 
             // Plugin2 should still be ACTIVE and functional
             assertEquals(LifecycleState.ACTIVE, plugin2.getState(),
-                        "Plugin2 should still be active");
+                    "Plugin2 should still be active");
             assertDoesNotThrow(() -> plugin2.call("echo", "{\"message\": \"test3\"}"),
-                              "Plugin2 should still work after plugin1 shutdown");
+                    "Plugin2 should still work after plugin1 shutdown");
 
         } finally {
             // Clean up

@@ -1,6 +1,7 @@
 # Java vs Kotlin Comparison
 
-This document shows how Kotlin makes the rustbridge API more idiomatic and concise while using the same underlying Java library.
+This document shows how Kotlin makes the rustbridge API more idiomatic and concise while using the same underlying Java
+library.
 
 ## Basic Usage
 
@@ -234,22 +235,23 @@ val results = messages
 
 ## Key Kotlin Advantages
 
-| Feature | Java | Kotlin | Benefit |
-|---------|------|--------|---------|
-| **Data classes** | ~20 lines | 1 line | Concise, auto-generates equals/hashCode/toString |
-| **Resource management** | try-finally | `use` block | Automatic cleanup, no boilerplate |
-| **Null safety** | `@Nullable` annotations | Built-in `?` | Compile-time null checking |
-| **Type inference** | Explicit types | `val`/`var` | Less verbose |
-| **Extension functions** | Utility classes | Extensions | Cleaner API |
-| **String templates** | String concatenation | `"${var}"` | Readable string formatting |
-| **Collections** | Verbose streams | Built-in operators | Functional, concise |
-| **When expressions** | switch statements | `when` | Exhaustive, returns value |
-| **Sealed classes** | Enums/inheritance | `sealed` | Type-safe alternatives |
-| **Coroutines** | CompletableFuture | `suspend fun` | Natural async/await |
+| Feature                 | Java                    | Kotlin             | Benefit                                          |
+|-------------------------|-------------------------|--------------------|--------------------------------------------------|
+| **Data classes**        | ~20 lines               | 1 line             | Concise, auto-generates equals/hashCode/toString |
+| **Resource management** | try-finally             | `use` block        | Automatic cleanup, no boilerplate                |
+| **Null safety**         | `@Nullable` annotations | Built-in `?`       | Compile-time null checking                       |
+| **Type inference**      | Explicit types          | `val`/`var`        | Less verbose                                     |
+| **Extension functions** | Utility classes         | Extensions         | Cleaner API                                      |
+| **String templates**    | String concatenation    | `"${var}"`         | Readable string formatting                       |
+| **Collections**         | Verbose streams         | Built-in operators | Functional, concise                              |
+| **When expressions**    | switch statements       | `when`             | Exhaustive, returns value                        |
+| **Sealed classes**      | Enums/inheritance       | `sealed`           | Type-safe alternatives                           |
+| **Coroutines**          | CompletableFuture       | `suspend fun`      | Natural async/await                              |
 
 ## Summary
 
 Kotlin provides:
+
 - **Less boilerplate**: Data classes, type inference, smart casts
 - **Better safety**: Null safety, when expressions, sealed classes
 - **More expressiveness**: Extension functions, operator overloading, DSLs

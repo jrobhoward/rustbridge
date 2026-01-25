@@ -13,15 +13,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test callback safety with multiple plugins.
- *
+ * <p>
  * IMPORTANT: Callbacks are cleared when ANY plugin shuts down for safety.
  * This prevents use-after-free crashes when the callback's Arena is closed.
- *
+ * <p>
  * The callback function pointer is tied to the Arena that created it.
  * When that Arena is closed (on plugin shutdown), the pointer becomes invalid.
  * Since we can't track which plugin "owns" the current callback, we clear it
  * on any plugin shutdown to prevent crashes.
- *
+ * <p>
  * This means:
  * - Callbacks work while at least one plugin with a callback is active
  * - When any plugin shuts down, the callback is cleared (safety feature)

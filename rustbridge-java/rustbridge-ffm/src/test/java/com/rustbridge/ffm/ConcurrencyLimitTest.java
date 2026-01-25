@@ -108,7 +108,7 @@ class ConcurrencyLimitTest {
             int total = successCount.get() + errorCount.get();
             assertEquals(15, total, "Total requests should be 15");
             assertTrue(successCount.get() >= 2 && successCount.get() <= 6,
-                "Expected 2-6 successful requests, got " + successCount.get());
+                    "Expected 2-6 successful requests, got " + successCount.get());
             assertTrue(errorCount.get() >= 9, "Expected at least 9 rejected requests, got " + errorCount.get());
 
             // Check rejected count
