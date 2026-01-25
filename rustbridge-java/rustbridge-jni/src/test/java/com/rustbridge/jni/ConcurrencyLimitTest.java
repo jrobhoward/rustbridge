@@ -29,7 +29,6 @@ class ConcurrencyLimitTest {
 
     @Test
     @DisplayName("Concurrency limit exceeded returns error")
-    @Disabled("JNI: Concurrency limiting needs investigation - semaphore state may not be shared correctly across JNI calls")
     void concurrency_limit___exceeded___returns_error() throws Exception {
         PluginConfig config = PluginConfig.defaults()
                 .maxConcurrentOps(2);
@@ -147,25 +146,26 @@ class ConcurrencyLimitTest {
 
     @Test
     @DisplayName("Rejected request count tracks rejected requests")
-    @Disabled("JNI: Concurrency limiting needs investigation - semaphore state may not be shared correctly across JNI calls")
     void rejected_request_count___tracks_rejected_requests() throws Exception {
         PluginConfig config = PluginConfig.defaults()
                 .maxConcurrentOps(2);
 
         try (Plugin plugin = JniPluginLoader.load(PLUGIN_PATH.toString(), config)) {
-            ExecutorService executor = Executors.newFixedThreadPool(20);
+            ExecutorService executor = Executors.newFixedThreadPool(15);
 
+            // Use test.sleep to ensure requests overlap and hit the limit
             CountDownLatch startLatch = new CountDownLatch(1);
             List<Future<String>> futures = new ArrayList<>();
 
-            for (int i = 0; i < 20; i++) {
+            for (int i = 0; i < 15; i++) {
                 final int id = i;
                 Future<String> future = executor.submit(() -> {
                     try {
                         startLatch.await();
-                        return plugin.call("greet", "{\"name\": \"User" + id + "\"}");
+                        // Use sleep handler to ensure concurrent execution
+                        return plugin.call("test.sleep", "{\"duration_ms\": 200}");
                     } catch (PluginException e) {
-                        return null;
+                        return null; // Expected for rejected requests
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         return null;
@@ -174,13 +174,15 @@ class ConcurrencyLimitTest {
                 futures.add(future);
             }
 
+            // Release all threads at once
             startLatch.countDown();
 
+            // Wait for all to complete
             for (Future<String> future : futures) {
                 try {
-                    future.get(5, TimeUnit.SECONDS);
+                    future.get(10, TimeUnit.SECONDS);
                 } catch (Exception e) {
-                    // Ignore
+                    // Ignore - some will timeout or fail
                 }
             }
 
@@ -188,7 +190,7 @@ class ConcurrencyLimitTest {
             executor.awaitTermination(5, TimeUnit.SECONDS);
 
             long rejectedCount = plugin.getRejectedRequestCount();
-            assertTrue(rejectedCount > 0, "Some requests should have been rejected with limit of 2 and 20 concurrent requests");
+            assertTrue(rejectedCount > 0, "Some requests should have been rejected with limit of 2 and 15 concurrent requests");
 
             System.out.println("Rejected count: " + rejectedCount);
         }

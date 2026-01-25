@@ -16,8 +16,16 @@
 //! This library implements native methods for:
 //! - `com.rustbridge.jni.JniPluginLoader` - Plugin loading
 //! - `com.rustbridge.jni.JniPlugin` - Plugin operations
+//!
+//! # Important Note
+//!
+//! This crate does NOT link against rustbridge-ffi directly. Instead, it defines
+//! minimal FFI types locally and loads all symbols dynamically from the plugin.
+//! This avoids symbol resolution conflicts between the JNI bridge and the plugin,
+//! which is critical for features like concurrency limiting to work correctly.
 
 mod error;
+mod ffi_types;
 mod loader;
 
 use error::JniError;
@@ -26,13 +34,14 @@ use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::{JNI_FALSE, JNI_TRUE, jboolean, jint, jlong};
 use loader::LoadedPlugin;
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 // Global registry of loaded plugins
-// Maps handle ID to LoadedPlugin (which keeps the library loaded)
-static LOADED_PLUGINS: Mutex<Option<HashMap<u64, LoadedPlugin>>> = Mutex::new(None);
+// Maps handle ID to Arc<LoadedPlugin> (which keeps the library loaded)
+// Using Arc allows us to clone references without holding the mutex during calls
+static LOADED_PLUGINS: Mutex<Option<HashMap<u64, Arc<LoadedPlugin>>>> = Mutex::new(None);
 
-fn get_plugins() -> std::sync::MutexGuard<'static, Option<HashMap<u64, LoadedPlugin>>> {
+fn get_plugins() -> std::sync::MutexGuard<'static, Option<HashMap<u64, Arc<LoadedPlugin>>>> {
     LOADED_PLUGINS.lock().unwrap()
 }
 
@@ -47,21 +56,31 @@ fn register_plugin(handle: u64, plugin: LoadedPlugin) {
     init_plugins();
     let mut guard = get_plugins();
     if let Some(ref mut map) = *guard {
-        map.insert(handle, plugin);
+        map.insert(handle, Arc::new(plugin));
     }
 }
 
-fn remove_plugin(handle: u64) -> Option<LoadedPlugin> {
+fn remove_plugin(handle: u64) -> Option<Arc<LoadedPlugin>> {
     let mut guard = get_plugins();
     guard.as_mut().and_then(|map| map.remove(&handle))
+}
+
+/// Get a plugin reference (Arc-cloned to avoid holding the mutex during the call)
+fn get_plugin(handle: u64) -> Option<Arc<LoadedPlugin>> {
+    let guard = get_plugins();
+    guard
+        .as_ref()
+        .and_then(|map| map.get(&handle).map(Arc::clone))
 }
 
 fn with_plugin<F, T>(handle: u64, f: F) -> Option<T>
 where
     F: FnOnce(&LoadedPlugin) -> T,
 {
-    let guard = get_plugins();
-    guard.as_ref().and_then(|map| map.get(&handle).map(f))
+    // Clone the Arc BEFORE releasing the mutex to allow concurrent calls
+    let plugin = get_plugin(handle)?;
+    // Mutex is released here, allowing other threads to proceed
+    Some(f(&plugin))
 }
 
 // ============================================================================

@@ -1266,7 +1266,6 @@ dependencies = [
  "jni",
  "libloading",
  "rustbridge-core",
- "rustbridge-ffi",
  "serde_json",
  "thiserror 1.0.69",
  "tracing",

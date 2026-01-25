@@ -1,8 +1,8 @@
 //! Dynamic library loading for plugins.
 
 use crate::error::JniError;
+use crate::ffi_types::{FfiBuffer, LogCallback};
 use libloading::{Library, Symbol};
-use rustbridge_ffi::FfiBuffer;
 use std::ffi::{c_char, c_void};
 
 /// A loaded plugin, keeping the library alive and providing access to its FFI functions.
@@ -25,7 +25,6 @@ struct PluginFfi {
     set_log_level: PluginSetLogLevelFn,
     get_rejected_count: PluginGetRejectedCountFn,
     shutdown: PluginShutdownFn,
-    free_buffer: PluginFreeBufferFn,
 }
 
 impl LoadedPlugin {
@@ -68,12 +67,6 @@ impl LoadedPlugin {
         // SAFETY: handle is valid
         unsafe { (self.ffi.shutdown)(self.handle as *mut c_void) }
     }
-
-    /// Free a buffer.
-    pub fn free_buffer(&self, buffer: *mut FfiBuffer) {
-        // SAFETY: buffer is valid
-        unsafe { (self.ffi.free_buffer)(buffer) }
-    }
 }
 
 // Type signatures for FFI functions
@@ -82,7 +75,7 @@ type PluginInitFn = unsafe extern "C" fn(
     plugin_ptr: *mut c_void,
     config_json: *const u8,
     config_len: usize,
-    log_callback: Option<rustbridge_ffi::LogCallback>,
+    log_callback: Option<LogCallback>,
 ) -> *mut c_void;
 type PluginCallFn = unsafe extern "C" fn(
     handle: *mut c_void,
@@ -94,7 +87,6 @@ type PluginGetStateFn = unsafe extern "C" fn(handle: *mut c_void) -> u8;
 type PluginSetLogLevelFn = unsafe extern "C" fn(handle: *mut c_void, level: u8);
 type PluginGetRejectedCountFn = unsafe extern "C" fn(handle: *mut c_void) -> u64;
 type PluginShutdownFn = unsafe extern "C" fn(handle: *mut c_void) -> bool;
-type PluginFreeBufferFn = unsafe extern "C" fn(buffer: *mut FfiBuffer);
 
 /// Load a plugin from a shared library.
 ///
@@ -139,10 +131,6 @@ pub fn load_plugin(
     let shutdown_fn: Symbol<PluginShutdownFn> = unsafe { library.get(b"plugin_shutdown\0") }
         .map_err(|e| JniError::SymbolNotFound(format!("plugin_shutdown: {}", e)))?;
 
-    let free_buffer_fn: Symbol<PluginFreeBufferFn> =
-        unsafe { library.get(b"plugin_free_buffer\0") }
-            .map_err(|e| JniError::SymbolNotFound(format!("plugin_free_buffer: {}", e)))?;
-
     // Store function pointers (they must outlive the library)
     // SAFETY: These function pointers are valid as long as the library is loaded
     let ffi = PluginFfi {
@@ -151,7 +139,6 @@ pub fn load_plugin(
         set_log_level: *set_log_level_fn,
         get_rejected_count: *get_rejected_count_fn,
         shutdown: *shutdown_fn,
-        free_buffer: *free_buffer_fn,
     };
 
     // Create the plugin instance

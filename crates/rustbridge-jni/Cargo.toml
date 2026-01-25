@@ -18,7 +18,8 @@ jni = "0.21"
 libloading = "0.8"
 
 # Internal crates
-rustbridge-ffi = { path = "../rustbridge-ffi" }
+# NOTE: We do NOT link against rustbridge-ffi to avoid symbol resolution conflicts
+# with the plugin's own rustbridge-ffi linkage. All FFI types are defined locally.
 rustbridge-core = { path = "../rustbridge-core" }
 
 # Serialization
