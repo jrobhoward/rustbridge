@@ -23,6 +23,8 @@ tokio = { workspace = true, features = ["sync"] }
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 async-trait = "0.1"
+proptest = { workspace = true }
+test-case = { workspace = true }
 
 [lints]
 workspace = true

@@ -69,6 +69,10 @@ hex = "0.4"
 # Benchmarking
 criterion = { version = "0.5", features = ["html_reports"] }
 
+# Testing
+proptest = "1.4"
+test-case = "3.3"
+
 # ============================================================================
 # Workspace Lints Configuration
 # ============================================================================
