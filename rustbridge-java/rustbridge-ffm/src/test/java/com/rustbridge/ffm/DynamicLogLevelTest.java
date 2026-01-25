@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -16,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Test that log levels can be changed dynamically at runtime.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@Timeout(value = 60, unit = TimeUnit.SECONDS)  // Prevent tests from hanging indefinitely
 class DynamicLogLevelTest {
 
     private static Path PLUGIN_PATH;

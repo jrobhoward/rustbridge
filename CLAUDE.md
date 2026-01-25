@@ -146,6 +146,25 @@ let re = Regex::new(r"^\d+$").unwrap();
 - All errors have stable numeric codes for FFI
 - Never panic across FFI boundary
 
+### Lock Safety
+
+**Never call external code while holding a lock.** This prevents deadlocks.
+
+```rust
+// ❌ BAD - logging/callback while holding lock can deadlock
+let guard = self.data.write();
+tracing::debug!("...");  // May re-acquire lock via logging layer!
+
+// ✅ GOOD - release lock before external calls
+{
+    let mut guard = self.data.write();
+    *guard = new_value;
+} // Lock released
+tracing::debug!("Updated");  // Safe
+```
+
+See [docs/SKILLS.md](./docs/SKILLS.md) for detailed lock safety patterns.
+
 ## Testing Conventions
 
 **Rust**: See [docs/TESTING.md](./docs/TESTING.md) for complete guidelines.

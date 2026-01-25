@@ -19,6 +19,8 @@ tasks.withType<JavaCompile> {
 
 tasks.withType<Test> {
     jvmArgs("--enable-preview", "--enable-native-access=ALL-UNNAMED")
+    // Default timeout for all tests - prevents builds from hanging indefinitely
+    systemProperty("junit.jupiter.execution.timeout.default", "60s")
 }
 
 tasks.withType<Javadoc> {

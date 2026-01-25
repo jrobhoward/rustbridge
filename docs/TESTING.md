@@ -31,9 +31,25 @@ fn PluginConfig___from_valid_json___parses_correctly() {
 
 **Rationale**: Test failures should be visible and obvious. Using `.unwrap()` in tests causes a clear panic with a backtrace, making debugging easier.
 
-### Test File Clippy Configuration
+### Clippy Configuration for Tests
 
-Test files should include the `non_snake_case` allow but do **not** need to suppress `unwrap_used`:
+The workspace `clippy.toml` automatically allows `.unwrap()` and `.expect()` in test code:
+
+```toml
+# clippy.toml
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+```
+
+This applies to:
+- Functions marked with `#[test]`
+- Code inside `#[cfg(test)]` modules
+
+**Note**: This does NOT apply to integration tests in `tests/` directory, examples, or benchmarks. Those require explicit allow attributes if needed.
+
+### Test File Header
+
+Test files should include the `non_snake_case` allow for the triple-underscore naming convention:
 
 ```rust
 #![allow(non_snake_case)]
@@ -41,7 +57,14 @@ Test files should include the `non_snake_case` allow but do **not** need to supp
 use super::*;
 ```
 
-The workspace Cargo.toml configures clippy to allow `.unwrap()` in test code automatically.
+For integration tests in `tests/` that need `.unwrap()`:
+
+```rust
+#![allow(non_snake_case)]
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
+use rustbridge_core::prelude::*;
+```
 
 ## File Organization
 
@@ -446,6 +469,86 @@ RUSTFLAGS="-Z sanitizer=memory" cargo +nightly test -p rustbridge-ffi
 cargo build --tests
 valgrind --leak-check=full ./target/debug/deps/rustbridge_ffi-*
 ```
+
+## Test Timeouts
+
+**Always add timeouts to integration tests** to prevent builds from hanging indefinitely. This is especially important for tests involving:
+- Async operations
+- FFI callbacks
+- Concurrent/parallel operations
+- Resource cleanup / lifecycle management
+
+### Per-Test Timeout with Tokio
+
+```rust
+#[tokio::test(flavor = "multi_thread")]
+async fn plugin___long_operation___completes_in_time() {
+    let result = tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        plugin.async_operation()
+    ).await;
+
+    assert!(result.is_ok(), "Operation timed out");
+}
+```
+
+### Timeout Helper Function
+
+Create a reusable timeout wrapper:
+
+```rust
+// In test_utils.rs
+pub async fn with_timeout<F, T>(duration_secs: u64, future: F) -> T
+where
+    F: std::future::Future<Output = T>,
+{
+    tokio::time::timeout(
+        std::time::Duration::from_secs(duration_secs),
+        future
+    )
+    .await
+    .expect("Test timed out")
+}
+
+// Usage
+#[tokio::test]
+async fn plugin___operation___succeeds() {
+    let result = with_timeout(30, async {
+        plugin.do_something().await
+    }).await;
+
+    assert!(result.is_ok());
+}
+```
+
+### Timeout Guidelines
+
+| Test Type | Recommended Timeout |
+|-----------|-------------------|
+| Unit tests | 5-10 seconds |
+| Integration tests | 30-60 seconds |
+| FFI roundtrip tests | 30 seconds |
+| Stress tests | 2-5 minutes |
+
+### Deadlock Prevention
+
+For tests involving locks, add timeout assertions:
+
+```rust
+#[test]
+fn lock___concurrent_access___no_deadlock() {
+    let result = std::thread::spawn(|| {
+        // Code that acquires locks
+        manager.do_locked_operation()
+    });
+
+    // Fail if thread doesn't complete in 10 seconds
+    let handle = result.join();
+    assert!(handle.is_ok(), "Possible deadlock detected");
+}
+```
+
+**Rationale**: Tests that hang indefinitely can block CI pipelines and developer workflows. Timeouts provide fail-fast behavior and clear error messages about which tests are problematic.
 
 ## CI Testing
 

@@ -22,3 +22,8 @@ uuid = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 async-trait = "0.1"
+
+# Example plugin - explicitly configure lints (can't override workspace lints)
+# Allow unwrap/expect since examples should be simple and clear
+[lints.clippy]
+await_holding_lock = "deny"  # Still enforce lock safety

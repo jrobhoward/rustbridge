@@ -78,6 +78,7 @@ impl PluginConfig {
             self.data = serde_json::json!({});
         }
         // Now we can safely get the object
+        #[allow(clippy::unwrap_used)] // Safe: we just set data to an empty object above
         let obj = self.data.as_object_mut().unwrap();
         obj.insert(key.to_string(), serde_json::to_value(value)?);
         Ok(())

@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -15,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Test loading multiple plugin instances in the same process.
  * This verifies whether plugins share global state or are properly isolated.
  */
+@Timeout(value = 60, unit = TimeUnit.SECONDS)  // Prevent tests from hanging indefinitely
 class MultiplePluginTest {
 
     private static Path PLUGIN_PATH;

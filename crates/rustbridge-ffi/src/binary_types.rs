@@ -452,6 +452,7 @@ impl RbResponse {
         let align = std::mem::align_of::<T>();
 
         // Allocate aligned memory
+        #[allow(clippy::expect_used)] // Safe: Layout is valid for any Sized type from std::mem
         let layout = std::alloc::Layout::from_size_align(size, align)
             .expect("Invalid layout for response type");
 

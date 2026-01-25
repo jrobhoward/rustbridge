@@ -27,3 +27,8 @@ rpassword = "7.3"
 tempfile = "3.9"
 
 [dev-dependencies]
+
+# CLI binary - explicitly configure lints (can't override workspace lints)
+# Allow unwrap/expect since CLI binaries can panic with clear error messages
+[lints.clippy]
+await_holding_lock = "deny"  # Still enforce lock safety

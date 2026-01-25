@@ -6,12 +6,14 @@ import org.junit.jupiter.api.Disabled;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Basic smoke tests for FFM plugin loading.
  */
+@Timeout(value = 30, unit = TimeUnit.SECONDS)  // Prevent tests from hanging indefinitely
 class FfmPluginLoaderTest {
 
     private static Path PLUGIN_PATH;

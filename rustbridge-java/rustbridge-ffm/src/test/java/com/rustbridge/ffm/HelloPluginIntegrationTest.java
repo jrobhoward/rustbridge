@@ -8,6 +8,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * - Logging integration
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@Timeout(value = 60, unit = TimeUnit.SECONDS)  // Prevent tests from hanging indefinitely
 class HelloPluginIntegrationTest {
 
     // Unused - kept for potential future use in test assertions

@@ -67,3 +67,22 @@ hex = "0.4"
 
 # Benchmarking
 criterion = { version = "0.5", features = ["html_reports"] }
+
+# ============================================================================
+# Workspace Lints Configuration
+# ============================================================================
+# These lints are inherited by all workspace members via `[lints] workspace = true`
+
+[workspace.lints.clippy]
+# Safety: Prevent panics in production code
+unwrap_used = "warn"        # Use ? or proper error handling instead of .unwrap()
+expect_used = "warn"        # Use ? or proper error handling instead of .expect()
+
+# Safety: Prevent deadlocks
+await_holding_lock = "deny" # Never hold a lock across .await points
+
+# Note: To allow .unwrap()/.expect() where it's truly safe, use:
+#   #[allow(clippy::unwrap_used)] // Safe: <reason>
+#   let value = something.unwrap();
+#
+# Tests and examples are configured separately to allow these patterns.

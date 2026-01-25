@@ -1,0 +1,10 @@
+# Clippy Configuration
+# See https://doc.rust-lang.org/clippy/lint_configuration.html
+
+# Allow .unwrap() and .expect() in test code
+# This applies to functions marked with #[test] or code in #[cfg(test)] modules
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+
+# Note: This does NOT apply to integration tests in tests/ directory,
+# examples, or benchmarks. Those need explicit #![allow(...)] if needed.

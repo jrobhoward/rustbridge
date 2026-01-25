@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -26,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * - When any plugin shuts down, the callback is cleared (safety feature)
  * - Other active plugins continue to work, but logging stops until a new callback is registered
  */
+@Timeout(value = 60, unit = TimeUnit.SECONDS)  // Prevent tests from hanging indefinitely
 class SharedCallbackMultiPluginTest {
 
     private static Path PLUGIN_PATH;

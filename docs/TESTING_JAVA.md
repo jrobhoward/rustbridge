@@ -469,6 +469,112 @@ test {
 }
 ```
 
+## Test Timeouts
+
+**Always add timeouts to integration tests** to prevent builds from hanging indefinitely. This is especially important for tests involving:
+- Native library loading (FFI)
+- Concurrent operations
+- Resource cleanup / lifecycle management
+
+### Per-Test Timeout
+
+```java
+import org.junit.jupiter.api.Timeout;
+import java.util.concurrent.TimeUnit;
+
+@Test
+@Timeout(value = 30, unit = TimeUnit.SECONDS)
+public void plugin___fullLifecycle___completesSuccessfully() {
+    // Test that must complete within 30 seconds
+}
+```
+
+### Class-Level Timeout
+
+Apply to all tests in a class:
+
+```java
+@Timeout(value = 60, unit = TimeUnit.SECONDS)
+class PluginIntegrationTest {
+    @Test
+    public void testOne() { ... }  // 60s timeout
+
+    @Test
+    public void testTwo() { ... }  // 60s timeout
+}
+```
+
+### Global Timeout via Gradle
+
+Configure default timeout in `build.gradle.kts`:
+
+```kotlin
+tasks.withType<Test> {
+    useJUnitPlatform()
+    systemProperty("junit.jupiter.execution.timeout.default", "60s")
+}
+```
+
+### Timeout Guidelines
+
+| Test Type | Recommended Timeout |
+|-----------|-------------------|
+| Unit tests | 5-10 seconds |
+| Integration tests | 30-60 seconds |
+| Performance/stress tests | 2-5 minutes |
+
+**Rationale**: Tests that hang indefinitely can block CI pipelines and developer workflows. Timeouts provide fail-fast behavior and clear error messages about which tests are problematic.
+
+## Test Isolation
+
+For tests that modify global state or interact with native libraries, isolation prevents interference between tests.
+
+### Process Isolation
+
+Fork a new JVM for each test class:
+
+```kotlin
+// build.gradle.kts
+tasks.withType<Test> {
+    forkEvery = 1  // New JVM per test class
+}
+```
+
+### JUnit @Isolated Annotation (JUnit 5.9+)
+
+Ensure a test runs alone, not concurrently with others:
+
+```java
+import org.junit.jupiter.api.parallel.Isolated;
+
+@Isolated  // Runs without other tests in parallel
+class GlobalStateTest {
+    @Test
+    public void test___modifiesGlobalState___succeeds() { ... }
+}
+```
+
+### Disable Parallel Execution
+
+For test classes that share state:
+
+```java
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+
+@Execution(ExecutionMode.SAME_THREAD)
+class SequentialTest {
+    // All tests run sequentially in the same thread
+}
+```
+
+### When to Use Isolation
+
+- Tests that load/unload native libraries
+- Tests that modify global configuration
+- Tests with shared callback handlers
+- Tests involving plugin reload cycles
+
 ## Best Practices
 
 1. **Test names as specifications**: A test name should read like a sentence describing behavior
@@ -479,3 +585,4 @@ test {
 6. **Avoid test interdependencies**: Don't rely on other tests running first
 7. **Fail fast**: Stop execution as soon as a condition is unmet
 8. **Test behavior, not implementation**: Focus on what the code does, not how it does it
+9. **Always use timeouts**: Integration tests must have explicit timeouts to prevent hangs

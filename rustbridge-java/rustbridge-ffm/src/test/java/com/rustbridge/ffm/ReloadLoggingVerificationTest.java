@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -14,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Verify that logging works correctly after reload.
  * This test specifically checks that the callback is re-registered on reload.
  */
+@Timeout(value = 60, unit = TimeUnit.SECONDS)  // Prevent tests from hanging indefinitely
 class ReloadLoggingVerificationTest {
 
     private static Path PLUGIN_PATH;

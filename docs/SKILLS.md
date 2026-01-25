@@ -107,9 +107,11 @@ static EMAIL_REGEX: Lazy<Regex> = Lazy::new(|| {
 ```
 
 **Exceptions where `.unwrap()` / `.expect()` are allowed:**
-- Test code (`#[cfg(test)]` modules)
-- Examples (`examples/` directory)
+- Test code (`#[cfg(test)]` modules) - automatically via `clippy.toml`
+- Examples (`examples/` directory) - configured in crate's `Cargo.toml`
 - Truly infallible operations with `#[allow(...)]` annotation
+
+The workspace `clippy.toml` sets `allow-unwrap-in-tests = true` and `allow-expect-in-tests = true` to suppress these warnings in test code automatically.
 
 ## Code Quality
 
@@ -202,6 +204,62 @@ Each crate should have a clear, focused responsibility:
 | `rustbridge-logging` | Tracing integration, FFI callbacks |
 | `rustbridge-macros` | Procedural macros |
 | `rustbridge-cli` | Build tool, code generation |
+
+### Lock Safety Rules
+
+**Never call external code while holding a lock.** This prevents deadlocks caused by lock reentrancy or callback cycles.
+
+**Forbidden patterns while holding a lock:**
+
+```rust
+// ❌ BAD - logging while holding lock
+let guard = self.data.write();
+tracing::debug!("Updated data");  // May try to acquire same lock via callback!
+*guard = new_value;
+
+// ❌ BAD - callback while holding lock
+let guard = self.data.read();
+self.callback.invoke(&guard);  // Callback might try to acquire lock!
+
+// ❌ BAD - async/await while holding lock (Clippy: await_holding_lock)
+let guard = self.data.lock().await;
+some_async_operation().await;  // Holds lock across await point!
+```
+
+**Safe patterns:**
+
+```rust
+// ✅ GOOD - release lock before logging
+{
+    let mut guard = self.data.write();
+    *guard = new_value;
+} // Lock released
+tracing::debug!("Updated data");  // Safe to log now
+
+// ✅ GOOD - copy data, release lock, then use
+let data_copy = {
+    let guard = self.data.read();
+    guard.clone()
+}; // Lock released
+self.callback.invoke(&data_copy);  // Safe to invoke callback
+
+// ✅ GOOD - minimize critical section
+let result = {
+    let mut guard = self.data.write();
+    guard.compute_result()
+}; // Lock released immediately
+process_result(result);  // Long operation outside lock
+```
+
+**Lock ordering:** If multiple locks must be held simultaneously, document and enforce a consistent acquisition order to prevent deadlocks:
+
+```rust
+// Document lock order: always acquire `users` before `sessions`
+let users = self.users.write();
+let sessions = self.sessions.write();  // Always after users
+```
+
+**Why this matters:** The log callback deadlock in `rustbridge-logging` was caused by calling `tracing::debug!()` while holding a write lock. The tracing layer tried to acquire a read lock on the same RwLock, causing a deadlock. Rust's `parking_lot::RwLock` does not support reentrancy.
 
 ### FFI Safety
 

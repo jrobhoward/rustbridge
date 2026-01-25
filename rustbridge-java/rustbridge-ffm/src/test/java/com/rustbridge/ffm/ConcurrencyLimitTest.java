@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for concurrency limiting and backpressure.
  */
+@Timeout(value = 60, unit = TimeUnit.SECONDS)  // Prevent tests from hanging indefinitely
 class ConcurrencyLimitTest {
 
     private static Path PLUGIN_PATH;
