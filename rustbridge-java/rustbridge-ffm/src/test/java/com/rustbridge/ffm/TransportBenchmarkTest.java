@@ -97,47 +97,57 @@ class TransportBenchmarkTest {
 
         // FFM JSON
         double ffmJsonLatency = benchmarkFfmJson();
-        System.out.printf("FFM JSON:    %.2f μs/call (%.0f calls/sec)%n",
+        System.out.printf("FFM JSON:           %6.2f μs/call (%,9.0f calls/sec)%n",
                 ffmJsonLatency, 1_000_000.0 / ffmJsonLatency);
 
-        // FFM Binary
+        // FFM Binary (original - per-call arena)
         double ffmBinaryLatency = benchmarkFfmBinary();
-        System.out.printf("FFM Binary:  %.2f μs/call (%.0f calls/sec)%n",
+        System.out.printf("FFM Binary:         %6.2f μs/call (%,9.0f calls/sec)%n",
                 ffmBinaryLatency, 1_000_000.0 / ffmBinaryLatency);
+
+        // FFM Binary optimized (caller-provided arena)
+        double ffmBinaryOptLatency = benchmarkFfmBinaryOptimized();
+        System.out.printf("FFM Binary (arena): %6.2f μs/call (%,9.0f calls/sec)%n",
+                ffmBinaryOptLatency, 1_000_000.0 / ffmBinaryOptLatency);
+
+        // FFM Binary bytes (returns byte[])
+        double ffmBinaryBytesLatency = benchmarkFfmBinaryBytes();
+        System.out.printf("FFM Binary (bytes): %6.2f μs/call (%,9.0f calls/sec)%n",
+                ffmBinaryBytesLatency, 1_000_000.0 / ffmBinaryBytesLatency);
 
         // JNI JSON (if available)
         if (jniPlugin != null) {
             double jniJsonLatency = benchmarkJniJson();
-            System.out.printf("JNI JSON:    %.2f μs/call (%.0f calls/sec)%n",
+            System.out.printf("JNI JSON:           %6.2f μs/call (%,9.0f calls/sec)%n",
                     jniJsonLatency, 1_000_000.0 / jniJsonLatency);
 
             // JNI Binary
             double jniBinaryLatency = benchmarkJniBinary();
-            System.out.printf("JNI Binary:  %.2f μs/call (%.0f calls/sec)%n",
+            System.out.printf("JNI Binary:         %6.2f μs/call (%,9.0f calls/sec)%n",
                     jniBinaryLatency, 1_000_000.0 / jniBinaryLatency);
 
             System.out.println();
             System.out.println("Speedup ratios:");
-            System.out.printf("  FFM Binary vs FFM JSON: %.2fx faster%n", ffmJsonLatency / ffmBinaryLatency);
-            System.out.printf("  JNI Binary vs JNI JSON: %.2fx faster%n", jniJsonLatency / jniBinaryLatency);
-            System.out.printf("  FFM JSON vs JNI JSON:   %.2fx %s%n",
-                    Math.max(ffmJsonLatency, jniJsonLatency) / Math.min(ffmJsonLatency, jniJsonLatency),
-                    ffmJsonLatency < jniJsonLatency ? "(FFM faster)" : "(JNI faster)");
-            System.out.printf("  FFM Binary vs JNI Binary: %.2fx %s%n",
-                    Math.max(ffmBinaryLatency, jniBinaryLatency) / Math.min(ffmBinaryLatency, jniBinaryLatency),
-                    ffmBinaryLatency < jniBinaryLatency ? "(FFM faster)" : "(JNI faster)");
+            System.out.printf("  FFM Binary vs FFM JSON:        %.2fx faster%n", ffmJsonLatency / ffmBinaryLatency);
+            System.out.printf("  FFM Binary (opt) vs original:  %.2fx faster%n", ffmBinaryLatency / ffmBinaryOptLatency);
+            System.out.printf("  JNI Binary vs JNI JSON:        %.2fx faster%n", jniJsonLatency / jniBinaryLatency);
+            System.out.printf("  FFM Binary (opt) vs JNI Binary: %.2fx %s%n",
+                    Math.max(ffmBinaryOptLatency, jniBinaryLatency) / Math.min(ffmBinaryOptLatency, jniBinaryLatency),
+                    ffmBinaryOptLatency < jniBinaryLatency ? "(FFM faster)" : "(JNI faster)");
         } else {
             System.out.println();
             System.out.println("JNI not available - skipping JNI benchmarks");
             System.out.println();
             System.out.println("Speedup ratios:");
-            System.out.printf("  FFM Binary vs FFM JSON: %.2fx faster%n", ffmJsonLatency / ffmBinaryLatency);
+            System.out.printf("  FFM Binary vs FFM JSON:       %.2fx faster%n", ffmJsonLatency / ffmBinaryLatency);
+            System.out.printf("  FFM Binary (opt) vs original: %.2fx faster%n", ffmBinaryLatency / ffmBinaryOptLatency);
         }
 
         System.out.println("==========================================\n");
 
         // Basic assertions
         assertTrue(ffmBinaryLatency < ffmJsonLatency, "Binary transport should be faster than JSON");
+        assertTrue(ffmBinaryOptLatency < ffmBinaryLatency, "Optimized binary should be faster than original");
     }
 
     private double benchmarkFfmJson() throws PluginException {
@@ -173,6 +183,50 @@ class TransportBenchmarkTest {
             for (int i = 0; i < BENCHMARK_ITERATIONS; i++) {
                 SmallRequestRaw request = new SmallRequestRaw(arena, "bench_key", 0x01);
                 ffmPlugin.callRaw(MSG_BENCH_SMALL, request, SmallResponseRaw.BYTE_SIZE);
+            }
+        }
+        long elapsed = System.nanoTime() - start;
+
+        return (double) elapsed / BENCHMARK_ITERATIONS / 1000.0;
+    }
+
+    private double benchmarkFfmBinaryOptimized() throws PluginException {
+        // Warmup - using caller-provided arena
+        try (Arena arena = Arena.ofConfined()) {
+            for (int i = 0; i < WARMUP_ITERATIONS; i++) {
+                SmallRequestRaw request = new SmallRequestRaw(arena, "bench_key", 0x01);
+                ffmPlugin.callRaw(MSG_BENCH_SMALL, request, SmallResponseRaw.BYTE_SIZE, arena);
+            }
+        }
+
+        // Benchmark - single arena for all iterations
+        long start = System.nanoTime();
+        try (Arena arena = Arena.ofConfined()) {
+            for (int i = 0; i < BENCHMARK_ITERATIONS; i++) {
+                SmallRequestRaw request = new SmallRequestRaw(arena, "bench_key", 0x01);
+                ffmPlugin.callRaw(MSG_BENCH_SMALL, request, SmallResponseRaw.BYTE_SIZE, arena);
+            }
+        }
+        long elapsed = System.nanoTime() - start;
+
+        return (double) elapsed / BENCHMARK_ITERATIONS / 1000.0;
+    }
+
+    private double benchmarkFfmBinaryBytes() throws PluginException {
+        // Warmup - using callRawBytes (returns byte[])
+        try (Arena arena = Arena.ofConfined()) {
+            for (int i = 0; i < WARMUP_ITERATIONS; i++) {
+                SmallRequestRaw request = new SmallRequestRaw(arena, "bench_key", 0x01);
+                ffmPlugin.callRawBytes(MSG_BENCH_SMALL, request);
+            }
+        }
+
+        // Benchmark
+        long start = System.nanoTime();
+        try (Arena arena = Arena.ofConfined()) {
+            for (int i = 0; i < BENCHMARK_ITERATIONS; i++) {
+                SmallRequestRaw request = new SmallRequestRaw(arena, "bench_key", 0x01);
+                ffmPlugin.callRawBytes(MSG_BENCH_SMALL, request);
             }
         }
         long elapsed = System.nanoTime() - start;
