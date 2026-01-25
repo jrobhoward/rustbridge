@@ -96,8 +96,8 @@ class BundleLoaderTest {
             assertNotNull(manifest);
             assertEquals("1.0", manifest.bundleVersion);
             assertNotNull(manifest.plugin);
-            assertEquals("test-plugin", manifest.plugin.name);
-            assertEquals("1.0.0", manifest.plugin.version);
+            assertEquals("test-plugin", manifest.plugin.name());
+            assertEquals("1.0.0", manifest.plugin.version());
         }
     }
 
@@ -249,14 +249,16 @@ class BundleLoaderTest {
     private Path createMinimalBundle() throws IOException {
         Path bundlePath = tempDir.resolve("test.rbp");
 
-        String manifest = "{\n" +
-                "    \"bundle_version\": \"1.0\",\n" +
-                "    \"plugin\": {\n" +
-                "        \"name\": \"test-plugin\",\n" +
-                "        \"version\": \"1.0.0\"\n" +
-                "    },\n" +
-                "    \"platforms\": {}\n" +
-                "}";
+        String manifest = """
+                {
+                    "bundle_version": "1.0",
+                    "plugin": {
+                        "name": "test-plugin",
+                        "version": "1.0.0"
+                    },
+                    "platforms": {}
+                }
+                """;
 
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(bundlePath.toFile()))) {
             ZipEntry entry = new ZipEntry("manifest.json");
@@ -271,19 +273,21 @@ class BundleLoaderTest {
     private Path createBundleWithPlatformButNoLibrary() throws IOException {
         Path bundlePath = tempDir.resolve("test.rbp");
 
-        String manifest = "{\n" +
-                "    \"bundle_version\": \"1.0\",\n" +
-                "    \"plugin\": {\n" +
-                "        \"name\": \"test-plugin\",\n" +
-                "        \"version\": \"1.0.0\"\n" +
-                "    },\n" +
-                "    \"platforms\": {\n" +
-                "        \"linux-x86_64\": {\n" +
-                "            \"library\": \"lib/linux-x86_64/libtest.so\",\n" +
-                "            \"checksum\": \"sha256:0000000000000000000000000000000000000000000000000000000000000000\"\n" +
-                "        }\n" +
-                "    }\n" +
-                "}";
+        String manifest = """
+                {
+                    "bundle_version": "1.0",
+                    "plugin": {
+                        "name": "test-plugin",
+                        "version": "1.0.0"
+                    },
+                    "platforms": {
+                        "linux-x86_64": {
+                            "library": "lib/linux-x86_64/libtest.so",
+                            "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+                        }
+                    }
+                }
+                """;
 
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(bundlePath.toFile()))) {
             ZipEntry entry = new ZipEntry("manifest.json");
@@ -298,19 +302,21 @@ class BundleLoaderTest {
     private Path createBundleWithBadChecksum() throws IOException {
         Path bundlePath = tempDir.resolve("test.rbp");
 
-        String manifest = "{\n" +
-                "    \"bundle_version\": \"1.0\",\n" +
-                "    \"plugin\": {\n" +
-                "        \"name\": \"test-plugin\",\n" +
-                "        \"version\": \"1.0.0\"\n" +
-                "    },\n" +
-                "    \"platforms\": {\n" +
-                "        \"linux-x86_64\": {\n" +
-                "            \"library\": \"lib/linux-x86_64/libtest.so\",\n" +
-                "            \"checksum\": \"sha256:0000000000000000000000000000000000000000000000000000000000000000\"\n" +
-                "        }\n" +
-                "    }\n" +
-                "}";
+        String manifest = """
+                {
+                    "bundle_version": "1.0",
+                    "plugin": {
+                        "name": "test-plugin",
+                        "version": "1.0.0"
+                    },
+                    "platforms": {
+                        "linux-x86_64": {
+                            "library": "lib/linux-x86_64/libtest.so",
+                            "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+                        }
+                    }
+                }
+                """;
 
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(bundlePath.toFile()))) {
             ZipEntry manifestEntry = new ZipEntry("manifest.json");
@@ -333,19 +339,21 @@ class BundleLoaderTest {
         byte[] libContent = "fake library content for testing".getBytes(StandardCharsets.UTF_8);
         String checksum = sha256Hex(libContent);
 
-        String manifest = "{\n" +
-                "    \"bundle_version\": \"1.0\",\n" +
-                "    \"plugin\": {\n" +
-                "        \"name\": \"test-plugin\",\n" +
-                "        \"version\": \"1.0.0\"\n" +
-                "    },\n" +
-                "    \"platforms\": {\n" +
-                "        \"linux-x86_64\": {\n" +
-                "            \"library\": \"lib/linux-x86_64/libtest.so\",\n" +
-                "            \"checksum\": \"sha256:" + checksum + "\"\n" +
-                "        }\n" +
-                "    }\n" +
-                "}";
+        String manifest = """
+                {
+                    "bundle_version": "1.0",
+                    "plugin": {
+                        "name": "test-plugin",
+                        "version": "1.0.0"
+                    },
+                    "platforms": {
+                        "linux-x86_64": {
+                            "library": "lib/linux-x86_64/libtest.so",
+                            "checksum": "sha256:%s"
+                        }
+                    }
+                }
+                """.formatted(checksum);
 
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(bundlePath.toFile()))) {
             ZipEntry manifestEntry = new ZipEntry("manifest.json");

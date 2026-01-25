@@ -13,7 +13,7 @@ java {
     withSourcesJar()
 }
 
-// Compile for Java 8 compatibility (for JNI support)
+// Compile for Java 17 compatibility
 tasks.withType<JavaCompile> {
-    options.release.set(8)
+    options.release.set(17)
 }

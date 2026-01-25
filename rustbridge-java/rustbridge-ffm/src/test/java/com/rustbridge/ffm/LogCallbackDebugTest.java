@@ -36,6 +36,8 @@ class LogCallbackDebugTest {
 
         // Act - load plugin with callback
         try (Plugin plugin = FfmPluginLoader.load(PLUGIN_PATH, PluginConfig.defaults(), callback)) {
+            // Verify plugin is active (also silences unused variable warning)
+            assertEquals(LifecycleState.ACTIVE, plugin.getState());
             System.err.println("Plugin loaded, call count: " + callCount.get());
 
             // Wait a bit to ensure async initialization completes

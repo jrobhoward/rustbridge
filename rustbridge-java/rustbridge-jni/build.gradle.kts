@@ -14,9 +14,9 @@ java {
     withSourcesJar()
 }
 
-// Compile for Java 8 compatibility using Java 21 compiler
+// Compile for Java 17 compatibility
 tasks.withType<JavaCompile> {
-    options.release.set(8)
+    options.release.set(17)
 }
 
 tasks.withType<Test> {

@@ -138,27 +138,27 @@ public class BundleLoader implements AutoCloseable {
         }
 
         // Extract the library
-        ZipEntry libEntry = zipFile.getEntry(platformInfo.library);
+        ZipEntry libEntry = zipFile.getEntry(platformInfo.library());
         if (libEntry == null) {
-            throw new IOException("Library not found in bundle: " + platformInfo.library);
+            throw new IOException("Library not found in bundle: " + platformInfo.library());
         }
 
         byte[] libData = readZipEntry(libEntry);
 
         // Verify checksum
-        if (!verifyChecksum(libData, platformInfo.checksum)) {
+        if (!verifyChecksum(libData, platformInfo.checksum())) {
             throw new IOException(
-                    "Checksum verification failed for " + platformInfo.library
+                    "Checksum verification failed for " + platformInfo.library()
             );
         }
 
         // Verify signature if enabled
         if (verifySignatures) {
-            verifyLibrarySignature(platformInfo.library, libData);
+            verifyLibrarySignature(platformInfo.library(), libData);
         }
 
         // Write to output directory
-        String fileName = Paths.get(platformInfo.library).getFileName().toString();
+        String fileName = Paths.get(platformInfo.library()).getFileName().toString();
         Path outputPath = outputDir.resolve(fileName);
         Files.write(outputPath, libData);
 
@@ -212,15 +212,15 @@ public class BundleLoader implements AutoCloseable {
         }
 
         // Extract the schema file
-        ZipEntry schemaEntry = zipFile.getEntry(schemaInfo.path);
+        ZipEntry schemaEntry = zipFile.getEntry(schemaInfo.path());
         if (schemaEntry == null) {
-            throw new IOException("Schema file not found in bundle: " + schemaInfo.path);
+            throw new IOException("Schema file not found in bundle: " + schemaInfo.path());
         }
 
         byte[] schemaData = readZipEntry(schemaEntry);
 
         // Verify checksum
-        if (!verifyChecksum(schemaData, schemaInfo.checksum)) {
+        if (!verifyChecksum(schemaData, schemaInfo.checksum())) {
             throw new IOException(
                     "Checksum verification failed for schema " + schemaName
             );
@@ -250,15 +250,15 @@ public class BundleLoader implements AutoCloseable {
         }
 
         // Extract the schema file
-        ZipEntry schemaEntry = zipFile.getEntry(schemaInfo.path);
+        ZipEntry schemaEntry = zipFile.getEntry(schemaInfo.path());
         if (schemaEntry == null) {
-            throw new IOException("Schema file not found in bundle: " + schemaInfo.path);
+            throw new IOException("Schema file not found in bundle: " + schemaInfo.path());
         }
 
         byte[] schemaData = readZipEntry(schemaEntry);
 
         // Verify checksum
-        if (!verifyChecksum(schemaData, schemaInfo.checksum)) {
+        if (!verifyChecksum(schemaData, schemaInfo.checksum())) {
             throw new IOException(
                     "Checksum verification failed for schema " + schemaName
             );
@@ -511,90 +511,81 @@ public class BundleLoader implements AutoCloseable {
 
         /**
          * Plugin metadata information.
+         *
+         * @param name        plugin name
+         * @param version     plugin version
+         * @param description plugin description
+         * @param authors     plugin authors
+         * @param license     plugin license
+         * @param repository  plugin repository URL
          */
-        public static class PluginInfo {
-            /** Plugin name */
-            public String name;
-            /** Plugin version */
-            public String version;
-            /** Plugin description */
-            public String description;
-            /** Plugin authors */
-            public List<String> authors;
-            /** Plugin license */
-            public String license;
-            /** Plugin repository URL */
-            public String repository;
-        }
+        public record PluginInfo(
+                String name,
+                String version,
+                String description,
+                List<String> authors,
+                String license,
+                String repository
+        ) {}
 
         /**
          * Platform-specific library information.
+         *
+         * @param library  path to the library file within the bundle
+         * @param checksum SHA256 checksum of the library
          */
-        public static class PlatformInfo {
-            /** Path to the library file within the bundle */
-            public String library;
-            /** SHA256 checksum of the library */
-            public String checksum;
-        }
+        public record PlatformInfo(
+                String library,
+                String checksum
+        ) {}
 
         /**
          * API information for the plugin.
+         *
+         * @param minRustbridgeVersion minimum required rustbridge version
+         * @param transports           supported transport types (e.g., "json", "cstruct")
+         * @param messages             message type definitions
          */
-        public static class ApiInfo {
-            /** Minimum required rustbridge version */
-            @JsonProperty("min_rustbridge_version")
-            public String minRustbridgeVersion;
-
-            /** Supported transport types (e.g., "json", "cstruct") */
-            public List<String> transports;
-            /** Message type definitions */
-            public List<MessageInfo> messages;
-        }
+        public record ApiInfo(
+                @JsonProperty("min_rustbridge_version") String minRustbridgeVersion,
+                List<String> transports,
+                List<MessageInfo> messages
+        ) {}
 
         /**
          * Message type information.
+         *
+         * @param typeTag         message type tag (e.g., "user.create")
+         * @param description     message description
+         * @param requestSchema   JSON Schema reference for the request type
+         * @param responseSchema  JSON Schema reference for the response type
+         * @param messageId       numeric message ID for binary transport
+         * @param cstructRequest  C struct name for request (binary transport)
+         * @param cstructResponse C struct name for response (binary transport)
          */
-        public static class MessageInfo {
-            /** Message type tag (e.g., "user.create") */
-            @JsonProperty("type_tag")
-            public String typeTag;
-
-            /** Message description */
-            public String description;
-
-            /** JSON Schema reference for the request type */
-            @JsonProperty("request_schema")
-            public String requestSchema;
-
-            /** JSON Schema reference for the response type */
-            @JsonProperty("response_schema")
-            public String responseSchema;
-
-            /** Numeric message ID for binary transport */
-            @JsonProperty("message_id")
-            public Integer messageId;
-
-            /** C struct name for request (binary transport) */
-            @JsonProperty("cstruct_request")
-            public String cstructRequest;
-
-            /** C struct name for response (binary transport) */
-            @JsonProperty("cstruct_response")
-            public String cstructResponse;
-        }
+        public record MessageInfo(
+                @JsonProperty("type_tag") String typeTag,
+                String description,
+                @JsonProperty("request_schema") String requestSchema,
+                @JsonProperty("response_schema") String responseSchema,
+                @JsonProperty("message_id") Integer messageId,
+                @JsonProperty("cstruct_request") String cstructRequest,
+                @JsonProperty("cstruct_response") String cstructResponse
+        ) {}
 
         /**
          * Schema file information.
+         *
+         * @param path        path to the schema file within the bundle
+         * @param format      schema format (e.g., "json-schema", "c-header")
+         * @param checksum    SHA256 checksum of the schema file
+         * @param description schema description
          */
-        public static class SchemaInfo {
-            /** Path to the schema file within the bundle */
-            public String path;
-            /** Schema format (e.g., "json-schema", "c-header") */
-            public String format;
-            /** SHA256 checksum of the schema file */
-            public String checksum;
-            /** Schema description */
-            public String description;
-        }
+        public record SchemaInfo(
+                String path,
+                String format,
+                String checksum,
+                String description
+        ) {}
     }
 }

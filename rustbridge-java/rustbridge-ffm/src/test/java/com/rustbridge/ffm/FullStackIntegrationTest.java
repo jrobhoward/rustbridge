@@ -205,13 +205,12 @@ class FullStackIntegrationTest {
     @Test
     @DisplayName("Timeout is respected for shutdown")
     void testShutdownTimeout() throws PluginException {
-        try (Plugin plugin = FfmPluginLoader.load(PLUGIN_PATH.toString())) {
-            assertEquals(LifecycleState.ACTIVE, plugin.getState());
+        Plugin plugin = FfmPluginLoader.load(PLUGIN_PATH.toString());
+        assertEquals(LifecycleState.ACTIVE, plugin.getState());
 
-            // Just verify shutdown completes
-            plugin.close();
-            assertEquals(LifecycleState.STOPPED, plugin.getState());
-        }
+        // Verify shutdown completes and state transitions correctly
+        plugin.close();
+        assertEquals(LifecycleState.STOPPED, plugin.getState());
     }
 
     @Test

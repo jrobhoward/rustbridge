@@ -188,16 +188,16 @@ class MultiplePluginTest {
 
     @Test
     @DisplayName("Shutting down one plugin doesn't affect another")
+    @SuppressWarnings("try") // Intentional explicit close to test plugin isolation
     void testShutdownOnePluginDoesntAffectOther() throws PluginException, InterruptedException {
-        Plugin plugin1 = FfmPluginLoader.load(PLUGIN_PATH.toString());
-        Plugin plugin2 = FfmPluginLoader.load(PLUGIN_PATH.toString());
+        try (Plugin plugin1 = FfmPluginLoader.load(PLUGIN_PATH.toString());
+             Plugin plugin2 = FfmPluginLoader.load(PLUGIN_PATH.toString())) {
 
-        try {
             // Both should work
             assertDoesNotThrow(() -> plugin1.call("echo", "{\"message\": \"test1\"}"));
             assertDoesNotThrow(() -> plugin2.call("echo", "{\"message\": \"test2\"}"));
 
-            // Close plugin1
+            // Close plugin1 explicitly to test that plugin2 remains unaffected
             plugin1.close();
             Thread.sleep(100);
 
@@ -206,14 +206,6 @@ class MultiplePluginTest {
                     "Plugin2 should still be active");
             assertDoesNotThrow(() -> plugin2.call("echo", "{\"message\": \"test3\"}"),
                     "Plugin2 should still work after plugin1 shutdown");
-
-        } finally {
-            // Clean up
-            try {
-                plugin2.close();
-            } catch (Exception e) {
-                // Ignore
-            }
         }
     }
 }
