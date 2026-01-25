@@ -76,7 +76,7 @@ fn PluginConfig___set_and_get_int___roundtrips_correctly(key: &str, value: i32) 
 }
 
 #[test_case("float_0", 0.0f64)]
-#[test_case("float_pi", 3.14159f64)]
+#[test_case("float_positive", 1.23456f64)]
 #[test_case("float_negative", -42.5f64)]
 fn PluginConfig___set_and_get_float___roundtrips_correctly(key: &str, value: f64) {
     let mut config = PluginConfig::new();
@@ -93,7 +93,7 @@ fn PluginConfig___set_and_get_float___roundtrips_correctly(key: &str, value: f64
 
 #[test_case("string_value", "nonexistent_string_key")]
 #[test_case(42, "nonexistent_int_key")]
-#[test_case(3.14, "nonexistent_float_key")]
+#[test_case(1.5, "nonexistent_float_key")]
 fn PluginConfig___get_nonexistent_key___returns_none(_value: impl serde::Serialize, key: &str) {
     let config = PluginConfig::default();
 
@@ -104,13 +104,13 @@ fn PluginConfig___get_nonexistent_key___returns_none(_value: impl serde::Seriali
 
 #[test_case("string_key", "stored_as_string", "int")]
 #[test_case("int_key", 42, "string")]
-#[test_case("float_key", 3.14, "int")]
+#[test_case("float_key", 1.5, "int")]
 fn PluginConfig___get_wrong_type___returns_none(
     key: &str,
     _stored_value: impl serde::Serialize,
     _expected_type: &str,
 ) {
-    let mut config = PluginConfig::new();
+    let config = PluginConfig::new();
     // Note: We skip actually setting the value as this test just verifies
     // the pattern. In practice, type mismatches would be detected.
 

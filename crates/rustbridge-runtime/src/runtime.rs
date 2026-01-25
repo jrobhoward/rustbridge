@@ -141,16 +141,19 @@ impl AsyncRuntime {
 
     /// Initiate graceful shutdown
     ///
-    /// This signals all tasks to stop and waits for completion up to the timeout.
-    pub fn shutdown(&self, timeout: std::time::Duration) -> PluginResult<()> {
-        tracing::info!("Initiating runtime shutdown with timeout {:?}", timeout);
+    /// This signals all tasks to stop. The runtime will complete shutdown
+    /// when dropped. We don't unconditionally sleep for the timeout since
+    /// most plugins have no long-running background tasks.
+    pub fn shutdown(&self, _timeout: std::time::Duration) -> PluginResult<()> {
+        tracing::info!("Initiating runtime shutdown");
 
         // Signal shutdown to all tasks
         self.shutdown_handle.trigger();
 
-        // Give tasks time to complete gracefully
+        // Give tasks a brief moment to notice the shutdown signal
+        // This is enough for cooperative tasks to start cleanup
         self.runtime.block_on(async {
-            tokio::time::sleep(timeout).await;
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
         });
 
         tracing::info!("Runtime shutdown complete");

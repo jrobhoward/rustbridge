@@ -65,7 +65,10 @@ public class FfmPlugin implements Plugin {
 
     @Override
     public LifecycleState getState() {
-        checkNotClosed();
+        // After close, return STOPPED instead of throwing
+        if (closed) {
+            return LifecycleState.STOPPED;
+        }
         try {
             byte stateCode = (byte) bindings.pluginGetState().invokeExact(handle);
             int stateCodeInt = Byte.toUnsignedInt(stateCode);
@@ -80,7 +83,9 @@ public class FfmPlugin implements Plugin {
 
     @Override
     public String call(String typeTag, String request) throws PluginException {
-        checkNotClosed();
+        if (closed) {
+            throw new PluginException(1, "Plugin has been closed");
+        }
 
         // Create per-call arena for temporary allocations (shared for FFM compatibility)
         try (Arena callArena = Arena.ofShared()) {
@@ -141,7 +146,9 @@ public class FfmPlugin implements Plugin {
      */
     public MemorySegment callRaw(int messageId, BinaryStruct request, long responseSize)
             throws PluginException {
-        checkNotClosed();
+        if (closed) {
+            throw new PluginException(1, "Plugin has been closed");
+        }
 
         // Create per-call arena for temporary allocations (shared for FFM compatibility)
         try (Arena callArena = Arena.ofShared()) {

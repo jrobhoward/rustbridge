@@ -210,6 +210,7 @@ let re = Regex::new(r"^\d+$").unwrap();
 | `rustbridge-macros` | Procedural macros |
 | `rustbridge-cli` | Build tool, code generation, C header verification |
 | `rustbridge-bundle` | Plugin bundling (.rbp format) |
+| `rustbridge-jni` | JNI native bridge for Java 8+ fallback |
 
 ## FFI Safety
 

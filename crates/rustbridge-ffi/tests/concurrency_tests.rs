@@ -65,8 +65,7 @@ fn test_concurrent_handle_registration() {
             let plugin_handle = PluginHandle::new(Box::new(TestPlugin::new()), config)
                 .expect("Should create handle");
 
-            let id = manager_clone.register(plugin_handle);
-            id
+            manager_clone.register(plugin_handle)
         });
 
         handles.push(handle);

@@ -280,15 +280,21 @@ class FullStackIntegrationTest {
     }
 
     @Test
-    @DisplayName("Empty request/response bodies are handled")
-    void testEmptyRequests() throws PluginException {
+    @DisplayName("Invalid request returns error but plugin stays functional")
+    void testInvalidRequestHandling() throws PluginException {
         try (Plugin plugin = FfmPluginLoader.load(PLUGIN_PATH.toString())) {
-            // Empty JSON object
-            String response = plugin.call("echo", "{}");
-            assertNotNull(response);
+            // Empty JSON object is invalid for echo (requires message field)
+            // This should throw PluginException but not crash the plugin
+            assertThrows(PluginException.class, () -> {
+                plugin.call("echo", "{}");
+            }, "Invalid request should throw PluginException");
 
-            // Plugin should still be functional
+            // Plugin should still be functional after the error
             assertEquals(LifecycleState.ACTIVE, plugin.getState());
+
+            // Valid request should work
+            String response = plugin.call("echo", "{\"message\": \"test\"}");
+            assertTrue(response.contains("test"));
         }
     }
 }

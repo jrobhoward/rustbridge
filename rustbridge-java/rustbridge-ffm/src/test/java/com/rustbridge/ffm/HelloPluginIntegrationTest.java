@@ -229,8 +229,8 @@ class HelloPluginIntegrationTest {
         // Close
         plugin.close();
 
-        // Assert - calls after close should fail
-        assertThrows(IllegalStateException.class, () -> {
+        // Assert - calls after close should fail with PluginException
+        assertThrows(PluginException.class, () -> {
             plugin.call("echo", request);
         });
 

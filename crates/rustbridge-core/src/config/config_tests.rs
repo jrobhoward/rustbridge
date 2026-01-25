@@ -177,6 +177,7 @@ fn init_params_as___returns_none_when_not_set() {
     let config = PluginConfig::default();
 
     #[derive(Deserialize)]
+    #[allow(dead_code)]
     struct InitParams {
         value: String,
     }
