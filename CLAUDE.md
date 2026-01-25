@@ -6,6 +6,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 rustbridge is a framework for developing Rust shared libraries callable from other languages (Java, C#, Python, etc.). It uses C ABI under the hood but abstracts the complexity, providing OSGI-like lifecycle, mandatory async (Tokio), logging callbacks, and JSON-based data transport with optional binary transport for performance-critical paths.
 
+## Quick Reference
+
+```bash
+# Pre-commit validation (recommended before committing)
+./scripts/pre-commit.sh              # Full validation
+./scripts/pre-commit.sh --fast       # Skip clippy and integration tests
+./scripts/pre-commit.sh --smart      # Only test changed components
+
+# Common development commands
+cargo test -p rustbridge-ffi         # Test a specific crate
+cargo test lifecycle___installed     # Run tests matching pattern
+cargo clippy --workspace --examples --tests -- -D warnings
+```
+
 ## Rust Version Policy
 
 - **Edition**: Rust 2024
@@ -25,6 +39,19 @@ Use `cargo msrv verify` to check MSRV compatibility when adding new dependencies
 - [docs/BINARY_TRANSPORT.md](./docs/BINARY_TRANSPORT.md) - Binary transport migration guide (opt-in performance feature)
 - [docs/CODE_GENERATION.md](./docs/CODE_GENERATION.md) - Code generation guide (JSON Schema, Java classes)
 
+## Architecture Overview
+
+The framework follows a layered architecture:
+
+- **Core layer** (`rustbridge-core`, `rustbridge-transport`): Traits, types, serialization
+- **Runtime layer** (`rustbridge-runtime`, `rustbridge-logging`): Tokio integration, tracing callbacks
+- **FFI layer** (`rustbridge-ffi`): C ABI exports, buffer management
+- **Tooling** (`rustbridge-macros`, `rustbridge-cli`, `rustbridge-bundle`): Code generation, build tools
+
+Data flow: Host → FFI boundary → Async runtime → Plugin implementation → Response → FFI boundary → Host
+
+Memory follows "Rust allocates, host frees" pattern. See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for details.
+
 ## Git Workflow
 
 **The user controls git operations.** Do not commit, push, or create branches without explicit user request.
@@ -39,8 +66,11 @@ Use `cargo msrv verify` to check MSRV compatibility when adding new dependencies
 
 ```bash
 ./scripts/pre-commit.sh           # Full validation (Linux/macOS)
-./scripts/pre-commit.sh --fast    # Skip slower tests
+./scripts/pre-commit.sh --fast    # Skip clippy and integration tests
+./scripts/pre-commit.sh --smart   # Only test changed components
 ```
+
+**Note**: `--fast` skips clippy, which can catch real bugs. Use full validation before final commits.
 
 **Windows**: Run the equivalent commands manually (see below). The bash script requires WSL or Git Bash.
 
@@ -80,38 +110,23 @@ cd rustbridge-java
 ### CLI Tool
 
 ```bash
-# Create a new plugin project
-rustbridge new my-plugin
+rustbridge new my-plugin              # Create a new plugin project
+rustbridge build --release            # Build a plugin
+rustbridge check                      # Validate manifest
 
-# Build a plugin
-rustbridge build --release
-
-# Generate C header from Rust structs (for binary transport)
-rustbridge generate-header --output include/messages.h
-rustbridge generate-header --verify  # Verify header compiles
-
-# Code generation from Rust message types
+# Code generation
 rustbridge generate json-schema -i src/messages.rs -o schema.json
 rustbridge generate java -i src/messages.rs -o src/main/java -p com.example.messages
-
-# Generate signing keys (one-time setup)
-rustbridge keygen --output ~/.rustbridge/signing.key
+rustbridge generate-header --output include/messages.h
 
 # Bundle operations
 rustbridge bundle create --name my-plugin --version 1.0.0 \
-  --lib linux-x86_64:target/release/libmyplugin.so \
-  --lib darwin-aarch64:target/release/libmyplugin.dylib \
-  --schema README.md:README.md \
-  --generate-header src/binary_messages.rs:messages.h \
-  --generate-schema src/messages.rs:messages.json \
-  --sign-key ~/.rustbridge/signing.key
-
+  --lib linux-x86_64:target/release/libmyplugin.so
 rustbridge bundle list my-plugin-1.0.0.rbp
 rustbridge bundle extract my-plugin-1.0.0.rbp --output ./lib
-
-# Validate manifest
-rustbridge check
 ```
+
+See [docs/CODE_GENERATION.md](./docs/CODE_GENERATION.md) for detailed code generation options.
 
 ### Benchmarks
 
@@ -148,22 +163,7 @@ let re = Regex::new(r"^\d+$").unwrap();
 
 ### Lock Safety
 
-**Never call external code while holding a lock.** This prevents deadlocks.
-
-```rust
-// ❌ BAD - logging/callback while holding lock can deadlock
-let guard = self.data.write();
-tracing::debug!("...");  // May re-acquire lock via logging layer!
-
-// ✅ GOOD - release lock before external calls
-{
-    let mut guard = self.data.write();
-    *guard = new_value;
-} // Lock released
-tracing::debug!("Updated");  // Safe
-```
-
-See [docs/SKILLS.md](./docs/SKILLS.md) for detailed lock safety patterns.
+**Never call external code while holding a lock.** This includes logging, callbacks, and async operations. Release locks before any external calls to prevent deadlocks. See [docs/SKILLS.md](./docs/SKILLS.md) for detailed patterns.
 
 ## Testing Conventions
 
@@ -220,11 +220,6 @@ The `rustbridge-java/` directory contains three subprojects:
 - `rustbridge-ffm`: FFM-based implementation (Java 21+, recommended)
 - `rustbridge-jni`: JNI-based implementation (Java 8+, legacy fallback)
 
-Memory follows "Rust allocates, host frees" pattern:
-1. `plugin_call()` returns `FfiBuffer` with Rust-allocated data
-2. Host copies data to managed heap
-3. Host calls `plugin_free_buffer()` to release native memory
-
 ## Transport Options
 
 **JSON (default)**: Universal, debuggable, no schema required. Use for most cases.
@@ -233,69 +228,4 @@ Memory follows "Rust allocates, host frees" pattern:
 
 ## Schema Embedding
 
-Bundles can include schema files for self-documenting APIs:
-
-### Automatic C Header Generation
-
-Generate and embed C headers automatically during bundle creation:
-
-```bash
-rustbridge bundle create --name my-plugin --version 1.0.0 \
-  --lib linux-x86_64:target/release/libmyplugin.so \
-  --generate-header src/binary_messages.rs:messages.h
-```
-
-This:
-1. Generates a C header from Rust `#[repr(C)]` structs
-2. Embeds it in `schema/messages.h` within the bundle
-3. Adds metadata to manifest with checksum and format
-
-### Manual Schema Files
-
-Add arbitrary schema files:
-
-```bash
-rustbridge bundle create --name my-plugin --version 1.0.0 \
-  --lib linux-x86_64:target/release/libmyplugin.so \
-  --schema api-schema.json:api-schema.json \
-  --schema README.md:README.md
-```
-
-Supported formats (auto-detected):
-- `*.h`, `*.hpp` → `c-header`
-- `*.json` → `json-schema`
-- Others → `unknown`
-
-### Accessing Schemas in Java
-
-```java
-BundleLoader loader = BundleLoader.builder()
-    .bundlePath("my-plugin-1.0.0.rbp")
-    .build();
-
-// List all schemas
-Map<String, SchemaInfo> schemas = loader.getSchemas();
-
-// Read schema content
-String header = loader.readSchema("messages.h");
-
-// Extract to file
-Path schemaPath = loader.extractSchema("messages.h", Paths.get("./include"));
-```
-
-### Bundle Manifest Schema Catalog
-
-Schemas are cataloged in the manifest:
-
-```json
-{
-  "schemas": {
-    "messages.h": {
-      "path": "schema/messages.h",
-      "format": "c-header",
-      "checksum": "sha256:abc123...",
-      "description": "C struct definitions for binary transport"
-    }
-  }
-}
-```
+Bundles can include schema files (C headers, JSON schemas) for self-documenting APIs. Use `--generate-header` for automatic C header generation from `#[repr(C)]` structs, or `--schema` for manual files. See [docs/BINARY_TRANSPORT.md](./docs/BINARY_TRANSPORT.md) for details.

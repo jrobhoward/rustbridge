@@ -2,24 +2,15 @@
 
 This document tracks incomplete tasks and priorities for the rustbridge project.
 
-## Current Focus: Kotlin-First Migration & Core Stability
+## Current Focus: Developer Experience & Multi-Language Expansion
 
-**Objective**: Migrate Java/Kotlin ecosystem to Kotlin-first architecture with Java facade, finalize core framework stability, and prepare for multi-language expansion.
+**Objective**: Improve developer ergonomics, enhance documentation, and prepare for multi-language bindings (C#, Python). Phase 1 (Critical Stability) is complete - core framework is production-ready.
 
 ---
 
-## Priority 1: Critical Stability
+## Priority 1: Technical Debt & Documentation
 
-### Plugin Lifecycle & Resource Management
-
-| Task | Priority | Effort | Notes |
-|------|----------|--------|-------|
-| Plugin reload/unload safety testing | High | 3-5 days | Test unload/reload cycles, verify no leaks, document limitations |
-| Safe global state patterns | High | 1-2 days | Audit global state, add reset methods, document patterns in SKILLS.md |
-| Request concurrency limits (backpressure) | High | 1-2 days | Implement semaphore-based request limiting with configurable max concurrent |
-| Dynamic log level verification | Medium | 1 day | End-to-end test from Java/Kotlin, verify level changes affect subsequent logs |
-
-### Technical Debt (Java/Kotlin Related)
+### Java/Kotlin API Quality
 
 | Task | Priority | Notes |
 |------|----------|-------|
@@ -28,25 +19,7 @@ This document tracks incomplete tasks and priorities for the rustbridge project.
 
 ---
 
-## ✅ Jackson Migration (Completed)
-
-**Status**: COMPLETED
-**Date**: 2026-01-24
-
-Migrated rustbridge-java from Gson 2.10.1 to Jackson 2.18.2 with jackson-module-kotlin for better Java/Kotlin interop. This was a drop-in replacement with no API changes.
-
-**Changes**:
-- Updated `rustbridge-core` dependency from Gson to Jackson
-- Migrated all serialization code in `ResponseEnvelope`, `PluginConfig`, and `BundleLoader`
-- Updated `FfmPlugin` and `JniPlugin` implementations
-- All tests pass with no API changes
-- Maintained Java 8+ compatibility
-
-**Rationale**: Jackson provides better Java/Kotlin interop, active development, and is the industry standard for JSON serialization in Java ecosystems.
-
----
-
-## Priority 3: Developer Experience & Ergonomics
+## Priority 2: Developer Experience & Ergonomics
 
 ### Plugin Development Improvements
 
@@ -68,7 +41,7 @@ Migrated rustbridge-java from Gson 2.10.1 to Jackson 2.18.2 with jackson-module-
 
 ---
 
-## Priority 4: Observability & Resource Monitoring
+## Priority 3: Observability & Resource Monitoring
 
 | Task | Priority | Effort | Notes |
 |------|----------|--------|-------|
@@ -78,7 +51,7 @@ Migrated rustbridge-java from Gson 2.10.1 to Jackson 2.18.2 with jackson-module-
 
 ---
 
-## Priority 5: Non-JVM Language Support (Future)
+## Priority 4: Non-JVM Language Support (Future)
 
 ### C# Bindings (Pending: Kotlin-first completion)
 
@@ -97,7 +70,7 @@ Migrated rustbridge-java from Gson 2.10.1 to Jackson 2.18.2 with jackson-module-
 
 ---
 
-## Priority 6: General Improvements
+## Priority 5: General Improvements
 
 ### Code Quality
 
@@ -124,6 +97,73 @@ These tasks are explicitly deferred pending user requirements:
 ---
 
 ## Recently Completed
+
+### ✅ Phase 1: Critical Stability (2026-01-24)
+
+**Status**: COMPLETED
+**Objective**: Finalize core framework stability and production-readiness
+
+All critical stability tasks have been completed, making the framework production-ready for multi-language expansion.
+
+#### Completed Tasks:
+
+**1. Request Concurrency Limits (Backpressure) ✅**
+- **Implementation**: Semaphore-based request limiting in `PluginHandle` (handle.rs:74-177)
+- **Configuration**: `PluginConfig.max_concurrent_ops` (default: 1000, 0 = unlimited)
+- **Error handling**: Returns `PluginError::TooManyRequests` when limit exceeded
+- **Metrics**: Tracks rejected request count via `rejected_requests` counter
+- **Tests**: Comprehensive test suite in `ConcurrencyLimitTest.java` (4 tests)
+  - Verify limit enforcement with concurrent requests
+  - Verify unlimited mode (0) allows all requests
+  - Verify permits released after completion
+  - Verify rejected count tracking
+
+**2. Safe Global State Patterns ✅**
+- **Documentation**: Added comprehensive section in `docs/SKILLS.md:470-569`
+- **Coverage**: Documents all global state in the framework
+  - HANDLE_MANAGER (plugin handles)
+  - CALLBACK_MANAGER (FFI log callbacks)
+  - BINARY_HANDLERS (binary message handlers)
+  - ReloadHandle (tracing filter reload)
+- **Patterns**: Provides GOOD/BAD examples with code
+- **Guidelines**: Best practices for plugin developers
+
+**3. Plugin Reload/Unload Safety Testing ✅**
+- **Tests**: 12 comprehensive tests created across 3 test files
+  - `MultiplePluginTest.java` (4 tests) - Multiple plugin scenarios
+  - `PluginReloadTest.java` (6 tests) - Reload cycles
+  - `ReloadLoggingVerificationTest.java` (2 tests) - Logging after reload
+- **Findings**: Reload cycles work perfectly with clean resource cleanup
+- **Bug fix**: Fixed critical stale callback crash (SIGSEGV)
+- **Documentation**:
+  - `RELOAD_TEST_RESULTS.md` - Detailed test results
+  - `PLUGIN_RELOAD_STATUS.md` - User-facing status
+  - `RELOAD_SAFETY_ANALYSIS.md` - Technical analysis
+  - Updated `ARCHITECTURE.md` with limitations
+
+**4. Dynamic Log Level Verification ✅**
+- **Implementation**: Added `tracing_subscriber::reload` support in logging crate
+- **Tests**: `DynamicLogLevelTest.java` verifies runtime level changes
+  - Full level cycle (INFO → DEBUG → ERROR)
+  - Immediate effect verification
+- **Result**: Log levels can be changed dynamically without restart
+
+#### Impact:
+
+**Production-Ready**: The framework is now stable and ready for:
+- ✅ Concurrent plugin calls with configurable backpressure
+- ✅ Safe plugin reload cycles
+- ✅ Dynamic log level changes at runtime
+- ✅ Clean shutdown with proper resource cleanup
+- ✅ Well-documented global state patterns
+
+**Multi-Language Ready**: Core FFI API is stable and won't need breaking changes for C#, Python, or other language bindings.
+
+**Documentation**: Comprehensive docs for reload safety, global state patterns, and testing.
+
+See `docs/PHASE1_COMPLETION_SUMMARY.md` for complete details.
+
+---
 
 ### Log Callback Safety Fixes (2026-01-24)
 
@@ -196,20 +236,33 @@ These tasks are explicitly deferred pending user requirements:
 
 ## Next Up (Recommended Priority)
 
-### Phase 1: Critical Stability (weeks 1-2)
-1. Plugin reload/unload safety testing
-2. Safe global state patterns
-3. Request concurrency limits (backpressure)
-4. Dynamic log level verification
+**Phase 1 is complete!** Core framework is production-ready. Choose your next focus area:
 
-### Phase 2: Kotlin-First Foundation (weeks 2-4)
-5. Evaluate kotlinx.serialization viability
-6. Set up Kotlin compiler in build
-7. Migrate PluginConfig serialization
-8. Create Java facades + test with existing suite
+### Option A: Developer Experience (Recommended - weeks 1-2)
+1. **Documentation overhaul** (High value, approachable)
+   - Getting Started guide
+   - Error handling patterns guide
+   - Debugging guide
+   - Plugin lifecycle best practices
+2. **Plugin initialization parameters** (ergonomics win)
+3. **Missing doc comments on public APIs** (finish polish)
 
-### Phase 3: Developer Experience (weeks 4-5)
-9. Plugin initialization parameters
-10. Documentation overhaul (Getting Started, Error Handling, Debugging)
-11. Macro improvements
+### Option B: Kotlin-First Migration (weeks 2-4)
+1. Evaluate kotlinx.serialization viability
+2. Set up Kotlin compiler in build
+3. Migrate PluginConfig serialization
+4. Create Java facades + test with existing suite
+5. Migrate transport and utilities incrementally
+
+### Option C: Multi-Language Expansion (weeks 3-6)
+1. **C# bindings** (Follow Java FFM patterns)
+   - C# FFI bindings
+   - Struct mapping for binary transport
+   - Port BundleLoader to C#
+   - Port MinisignVerifier to C#
+2. **Python bindings** (High demand)
+   - Python FFI bindings (ctypes/cffi)
+   - Port BundleLoader to Python
+
+**Recommendation**: Start with **Option A (Developer Experience)** to make the framework easier to adopt, then proceed with either Kotlin migration or multi-language expansion based on user priorities.
 
