@@ -5,12 +5,6 @@ namespace RustBridge.Tests;
 
 /// <summary>
 /// Tests for binary transport (CallRaw).
-/// <para>
-/// NOTE: These tests are currently skipped because the Rust FFI layer uses thread_local
-/// storage for binary handlers. Handlers registered during on_start (in Tokio's thread)
-/// aren't visible when plugin_call_raw is called from the host language thread.
-/// See: crates/rustbridge-ffi/src/exports.rs BINARY_HANDLERS
-/// </para>
 /// </summary>
 [Trait("Category", "Integration")]
 [Trait("Category", "BinaryTransport")]
@@ -84,10 +78,6 @@ public class BinaryTransportTest : IDisposable
     private void SkipIfPluginNotAvailable()
     {
         Skip.If(_skipReason != null, _skipReason);
-
-        // Skip due to known Rust FFI thread-local storage issue
-        // Binary handlers are registered in Tokio thread but looked up in calling thread
-        Skip.If(true, "Binary transport disabled: Rust FFI uses thread_local storage for handlers (see BINARY_HANDLERS in exports.rs)");
     }
 
     // ==================== Binary Transport Tests ====================

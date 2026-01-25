@@ -6,6 +6,8 @@ use crate::binary_types::RbResponse;
 use crate::buffer::FfiBuffer;
 use crate::handle::{PluginHandle, PluginHandleManager};
 use crate::panic_guard::catch_panic;
+use dashmap::DashMap;
+use once_cell::sync::OnceCell;
 use rustbridge_core::{LogLevel, PluginConfig};
 use rustbridge_logging::{LogCallback, LogCallbackManager};
 use rustbridge_transport::ResponseEnvelope;
@@ -351,16 +353,16 @@ pub unsafe extern "C" fn plugin_get_rejected_count(handle: FfiPluginHandle) -> u
 pub type BinaryMessageHandler =
     fn(handle: &PluginHandle, request: &[u8]) -> Result<Vec<u8>, rustbridge_core::PluginError>;
 
-// Registry for binary message handlers
-//
-// This is a simple thread-local registry mapping message_id to handlers.
-// Plugins can register handlers during initialization.
-//
-// Note: For the initial benchmark, we use a simple static approach.
-// A more sophisticated implementation would use the Plugin trait.
-thread_local! {
-    static BINARY_HANDLERS: std::cell::RefCell<std::collections::HashMap<u32, BinaryMessageHandler>> =
-        std::cell::RefCell::new(std::collections::HashMap::new());
+/// Global registry for binary message handlers
+///
+/// This uses a thread-safe DashMap so handlers registered from the Tokio
+/// worker thread are visible when plugin_call_raw is called from the host
+/// language thread.
+static BINARY_HANDLERS: OnceCell<DashMap<u32, BinaryMessageHandler>> = OnceCell::new();
+
+/// Get the binary handlers registry, initializing if needed
+fn binary_handlers() -> &'static DashMap<u32, BinaryMessageHandler> {
+    BINARY_HANDLERS.get_or_init(DashMap::new)
 }
 
 /// Register a binary message handler
@@ -368,9 +370,7 @@ thread_local! {
 /// Call this during plugin initialization to register handlers for
 /// binary transport message types.
 pub fn register_binary_handler(message_id: u32, handler: BinaryMessageHandler) {
-    BINARY_HANDLERS.with(|handlers| {
-        handlers.borrow_mut().insert(message_id, handler);
-    });
+    binary_handlers().insert(message_id, handler);
 }
 
 /// Clear all binary message handlers
@@ -378,9 +378,7 @@ pub fn register_binary_handler(message_id: u32, handler: BinaryMessageHandler) {
 /// This should be called during plugin shutdown to ensure handlers
 /// don't persist across plugin reload cycles.
 pub(crate) fn clear_binary_handlers() {
-    BINARY_HANDLERS.with(|handlers| {
-        handlers.borrow_mut().clear();
-    });
+    binary_handlers().clear();
 }
 
 /// Make a synchronous binary call to the plugin
@@ -461,7 +459,7 @@ unsafe fn plugin_call_raw_impl(
     };
 
     // Look up handler
-    let handler = BINARY_HANDLERS.with(|handlers| handlers.borrow().get(&message_id).copied());
+    let handler = binary_handlers().get(&message_id).map(|r| *r);
 
     match handler {
         Some(h) => {

@@ -57,8 +57,8 @@ This document tracks incomplete tasks and priorities for the rustbridge project.
 
 | Task | Priority | Status | Notes |
 |------|----------|--------|-------|
-| C# FFI bindings | Low | ✅ Done | P/Invoke implementation complete, 76 tests (73 passing, 3 skipped) |
-| C# struct mapping for binary transport | Low | ⚠️ Blocked | Implementation complete but blocked by Rust thread-local issue |
+| C# FFI bindings | Low | ✅ Done | P/Invoke implementation complete, 76 tests passing |
+| C# struct mapping for binary transport | Low | ✅ Done | Binary transport working with thread-safe handler registry |
 | Port BundleLoader to C# | Low | ✅ Done | Supports ZIP extraction, checksums, minisign verification (20 tests) |
 | Port MinisignVerifier to C# | Low | ✅ Done | Ed25519 verification using NSec.Cryptography (14 tests) |
 | C# testing documentation | Low | ✅ Done | docs/TESTING_CSHARP.md |
@@ -66,11 +66,12 @@ This document tracks incomplete tasks and priorities for the rustbridge project.
 | C# CI/CD pipeline (GitHub Actions) | Low | Pending | Add .NET build/test to CI workflow, run on ubuntu/windows/macos |
 | C# NuGet packaging | Low | Pending | Create .nupkg for RustBridge.Core and RustBridge.Native |
 
-### Rust FFI Fixes Needed
+### Rust FFI Fixes Completed
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| Fix BINARY_HANDLERS thread-local storage | Medium | `crates/rustbridge-ffi/src/exports.rs` uses `thread_local!` for binary handlers. Handlers registered in Tokio thread aren't visible when `plugin_call_raw` is called from host language thread. Need to use thread-safe global registry (e.g., `once_cell::sync::Lazy<DashMap<...>>`) instead. Blocks binary transport for all host languages. |
+| ✅ Fix BINARY_HANDLERS thread-local storage | Medium | Fixed: Replaced `thread_local!` with `OnceCell<DashMap<...>>` in `crates/rustbridge-ffi/src/exports.rs`. Binary transport now works for all host languages. |
+| ✅ Java binary transport tests | Medium | Added `BinaryTransportTest.java` with 4 tests for callRaw functionality. |
 
 ### Python Bindings (Pending: User Decision)
 
