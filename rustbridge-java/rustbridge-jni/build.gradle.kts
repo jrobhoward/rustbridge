@@ -18,3 +18,8 @@ java {
 tasks.withType<JavaCompile> {
     options.release.set(8)
 }
+
+tasks.withType<Test> {
+    // Default timeout for all tests - prevents builds from hanging indefinitely
+    systemProperty("junit.jupiter.execution.timeout.default", "60s")
+}

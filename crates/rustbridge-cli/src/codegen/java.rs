@@ -105,7 +105,9 @@
 //! generate_java(&messages, Path::new("src/main/java"), "com.example").unwrap();
 //! ```
 
-use super::ir::{FieldType, MessageType};
+use super::ir::MessageType;
+use super::jvm_types::{map_field_type, needs_list_import};
+use super::naming::{capitalize, to_camel_case};
 use anyhow::{Context, Result};
 use std::fs;
 use std::path::Path;
@@ -141,11 +143,7 @@ fn generate_java_class(message: &MessageType, package: &str) -> Result<String> {
     // Imports
     code.push_str("import com.fasterxml.jackson.annotation.JsonProperty;\n");
 
-    let has_list = message
-        .fields
-        .iter()
-        .any(|f| matches!(f.ty, FieldType::Vec(_)));
-    if has_list {
+    if needs_list_import(&message.fields) {
         code.push_str("import java.util.List;\n");
     }
     code.push('\n');
@@ -186,7 +184,8 @@ fn generate_java_class(message: &MessageType, package: &str) -> Result<String> {
         }
 
         // Field declaration
-        let java_type = map_type_to_java(&field.ty, field.optional);
+        let jvm_type = map_field_type(&field.ty);
+        let java_type = jvm_type.java_type(field.optional);
         code.push_str(&format!("    public {} {};\n", java_type, java_field_name));
     }
 
@@ -206,7 +205,8 @@ fn generate_java_class(message: &MessageType, package: &str) -> Result<String> {
             if i > 0 {
                 code.push_str(", ");
             }
-            let java_type = map_type_to_java(&field.ty, field.optional);
+            let jvm_type = map_field_type(&field.ty);
+            let java_type = jvm_type.java_type(field.optional);
             let java_field_name = to_camel_case(&field.name);
             code.push_str(&format!("{} {}", java_type, java_field_name));
         }
@@ -226,7 +226,8 @@ fn generate_java_class(message: &MessageType, package: &str) -> Result<String> {
 
     // Getters and setters
     for field in &message.fields {
-        let java_type = map_type_to_java(&field.ty, field.optional);
+        let jvm_type = map_field_type(&field.ty);
+        let java_type = jvm_type.java_type(field.optional);
         let java_field_name = to_camel_case(&field.name);
         let method_name_part = capitalize(&java_field_name);
 
@@ -255,119 +256,15 @@ fn generate_java_class(message: &MessageType, package: &str) -> Result<String> {
     Ok(code)
 }
 
-/// Map a Rust type to a Java type.
-fn map_type_to_java(ty: &FieldType, optional: bool) -> String {
-    match ty {
-        FieldType::String => "String".to_string(),
-        FieldType::Bool => if optional { "Boolean" } else { "boolean" }.to_string(),
-        FieldType::I8 | FieldType::I16 | FieldType::I32 => {
-            if optional { "Integer" } else { "int" }.to_string()
-        }
-        FieldType::I64 => if optional { "Long" } else { "long" }.to_string(),
-        FieldType::U8 | FieldType::U16 | FieldType::U32 => {
-            if optional { "Integer" } else { "int" }.to_string()
-        }
-        FieldType::U64 => if optional { "Long" } else { "long" }.to_string(),
-        FieldType::F32 => if optional { "Float" } else { "float" }.to_string(),
-        FieldType::F64 => if optional { "Double" } else { "double" }.to_string(),
-        FieldType::Vec(inner) => {
-            let inner_type = map_type_to_java(inner, false);
-            // Use boxed types for List elements
-            let boxed_inner = box_primitive(&inner_type);
-            format!("List<{}>", boxed_inner)
-        }
-        FieldType::Option(inner) => {
-            // This shouldn't happen as optional is handled at the field level
-            map_type_to_java(inner, true)
-        }
-        FieldType::Custom(name) => name.clone(),
-    }
-}
-
-/// Box a primitive type for use in generics.
-fn box_primitive(ty: &str) -> String {
-    match ty {
-        "boolean" => "Boolean".to_string(),
-        "byte" => "Byte".to_string(),
-        "short" => "Short".to_string(),
-        "int" => "Integer".to_string(),
-        "long" => "Long".to_string(),
-        "float" => "Float".to_string(),
-        "double" => "Double".to_string(),
-        "char" => "Character".to_string(),
-        other => other.to_string(),
-    }
-}
-
-/// Convert snake_case to camelCase.
-fn to_camel_case(s: &str) -> String {
-    let mut result = String::new();
-    let mut capitalize_next = false;
-
-    for c in s.chars() {
-        if c == '_' {
-            capitalize_next = true;
-        } else if capitalize_next {
-            result.push_str(&c.to_uppercase().to_string());
-            capitalize_next = false;
-        } else {
-            result.push(c);
-        }
-    }
-
-    result
-}
-
-/// Capitalize the first letter of a string.
-fn capitalize(s: &str) -> String {
-    let mut chars = s.chars();
-    match chars.next() {
-        None => String::new(),
-        Some(first) => first.to_uppercase().chain(chars).collect(),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     #![allow(non_snake_case)]
 
     use super::*;
-    use crate::codegen::ir::Field;
+    use crate::codegen::ir::{Field, FieldType};
 
-    #[test]
-    fn map_type_to_java___handles_primitives() {
-        assert_eq!(map_type_to_java(&FieldType::String, false), "String");
-        assert_eq!(map_type_to_java(&FieldType::Bool, false), "boolean");
-        assert_eq!(map_type_to_java(&FieldType::Bool, true), "Boolean");
-        assert_eq!(map_type_to_java(&FieldType::I32, false), "int");
-        assert_eq!(map_type_to_java(&FieldType::I32, true), "Integer");
-    }
-
-    #[test]
-    fn map_type_to_java___handles_arrays() {
-        let vec_string = FieldType::Vec(Box::new(FieldType::String));
-        assert_eq!(map_type_to_java(&vec_string, false), "List<String>");
-
-        let vec_int = FieldType::Vec(Box::new(FieldType::I32));
-        assert_eq!(map_type_to_java(&vec_int, false), "List<Integer>");
-    }
-
-    #[test]
-    fn to_camel_case___converts_snake_case() {
-        assert_eq!(to_camel_case("hello_world"), "helloWorld");
-        assert_eq!(to_camel_case("display_name"), "displayName");
-        assert_eq!(to_camel_case("foo_bar_baz"), "fooBarBaz");
-        assert_eq!(to_camel_case("simple"), "simple");
-        assert_eq!(to_camel_case(""), "");
-    }
-
-    #[test]
-    fn capitalize___capitalizes_first_letter() {
-        assert_eq!(capitalize("hello"), "Hello");
-        assert_eq!(capitalize("world"), "World");
-        assert_eq!(capitalize("a"), "A");
-        assert_eq!(capitalize(""), "");
-    }
+    // Note: Tests for naming utilities (to_camel_case, capitalize) and type mapping
+    // (map_field_type) are in their respective shared modules: naming.rs and jvm_types.rs
 
     #[test]
     fn generate_java_class___creates_valid_class() {
@@ -408,7 +305,7 @@ mod tests {
 
         let code = generate_java_class(&message, "com.example").unwrap();
 
-        assert!(code.contains("@SerializedName(\"display_name\")"));
+        assert!(code.contains("@JsonProperty(\"display_name\")"));
         assert!(code.contains("public String displayName;"));
         assert!(code.contains("public String getDisplayName()"));
         assert!(code.contains("public void setDisplayName(String displayName)"));
@@ -553,7 +450,7 @@ mod tests {
 
         let code = generate_java_class(&message, "com.example").unwrap();
 
-        assert!(code.contains("@SerializedName(\"jsonName\")"));
+        assert!(code.contains("@JsonProperty(\"jsonName\")"));
         assert!(code.contains("public String rustName;"));
     }
 
@@ -575,31 +472,5 @@ mod tests {
 
         assert!(code.contains("/**\n * Line 1\n * Line 2\n */"));
         assert!(code.contains("/**\n     * Field doc 1\n     * Field doc 2\n     */"));
-    }
-
-    #[test]
-    fn box_primitive___boxes_all_primitive_types() {
-        assert_eq!(box_primitive("boolean"), "Boolean");
-        assert_eq!(box_primitive("byte"), "Byte");
-        assert_eq!(box_primitive("short"), "Short");
-        assert_eq!(box_primitive("int"), "Integer");
-        assert_eq!(box_primitive("long"), "Long");
-        assert_eq!(box_primitive("float"), "Float");
-        assert_eq!(box_primitive("double"), "Double");
-        assert_eq!(box_primitive("char"), "Character");
-    }
-
-    #[test]
-    fn box_primitive___leaves_reference_types_unchanged() {
-        assert_eq!(box_primitive("String"), "String");
-        assert_eq!(box_primitive("CustomType"), "CustomType");
-    }
-
-    #[test]
-    fn map_type_to_java___handles_all_float_types() {
-        assert_eq!(map_type_to_java(&FieldType::F32, false), "float");
-        assert_eq!(map_type_to_java(&FieldType::F32, true), "Float");
-        assert_eq!(map_type_to_java(&FieldType::F64, false), "double");
-        assert_eq!(map_type_to_java(&FieldType::F64, true), "Double");
     }
 }

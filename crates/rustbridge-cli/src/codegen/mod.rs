@@ -99,6 +99,8 @@
 pub mod ir;
 pub mod java;
 pub mod json_schema;
+pub mod jvm_types;
+pub mod naming;
 
 pub use ir::MessageType;
 pub use java::generate_java;
