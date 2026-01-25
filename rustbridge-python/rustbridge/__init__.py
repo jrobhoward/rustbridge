@@ -2,17 +2,30 @@
 rustbridge - Python bindings for Rust shared libraries.
 
 This package provides Python bindings for rustbridge plugins using ctypes.
-It supports JSON-based transport and optional bundle loading with minisign
-signature verification.
+It supports JSON-based transport, binary transport for high-performance paths,
+and optional bundle loading with minisign signature verification.
 
 Example:
-    # Direct library loading
+    # Direct library loading (JSON transport)
     from rustbridge import NativePluginLoader, PluginConfig, LogLevel
 
     config = PluginConfig.defaults().log_level(LogLevel.DEBUG)
     with NativePluginLoader.load_with_config("libmyplugin.so", config) as plugin:
         response = plugin.call("echo", '{"message": "hello"}')
         print(response)
+
+    # Binary transport (high-performance)
+    from ctypes import Structure, c_uint8, c_uint32
+
+    class MyRequest(Structure):
+        _pack_ = 1
+        _fields_ = [("version", c_uint8), ("data", c_uint8 * 64)]
+
+    class MyResponse(Structure):
+        _pack_ = 1
+        _fields_ = [("result", c_uint32)]
+
+    response = plugin.call_raw(1, MyRequest(...), MyResponse)
 
     # Bundle loading (with signature verification)
     from rustbridge import BundleLoader

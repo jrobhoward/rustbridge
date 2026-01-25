@@ -65,6 +65,17 @@ class RbResponse(Structure):
 
     Used by plugin_call_raw for high-performance binary communication.
 
+    Layout matches Rust RbResponse:
+    ```rust
+    struct RbResponse {
+        error_code: u32,  // 0 = success
+        len: u32,         // response data size
+        capacity: u32,    // allocation capacity
+        _padding: u32,    // alignment padding
+        data: *mut c_void // response data pointer
+    }
+    ```
+
     Attributes:
         error_code: Error code (0 = success).
         len: Length of valid data.
@@ -76,6 +87,7 @@ class RbResponse(Structure):
         ("error_code", c_uint32),
         ("len", c_uint32),
         ("capacity", c_uint32),
+        ("_padding", c_uint32),  # Alignment padding for 64-bit pointer
         ("data", POINTER(c_uint8)),
     ]
 
@@ -88,6 +100,12 @@ class RbResponse(Structure):
         if not self.data or self.len == 0:
             return b""
         return bytes(self.data[: self.len])
+
+    def get_error_message(self) -> str:
+        """Get error message if this is an error response."""
+        if not self.is_error():
+            return ""
+        return self.get_bytes().decode("utf-8", errors="replace")
 
 
 # Log callback function type

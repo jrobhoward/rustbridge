@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import ctypes
 import json
-from ctypes import c_void_p
+from ctypes import Structure, c_void_p, memmove, sizeof
 from typing import Any, Callable, TypeVar
 
 from rustbridge.core.lifecycle_state import LifecycleState
@@ -15,6 +16,8 @@ from rustbridge.native.structures import LogCallbackFnType
 
 T = TypeVar("T")
 R = TypeVar("R")
+TRequest = TypeVar("TRequest", bound=Structure)
+TResponse = TypeVar("TResponse", bound=Structure)
 
 # Type alias for log callback
 LogCallbackFn = Callable[[LogLevel, str, str], None]
@@ -133,6 +136,105 @@ class NativePlugin:
         request_json = json.dumps(request)
         response_json = self.call(type_tag, request_json)
         return json.loads(response_json)
+
+    def call_raw(
+        self,
+        message_id: int,
+        request: TRequest,
+        response_type: type[TResponse],
+    ) -> TResponse:
+        """
+        Make a binary call to the plugin using ctypes structures.
+
+        This method bypasses JSON serialization for high-performance scenarios.
+        Request and response must be ctypes.Structure subclasses with layouts
+        matching the Rust `#[repr(C)]` structs.
+
+        Args:
+            message_id: Numeric message identifier (registered with register_binary_handler).
+            request: Request struct (ctypes.Structure subclass).
+            response_type: Response struct type (ctypes.Structure subclass).
+
+        Returns:
+            Response struct populated with data from the plugin.
+
+        Raises:
+            PluginException: If the call fails or binary transport is not supported.
+
+        Example:
+            ```python
+            from ctypes import Structure, c_uint8, c_uint32
+
+            class SmallRequest(Structure):
+                _pack_ = 1
+                _fields_ = [
+                    ("version", c_uint8),
+                    ("_reserved", c_uint8 * 3),
+                    ("key", c_uint8 * 64),
+                    ("key_len", c_uint32),
+                    ("flags", c_uint32),
+                ]
+
+            class SmallResponse(Structure):
+                _pack_ = 1
+                _fields_ = [
+                    ("version", c_uint8),
+                    ("_reserved", c_uint8 * 3),
+                    ("value", c_uint8 * 64),
+                    ("value_len", c_uint32),
+                    ("ttl_seconds", c_uint32),
+                    ("cache_hit", c_uint8),
+                    ("_padding", c_uint8 * 3),
+                ]
+
+            request = SmallRequest(...)
+            response = plugin.call_raw(1, request, SmallResponse)
+            ```
+        """
+        self._throw_if_disposed()
+
+        if not self._library.has_binary_transport:
+            raise PluginException("Binary transport not supported by this library")
+
+        # Convert request struct to bytes
+        request_bytes = bytes(request)
+
+        # Make the raw call
+        rb_response = self._library.plugin_call_raw(
+            self._handle, message_id, request_bytes
+        )
+
+        try:
+            # Check for errors
+            if rb_response.is_error():
+                error_message = rb_response.get_error_message() or "Unknown error"
+                raise PluginException(error_message, rb_response.error_code)
+
+            # Validate response size
+            expected_size = sizeof(response_type)
+            if rb_response.len != expected_size:
+                raise PluginException(
+                    f"Response size mismatch: expected {expected_size}, got {rb_response.len}"
+                )
+
+            # Create response struct and copy data into it
+            response = response_type()
+            memmove(ctypes.addressof(response), rb_response.data, expected_size)
+
+            return response
+        finally:
+            # Free the response
+            self._library.rb_response_free(rb_response)
+
+    @property
+    def has_binary_transport(self) -> bool:
+        """
+        Check if this plugin supports binary transport.
+
+        Returns:
+            True if binary transport is available.
+        """
+        return self._library.has_binary_transport
 
     def set_log_level(self, level: LogLevel) -> None:
         """

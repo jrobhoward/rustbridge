@@ -27,7 +27,7 @@ This document tracks incomplete tasks and priorities for the rustbridge project.
 | 6 | Add host-language benchmarks | Java | Pending | JMH benchmarks for JSON/binary latency, throughput |
 | 7 | Add host-language benchmarks | C# | Pending | BenchmarkDotNet for JSON/binary latency, throughput |
 | 8 | Add host-language benchmarks | Python | ✅ Done | Added pytest-benchmark tests for call latency, throughput |
-| 9 | Add binary transport to Python | Python | Pending | `call_raw()` with ctypes structs |
+| 9 | Add binary transport to Python | Python | ✅ Done | `call_raw()` with ctypes structs, 8 tests |
 
 ### Lower Priority
 
