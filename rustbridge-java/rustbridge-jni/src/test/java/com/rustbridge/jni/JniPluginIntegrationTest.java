@@ -51,7 +51,7 @@ class JniPluginIntegrationTest {
     @Test
     @Order(1)
     @DisplayName("Plugin loads and initializes successfully")
-    void testPluginLoads() {
+    void plugin___loaded___is_active() {
         assertNotNull(plugin);
         assertEquals(LifecycleState.ACTIVE, plugin.getState());
     }
@@ -59,7 +59,7 @@ class JniPluginIntegrationTest {
     @Test
     @Order(2)
     @DisplayName("Echo handler returns message with length")
-    void testEchoHandler() throws PluginException {
+    void echo___valid_message___returns_message_with_length() throws PluginException {
         String request = "{\"message\": \"Hello, World!\"}";
 
         String response = plugin.call("echo", request);
@@ -72,7 +72,7 @@ class JniPluginIntegrationTest {
     @Test
     @Order(3)
     @DisplayName("Greet handler returns personalized greeting")
-    void testGreetHandler() throws PluginException {
+    void greet___valid_name___returns_personalized_greeting() throws PluginException {
         String request = "{\"name\": \"Alice\"}";
 
         String response = plugin.call("greet", request);
@@ -84,7 +84,7 @@ class JniPluginIntegrationTest {
     @Test
     @Order(4)
     @DisplayName("User create handler creates user with ID")
-    void testUserCreateHandler() throws PluginException {
+    void user_create___valid_input___creates_user_with_id() throws PluginException {
         String request = "{\"username\": \"testuser\", \"email\": \"test@example.com\"}";
 
         String response = plugin.call("user.create", request);
@@ -98,7 +98,7 @@ class JniPluginIntegrationTest {
     @Test
     @Order(5)
     @DisplayName("Math add handler computes sum")
-    void testMathAddHandler() throws PluginException {
+    void math_add___valid_numbers___computes_sum() throws PluginException {
         String request = "{\"a\": 42, \"b\": 58}";
 
         String response = plugin.call("math.add", request);
@@ -110,7 +110,7 @@ class JniPluginIntegrationTest {
     @Test
     @Order(6)
     @DisplayName("Invalid type tag returns error")
-    void testInvalidTypeTag() {
+    void call___invalid_type_tag___throws_exception() {
         String request = "{\"test\": true}";
 
         PluginException exception = assertThrows(PluginException.class, () -> {
@@ -124,7 +124,7 @@ class JniPluginIntegrationTest {
     @Test
     @Order(7)
     @DisplayName("Invalid JSON in request returns error")
-    void testInvalidJson() {
+    void call___invalid_json___throws_serialization_error() {
         String invalidJson = "{broken json}";
 
         PluginException exception = assertThrows(PluginException.class, () -> {
@@ -141,7 +141,7 @@ class JniPluginIntegrationTest {
     @Test
     @Order(8)
     @DisplayName("Empty message field in echo returns error")
-    void testEmptyRequest() {
+    void echo___empty_object___throws_missing_field_error() {
         PluginException exception = assertThrows(PluginException.class, () -> {
             plugin.call("echo", "{}");
         });
@@ -154,7 +154,7 @@ class JniPluginIntegrationTest {
     @Test
     @Order(9)
     @DisplayName("Multiple sequential calls work correctly")
-    void testMultipleCalls() throws PluginException {
+    void call___sequential_calls___all_succeed() throws PluginException {
         String response1 = plugin.call("echo", "{\"message\": \"First\"}");
         String response2 = plugin.call("echo", "{\"message\": \"Second\"}");
         String response3 = plugin.call("greet", "{\"name\": \"Bob\"}");
@@ -170,7 +170,7 @@ class JniPluginIntegrationTest {
     @Test
     @Order(10)
     @DisplayName("Plugin state remains ACTIVE after successful calls")
-    void testStateRemainsActive() throws PluginException {
+    void state___after_successful_calls___remains_active() throws PluginException {
         plugin.call("echo", "{\"message\": \"test\"}");
         LifecycleState state = plugin.getState();
 
@@ -180,7 +180,7 @@ class JniPluginIntegrationTest {
     @Test
     @Order(11)
     @DisplayName("Log level can be changed")
-    void testSetLogLevel() {
+    void log_level___set_different_levels___no_exceptions() {
         assertDoesNotThrow(() -> {
             plugin.setLogLevel(LogLevel.DEBUG);
             plugin.setLogLevel(LogLevel.INFO);
@@ -191,7 +191,7 @@ class JniPluginIntegrationTest {
     @Test
     @Order(12)
     @DisplayName("Plugin can be closed and reopened")
-    void testPluginCloseAndReopen() throws PluginException {
+    void plugin___close_and_reopen___works_correctly() throws PluginException {
         String request = "{\"message\": \"test\"}";
 
         String response1 = plugin.call("echo", request);
@@ -213,7 +213,7 @@ class JniPluginIntegrationTest {
     @Test
     @Order(13)
     @DisplayName("Large request payload is handled")
-    void testLargePayload() throws PluginException {
+    void echo___large_payload___handled_correctly() throws PluginException {
         StringBuilder largeMessage = new StringBuilder();
         for (int i = 0; i < 10000; i++) {
             largeMessage.append("This is a test message. ");
@@ -229,7 +229,7 @@ class JniPluginIntegrationTest {
     @Test
     @Order(14)
     @DisplayName("Concurrent calls are handled safely")
-    void testConcurrentCalls() throws InterruptedException {
+    void call___concurrent_calls___all_succeed() throws InterruptedException {
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger errorCount = new AtomicInteger(0);
         int numThreads = 10;

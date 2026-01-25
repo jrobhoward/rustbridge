@@ -26,7 +26,7 @@ class JniPluginLoaderTest {
 
     @Test
     @DisplayName("Plugin can be loaded")
-    void testPluginLoads() throws PluginException {
+    void load___valid_path___succeeds() throws PluginException {
         try (Plugin plugin = JniPluginLoader.load(PLUGIN_PATH.toString())) {
             assertNotNull(plugin);
         }
@@ -34,7 +34,7 @@ class JniPluginLoaderTest {
 
     @Test
     @DisplayName("Plugin can be loaded with configuration")
-    void testPluginLoadsWithConfig() throws PluginException {
+    void load___with_config___succeeds() throws PluginException {
         PluginConfig config = PluginConfig.defaults()
                 .workerThreads(1);
 
@@ -46,7 +46,7 @@ class JniPluginLoaderTest {
     @Test
     @Disabled("loadByName searches in standard paths - needs library in java.library.path or current dir")
     @DisplayName("Plugin can be loaded by name")
-    void testPluginLoadByName() throws PluginException {
+    void load_by_name___valid_name___succeeds() throws PluginException {
         try (Plugin plugin = JniPluginLoader.loadByName("hello_plugin")) {
             assertNotNull(plugin);
         }
@@ -54,7 +54,7 @@ class JniPluginLoaderTest {
 
     @Test
     @DisplayName("Invalid library path throws exception")
-    void testInvalidPath() {
+    void load___invalid_path___throws_exception() {
         assertThrows(PluginException.class, () -> {
             JniPluginLoader.load("/nonexistent/path/libfake.so");
         });

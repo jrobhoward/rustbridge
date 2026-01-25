@@ -1,0 +1,39 @@
+[package]
+name = "rustbridge-jni"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "JNI bindings for rustbridge - enables Java 8+ support"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# JNI bindings
+jni = "0.21"
+
+# Dynamic library loading
+libloading = "0.8"
+
+# Internal crates
+rustbridge-ffi = { path = "../rustbridge-ffi" }
+rustbridge-core = { path = "../rustbridge-core" }
+
+# Serialization
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+# Tracing (for debug logging)
+tracing = { workspace = true }
+
+# Note: We don't use workspace lints because this crate needs to allow
+# unwrap/expect since JNI error handling is fundamentally different.
+# The Mutex guard unwrap() is safe because we never hold it across await points.
+[lints.clippy]
+unwrap_used = "allow"
+expect_used = "allow"
+await_holding_lock = "deny"

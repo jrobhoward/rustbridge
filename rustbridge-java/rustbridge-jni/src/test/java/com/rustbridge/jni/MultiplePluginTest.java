@@ -27,7 +27,7 @@ class MultiplePluginTest {
 
     @Test
     @DisplayName("Two plugins can be loaded simultaneously")
-    void testTwoPluginsSimultaneously() throws PluginException {
+    void plugins___two_loaded___both_work_independently() throws PluginException {
         try (Plugin plugin1 = JniPluginLoader.load(PLUGIN_PATH.toString());
              Plugin plugin2 = JniPluginLoader.load(PLUGIN_PATH.toString())) {
 
@@ -44,7 +44,7 @@ class MultiplePluginTest {
 
     @Test
     @DisplayName("Multiple plugins have independent log levels")
-    void testMultiplePluginsIndependentLogLevels() throws PluginException {
+    void plugins___different_log_levels___independent_operation() throws PluginException {
         try (Plugin plugin1 = JniPluginLoader.load(PLUGIN_PATH.toString());
              Plugin plugin2 = JniPluginLoader.load(PLUGIN_PATH.toString())) {
 
@@ -63,7 +63,7 @@ class MultiplePluginTest {
 
     @Test
     @DisplayName("Shutting down one plugin doesn't affect another")
-    void testShutdownOnePluginDoesntAffectOther() throws PluginException, InterruptedException {
+    void plugins___one_shutdown___other_continues_working() throws PluginException, InterruptedException {
         Plugin plugin1 = JniPluginLoader.load(PLUGIN_PATH.toString());
         Plugin plugin2 = JniPluginLoader.load(PLUGIN_PATH.toString());
 

@@ -26,7 +26,7 @@ class PluginReloadTest {
 
     @Test
     @DisplayName("Plugin can be loaded, shut down, and reloaded")
-    void testLoadShutdownReload() throws PluginException, InterruptedException {
+    void reload___after_shutdown___works_correctly() throws PluginException, InterruptedException {
         System.out.println("\n=== First Load ===");
 
         Plugin plugin1 = JniPluginLoader.load(PLUGIN_PATH.toString());
@@ -64,7 +64,7 @@ class PluginReloadTest {
 
     @Test
     @DisplayName("Plugin can be used, reloaded, and used again with same functionality")
-    void testReloadFunctionality() throws PluginException, InterruptedException {
+    void reload___all_functions___work_after_reload() throws PluginException, InterruptedException {
         System.out.println("\n=== First Load - Testing All Functions ===");
         Plugin plugin1 = JniPluginLoader.load(PLUGIN_PATH.toString());
 
@@ -97,7 +97,7 @@ class PluginReloadTest {
 
     @Test
     @DisplayName("Multiple reload cycles work")
-    void testMultipleReloadCycles() throws PluginException, InterruptedException {
+    void reload___multiple_cycles___all_succeed() throws PluginException, InterruptedException {
         final int RELOAD_COUNT = 3;
 
         for (int i = 0; i < RELOAD_COUNT; i++) {
@@ -120,7 +120,7 @@ class PluginReloadTest {
 
     @Test
     @DisplayName("Plugin state is fresh after reload")
-    void testStateFreshAfterReload() throws PluginException, InterruptedException {
+    void reload___state___appears_fresh() throws PluginException, InterruptedException {
         System.out.println("\n=== First Load - Create Users ===");
 
         Plugin plugin1 = JniPluginLoader.load(PLUGIN_PATH.toString());
@@ -156,7 +156,7 @@ class PluginReloadTest {
 
     @Test
     @DisplayName("Dynamic log level changes work after reload")
-    void testDynamicLogLevelAfterReload() throws PluginException, InterruptedException {
+    void reload___log_levels___work_after_reload() throws PluginException, InterruptedException {
         System.out.println("\n=== First Load - Testing Dynamic Log Levels ===");
 
         Plugin plugin1 = JniPluginLoader.load(PLUGIN_PATH.toString());
