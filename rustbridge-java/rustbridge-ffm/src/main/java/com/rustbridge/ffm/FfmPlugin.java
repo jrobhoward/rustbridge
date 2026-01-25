@@ -9,7 +9,7 @@ import java.lang.invoke.MethodHandle;
 import java.nio.charset.StandardCharsets;
 
 /**
- * FFM-based plugin implementation using Java 21+ Foreign Function & Memory API.
+ * FFM-based plugin implementation using Java 21+ Foreign Function and Memory API.
  * <p>
  * This implementation uses Project Panama to call native plugin functions directly,
  * without JNI overhead.

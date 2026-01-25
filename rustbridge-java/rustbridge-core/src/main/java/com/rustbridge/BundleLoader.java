@@ -56,11 +56,18 @@ public class BundleLoader implements AutoCloseable {
         this.verifySignatures = builder.verifySignatures;
         this.publicKeyOverride = builder.publicKeyOverride;
         this.zipFile = new ZipFile(bundlePath.toFile());
-        this.manifest = loadManifest();
 
-        // Verify manifest signature if enabled
-        if (verifySignatures) {
-            verifyManifestSignature();
+        try {
+            this.manifest = loadManifest();
+
+            // Verify manifest signature if enabled
+            if (verifySignatures) {
+                verifyManifestSignature();
+            }
+        } catch (IOException | RuntimeException e) {
+            // Ensure ZipFile is closed if construction fails
+            zipFile.close();
+            throw e;
         }
     }
 
