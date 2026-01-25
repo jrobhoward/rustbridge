@@ -1,5 +1,7 @@
 package com.rustbridge;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Plugin lifecycle states.
  * <p>
@@ -55,7 +57,7 @@ public enum LifecycleState {
      * @return the corresponding state
      * @throws IllegalArgumentException if the code is invalid
      */
-    public static LifecycleState fromCode(int code) {
+    public static @NotNull LifecycleState fromCode(int code) {
         for (LifecycleState state : values()) {
             if (state.code == code) {
                 return state;

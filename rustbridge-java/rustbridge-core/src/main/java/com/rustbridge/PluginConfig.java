@@ -3,6 +3,8 @@ package com.rustbridge;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,8 +16,8 @@ public class PluginConfig {
     private static final ObjectMapper OBJECT_MAPPER = JsonMapper.getInstance();
 
     private final Map<String, Object> data;
-    private Map<String, Object> initParams;
-    private Integer workerThreads;
+    private @Nullable Map<String, Object> initParams;
+    private @Nullable Integer workerThreads;
     private String logLevel = "info";
     private int maxConcurrentOps = 1000;
     private long shutdownTimeoutMs = 5000;
@@ -32,7 +34,7 @@ public class PluginConfig {
      *
      * @return a new configuration with defaults
      */
-    public static PluginConfig defaults() {
+    public static @NotNull PluginConfig defaults() {
         return new PluginConfig();
     }
 
@@ -42,7 +44,7 @@ public class PluginConfig {
      * @param threads the number of threads
      * @return this config for chaining
      */
-    public PluginConfig workerThreads(int threads) {
+    public @NotNull PluginConfig workerThreads(int threads) {
         this.workerThreads = threads;
         return this;
     }
@@ -53,7 +55,7 @@ public class PluginConfig {
      * @param level the log level
      * @return this config for chaining
      */
-    public PluginConfig logLevel(LogLevel level) {
+    public @NotNull PluginConfig logLevel(@NotNull LogLevel level) {
         this.logLevel = level.name().toLowerCase();
         return this;
     }
@@ -67,7 +69,7 @@ public class PluginConfig {
      * @param level the log level as a string
      * @return this config for chaining
      */
-    public PluginConfig logLevel(String level) {
+    public @NotNull PluginConfig logLevel(@NotNull String level) {
         this.logLevel = level.toLowerCase();
         return this;
     }
@@ -78,7 +80,7 @@ public class PluginConfig {
      * @param maxOps the maximum concurrent operations
      * @return this config for chaining
      */
-    public PluginConfig maxConcurrentOps(int maxOps) {
+    public @NotNull PluginConfig maxConcurrentOps(int maxOps) {
         this.maxConcurrentOps = maxOps;
         return this;
     }
@@ -89,7 +91,7 @@ public class PluginConfig {
      * @param timeoutMs the timeout in milliseconds
      * @return this config for chaining
      */
-    public PluginConfig shutdownTimeout(long timeoutMs) {
+    public @NotNull PluginConfig shutdownTimeout(long timeoutMs) {
         this.shutdownTimeoutMs = timeoutMs;
         return this;
     }
@@ -102,7 +104,7 @@ public class PluginConfig {
      * @param timeoutMs the timeout in milliseconds
      * @return this config for chaining
      */
-    public PluginConfig shutdownTimeoutMs(long timeoutMs) {
+    public @NotNull PluginConfig shutdownTimeoutMs(long timeoutMs) {
         this.shutdownTimeoutMs = timeoutMs;
         return this;
     }
@@ -114,7 +116,7 @@ public class PluginConfig {
      * @param value the configuration value
      * @return this config for chaining
      */
-    public PluginConfig set(String key, Object value) {
+    public @NotNull PluginConfig set(@NotNull String key, @Nullable Object value) {
         this.data.put(key, value);
         return this;
     }
@@ -130,7 +132,7 @@ public class PluginConfig {
      * @param value the parameter value
      * @return this config for chaining
      */
-    public PluginConfig initParam(String key, Object value) {
+    public @NotNull PluginConfig initParam(@NotNull String key, @Nullable Object value) {
         if (this.initParams == null) {
             this.initParams = new HashMap<>();
         }
@@ -147,7 +149,7 @@ public class PluginConfig {
      * @param params map of initialization parameters
      * @return this config for chaining
      */
-    public PluginConfig initParams(Map<String, Object> params) {
+    public @NotNull PluginConfig initParams(@NotNull Map<String, Object> params) {
         this.initParams = new HashMap<>(params);
         return this;
     }
@@ -157,7 +159,7 @@ public class PluginConfig {
      *
      * @return the JSON bytes
      */
-    public byte[] toJsonBytes() {
+    public byte @NotNull [] toJsonBytes() {
         ObjectNode json = OBJECT_MAPPER.createObjectNode();
         json.set("data", OBJECT_MAPPER.valueToTree(data));
 

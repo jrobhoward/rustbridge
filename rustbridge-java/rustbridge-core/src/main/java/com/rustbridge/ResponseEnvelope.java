@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Response envelope for FFI communication.
@@ -12,19 +14,19 @@ public class ResponseEnvelope {
     private static final ObjectMapper OBJECT_MAPPER = JsonMapper.getInstance();
 
     @JsonProperty("status")
-    private String status;
+    private @Nullable String status;
 
     @JsonProperty("payload")
-    private JsonNode payload;
+    private @Nullable JsonNode payload;
 
     @JsonProperty("error_code")
-    private Integer errorCode;
+    private @Nullable Integer errorCode;
 
     @JsonProperty("error_message")
-    private String errorMessage;
+    private @Nullable String errorMessage;
 
     @JsonProperty("request_id")
-    private Long requestId;
+    private @Nullable Long requestId;
 
     /**
      * Parse a response envelope from JSON.
@@ -32,7 +34,7 @@ public class ResponseEnvelope {
      * @param json the JSON string
      * @return the parsed envelope
      */
-    public static ResponseEnvelope fromJson(String json) {
+    public static @NotNull ResponseEnvelope fromJson(@NotNull String json) {
         try {
             return OBJECT_MAPPER.readValue(json, ResponseEnvelope.class);
         } catch (JsonProcessingException e) {
@@ -54,7 +56,7 @@ public class ResponseEnvelope {
      *
      * @return the payload JSON, or null if error
      */
-    public String getPayloadJson() {
+    public @Nullable String getPayloadJson() {
         try {
             return payload != null ? OBJECT_MAPPER.writeValueAsString(payload) : null;
         } catch (JsonProcessingException e) {
@@ -67,9 +69,9 @@ public class ResponseEnvelope {
      *
      * @param type the target type
      * @param <T>  the type parameter
-     * @return the deserialized payload
+     * @return the deserialized payload, or null if no payload
      */
-    public <T> T getPayload(Class<T> type) {
+    public <T> @Nullable T getPayload(@NotNull Class<T> type) {
         try {
             return payload != null ? OBJECT_MAPPER.treeToValue(payload, type) : null;
         } catch (JsonProcessingException e) {
@@ -82,7 +84,7 @@ public class ResponseEnvelope {
      *
      * @return the error code, or null if success
      */
-    public Integer getErrorCode() {
+    public @Nullable Integer getErrorCode() {
         return errorCode;
     }
 
@@ -91,7 +93,7 @@ public class ResponseEnvelope {
      *
      * @return the error message, or null if success
      */
-    public String getErrorMessage() {
+    public @Nullable String getErrorMessage() {
         return errorMessage;
     }
 
@@ -100,7 +102,7 @@ public class ResponseEnvelope {
      *
      * @return the request ID, or null if not set
      */
-    public Long getRequestId() {
+    public @Nullable Long getRequestId() {
         return requestId;
     }
 
@@ -109,7 +111,7 @@ public class ResponseEnvelope {
      *
      * @return the exception
      */
-    public PluginException toException() {
+    public @NotNull PluginException toException() {
         int code = errorCode != null ? errorCode : 0;
         String message = errorMessage != null ? errorMessage : "Unknown error";
         return new PluginException(code, message);

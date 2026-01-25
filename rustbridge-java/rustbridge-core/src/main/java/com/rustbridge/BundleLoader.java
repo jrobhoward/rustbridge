@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.nio.file.*;
@@ -74,7 +76,7 @@ public class BundleLoader implements AutoCloseable {
     /**
      * Create a new builder for constructing a BundleLoader.
      */
-    public static Builder builder() {
+    public static @NotNull Builder builder() {
         return new Builder();
     }
 
@@ -92,7 +94,7 @@ public class BundleLoader implements AutoCloseable {
     /**
      * Get the bundle manifest.
      */
-    public BundleManifest getManifest() {
+    public @NotNull BundleManifest getManifest() {
         return manifest;
     }
 
@@ -103,7 +105,7 @@ public class BundleLoader implements AutoCloseable {
      * @throws IOException        if extraction fails
      * @throws SignatureException if signature verification fails (when enabled)
      */
-    public Path extractLibrary() throws IOException, SignatureException {
+    public @NotNull Path extractLibrary() throws IOException, SignatureException {
         Path tempDir = Files.createTempDirectory("rustbridge-");
         return extractLibrary(tempDir);
     }
@@ -116,7 +118,7 @@ public class BundleLoader implements AutoCloseable {
      * @throws IOException        if extraction fails
      * @throws SignatureException if signature verification fails (when enabled)
      */
-    public Path extractLibrary(Path outputDir) throws IOException, SignatureException {
+    public @NotNull Path extractLibrary(@NotNull Path outputDir) throws IOException, SignatureException {
         String platform = detectPlatform();
         return extractLibrary(platform, outputDir);
     }
@@ -130,7 +132,7 @@ public class BundleLoader implements AutoCloseable {
      * @throws IOException        if extraction fails
      * @throws SignatureException if signature verification fails (when enabled)
      */
-    public Path extractLibrary(String platform, Path outputDir)
+    public @NotNull Path extractLibrary(@NotNull String platform, @NotNull Path outputDir)
             throws IOException, SignatureException {
         BundleManifest.PlatformInfo platformInfo = manifest.platforms.get(platform);
         if (platformInfo == null) {
@@ -173,7 +175,7 @@ public class BundleLoader implements AutoCloseable {
     /**
      * List all files in the bundle.
      */
-    public List<String> listFiles() {
+    public @NotNull List<String> listFiles() {
         List<String> files = new ArrayList<>();
         Enumeration<? extends ZipEntry> entries = zipFile.entries();
         while (entries.hasMoreElements()) {
@@ -187,7 +189,7 @@ public class BundleLoader implements AutoCloseable {
      *
      * @return map of schema name to schema info
      */
-    public Map<String, BundleManifest.SchemaInfo> getSchemas() {
+    public @NotNull Map<String, BundleManifest.SchemaInfo> getSchemas() {
         if (manifest.schemas == null) {
             return new HashMap<>();
         }
@@ -202,7 +204,7 @@ public class BundleLoader implements AutoCloseable {
      * @return path to the extracted schema file
      * @throws IOException if extraction fails
      */
-    public Path extractSchema(String schemaName, Path outputDir) throws IOException {
+    public @NotNull Path extractSchema(@NotNull String schemaName, @NotNull Path outputDir) throws IOException {
         BundleManifest.SchemaInfo schemaInfo = manifest.schemas != null
                 ? manifest.schemas.get(schemaName)
                 : null;
@@ -240,7 +242,7 @@ public class BundleLoader implements AutoCloseable {
      * @return schema file content
      * @throws IOException if reading fails
      */
-    public String readSchema(String schemaName) throws IOException {
+    public @NotNull String readSchema(@NotNull String schemaName) throws IOException {
         BundleManifest.SchemaInfo schemaInfo = manifest.schemas != null
                 ? manifest.schemas.get(schemaName)
                 : null;
@@ -438,7 +440,7 @@ public class BundleLoader implements AutoCloseable {
         /**
          * Set the path to the bundle file.
          */
-        public Builder bundlePath(String path) {
+        public @NotNull Builder bundlePath(@NotNull String path) {
             this.bundlePath = Paths.get(path);
             return this;
         }
@@ -446,7 +448,7 @@ public class BundleLoader implements AutoCloseable {
         /**
          * Set the path to the bundle file.
          */
-        public Builder bundlePath(Path path) {
+        public @NotNull Builder bundlePath(@NotNull Path path) {
             this.bundlePath = path;
             return this;
         }
@@ -459,7 +461,7 @@ public class BundleLoader implements AutoCloseable {
          * <p><strong>WARNING:</strong> Disabling signature verification means
          * the bundle can contain malicious code. Only disable for development/testing.
          */
-        public Builder verifySignatures(boolean verify) {
+        public @NotNull Builder verifySignatures(boolean verify) {
             this.verifySignatures = verify;
             return this;
         }
@@ -472,7 +474,7 @@ public class BundleLoader implements AutoCloseable {
          *
          * @param publicKey minisign public key in base64 format (e.g., "RWS...")
          */
-        public Builder publicKey(String publicKey) {
+        public @NotNull Builder publicKey(@Nullable String publicKey) {
             this.publicKeyOverride = publicKey;
             return this;
         }
@@ -482,7 +484,7 @@ public class BundleLoader implements AutoCloseable {
          *
          * @throws IOException if the bundle cannot be opened or manifest is invalid
          */
-        public BundleLoader build() throws IOException {
+        public @NotNull BundleLoader build() throws IOException {
             if (bundlePath == null) {
                 throw new IllegalStateException("bundlePath must be set");
             }

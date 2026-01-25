@@ -1,6 +1,8 @@
 package com.rustbridge.jni;
 
 import com.rustbridge.*;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 
@@ -41,7 +43,7 @@ public class JniPluginLoader {
      * @return the loaded plugin
      * @throws PluginException if loading fails
      */
-    public static Plugin load(String libraryPath) throws PluginException {
+    public static @NotNull Plugin load(@NotNull String libraryPath) throws PluginException {
         return load(libraryPath, PluginConfig.defaults(), null);
     }
 
@@ -53,7 +55,7 @@ public class JniPluginLoader {
      * @return the loaded plugin
      * @throws PluginException if loading fails
      */
-    public static Plugin load(String libraryPath, PluginConfig config) throws PluginException {
+    public static @NotNull Plugin load(@NotNull String libraryPath, @NotNull PluginConfig config) throws PluginException {
         return load(libraryPath, config, null);
     }
 
@@ -66,7 +68,7 @@ public class JniPluginLoader {
      * @return the loaded plugin
      * @throws PluginException if loading fails
      */
-    public static Plugin load(String libraryPath, PluginConfig config, LogCallback logCallback)
+    public static @NotNull Plugin load(@NotNull String libraryPath, @NotNull PluginConfig config, @Nullable LogCallback logCallback)
             throws PluginException {
 
         byte[] configBytes = config.toJsonBytes();
@@ -86,7 +88,7 @@ public class JniPluginLoader {
      * @return the loaded plugin
      * @throws PluginException if loading fails
      */
-    public static Plugin loadByName(String libraryName) throws PluginException {
+    public static @NotNull Plugin loadByName(@NotNull String libraryName) throws PluginException {
         return loadByName(libraryName, PluginConfig.defaults());
     }
 
@@ -98,7 +100,7 @@ public class JniPluginLoader {
      * @return the loaded plugin
      * @throws PluginException if loading fails
      */
-    public static Plugin loadByName(String libraryName, PluginConfig config) throws PluginException {
+    public static @NotNull Plugin loadByName(@NotNull String libraryName, @NotNull PluginConfig config) throws PluginException {
         String osName = System.getProperty("os.name").toLowerCase();
         String libraryFileName;
 

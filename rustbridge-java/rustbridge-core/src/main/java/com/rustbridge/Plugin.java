@@ -1,5 +1,7 @@
 package com.rustbridge;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Base interface for rustbridge plugins.
  * <p>
@@ -14,6 +16,7 @@ public interface Plugin extends AutoCloseable {
      *
      * @return the current state
      */
+    @NotNull
     LifecycleState getState();
 
     /**
@@ -24,7 +27,8 @@ public interface Plugin extends AutoCloseable {
      * @return the JSON response payload
      * @throws PluginException if the call fails
      */
-    String call(String typeTag, String request) throws PluginException;
+    @NotNull
+    String call(@NotNull String typeTag, @NotNull String request) throws PluginException;
 
     /**
      * Make a synchronous call with a typed request and response.
@@ -37,14 +41,15 @@ public interface Plugin extends AutoCloseable {
      * @return the deserialized response
      * @throws PluginException if the call fails
      */
-    <T, R> R call(String typeTag, T request, Class<R> responseType) throws PluginException;
+    @NotNull
+    <T, R> R call(@NotNull String typeTag, @NotNull T request, @NotNull Class<R> responseType) throws PluginException;
 
     /**
      * Set the log level for the plugin.
      *
      * @param level the new log level
      */
-    void setLogLevel(LogLevel level);
+    void setLogLevel(@NotNull LogLevel level);
 
     /**
      * Get the count of requests rejected due to concurrency limits.

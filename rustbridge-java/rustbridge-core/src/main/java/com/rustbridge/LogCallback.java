@@ -1,5 +1,7 @@
 package com.rustbridge;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Callback interface for receiving log messages from plugins.
  */
@@ -12,5 +14,5 @@ public interface LogCallback {
      * @param target  the log target (usually module path)
      * @param message the log message
      */
-    void log(LogLevel level, String target, String message);
+    void log(@NotNull LogLevel level, @NotNull String target, @NotNull String message);
 }

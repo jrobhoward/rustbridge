@@ -1,5 +1,7 @@
 package com.rustbridge;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Log levels for plugin logging.
  */
@@ -46,7 +48,7 @@ public enum LogLevel {
      * @param code the level code
      * @return the corresponding level
      */
-    public static LogLevel fromCode(int code) {
+    public static @NotNull LogLevel fromCode(int code) {
         for (LogLevel level : values()) {
             if (level.code == code) {
                 return level;

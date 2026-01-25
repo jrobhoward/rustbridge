@@ -3,6 +3,8 @@ package com.rustbridge.ffm;
 import com.rustbridge.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
@@ -56,7 +58,7 @@ public class FfmPlugin implements Plugin {
      * @param bindings    the native function bindings
      * @param logCallback optional log callback
      */
-    FfmPlugin(Arena pluginArena, MemorySegment handle, NativeBindings bindings, LogCallback logCallback) {
+    FfmPlugin(@NotNull Arena pluginArena, @NotNull MemorySegment handle, @NotNull NativeBindings bindings, @Nullable LogCallback logCallback) {
         this.pluginArena = pluginArena;
         this.handle = handle;
         this.bindings = bindings;
@@ -64,7 +66,7 @@ public class FfmPlugin implements Plugin {
     }
 
     @Override
-    public LifecycleState getState() {
+    public @NotNull LifecycleState getState() {
         // After close, return STOPPED instead of throwing
         if (closed) {
             return LifecycleState.STOPPED;
@@ -82,7 +84,7 @@ public class FfmPlugin implements Plugin {
     }
 
     @Override
-    public String call(String typeTag, String request) throws PluginException {
+    public @NotNull String call(@NotNull String typeTag, @NotNull String request) throws PluginException {
         if (closed) {
             throw new PluginException(1, "Plugin has been closed");
         }
@@ -117,7 +119,7 @@ public class FfmPlugin implements Plugin {
     }
 
     @Override
-    public <T, R> R call(String typeTag, T request, Class<R> responseType) throws PluginException {
+    public <T, R> @NotNull R call(@NotNull String typeTag, @NotNull T request, @NotNull Class<R> responseType) throws PluginException {
         String requestJson;
         try {
             requestJson = OBJECT_MAPPER.writeValueAsString(request);
@@ -144,7 +146,7 @@ public class FfmPlugin implements Plugin {
      * @return a memory segment containing the response data
      * @throws PluginException if the call fails
      */
-    public MemorySegment callRaw(int messageId, BinaryStruct request, long responseSize)
+    public @NotNull MemorySegment callRaw(int messageId, @NotNull BinaryStruct request, long responseSize)
             throws PluginException {
         if (closed) {
             throw new PluginException(1, "Plugin has been closed");
@@ -227,7 +229,7 @@ public class FfmPlugin implements Plugin {
     }
 
     @Override
-    public void setLogLevel(LogLevel level) {
+    public void setLogLevel(@NotNull LogLevel level) {
         checkNotClosed();
         try {
             bindings.pluginSetLogLevel().invokeExact(handle, (byte) level.getCode());

@@ -4,6 +4,8 @@ import com.rustbridge.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * JNI-based plugin implementation for Java 8+ compatibility.
@@ -34,7 +36,7 @@ public class JniPlugin implements Plugin {
      * @param handle      the native plugin handle
      * @param logCallback optional log callback
      */
-    JniPlugin(long handle, LogCallback logCallback) {
+    JniPlugin(long handle, @Nullable LogCallback logCallback) {
         this.handle = handle;
         this.logCallback = logCallback;
     }
@@ -51,7 +53,7 @@ public class JniPlugin implements Plugin {
     private static native boolean nativeShutdown(long handle);
 
     @Override
-    public LifecycleState getState() {
+    public @NotNull LifecycleState getState() {
         checkNotClosed();
         int stateCode = nativeGetState(handle);
         if (stateCode == 255) {
@@ -61,7 +63,7 @@ public class JniPlugin implements Plugin {
     }
 
     @Override
-    public String call(String typeTag, String request) throws PluginException {
+    public @NotNull String call(@NotNull String typeTag, @NotNull String request) throws PluginException {
         checkNotClosed();
         return nativeCall(handle, typeTag, request);
     }
@@ -69,7 +71,7 @@ public class JniPlugin implements Plugin {
     // Native methods (implemented in Rust)
 
     @Override
-    public <T, R> R call(String typeTag, T request, Class<R> responseType) throws PluginException {
+    public <T, R> @NotNull R call(@NotNull String typeTag, @NotNull T request, @NotNull Class<R> responseType) throws PluginException {
         String requestJson;
         try {
             requestJson = OBJECT_MAPPER.writeValueAsString(request);
@@ -85,7 +87,7 @@ public class JniPlugin implements Plugin {
     }
 
     @Override
-    public void setLogLevel(LogLevel level) {
+    public void setLogLevel(@NotNull LogLevel level) {
         checkNotClosed();
         nativeSetLogLevel(handle, level.getCode());
     }

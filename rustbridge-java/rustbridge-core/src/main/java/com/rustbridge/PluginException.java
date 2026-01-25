@@ -1,5 +1,8 @@
 package com.rustbridge;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Exception thrown by rustbridge plugin operations.
  */
@@ -11,7 +14,7 @@ public class PluginException extends Exception {
      *
      * @param message the error message
      */
-    public PluginException(String message) {
+    public PluginException(@NotNull String message) {
         super(message);
         this.errorCode = 0;
     }
@@ -22,7 +25,7 @@ public class PluginException extends Exception {
      * @param errorCode the error code
      * @param message   the error message
      */
-    public PluginException(int errorCode, String message) {
+    public PluginException(int errorCode, @NotNull String message) {
         super(message);
         this.errorCode = errorCode;
     }
@@ -33,7 +36,7 @@ public class PluginException extends Exception {
      * @param message the error message
      * @param cause   the underlying cause
      */
-    public PluginException(String message, Throwable cause) {
+    public PluginException(@NotNull String message, @Nullable Throwable cause) {
         super(message, cause);
         this.errorCode = 0;
     }
