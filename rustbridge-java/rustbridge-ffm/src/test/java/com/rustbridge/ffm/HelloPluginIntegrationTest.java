@@ -1,13 +1,10 @@
 package com.rustbridge.ffm;
 
 import com.rustbridge.*;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,40 +25,12 @@ import static org.junit.jupiter.api.Assertions.*;
 @Timeout(value = 60, unit = TimeUnit.SECONDS)  // Prevent tests from hanging indefinitely
 class HelloPluginIntegrationTest {
 
-    // Unused - kept for potential future use in test assertions
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     private static Path PLUGIN_PATH;
     private Plugin plugin;
 
     @BeforeAll
     static void setupPluginPath() {
-        // Find the hello-plugin library
-        String osName = System.getProperty("os.name").toLowerCase();
-        String libraryName;
-
-        if (osName.contains("linux")) {
-            libraryName = "libhello_plugin.so";
-        } else if (osName.contains("mac") || osName.contains("darwin")) {
-            libraryName = "libhello_plugin.dylib";
-        } else if (osName.contains("windows")) {
-            libraryName = "hello_plugin.dll";
-        } else {
-            throw new RuntimeException("Unsupported OS: " + osName);
-        }
-
-        // Look in target/release first, then target/debug
-        Path releasePath = Paths.get("../../target/release").resolve(libraryName);
-        Path debugPath = Paths.get("../../target/debug").resolve(libraryName);
-
-        if (releasePath.toFile().exists()) {
-            PLUGIN_PATH = releasePath.toAbsolutePath();
-        } else if (debugPath.toFile().exists()) {
-            PLUGIN_PATH = debugPath.toAbsolutePath();
-        } else {
-            throw new RuntimeException("Could not find hello-plugin library. Build it with: cargo build -p hello-plugin --release");
-        }
-
+        PLUGIN_PATH = TestPluginLoader.findHelloPluginLibrary();
         System.out.println("Using plugin: " + PLUGIN_PATH);
     }
 

@@ -1,7 +1,6 @@
 package com.rustbridge;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -12,8 +11,7 @@ import java.util.Map;
  * Configuration for plugin initialization.
  */
 public class PluginConfig {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private static final ObjectMapper OBJECT_MAPPER = JsonMapper.getInstance();
 
     private final Map<String, Object> data;
     private Map<String, Object> initParams;

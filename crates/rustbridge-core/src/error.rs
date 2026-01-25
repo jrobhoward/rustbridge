@@ -97,6 +97,7 @@ impl PluginError {
             8 => PluginError::RuntimeError(message),
             9 => PluginError::Cancelled,
             10 => PluginError::Timeout,
+            11 => PluginError::Internal(message),
             12 => PluginError::FfiError(message),
             13 => PluginError::TooManyRequests,
             _ => PluginError::Internal(message),

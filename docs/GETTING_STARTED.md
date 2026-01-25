@@ -651,7 +651,7 @@ When things don't work as expected:
 - Use a log callback to see what's happening in Rust
 - Check `cargo build` output for compilation errors
 - Verify your library path is correct
-- See [docs/DEBUGGING.md](./DEBUGGING.md) (coming soon) for detailed troubleshooting
+- See [docs/DEBUGGING.md](./DEBUGGING.md) for detailed troubleshooting
 
 ## Common Gotchas
 

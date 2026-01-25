@@ -208,7 +208,10 @@ void plugin_set_log_level(void* handle, uint8_t level);
 // Get current lifecycle state
 uint8_t plugin_get_state(void* handle);
 
-// Async API (placeholder for future)
+// Get count of rejected requests (due to concurrency limit)
+uint64_t plugin_get_rejected_count(void* handle);
+
+// Async API (placeholder for future - returns 0/false)
 uint64_t plugin_call_async(...);
 bool plugin_cancel_async(void* handle, uint64_t request_id);
 ```

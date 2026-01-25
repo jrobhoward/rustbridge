@@ -30,8 +30,8 @@ pub use handle::{PluginHandle, PluginHandleManager};
 // Re-export FFI functions for use by plugins
 pub use exports::{
     BinaryMessageHandler, plugin_call, plugin_call_async, plugin_call_raw, plugin_cancel_async,
-    plugin_free_buffer, plugin_get_state, plugin_init, plugin_set_log_level, plugin_shutdown,
-    rb_response_free, register_binary_handler,
+    plugin_free_buffer, plugin_get_rejected_count, plugin_get_state, plugin_init,
+    plugin_set_log_level, plugin_shutdown, rb_response_free, register_binary_handler,
 };
 
 // Re-export types needed for plugin implementation

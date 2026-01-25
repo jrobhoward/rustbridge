@@ -2,7 +2,6 @@ package com.rustbridge;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -10,8 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * Response envelope for FFI communication.
  */
 public class ResponseEnvelope {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private static final ObjectMapper OBJECT_MAPPER = JsonMapper.getInstance();
 
     @JsonProperty("status")
     private String status;

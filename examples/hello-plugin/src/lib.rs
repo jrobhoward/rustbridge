@@ -459,8 +459,9 @@ rustbridge_entry!(HelloPlugin::new);
 
 // Re-export FFI functions from rustbridge-ffi
 pub use rustbridge_ffi::{
-    plugin_call, plugin_call_async, plugin_cancel_async, plugin_free_buffer, plugin_get_state,
-    plugin_init, plugin_set_log_level, plugin_shutdown,
+    plugin_call, plugin_call_async, plugin_cancel_async, plugin_free_buffer,
+    plugin_get_rejected_count, plugin_get_state, plugin_init, plugin_set_log_level,
+    plugin_shutdown,
 };
 
 // ============================================================================

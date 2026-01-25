@@ -4,7 +4,6 @@ import com.rustbridge.*;
 import org.junit.jupiter.api.*;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
@@ -22,32 +21,7 @@ class ConcurrencyLimitTest {
 
     @BeforeAll
     static void setupPluginPath() {
-        // Find the hello-plugin library
-        String osName = System.getProperty("os.name").toLowerCase();
-        String libraryName;
-
-        if (osName.contains("linux")) {
-            libraryName = "libhello_plugin.so";
-        } else if (osName.contains("mac") || osName.contains("darwin")) {
-            libraryName = "libhello_plugin.dylib";
-        } else if (osName.contains("windows")) {
-            libraryName = "hello_plugin.dll";
-        } else {
-            throw new RuntimeException("Unsupported OS: " + osName);
-        }
-
-        // Look in target/release first, then target/debug
-        Path releasePath = Paths.get("../../target/release").resolve(libraryName);
-        Path debugPath = Paths.get("../../target/debug").resolve(libraryName);
-
-        if (releasePath.toFile().exists()) {
-            PLUGIN_PATH = releasePath.toAbsolutePath();
-        } else if (debugPath.toFile().exists()) {
-            PLUGIN_PATH = debugPath.toAbsolutePath();
-        } else {
-            fail("Could not find hello-plugin library. Build it with: cargo build -p hello-plugin");
-        }
-
+        PLUGIN_PATH = TestPluginLoader.findHelloPluginLibrary();
         System.out.println("Using plugin: " + PLUGIN_PATH);
     }
 
