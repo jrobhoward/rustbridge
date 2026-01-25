@@ -1,6 +1,6 @@
 package com.example.messages;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
@@ -32,13 +32,13 @@ public class SearchRequest {
     /**
      * Minimum price in cents (optional).
      */
-    @SerializedName("min_price_cents")
+    @JsonProperty("min_price_cents")
     public Long minPriceCents;
 
     /**
      * Maximum price in cents (optional).
      */
-    @SerializedName("max_price_cents")
+    @JsonProperty("max_price_cents")
     public Long maxPriceCents;
 
     public SearchRequest() {}

@@ -1,6 +1,6 @@
 package com.rustbridge.examples
 
-import com.google.gson.Gson
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.rustbridge.LogLevel
 import com.rustbridge.Plugin
 import com.rustbridge.PluginConfig
@@ -30,10 +30,10 @@ sealed class PluginResult<out T> {
  */
 inline fun <reified T> Plugin.callSafe(messageType: String, request: Any): PluginResult<T> {
     return runCatching {
-        val gson = Gson()
-        val requestJson = gson.toJson(request)
+        val mapper = ObjectMapper()
+        val requestJson = mapper.writeValueAsString(request)
         val responseJson = this.call(messageType, requestJson)
-        gson.fromJson(responseJson, T::class.java)
+        mapper.readValue(responseJson, T::class.java)
     }.fold(
         onSuccess = { PluginResult.Success(it) },
         onFailure = { exception ->
@@ -50,10 +50,10 @@ inline fun <reified T> Plugin.callSafe(messageType: String, request: Any): Plugi
  */
 inline fun <reified T> Plugin.callResult(messageType: String, request: Any): Result<T> {
     return runCatching {
-        val gson = Gson()
-        val requestJson = gson.toJson(request)
+        val mapper = ObjectMapper()
+        val requestJson = mapper.writeValueAsString(request)
         val responseJson = this.call(messageType, requestJson)
-        gson.fromJson(responseJson, T::class.java)
+        mapper.readValue(responseJson, T::class.java)
     }
 }
 
@@ -69,8 +69,8 @@ fun main() {
         println("1. Try-Catch Error Handling:")
         println("----------------------------")
         try {
-            val gson = Gson()
-            val request = gson.toJson(EchoRequest("test"))
+            val mapper = ObjectMapper()
+            val request = mapper.writeValueAsString(EchoRequest("test"))
             plugin.call("unknown.message.type", request)
             println("   ✗ Should have thrown an exception")
         } catch (e: PluginException) {

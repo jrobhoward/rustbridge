@@ -1,6 +1,6 @@
 package com.example.messages;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * User account settings.
@@ -11,13 +11,13 @@ public class AccountSettings {
     /**
      * Enable email notifications.
      */
-    @SerializedName("email_notifications")
+    @JsonProperty("email_notifications")
     public boolean emailNotifications;
 
     /**
      * Enable SMS notifications.
      */
-    @SerializedName("sms_notifications")
+    @JsonProperty("sms_notifications")
     public boolean smsNotifications;
 
     /**

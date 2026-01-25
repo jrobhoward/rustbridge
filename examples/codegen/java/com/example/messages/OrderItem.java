@@ -1,6 +1,6 @@
 package com.example.messages;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * An item in an order.
@@ -20,7 +20,7 @@ public class OrderItem {
     /**
      * Price per unit in cents (at time of order).
      */
-    @SerializedName("unit_price_cents")
+    @JsonProperty("unit_price_cents")
     public long unitPriceCents;
 
     public OrderItem() {}

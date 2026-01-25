@@ -1,6 +1,5 @@
 package com.rustbridge.examples
 
-import com.google.gson.Gson
 import com.rustbridge.LogCallback
 import com.rustbridge.LogLevel
 import com.rustbridge.Plugin

@@ -1,6 +1,6 @@
 package com.example.messages;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
@@ -20,7 +20,7 @@ public class UserProfile {
      * This field uses snake_case in Rust but will be converted
      * to camelCase in Java: displayName
      */
-    @SerializedName("display_name")
+    @JsonProperty("display_name")
     public String displayName;
 
     /**

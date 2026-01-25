@@ -2,9 +2,9 @@
 
 This document tracks incomplete tasks and priorities for the rustbridge project.
 
-## Current Focus: Developer Experience & Multi-Language Expansion
+## Current Focus: Developer Experience ✅ & Multi-Language Expansion
 
-**Objective**: Improve developer ergonomics, enhance documentation, and prepare for multi-language bindings (C#, Python). Phase 1 (Critical Stability) is complete - core framework is production-ready.
+**Objective**: Developer experience improvements are complete. Next focus is multi-language bindings (C#, Python). Phase 1 (Critical Stability) is complete - core framework is production-ready.
 
 ---
 
@@ -53,14 +53,14 @@ This document tracks incomplete tasks and priorities for the rustbridge project.
 
 ## Priority 4: Non-JVM Language Support (Future)
 
-### C# Bindings (Pending: Kotlin-first completion)
+### C# Bindings
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| C# FFI bindings | Low | Follow Java FFM patterns, implement after Kotlin migration stabilizes |
+| C# FFI bindings | Low | Follow Java FFM patterns |
 | C# struct mapping for binary transport | Low | Follow Java BinaryStruct pattern |
-| Port BundleLoader to C# | Low | Leverage Kotlin implementation patterns |
-| Port MinisignVerifier to C# | Low | Leverage Kotlin implementation patterns |
+| Port BundleLoader to C# | Low | Follow Java implementation patterns |
+| Port MinisignVerifier to C# | Low | Follow Java implementation patterns |
 
 ### Python Bindings (Pending: User Decision)
 
@@ -210,51 +210,20 @@ See `docs/PHASE1_COMPLETION_SUMMARY.md` for complete details.
 
 ---
 
-## Kotlin-First Architecture Decision
-
-**Rationale:**
-- `kotlinx.serialization` is more idiomatic and performant than Gson for modern Kotlin
-- Kotlin compiles to JVM bytecode compatible with Java 8+ (supporting existing MSRV)
-- Java facades enable ergonomic Java API while leveraging Kotlin's advantages
-- Reduces boilerplate and improves type safety for core serialization logic
-- Positions framework as Kotlin-primary, with Java as a supported secondary consumer
-
-**Migration Strategy:**
-1. Start with serialization layer (highest ROI, lowest risk)
-2. Add Java facade layer to maintain existing API
-3. Verify Java 8+ compatibility
-4. Migrate transport and utilities incrementally
-5. Maintain green tests throughout (no breaking changes to Java API)
-
-**Key Constraints:**
-- MSRV stays 1.85.0 (Rust 2024)
-- Java tests must pass without modification (ensures backward compatibility)
-- No changes to FFI contract or C ABI
-- Gradle build must remain compatible
-
----
-
 ## Next Up (Recommended Priority)
 
 **Phase 1 is complete!** Core framework is production-ready. Choose your next focus area:
 
-### Option A: Developer Experience (Recommended - weeks 1-2)
-1. **Documentation overhaul** (High value, approachable)
-   - Getting Started guide
-   - Error handling patterns guide
-   - Debugging guide
-   - Plugin lifecycle best practices
-2. **Plugin initialization parameters** (ergonomics win)
-3. **Missing doc comments on public APIs** (finish polish)
+### Option A: Developer Experience ✅ COMPLETED
+1. ✅ **Documentation overhaul** (High value, approachable)
+   - ✅ Getting Started guide
+   - ✅ Error handling patterns guide
+   - ✅ Debugging guide
+   - ✅ Plugin lifecycle best practices
+2. ✅ **Plugin initialization parameters** (ergonomics win)
+3. ✅ **Missing doc comments on public APIs** (finish polish)
 
-### Option B: Kotlin-First Migration (weeks 2-4)
-1. Evaluate kotlinx.serialization viability
-2. Set up Kotlin compiler in build
-3. Migrate PluginConfig serialization
-4. Create Java facades + test with existing suite
-5. Migrate transport and utilities incrementally
-
-### Option C: Multi-Language Expansion (weeks 3-6)
+### Option B: Multi-Language Expansion (weeks 3-6)
 1. **C# bindings** (Follow Java FFM patterns)
    - C# FFI bindings
    - Struct mapping for binary transport
@@ -264,5 +233,5 @@ See `docs/PHASE1_COMPLETION_SUMMARY.md` for complete details.
    - Python FFI bindings (ctypes/cffi)
    - Port BundleLoader to Python
 
-**Recommendation**: Start with **Option A (Developer Experience)** to make the framework easier to adopt, then proceed with either Kotlin migration or multi-language expansion based on user priorities.
+**Recommendation**: Start with **Option B (Multi-Language Expansion)** to expand the framework's reach, or continue with other priorities from Priority 2-5 sections.
 

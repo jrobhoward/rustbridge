@@ -12,10 +12,10 @@
 //!
 //! For each message type, generates a Java class with:
 //! - Package declaration
-//! - Imports (Gson annotations, List if needed)
+//! - Imports (Jackson annotations, List if needed)
 //! - Class-level JavaDoc
 //! - Public fields with JavaDoc
-//! - `@SerializedName` annotations for JSON compatibility
+//! - `@JsonProperty` annotations for JSON compatibility
 //! - Default constructor
 //! - Full constructor with all fields
 //! - Getters and setters for all fields
@@ -23,7 +23,7 @@
 //! # Naming Conventions
 //!
 //! - **Snake case → Camel case**: `user_name` becomes `userName`
-//! - **Serde rename**: `#[serde(rename = "user")]` becomes `@SerializedName("user")`
+//! - **Serde rename**: `#[serde(rename = "user")]` becomes `@JsonProperty("user")`
 //! - **Getters/Setters**: `getName()` / `setName(String name)`
 //!
 //! # Type Mappings
@@ -65,7 +65,7 @@
 //! ```java
 //! package com.example;
 //!
-//! import com.google.gson.annotations.SerializedName;
+//! import com.fasterxml.jackson.annotation.JsonProperty;
 //!
 //! /**
 //!  * User profile.
@@ -75,7 +75,7 @@
 //!     public long id;
 //!
 //!     /** Display name. */
-//!     @SerializedName("display_name")
+//!     @JsonProperty("display_name")
 //!     public String displayName;
 //!
 //!     /** Email (optional). */
@@ -139,7 +139,7 @@ fn generate_java_class(message: &MessageType, package: &str) -> Result<String> {
     code.push_str(&format!("package {};\n\n", package));
 
     // Imports
-    code.push_str("import com.google.gson.annotations.SerializedName;\n");
+    code.push_str("import com.fasterxml.jackson.annotation.JsonProperty;\n");
 
     let has_list = message
         .fields
@@ -178,11 +178,11 @@ fn generate_java_class(message: &MessageType, package: &str) -> Result<String> {
         // Convert snake_case to camelCase for Java
         let java_field_name = to_camel_case(&field.name);
 
-        // Add SerializedName if field name differs from original or has serde rename
-        let needs_serialized_name = field.serde_rename.is_some() || java_field_name != field.name;
-        if needs_serialized_name {
+        // Add JsonProperty if field name differs from original or has serde rename
+        let needs_json_property = field.serde_rename.is_some() || java_field_name != field.name;
+        if needs_json_property {
             let serialize_name = field.serde_rename.as_ref().unwrap_or(&field.name);
-            code.push_str(&format!("    @SerializedName(\"{}\")\n", serialize_name));
+            code.push_str(&format!("    @JsonProperty(\"{}\")\n", serialize_name));
         }
 
         // Field declaration

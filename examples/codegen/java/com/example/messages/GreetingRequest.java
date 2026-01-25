@@ -1,6 +1,6 @@
 package com.example.messages;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * A simple greeting request.

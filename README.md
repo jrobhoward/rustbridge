@@ -158,9 +158,9 @@ data class EchoResponse(val message: String, val length: Int)
 
 // Extension function for typed calls
 inline fun <reified T> Plugin.callTyped(messageType: String, request: Any): T {
-    val gson = Gson()
-    val responseJson = call(messageType, gson.toJson(request))
-    return gson.fromJson(responseJson, T::class.java)
+    val mapper = ObjectMapper()
+    val responseJson = call(messageType, mapper.writeValueAsString(request))
+    return mapper.readValue(responseJson, T::class.java)
 }
 
 // Use block for automatic cleanup

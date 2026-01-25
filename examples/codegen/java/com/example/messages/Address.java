@@ -1,6 +1,6 @@
 package com.example.messages;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * A mailing address.
@@ -30,7 +30,7 @@ public class Address {
     /**
      * Postal/ZIP code.
      */
-    @SerializedName("postal_code")
+    @JsonProperty("postal_code")
     public String postalCode;
 
     /**

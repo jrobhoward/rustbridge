@@ -11,7 +11,7 @@ library.
 import com.rustbridge.ffm.FfmPluginLoader;
 import com.rustbridge.Plugin;
 import com.rustbridge.PluginConfig;
-import com.google.gson.Gson;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class Example {
     public static void main(String[] args) {
@@ -24,12 +24,12 @@ public class Example {
         try {
             plugin = FfmPluginLoader.load("libhello_plugin.so", config);
 
-            Gson gson = new Gson();
+            ObjectMapper mapper = new ObjectMapper();
             EchoRequest request = new EchoRequest("Hello");
-            String requestJson = gson.toJson(request);
+            String requestJson = mapper.writeValueAsString(request);
 
             String responseJson = plugin.call("echo", requestJson);
-            EchoResponse response = gson.fromJson(responseJson, EchoResponse.class);
+            EchoResponse response = mapper.readValue(responseJson, EchoResponse.class);
 
             System.out.println(response.message);
 
@@ -69,7 +69,7 @@ class EchoResponse {
 
 ```kotlin
 import com.rustbridge.ffm.FfmPluginLoader
-import com.google.gson.Gson
+import com.fasterxml.jackson.databind.ObjectMapper
 
 // Concise data classes
 data class EchoRequest(val message: String)
@@ -77,10 +77,10 @@ data class EchoResponse(val message: String, val length: Int)
 
 // Extension function for type safety
 inline fun <reified T> Plugin.callTyped(messageType: String, request: Any): T {
-    val gson = Gson()
-    val requestJson = gson.toJson(request)
+    val mapper = ObjectMapper()
+    val requestJson = mapper.writeValueAsString(request)
     val responseJson = this.call(messageType, requestJson)
-    return gson.fromJson(responseJson, T::class.java)
+    return mapper.readValue(responseJson, T::class.java)
 }
 
 fun main() {
@@ -108,7 +108,7 @@ fun main() {
 ```java
 try {
     String response = plugin.call("echo", requestJson);
-    EchoResponse result = gson.fromJson(response, EchoResponse.class);
+    EchoResponse result = mapper.readValue(response, EchoResponse.class);
     System.out.println("Success: " + result.message);
 } catch (PluginException e) {
     System.err.println("Error: " + e.getMessage());
@@ -205,9 +205,9 @@ List<EchoResponse> responses = new ArrayList<>();
 
 for (String msg : messages) {
     EchoRequest request = new EchoRequest(msg);
-    String requestJson = gson.toJson(request);
+    String requestJson = mapper.writeValueAsString(request);
     String responseJson = plugin.call("echo", requestJson);
-    EchoResponse response = gson.fromJson(responseJson, EchoResponse.class);
+    EchoResponse response = mapper.readValue(responseJson, EchoResponse.class);
     responses.add(response);
 }
 

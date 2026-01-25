@@ -1,6 +1,6 @@
 package com.example.messages;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
@@ -12,7 +12,7 @@ public class Product {
     /**
      * Product SKU (Stock Keeping Unit).
      */
-    @SerializedName("sku")
+    @JsonProperty("sku")
     public String stockKeepingUnit;
 
     /**
@@ -28,7 +28,7 @@ public class Product {
     /**
      * Price in cents (to avoid floating point precision issues).
      */
-    @SerializedName("price_cents")
+    @JsonProperty("price_cents")
     public long priceCents;
 
     /**

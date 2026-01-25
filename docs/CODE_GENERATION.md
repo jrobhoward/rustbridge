@@ -32,7 +32,7 @@ rustbridge generate json-schema \
 
 ### 2. Java Classes
 
-Generates Java POJOs with Gson annotations for JSON serialization.
+Generates Java POJOs with Jackson annotations for JSON serialization.
 
 **Use cases:**
 - Java/Kotlin client libraries
@@ -170,7 +170,7 @@ pub struct UserPreferences {
 ```java
 package com.example.messages;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
@@ -186,7 +186,7 @@ public class UserProfile {
     /**
      * User's display name.
      */
-    @SerializedName("displayName")
+    @JsonProperty("displayName")
     public String displayName;
 
     /**

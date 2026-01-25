@@ -1,6 +1,6 @@
 package com.example.messages;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
@@ -21,7 +21,7 @@ public class SearchResponse {
     /**
      * Query execution time in milliseconds.
      */
-    @SerializedName("query_time_ms")
+    @JsonProperty("query_time_ms")
     public int queryTimeMs;
 
     public SearchResponse() {}

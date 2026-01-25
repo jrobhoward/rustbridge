@@ -1,6 +1,6 @@
 package com.rustbridge.examples
 
-import com.google.gson.Gson
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.rustbridge.Plugin
 import java.nio.file.Paths
 
@@ -28,10 +28,10 @@ data class AddResponse(val result: Long)
  * providing a clean, type-safe API for calling plugin methods.
  */
 inline fun <reified T> Plugin.callTyped(messageType: String, request: Any): T {
-    val gson = Gson()
-    val requestJson = gson.toJson(request)
+    val mapper = ObjectMapper()
+    val requestJson = mapper.writeValueAsString(request)
     val responseJson = this.call(messageType, requestJson)
-    return gson.fromJson(responseJson, T::class.java)
+    return mapper.readValue(responseJson, T::class.java)
 }
 
 /**

@@ -1,6 +1,6 @@
 package com.example.messages;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
@@ -12,13 +12,13 @@ public class Order {
     /**
      * Unique order identifier.
      */
-    @SerializedName("order_id")
+    @JsonProperty("order_id")
     public long orderId;
 
     /**
      * Customer user ID.
      */
-    @SerializedName("customer_id")
+    @JsonProperty("customer_id")
     public long customerId;
 
     /**
@@ -29,19 +29,19 @@ public class Order {
     /**
      * Shipping address.
      */
-    @SerializedName("shipping_address")
+    @JsonProperty("shipping_address")
     public Address shippingAddress;
 
     /**
      * Billing address (optional, may be same as shipping).
      */
-    @SerializedName("billing_address")
+    @JsonProperty("billing_address")
     public Address billingAddress;
 
     /**
      * Order total in cents.
      */
-    @SerializedName("total_cents")
+    @JsonProperty("total_cents")
     public long totalCents;
 
     /**
@@ -52,7 +52,7 @@ public class Order {
     /**
      * Order creation timestamp (Unix epoch milliseconds).
      */
-    @SerializedName("created_at")
+    @JsonProperty("created_at")
     public long createdAt;
 
     public Order() {}

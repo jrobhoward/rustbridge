@@ -1,6 +1,6 @@
 package com.example.messages;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * A product rating.
@@ -10,7 +10,7 @@ public class ProductRating {
     /**
      * User who submitted the rating.
      */
-    @SerializedName("user_id")
+    @JsonProperty("user_id")
     public long userId;
 
     /**
