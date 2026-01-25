@@ -50,4 +50,21 @@ public interface IPlugin : IDisposable
     /// </para>
     /// </summary>
     long RejectedRequestCount { get; }
+
+    /// <summary>
+    /// Call the plugin with a binary struct request (raw binary transport).
+    /// <para>
+    /// This method bypasses JSON serialization for high-performance scenarios.
+    /// The request and response are fixed-size C structs.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="TRequest">The request struct type.</typeparam>
+    /// <typeparam name="TResponse">The response struct type.</typeparam>
+    /// <param name="messageId">The binary message ID (registered with register_binary_handler).</param>
+    /// <param name="request">The request struct.</param>
+    /// <returns>The response struct.</returns>
+    /// <exception cref="PluginException">If the call fails.</exception>
+    TResponse CallRaw<TRequest, TResponse>(int messageId, TRequest request)
+        where TRequest : unmanaged, IBinaryStruct
+        where TResponse : unmanaged, IBinaryStruct;
 }

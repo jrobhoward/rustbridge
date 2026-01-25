@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="NSec.Cryptography" Version="24.4.0" />
   </ItemGroup>
 
 </Project>

@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
@@ -101,6 +102,81 @@ public sealed class NativePlugin : IPlugin
         {
             ThrowIfDisposed();
             return (long)_library.PluginGetRejectedCount(_handle);
+        }
+    }
+
+    /// <inheritdoc/>
+    public TResponse CallRaw<TRequest, TResponse>(int messageId, TRequest request)
+        where TRequest : unmanaged, IBinaryStruct
+        where TResponse : unmanaged, IBinaryStruct
+    {
+        ThrowIfDisposed();
+
+        unsafe
+        {
+            // Get pointer to request struct
+            var requestPtr = (IntPtr)Unsafe.AsPointer(ref request);
+
+            var response = _library.PluginCallRaw(
+                _handle,
+                messageId,
+                requestPtr,
+                (nuint)request.ByteSize
+            );
+
+            return ParseRawResponse<TResponse>(response);
+        }
+    }
+
+    private unsafe TResponse ParseRawResponse<TResponse>(NativeBindings.RbResponse response)
+        where TResponse : unmanaged, IBinaryStruct
+    {
+        try
+        {
+            if (response.ErrorCode != 0)
+            {
+                var errorMessage = "Unknown error";
+                if (response.Data != IntPtr.Zero && response.Len > 0)
+                {
+                    errorMessage = Marshal.PtrToStringUTF8(response.Data, (int)response.Len) ?? errorMessage;
+                }
+                throw new PluginException((int)response.ErrorCode, errorMessage);
+            }
+
+            if (response.Data == IntPtr.Zero || response.Len == 0)
+            {
+                throw new PluginException("Empty response from raw call");
+            }
+
+            var expectedSize = Unsafe.SizeOf<TResponse>();
+            if (response.Len != expectedSize)
+            {
+                throw new PluginException($"Response size mismatch: expected {expectedSize}, got {response.Len}");
+            }
+
+            // Copy response data to managed struct
+            TResponse result = default;
+            var resultPtr = (IntPtr)Unsafe.AsPointer(ref result);
+            Buffer.MemoryCopy((void*)response.Data, (void*)resultPtr, expectedSize, expectedSize);
+
+            return result;
+        }
+        finally
+        {
+            FreeRawResponse(response);
+        }
+    }
+
+    private unsafe void FreeRawResponse(NativeBindings.RbResponse response)
+    {
+        try
+        {
+            var responsePtr = (IntPtr)Unsafe.AsPointer(ref response);
+            _library.RbResponseFree(responsePtr);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Warning: Failed to free raw response: {ex.Message}");
         }
     }
 

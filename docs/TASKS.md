@@ -55,12 +55,18 @@ This document tracks incomplete tasks and priorities for the rustbridge project.
 
 ### C# Bindings
 
+| Task | Priority | Status | Notes |
+|------|----------|--------|-------|
+| C# FFI bindings | Low | ✅ Done | P/Invoke implementation complete, 39 tests passing |
+| C# struct mapping for binary transport | Low | ⚠️ Blocked | Implementation complete but blocked by Rust thread-local issue |
+| Port BundleLoader to C# | Low | 🔄 In Progress | Follow Java implementation patterns |
+| Port MinisignVerifier to C# | Low | 🔄 In Progress | Follow Java implementation patterns |
+
+### Rust FFI Fixes Needed
+
 | Task | Priority | Notes |
 |------|----------|-------|
-| C# FFI bindings | Low | Follow Java FFM patterns |
-| C# struct mapping for binary transport | Low | Follow Java BinaryStruct pattern |
-| Port BundleLoader to C# | Low | Follow Java implementation patterns |
-| Port MinisignVerifier to C# | Low | Follow Java implementation patterns |
+| Fix BINARY_HANDLERS thread-local storage | Medium | `crates/rustbridge-ffi/src/exports.rs` uses `thread_local!` for binary handlers. Handlers registered in Tokio thread aren't visible when `plugin_call_raw` is called from host language thread. Need to use thread-safe global registry (e.g., `once_cell::sync::Lazy<DashMap<...>>`) instead. Blocks binary transport for all host languages. |
 
 ### Python Bindings (Pending: User Decision)
 
