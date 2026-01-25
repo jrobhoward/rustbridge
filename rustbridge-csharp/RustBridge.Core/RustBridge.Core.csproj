@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+
+    <!-- Package metadata -->
+    <PackageId>RustBridge.Core</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>RustBridge Contributors</Authors>
+    <Description>Core interfaces and types for RustBridge - a framework for calling Rust plugins from .NET</Description>
+    <PackageTags>rust;ffi;interop;plugin</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+
+</Project>

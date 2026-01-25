@@ -1,0 +1,35 @@
+# Build outputs
+bin/
+obj/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# VS Code
+.vscode/
+
+# Rider
+.idea/
+
+# Visual Studio
+.vs/
+*.rsuser
+
+# Test results
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# Build artifacts
+publish/
+artifacts/

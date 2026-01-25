@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- Package metadata -->
+    <PackageId>RustBridge.Native</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>RustBridge Contributors</Authors>
+    <Description>P/Invoke bindings for RustBridge - load and call Rust plugins from .NET</Description>
+    <PackageTags>rust;ffi;interop;plugin;pinvoke</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RustBridge.Core\RustBridge.Core.csproj" />
+  </ItemGroup>
+
+</Project>
