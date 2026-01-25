@@ -69,7 +69,7 @@ Memory follows "Rust allocates, host frees" pattern. See [docs/ARCHITECTURE.md](
 
 ## Testing Conventions
 
-See [docs/TESTING.md](./docs/TESTING.md), [docs/TESTING_KOTLIN.md](./docs/TESTING_KOTLIN.md), [docs/TESTING_JAVA.md](./docs/TESTING_JAVA.md).
+See [docs/TESTING.md](./docs/TESTING.md), [docs/TESTING_KOTLIN.md](./docs/TESTING_KOTLIN.md), [docs/TESTING_JAVA.md](./docs/TESTING_JAVA.md), [docs/TESTING_CSHARP.md](./docs/TESTING_CSHARP.md).
 
 **Key conventions:**
 - Test naming: `subjectUnderTest___condition___expectedResult` (triple underscores)
@@ -93,6 +93,39 @@ The `rustbridge-java/` directory contains:
 - `rustbridge-core`: Core Java interfaces
 - `rustbridge-ffm`: FFM implementation (Java 21+, recommended)
 - `rustbridge-jni`: JNI implementation (Java 8+, fallback)
+
+## C# Integration
+
+The `rustbridge-csharp/` directory contains:
+- `RustBridge.Core`: Core interfaces and types (IPlugin, PluginConfig)
+- `RustBridge.Native`: P/Invoke-based native plugin loader
+- `RustBridge.Tests`: Unit and integration tests
+
+```bash
+# C# development (from rustbridge-csharp/)
+dotnet build                                        # Build all projects
+dotnet test                                         # Run all tests
+dotnet test --filter "FullyQualifiedName~FromCode"  # Run tests matching pattern
+```
+
+See [docs/TESTING_CSHARP.md](./docs/TESTING_CSHARP.md) for C# testing conventions.
+
+## Python Integration
+
+The `rustbridge-python/` directory contains:
+- `rustbridge.core`: Core types (LogLevel, LifecycleState, PluginConfig, etc.)
+- `rustbridge.native`: ctypes-based native plugin loader
+- `rustbridge.core.bundle_loader`: Bundle loading with minisign signature verification
+
+```bash
+# Python development (from rustbridge-python/)
+python -m venv .venv && source .venv/bin/activate  # Create virtual environment
+pip install -e ".[dev]"                             # Install with dev dependencies
+python -m pytest tests/ -v                          # Run all tests
+python -m pytest tests/test_log_level.py -v         # Run tests matching pattern
+```
+
+See [docs/TESTING_PYTHON.md](./docs/TESTING_PYTHON.md) for Python testing conventions.
 
 ## Documentation
 
