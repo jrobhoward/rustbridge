@@ -46,6 +46,11 @@ public class JniPlugin implements Plugin {
     private static native String nativeCall(long handle, String typeTag, String request)
             throws PluginException;
 
+    private static native byte[] nativeCallRaw(long handle, int messageId, byte[] request)
+            throws PluginException;
+
+    private static native boolean nativeHasBinaryTransport(long handle);
+
     private static native void nativeSetLogLevel(long handle, int level);
 
     private static native long nativeGetRejectedCount(long handle);
@@ -85,6 +90,34 @@ public class JniPlugin implements Plugin {
             throw new RuntimeException("Failed to deserialize response", e);
         }
     }
+
+    /**
+     * Check if this plugin supports binary transport.
+     *
+     * @return true if binary transport is available
+     */
+    public boolean hasBinaryTransport() {
+        checkNotClosed();
+        return nativeHasBinaryTransport(handle);
+    }
+
+    /**
+     * Call the plugin with a binary struct request (raw binary transport).
+     * <p>
+     * This method bypasses JSON serialization for high-performance scenarios.
+     * The request and response are fixed-size C structs serialized as byte arrays.
+     *
+     * @param messageId the binary message ID (registered with register_binary_handler)
+     * @param request   the request struct as a byte array
+     * @return the response struct as a byte array
+     * @throws PluginException if the call fails or binary transport is not supported
+     */
+    public byte @NotNull [] callRaw(int messageId, byte @NotNull [] request) throws PluginException {
+        checkNotClosed();
+        return nativeCallRaw(handle, messageId, request);
+    }
+
+    // Native methods (implemented in Rust)
 
     @Override
     public void setLogLevel(@NotNull LogLevel level) {

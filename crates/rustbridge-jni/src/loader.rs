@@ -1,7 +1,7 @@
 //! Dynamic library loading for plugins.
 
 use crate::error::JniError;
-use crate::ffi_types::{FfiBuffer, LogCallback};
+use crate::ffi_types::{FfiBuffer, LogCallback, RbResponse};
 use libloading::{Library, Symbol};
 use std::ffi::{c_char, c_void};
 
@@ -21,6 +21,7 @@ pub struct LoadedPlugin {
 /// Function pointers to plugin FFI functions.
 struct PluginFfi {
     call: PluginCallFn,
+    call_raw: Option<PluginCallRawFn>,
     get_state: PluginGetStateFn,
     set_log_level: PluginSetLogLevelFn,
     get_rejected_count: PluginGetRejectedCountFn,
@@ -67,6 +68,32 @@ impl LoadedPlugin {
         // SAFETY: handle is valid
         unsafe { (self.ffi.shutdown)(self.handle as *mut c_void) }
     }
+
+    /// Check if binary transport is supported.
+    pub fn has_binary_transport(&self) -> bool {
+        self.ffi.call_raw.is_some()
+    }
+
+    /// Make a raw binary call to the plugin.
+    ///
+    /// Returns None if binary transport is not supported.
+    pub fn call_raw(
+        &self,
+        message_id: u32,
+        request: *const u8,
+        request_len: usize,
+    ) -> Option<RbResponse> {
+        let call_raw_fn = self.ffi.call_raw?;
+        // SAFETY: handle is valid, request is valid for request_len bytes
+        Some(unsafe {
+            call_raw_fn(
+                self.handle as *mut c_void,
+                message_id,
+                request as *const c_void,
+                request_len,
+            )
+        })
+    }
 }
 
 // Type signatures for FFI functions
@@ -83,6 +110,12 @@ type PluginCallFn = unsafe extern "C" fn(
     request: *const u8,
     request_len: usize,
 ) -> FfiBuffer;
+type PluginCallRawFn = unsafe extern "C" fn(
+    handle: *mut c_void,
+    message_id: u32,
+    request: *const c_void,
+    request_len: usize,
+) -> RbResponse;
 type PluginGetStateFn = unsafe extern "C" fn(handle: *mut c_void) -> u8;
 type PluginSetLogLevelFn = unsafe extern "C" fn(handle: *mut c_void, level: u8);
 type PluginGetRejectedCountFn = unsafe extern "C" fn(handle: *mut c_void) -> u64;
@@ -117,6 +150,10 @@ pub fn load_plugin(
     let call_fn: Symbol<PluginCallFn> = unsafe { library.get(b"plugin_call\0") }
         .map_err(|e| JniError::SymbolNotFound(format!("plugin_call: {}", e)))?;
 
+    // Try to load binary transport symbols (optional)
+    let call_raw_fn: Option<Symbol<PluginCallRawFn>> =
+        unsafe { library.get(b"plugin_call_raw\0") }.ok();
+
     let get_state_fn: Symbol<PluginGetStateFn> = unsafe { library.get(b"plugin_get_state\0") }
         .map_err(|e| JniError::SymbolNotFound(format!("plugin_get_state: {}", e)))?;
 
@@ -135,6 +172,7 @@ pub fn load_plugin(
     // SAFETY: These function pointers are valid as long as the library is loaded
     let ffi = PluginFfi {
         call: *call_fn,
+        call_raw: call_raw_fn.map(|f| *f),
         get_state: *get_state_fn,
         set_log_level: *set_log_level_fn,
         get_rejected_count: *get_rejected_count_fn,

@@ -308,6 +308,127 @@ fn extract_response_data(bytes: &[u8]) -> Result<String, JniError> {
     serde_json::to_string(payload).map_err(|e| JniError::JsonParse(e.to_string()))
 }
 
+/// Check if binary transport is supported.
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_rustbridge_jni_JniPlugin_nativeHasBinaryTransport<'local>(
+    _env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    handle: jlong,
+) -> jboolean {
+    let result =
+        with_plugin(handle as u64, |plugin| plugin.has_binary_transport()).unwrap_or(false);
+    if result { JNI_TRUE } else { JNI_FALSE }
+}
+
+/// Make a raw binary call to the plugin.
+///
+/// # Parameters
+/// - `handle`: Plugin handle
+/// - `message_id`: Binary message ID
+/// - `request`: Request bytes
+///
+/// # Returns
+/// Response bytes, or throws PluginException on failure
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_rustbridge_jni_JniPlugin_nativeCallRaw<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    handle: jlong,
+    message_id: jint,
+    request: JByteArray<'local>,
+) -> JByteArray<'local> {
+    match call_raw_impl(&mut env, handle, message_id, request) {
+        Ok(response) => response,
+        Err(e) => {
+            throw_plugin_exception(&mut env, e.code(), &e.to_string());
+            JByteArray::default()
+        }
+    }
+}
+
+fn call_raw_impl<'local>(
+    env: &mut JNIEnv<'local>,
+    handle: jlong,
+    message_id: jint,
+    request: JByteArray<'local>,
+) -> Result<JByteArray<'local>, JniError> {
+    // Get request bytes
+    let request_len = env
+        .get_array_length(&request)
+        .map_err(|e| JniError::ArrayAccess(e.to_string()))?;
+
+    let mut request_bytes = vec![0u8; request_len as usize];
+    env.get_byte_array_region(&request, 0, bytemuck_cast_slice_mut(&mut request_bytes))
+        .map_err(|e| JniError::ArrayAccess(e.to_string()))?;
+
+    // Make the raw call
+    let response = with_plugin(handle as u64, |plugin| {
+        plugin.call_raw(
+            message_id as u32,
+            request_bytes.as_ptr(),
+            request_bytes.len(),
+        )
+    })
+    .ok_or_else(|| JniError::PluginCall {
+        code: 1,
+        message: "Invalid plugin handle".to_string(),
+    })?
+    .ok_or_else(|| JniError::PluginCall {
+        code: 6,
+        message: "Binary transport not supported by this plugin".to_string(),
+    })?;
+
+    // Check for errors
+    if response.is_error() {
+        let error_code = response.error_code;
+        // SAFETY: response contains valid data from plugin_call_raw
+        let error_msg = unsafe {
+            let slice = response.as_slice();
+            std::str::from_utf8(slice).unwrap_or("Unknown error")
+        };
+        let err = JniError::PluginCall {
+            code: error_code,
+            message: error_msg.to_string(),
+        };
+
+        // Free the response
+        // SAFETY: response is a valid RbResponse from plugin_call_raw
+        unsafe {
+            let mut resp = response;
+            resp.free();
+        }
+
+        return Err(err);
+    }
+
+    // Get response bytes
+    // SAFETY: response contains valid data from plugin_call_raw
+    let response_bytes = unsafe { response.as_slice() };
+
+    // Create Java byte array
+    let result = env
+        .new_byte_array(response_bytes.len() as i32)
+        .map_err(|e| JniError::ArrayAccess(e.to_string()))?;
+
+    env.set_byte_array_region(&result, 0, bytemuck_cast_slice(response_bytes))
+        .map_err(|e| JniError::ArrayAccess(e.to_string()))?;
+
+    // Free the response
+    // SAFETY: response is a valid RbResponse from plugin_call_raw
+    unsafe {
+        let mut resp = response;
+        resp.free();
+    }
+
+    Ok(result)
+}
+
+/// Cast a &[u8] to &[i8] for JNI byte array operations.
+fn bytemuck_cast_slice(bytes: &[u8]) -> &[i8] {
+    // SAFETY: u8 and i8 have the same size and alignment
+    unsafe { std::slice::from_raw_parts(bytes.as_ptr() as *const i8, bytes.len()) }
+}
+
 /// Set the log level for a plugin.
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_rustbridge_jni_JniPlugin_nativeSetLogLevel<'local>(
