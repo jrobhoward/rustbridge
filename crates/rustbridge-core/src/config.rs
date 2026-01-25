@@ -206,3 +206,7 @@ impl PluginMetadata {
 #[cfg(test)]
 #[path = "config/config_tests.rs"]
 mod config_tests;
+
+#[cfg(test)]
+#[path = "config/config_parameterized_tests.rs"]
+mod config_parameterized_tests;

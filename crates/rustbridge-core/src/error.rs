@@ -114,3 +114,7 @@ impl From<serde_json::Error> for PluginError {
 #[cfg(test)]
 #[path = "error/error_tests.rs"]
 mod error_tests;
+
+#[cfg(test)]
+#[path = "error/error_parameterized_tests.rs"]
+mod error_parameterized_tests;

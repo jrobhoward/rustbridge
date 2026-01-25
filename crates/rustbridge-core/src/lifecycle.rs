@@ -89,3 +89,7 @@ impl std::fmt::Display for LifecycleState {
 #[cfg(test)]
 #[path = "lifecycle/lifecycle_tests.rs"]
 mod lifecycle_tests;
+
+#[cfg(test)]
+#[path = "lifecycle/lifecycle_parameterized_tests.rs"]
+mod lifecycle_parameterized_tests;
