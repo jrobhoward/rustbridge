@@ -10,13 +10,13 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def project_root() -> Path:
     """Return the project root directory (rust_lang_interop)."""
     return Path(__file__).parent.parent.parent
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def hello_plugin_path(project_root: Path) -> Path | None:
     """
     Return the path to the hello-plugin shared library.

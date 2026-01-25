@@ -2,9 +2,41 @@
 
 This document tracks incomplete tasks and priorities for the rustbridge project.
 
-## Current Focus: Developer Experience ✅ & Multi-Language Expansion
+## Current Focus: Language Binding Feature Parity
 
-**Objective**: Developer experience improvements are complete. Next focus is multi-language bindings (C#, Python). Phase 1 (Critical Stability) is complete - core framework is production-ready.
+**Objective**: Achieve full feature parity across all language bindings (Java FFM, Java JNI, C#, Python). Python bindings are now complete (JSON transport). Next: fill feature gaps and add comprehensive testing.
+
+---
+
+## Priority 0: Language Binding Feature Parity (Active)
+
+### High Priority (Functionality Gaps)
+
+| # | Task | Language | Status | Notes |
+|---|------|----------|--------|-------|
+| 1 | Add schema extraction to Python BundleLoader | Python | ✅ Done | Added `extract_schema()`, `read_schema()`, `get_schemas()` + 8 tests |
+| 2 | Add concurrency tests to Python | Python | ✅ Done | Added 4 tests in `test_concurrency.py` |
+| 3 | Add resource leak tests to Python | Python | ✅ Done | Added 7 tests in `test_resource_leak.py` |
+| 4 | Add concurrency tests to C# | C# | ✅ Done | Added 4 tests in `ConcurrencyLimitTest.cs` |
+| 5 | Add resource leak tests to C# | C# | ✅ Done | Added 7 tests in `ResourceLeakTest.cs` |
+
+### Medium Priority (Nice to Have)
+
+| # | Task | Language | Status | Notes |
+|---|------|----------|--------|-------|
+| 6 | Add host-language benchmarks | Java | Pending | JMH benchmarks for JSON/binary latency, throughput |
+| 7 | Add host-language benchmarks | C# | Pending | BenchmarkDotNet for JSON/binary latency, throughput |
+| 8 | Add host-language benchmarks | Python | ✅ Done | Added pytest-benchmark tests for call latency, throughput |
+| 9 | Add binary transport to Python | Python | Pending | `call_raw()` with ctypes structs |
+
+### Lower Priority
+
+| # | Task | Language | Status | Notes |
+|---|------|----------|--------|-------|
+| 10 | Add binary transport to Java JNI | Java JNI | Pending | `callRaw()` method for JNI module |
+| 11 | Add Kotlin extension APIs | Kotlin | Pending | DSL config, coroutine support, extension functions |
+
+---
 
 ---
 

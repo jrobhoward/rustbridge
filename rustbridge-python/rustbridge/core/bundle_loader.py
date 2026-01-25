@@ -11,7 +11,7 @@ import zipfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
-from rustbridge.core.bundle_manifest import BundleManifest
+from rustbridge.core.bundle_manifest import BundleManifest, SchemaInfo
 from rustbridge.core.minisign_verifier import MinisignVerifier
 from rustbridge.core.plugin_exception import PluginException
 
@@ -205,6 +205,93 @@ class BundleLoader:
         """
         with zipfile.ZipFile(bundle_path, "r") as zip_file:
             return zip_file.namelist()
+
+    def get_schemas(self, bundle_path: str | Path) -> dict[str, SchemaInfo]:
+        """
+        Get all available schemas in the bundle.
+
+        Args:
+            bundle_path: Path to the .rbp bundle file.
+
+        Returns:
+            Dictionary mapping schema names to SchemaInfo objects.
+        """
+        manifest = self.get_manifest(bundle_path)
+        return manifest.schemas
+
+    def extract_schema(
+        self, bundle_path: str | Path, schema_name: str, dest_dir: str | Path
+    ) -> Path:
+        """
+        Extract a schema file from the bundle.
+
+        Args:
+            bundle_path: Path to the .rbp bundle file.
+            schema_name: Name of the schema (e.g., "messages.h").
+            dest_dir: Directory to extract the schema to.
+
+        Returns:
+            Path to the extracted schema file.
+
+        Raises:
+            PluginException: If extraction fails or schema not found.
+        """
+        bundle_path = Path(bundle_path)
+        dest_dir = Path(dest_dir)
+
+        with zipfile.ZipFile(bundle_path, "r") as zip_file:
+            manifest = self._load_manifest(zip_file)
+
+            schema_info = manifest.schemas.get(schema_name)
+            if not schema_info:
+                raise PluginException(f"Schema not found in bundle: {schema_name}")
+
+            # Read schema data
+            schema_data = self._read_zip_entry(zip_file, schema_info.path)
+
+            # Verify checksum
+            if not self._verify_checksum(schema_data, schema_info.checksum):
+                raise PluginException(
+                    f"Checksum verification failed for schema {schema_name}"
+                )
+
+            # Write to output directory
+            output_path = dest_dir / schema_name
+            output_path.write_bytes(schema_data)
+
+            return output_path
+
+    def read_schema(self, bundle_path: str | Path, schema_name: str) -> str:
+        """
+        Read a schema file content as string.
+
+        Args:
+            bundle_path: Path to the .rbp bundle file.
+            schema_name: Name of the schema (e.g., "messages.h").
+
+        Returns:
+            Schema file content as a string.
+
+        Raises:
+            PluginException: If reading fails or schema not found.
+        """
+        with zipfile.ZipFile(bundle_path, "r") as zip_file:
+            manifest = self._load_manifest(zip_file)
+
+            schema_info = manifest.schemas.get(schema_name)
+            if not schema_info:
+                raise PluginException(f"Schema not found in bundle: {schema_name}")
+
+            # Read schema data
+            schema_data = self._read_zip_entry(zip_file, schema_info.path)
+
+            # Verify checksum
+            if not self._verify_checksum(schema_data, schema_info.checksum):
+                raise PluginException(
+                    f"Checksum verification failed for schema {schema_name}"
+                )
+
+            return schema_data.decode("utf-8")
 
     @staticmethod
     def get_current_platform() -> str:

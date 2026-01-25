@@ -381,8 +381,6 @@ Errors are represented with stable numeric codes:
 | Java/Kotlin | Tier 1 | FFM (Java 21+) + JNI (Java 8+) |
 | C# | Tier 2 | P/Invoke |
 | Python | Tier 2 | ctypes/cffi |
-| Go | Tier 3 | cgo |
-| Erlang | Tier 3 | NIF |
 
 ## Documentation
 
