@@ -6,6 +6,7 @@
 # - Security and license checks (cargo deny)
 # - Rust unit tests
 # - Java/Kotlin tests
+# - C# tests
 # - Integration tests (when available)
 #
 # Usage:
@@ -41,6 +42,7 @@ SMART_MODE=false
 # What to test (set by smart detection or defaults)
 RUN_RUST_TESTS=true
 RUN_JAVA_TESTS=true
+RUN_CSHARP_TESTS=true
 RUN_RUST_FMT=true
 RUN_CARGO_DENY=true
 
@@ -127,6 +129,7 @@ if [ "$SMART_MODE" = true ]; then
         # Categorize changes
         RUST_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^(crates/|plugins/|Cargo\.(toml|lock)$|deny\.toml$|\.cargo/)' || true)
         JAVA_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^rustbridge-java/' || true)
+        CSHARP_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^rustbridge-csharp/' || true)
         SCRIPT_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^scripts/' || true)
         CONFIG_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^(\.github/|rust-toolchain|clippy\.toml$)' || true)
         DOCS_ONLY=$(echo "$ALL_CHANGES" | grep -vE '\.(md|txt)$' | head -1 || true)
@@ -137,11 +140,13 @@ if [ "$SMART_MODE" = true ]; then
             print_info "Config or script changes detected - running full validation"
             RUN_RUST_TESTS=true
             RUN_JAVA_TESTS=true
+            RUN_CSHARP_TESTS=true
         elif [ -z "$DOCS_ONLY" ]; then
             # Only docs changed
             print_info "Only documentation changed - skipping tests"
             RUN_RUST_TESTS=false
             RUN_JAVA_TESTS=false
+            RUN_CSHARP_TESTS=false
             RUN_CARGO_DENY=false
         else
             # Selective testing based on what changed
@@ -165,19 +170,34 @@ if [ "$SMART_MODE" = true ]; then
                 [ $(echo "$JAVA_CHANGES" | wc -l) -gt 5 ] && echo "    ... and more"
             fi
 
-            # Special case: Rust FFI changes should trigger Java tests
-            # because Java tests are integration tests that use the native lib
-            if [ "$RUN_RUST_TESTS" = true ] && [ "$RUN_JAVA_TESTS" = false ]; then
+            if [ -z "$CSHARP_CHANGES" ]; then
+                print_info "No C# changes detected - skipping C# tests"
+                RUN_CSHARP_TESTS=false
+            else
+                print_info "C# changes detected:"
+                echo "$CSHARP_CHANGES" | head -5 | sed 's/^/    /'
+                [ $(echo "$CSHARP_CHANGES" | wc -l) -gt 5 ] && echo "    ... and more"
+            fi
+
+            # Special case: Rust FFI changes should trigger Java/C# tests
+            # because Java/C# tests are integration tests that use the native lib
+            if [ "$RUN_RUST_TESTS" = true ]; then
                 FFI_CHANGES=$(echo "$RUST_CHANGES" | grep -E '(ffi|plugin_|FfiBuffer)' || true)
                 if [ -n "$FFI_CHANGES" ]; then
-                    print_warning "FFI changes detected - enabling Java tests for integration coverage"
-                    RUN_JAVA_TESTS=true
+                    if [ "$RUN_JAVA_TESTS" = false ]; then
+                        print_warning "FFI changes detected - enabling Java tests for integration coverage"
+                        RUN_JAVA_TESTS=true
+                    fi
+                    if [ "$RUN_CSHARP_TESTS" = false ]; then
+                        print_warning "FFI changes detected - enabling C# tests for integration coverage"
+                        RUN_CSHARP_TESTS=true
+                    fi
                 fi
             fi
         fi
 
         echo ""
-        print_info "Test plan: Rust=$RUN_RUST_TESTS, Java=$RUN_JAVA_TESTS, Fmt=$RUN_RUST_FMT, Deny=$RUN_CARGO_DENY"
+        print_info "Test plan: Rust=$RUN_RUST_TESTS, Java=$RUN_JAVA_TESTS, C#=$RUN_CSHARP_TESTS, Fmt=$RUN_RUST_FMT, Deny=$RUN_CARGO_DENY"
         echo ""
     fi
 fi
@@ -217,6 +237,15 @@ if [ "$RUN_JAVA_TESTS" = true ] && [ -d "rustbridge-java" ]; then
         RUN_JAVA_TESTS=false
     else
         print_success "gradle wrapper found"
+    fi
+fi
+
+if [ "$RUN_CSHARP_TESTS" = true ] && [ -d "rustbridge-csharp" ]; then
+    if ! command_exists dotnet; then
+        print_warning "dotnet not found. C# tests will be skipped."
+        RUN_CSHARP_TESTS=false
+    else
+        print_success "dotnet found"
     fi
 fi
 
@@ -354,7 +383,37 @@ else
 fi
 
 # ============================================================================
-# 8. Integration/E2E Tests (Future)
+# 8. C# Tests
+# ============================================================================
+if [ "$RUN_CSHARP_TESTS" = true ] && [ -d "rustbridge-csharp" ] && command_exists dotnet; then
+    print_header "Running C# Tests"
+
+    cd rustbridge-csharp
+
+    if ! dotnet build; then
+        print_error "C# build failed!"
+        exit 1
+    fi
+    print_success "C# build succeeded"
+
+    if ! dotnet test; then
+        print_error "C# tests failed!"
+        exit 1
+    fi
+    print_success "All C# tests passed"
+
+    cd "$PROJECT_ROOT"
+    echo ""
+elif [ "$RUN_CSHARP_TESTS" = false ]; then
+    print_info "Skipping C# tests (no C# changes)"
+    echo ""
+else
+    print_info "Skipping C# tests (not available)"
+    echo ""
+fi
+
+# ============================================================================
+# 10. Integration/E2E Tests (Future)
 # ============================================================================
 if [ "$FAST_MODE" = false ]; then
     if [ -d "tests/integration" ]; then
@@ -373,7 +432,7 @@ if [ "$FAST_MODE" = false ]; then
 fi
 
 # ============================================================================
-# 9. Clippy (Optional but Recommended)
+# 11. Clippy (Optional but Recommended)
 # ============================================================================
 if [ "$RUN_RUST_TESTS" = true ] && [ "$FAST_MODE" = false ]; then
     print_header "Running Clippy (Lints)"

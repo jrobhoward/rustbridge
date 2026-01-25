@@ -57,10 +57,14 @@ This document tracks incomplete tasks and priorities for the rustbridge project.
 
 | Task | Priority | Status | Notes |
 |------|----------|--------|-------|
-| C# FFI bindings | Low | ✅ Done | P/Invoke implementation complete, 39 tests passing |
+| C# FFI bindings | Low | ✅ Done | P/Invoke implementation complete, 76 tests (73 passing, 3 skipped) |
 | C# struct mapping for binary transport | Low | ⚠️ Blocked | Implementation complete but blocked by Rust thread-local issue |
-| Port BundleLoader to C# | Low | 🔄 In Progress | Follow Java implementation patterns |
-| Port MinisignVerifier to C# | Low | 🔄 In Progress | Follow Java implementation patterns |
+| Port BundleLoader to C# | Low | ✅ Done | Supports ZIP extraction, checksums, minisign verification (20 tests) |
+| Port MinisignVerifier to C# | Low | ✅ Done | Ed25519 verification using NSec.Cryptography (14 tests) |
+| C# testing documentation | Low | ✅ Done | docs/TESTING_CSHARP.md |
+| C# pre-commit integration | Low | ✅ Done | Added to scripts/pre-commit.sh and scripts/pre-commit.bat |
+| C# CI/CD pipeline (GitHub Actions) | Low | Pending | Add .NET build/test to CI workflow, run on ubuntu/windows/macos |
+| C# NuGet packaging | Low | Pending | Create .nupkg for RustBridge.Core and RustBridge.Native |
 
 ### Rust FFI Fixes Needed
 

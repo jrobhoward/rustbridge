@@ -178,7 +178,46 @@ if exist "rustbridge-java\gradlew.bat" (
 )
 
 REM ============================================================================
-REM 8. Clippy (skip in fast mode)
+REM 8. C# Tests
+REM ============================================================================
+where dotnet >nul 2>&1
+if errorlevel 1 (
+    echo [INFO] Skipping C# tests (dotnet not found)
+    echo.
+) else (
+    if exist "rustbridge-csharp\RustBridge.sln" (
+        echo ===================================================
+        echo Running C# Tests
+        echo ===================================================
+
+        pushd rustbridge-csharp
+        dotnet build
+        if errorlevel 1 (
+            popd
+            echo.
+            echo [ERROR] C# build failed!
+            exit /b 1
+        )
+        echo [OK] C# build succeeded
+
+        dotnet test
+        if errorlevel 1 (
+            popd
+            echo.
+            echo [ERROR] C# tests failed!
+            exit /b 1
+        )
+        popd
+        echo [OK] All C# tests passed
+        echo.
+    ) else (
+        echo [INFO] Skipping C# tests (RustBridge.sln not found)
+        echo.
+    )
+)
+
+REM ============================================================================
+REM 9. Clippy (skip in fast mode)
 REM ============================================================================
 if "%FAST_MODE%"=="1" (
     echo [INFO] Skipping clippy checks (--fast mode)
