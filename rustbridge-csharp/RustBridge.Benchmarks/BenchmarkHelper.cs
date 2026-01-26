@@ -15,32 +15,41 @@ public static class BenchmarkHelper
         var assemblyLocation = typeof(BenchmarkHelper).Assembly.Location;
         var assemblyDir = Path.GetDirectoryName(assemblyLocation) ?? ".";
 
-        var searchBases = new[]
-        {
-            // From current directory
-            Environment.CurrentDirectory,
-            // From assembly location
-            assemblyDir,
-            // Walk up from assembly to find repo
-            Path.Combine(assemblyDir, "..", "..", "..", ".."),
-            Path.Combine(assemblyDir, "..", "..", "..", "..", ".."),
-            Path.Combine(assemblyDir, "..", "..", "..", "..", "..", ".."),
-        };
+        // Search from current directory
+        var result = SearchForPlugin(Environment.CurrentDirectory, libraryName);
+        if (result != null) return result;
 
-        foreach (var baseDir in searchBases)
+        // Search from assembly location, walking up the directory tree
+        // BenchmarkDotNet copies assemblies to deep temp paths like:
+        // bin\Release\net8.0\{guid}\bin\Release\net8.0
+        // So we need to walk up many levels to find the repo root
+        var searchDir = assemblyDir;
+        for (int i = 0; i < 15; i++)
         {
-            // Prefer release build for benchmarks
-            var releasePath = Path.Combine(baseDir, "target", "release", libraryName);
-            if (File.Exists(releasePath))
-            {
-                return Path.GetFullPath(releasePath);
-            }
+            result = SearchForPlugin(searchDir, libraryName);
+            if (result != null) return result;
 
-            var debugPath = Path.Combine(baseDir, "target", "debug", libraryName);
-            if (File.Exists(debugPath))
-            {
-                return Path.GetFullPath(debugPath);
-            }
+            var parent = Path.GetDirectoryName(searchDir);
+            if (parent == null || parent == searchDir) break;
+            searchDir = parent;
+        }
+
+        return null;
+    }
+
+    private static string? SearchForPlugin(string baseDir, string libraryName)
+    {
+        // Prefer release build for benchmarks
+        var releasePath = Path.Combine(baseDir, "target", "release", libraryName);
+        if (File.Exists(releasePath))
+        {
+            return Path.GetFullPath(releasePath);
+        }
+
+        var debugPath = Path.Combine(baseDir, "target", "debug", libraryName);
+        if (File.Exists(debugPath))
+        {
+            return Path.GetFullPath(debugPath);
         }
 
         return null;

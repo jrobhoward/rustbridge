@@ -24,7 +24,7 @@ public class ConcurrentBenchmark : IDisposable
     {
         var libraryPath = BenchmarkHelper.GetHelloPluginOrThrow();
         // Use more worker threads for concurrent tests
-        var config = PluginConfig.Defaults().WithWorkerThreads(8);
+        var config = PluginConfig.Defaults().WorkerThreads(8);
         _plugin = NativePluginLoader.Load(libraryPath, config);
     }
 
@@ -32,6 +32,11 @@ public class ConcurrentBenchmark : IDisposable
     public void Cleanup()
     {
         _plugin?.Dispose();
+    }
+
+    public void Dispose()
+    {
+        Cleanup();
     }
 
     [Benchmark(Baseline = true, Description = "JSON concurrent (100 tasks)")]

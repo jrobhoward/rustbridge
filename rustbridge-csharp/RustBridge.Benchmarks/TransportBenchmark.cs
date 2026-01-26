@@ -23,7 +23,7 @@ public class TransportBenchmark : IDisposable
     public void Setup()
     {
         var libraryPath = BenchmarkHelper.GetHelloPluginOrThrow();
-        var config = PluginConfig.Defaults().WithWorkerThreads(4);
+        var config = PluginConfig.Defaults().WorkerThreads(4);
         _plugin = NativePluginLoader.Load(libraryPath, config);
     }
 
@@ -31,6 +31,11 @@ public class TransportBenchmark : IDisposable
     public void Cleanup()
     {
         _plugin?.Dispose();
+    }
+
+    public void Dispose()
+    {
+        Cleanup();
     }
 
     [Benchmark(Baseline = true, Description = "JSON transport")]
