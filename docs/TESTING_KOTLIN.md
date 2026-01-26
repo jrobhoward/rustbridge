@@ -2,6 +2,8 @@
 
 This document describes the testing conventions for Kotlin code in the rustbridge workspace (primarily `rustbridge-java/rustbridge-ffm`).
 
+> **Note**: This guide follows the [shared testing conventions](./TESTING.md#cross-language-testing-conventions) used across all rustbridge languages, including the triple-underscore naming pattern and Arrange-Act-Assert structure.
+
 ## Code Quality Requirements
 
 ### Ktlint

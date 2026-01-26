@@ -2,6 +2,8 @@
 
 This document describes the testing conventions for C# code in the rustbridge workspace (`rustbridge-csharp/`).
 
+> **Note**: This guide follows the [shared testing conventions](./TESTING.md#cross-language-testing-conventions) used across all rustbridge languages, including the triple-underscore naming pattern and Arrange-Act-Assert structure.
+
 ## Code Quality Requirements
 
 ### Build with Warnings as Errors

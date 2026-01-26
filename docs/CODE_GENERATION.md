@@ -453,5 +453,5 @@ Planned improvements:
 ## Related Documentation
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - Overall system design
-- [BINARY_TRANSPORT.md](./BINARY_TRANSPORT.md) - C header generation for binary transport
+- [TRANSPORT.md](./TRANSPORT.md) - JSON and binary transport layer, C header generation
 - [TESTING.md](./TESTING.md) - Testing conventions and guidelines

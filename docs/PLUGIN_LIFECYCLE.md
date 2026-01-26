@@ -839,9 +839,8 @@ async fn handle_request(...) -> PluginResult<Vec<u8>> {
 
 ## Related Documentation
 
-- [docs/GETTING_STARTED.md](./GETTING_STARTED.md) - Plugin creation tutorial
-- [docs/ERROR_HANDLING.md](./ERROR_HANDLING.md) - Error handling patterns
-- [docs/DEBUGGING.md](./DEBUGGING.md) - Debugging techniques
-- [docs/SKILLS.md](./SKILLS.md) - Lock safety and best practices
-- [docs/ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture
-- [docs/PLUGIN_RELOAD_STATUS.md](./PLUGIN_RELOAD_STATUS.md) - Reload status and limitations
+- [GETTING_STARTED.md](./GETTING_STARTED.md) - Plugin creation tutorial
+- [ERROR_HANDLING.md](./ERROR_HANDLING.md) - Error handling patterns
+- [DEBUGGING.md](./DEBUGGING.md) - Debugging techniques
+- [SKILLS.md](./SKILLS.md) - Lock safety and best practices
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture

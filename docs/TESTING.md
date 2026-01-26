@@ -1,6 +1,23 @@
 # rustbridge Testing Conventions
 
-This document describes the testing conventions for the rustbridge workspace.
+This document describes the testing conventions for the rustbridge workspace. These conventions apply to Rust code, with language-specific variations documented in separate files.
+
+## Cross-Language Testing Conventions
+
+All rustbridge code (Rust, Java, Kotlin, C#, Python) follows the same core conventions:
+
+| Convention | All Languages |
+|------------|---------------|
+| **Naming** | `subject___condition___expectedResult` (triple underscores) |
+| **Structure** | Arrange-Act-Assert pattern with blank line separation |
+| **Comments** | No `// Arrange`, `// Act`, `// Assert` comments |
+| **Assertions** | Prefer specific assertions over generic ones |
+
+See language-specific guides for implementation details:
+- [TESTING_JAVA.md](./TESTING_JAVA.md) - Java testing conventions
+- [TESTING_KOTLIN.md](./TESTING_KOTLIN.md) - Kotlin testing conventions
+- [TESTING_CSHARP.md](./TESTING_CSHARP.md) - C# testing conventions
+- [TESTING_PYTHON.md](./TESTING_PYTHON.md) - Python testing conventions
 
 ## Code Quality Requirements
 

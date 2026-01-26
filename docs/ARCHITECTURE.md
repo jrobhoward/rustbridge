@@ -568,11 +568,7 @@ The shared logging state is an intentional trade-off:
 - ✅ Reliable reload support (global state doesn't prevent reinitialization)
 - ⚠️ Multi-plugin scenarios require awareness of shared state
 
-**Future Enhancement**: If multi-plugin with isolated logging becomes a requirement, we can implement per-handle logging state. See [PLUGIN_RELOAD_STATUS.md](./PLUGIN_RELOAD_STATUS.md) for details.
-
-**Related Documentation**:
-- [Plugin Reload Status](./PLUGIN_RELOAD_STATUS.md) - Test results and detailed analysis
-- [Reload Safety Analysis](./RELOAD_SAFETY_ANALYSIS.md) - Global state inventory and considerations
+**Future Enhancement**: If multi-plugin with isolated logging becomes a requirement, we can implement per-handle logging state.
 
 ---
 
@@ -590,3 +586,13 @@ The shared logging state is an intentional trade-off:
 1. **Shared memory transport**: Complexity outweighs benefits
 2. **Custom allocators**: Standard allocator is sufficient
 3. **Multiple runtime support**: Tokio-only simplifies API
+
+---
+
+## Related Documentation
+
+- [BUNDLE_FORMAT.md](./BUNDLE_FORMAT.md) - .rbp bundle specification
+- [TRANSPORT.md](./TRANSPORT.md) - JSON and binary transport layer
+- [MEMORY_MODEL.md](./MEMORY_MODEL.md) - Memory ownership patterns
+- [PLUGIN_LIFECYCLE.md](./PLUGIN_LIFECYCLE.md) - Detailed lifecycle documentation
+- [GETTING_STARTED.md](./GETTING_STARTED.md) - Tutorial for creating plugins

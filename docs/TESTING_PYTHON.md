@@ -2,6 +2,8 @@
 
 This document describes the testing conventions for the rustbridge Python bindings.
 
+> **Note**: This guide follows the [shared testing conventions](./TESTING.md#cross-language-testing-conventions) used across all rustbridge languages, including the triple-underscore naming pattern and Arrange-Act-Assert structure.
+
 ## Quick Reference
 
 ```bash

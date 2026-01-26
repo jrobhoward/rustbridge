@@ -19,6 +19,7 @@ scripts\pre-commit.bat --fast        # Windows (skip clippy/integration)
 # Common development commands
 cargo fmt --all                                                    # Format code
 cargo clippy --workspace --examples --tests -- -D warnings         # Lint (must pass)
+cargo test --workspace                                             # Test all crates
 cargo test -p rustbridge-ffi                                       # Test specific crate
 cargo test lifecycle___installed                                   # Run tests matching pattern
 cargo bench -p rustbridge-transport -- small_roundtrip             # Run specific benchmark
@@ -43,7 +44,7 @@ Host Language → FFI Boundary → Async Runtime → Plugin Implementation → R
 - **Core** (`rustbridge-core`, `rustbridge-transport`): Traits, types, serialization
 - **Runtime** (`rustbridge-runtime`, `rustbridge-logging`): Tokio integration, tracing callbacks
 - **FFI** (`rustbridge-ffi`): C ABI exports, buffer management
-- **Tooling** (`rustbridge-macros`, `rustbridge-cli`, `rustbridge-bundle`): Code generation, build tools
+- **Tooling** (`rustbridge-macros`, `rustbridge-cli`, `rustbridge-bundle`): Code generation, build tools, `.rbp` packaging
 - **JNI** (`rustbridge-jni`): JNI native bridge for Java 8+ fallback
 
 Memory follows "Rust allocates, host frees" pattern. See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for details.
@@ -131,7 +132,9 @@ See [docs/TESTING_PYTHON.md](./docs/TESTING_PYTHON.md) for Python testing conven
 
 - [docs/GETTING_STARTED.md](./docs/GETTING_STARTED.md) - Tutorial for creating your first plugin
 - [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) - System architecture and design decisions
+- [docs/BUNDLE_FORMAT.md](./docs/BUNDLE_FORMAT.md) - .rbp bundle specification
+- [docs/TRANSPORT.md](./docs/TRANSPORT.md) - JSON and binary transport (binary is 7x faster)
+- [docs/MEMORY_MODEL.md](./docs/MEMORY_MODEL.md) - Memory ownership patterns
 - [docs/SKILLS.md](./docs/SKILLS.md) - Development best practices
 - [docs/PLUGIN_LIFECYCLE.md](./docs/PLUGIN_LIFECYCLE.md) - Plugin lifecycle and resource cleanup
-- [docs/BINARY_TRANSPORT.md](./docs/BINARY_TRANSPORT.md) - Binary transport (opt-in, 7x faster)
 - [docs/CODE_GENERATION.md](./docs/CODE_GENERATION.md) - Code generation guide

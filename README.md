@@ -3,7 +3,30 @@
 > [!WARNING]
 > This project is in early development. APIs are unstable and may change without notice.
 
-A framework for developing Rust shared libraries callable from other languages. Uses C ABI under the hood but abstracts the complexity, providing OSGI-like lifecycle, mandatory async (Tokio), logging callbacks, and JSON-based data transport.
+A framework for developing Rust shared libraries callable from other languages. Uses C ABI under the hood but abstracts the complexity, providing OSGI-like lifecycle, mandatory async (Tokio), logging callbacks, and JSON-based data transport with optional binary transport for performance-critical paths.
+
+## The .rbp Bundle
+
+rustbridge plugins are distributed as `.rbp` (rustbridge plugin) bundles - portable ZIP archives containing:
+
+- **Multi-platform libraries** - Native libraries for all target platforms in one file
+- **Manifest** - Plugin metadata, version info, and SHA256 checksums
+- **Optional signatures** - Minisign code signing for production security
+- **Optional schemas** - JSON Schema and C headers for API documentation
+
+```bash
+# Create a bundle
+rustbridge bundle create \
+  --name my-plugin --version 1.0.0 \
+  --lib linux-x86_64:target/release/libmyplugin.so \
+  --lib darwin-aarch64:target/release/libmyplugin.dylib \
+  --output my-plugin-1.0.0.rbp
+
+# Load from any language - auto-detects platform
+plugin = BundleLoader.load("my-plugin-1.0.0.rbp")
+```
+
+See [docs/BUNDLE_FORMAT.md](./docs/BUNDLE_FORMAT.md) for the complete specification.
 
 ## Overview
 
@@ -384,10 +407,25 @@ Errors are represented with stable numeric codes:
 
 ## Documentation
 
+### Getting Started
+- [docs/GETTING_STARTED.md](./docs/GETTING_STARTED.md) - Tutorial for creating your first plugin
+- [docs/getting-started/JAVA_FFM.md](./docs/getting-started/JAVA_FFM.md) - Java 21+ FFM guide
+- [docs/getting-started/JAVA_JNI.md](./docs/getting-started/JAVA_JNI.md) - Java 8+ JNI guide
+- [docs/getting-started/KOTLIN.md](./docs/getting-started/KOTLIN.md) - Kotlin guide
+- [docs/getting-started/CSHARP.md](./docs/getting-started/CSHARP.md) - C# guide
+- [docs/getting-started/PYTHON.md](./docs/getting-started/PYTHON.md) - Python guide
+
+### Architecture & Design
 - [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) - System architecture and design decisions
+- [docs/BUNDLE_FORMAT.md](./docs/BUNDLE_FORMAT.md) - .rbp bundle specification
+- [docs/TRANSPORT.md](./docs/TRANSPORT.md) - JSON and binary transport layer
+- [docs/MEMORY_MODEL.md](./docs/MEMORY_MODEL.md) - Memory ownership patterns
+
+### Development
 - [docs/SKILLS.md](./docs/SKILLS.md) - Development best practices and coding conventions
 - [docs/TESTING.md](./docs/TESTING.md) - Testing conventions and guidelines
-- [docs/TASKS.md](./docs/TASKS.md) - Project roadmap and task tracking
+- [docs/ERROR_HANDLING.md](./docs/ERROR_HANDLING.md) - Error handling patterns
+- [docs/DEBUGGING.md](./docs/DEBUGGING.md) - Debugging techniques
 
 ## Contributing
 

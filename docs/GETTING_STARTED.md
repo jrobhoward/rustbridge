@@ -1,6 +1,20 @@
 # Getting Started with rustbridge
 
-This guide walks you through creating your first rustbridge plugin from scratch. By the end, you'll have a working plugin that can be called from Java, Kotlin, or other languages.
+This guide walks you through creating your first rustbridge plugin from scratch. By the end, you'll have a working plugin that can be called from Java, Kotlin, C#, Python, or other languages.
+
+## Language-Specific Guides
+
+For detailed setup instructions for your target language, see:
+
+| Language | Guide | Java Version |
+|----------|-------|--------------|
+| Java (FFM) | [JAVA_FFM.md](./getting-started/JAVA_FFM.md) | Java 21+ (recommended) |
+| Java (JNI) | [JAVA_JNI.md](./getting-started/JAVA_JNI.md) | Java 8+ |
+| Kotlin | [KOTLIN.md](./getting-started/KOTLIN.md) | Java 21+ |
+| C# | [CSHARP.md](./getting-started/CSHARP.md) | .NET 6.0+ |
+| Python | [PYTHON.md](./getting-started/PYTHON.md) | Python 3.9+ |
+
+This guide focuses on creating the Rust plugin. The language-specific guides cover host-side integration in detail.
 
 ## What You'll Build
 
@@ -630,10 +644,11 @@ Congratulations! You've created your first rustbridge plugin. Here are some next
 - See [docs/TESTING.md](./TESTING.md) for testing conventions
 
 ### 2. Advanced Features
-- **Binary transport**: For performance-critical paths, see [docs/BINARY_TRANSPORT.md](./BINARY_TRANSPORT.md)
-- **Code generation**: Generate Java classes from Rust types with `rustbridge generate` (see [docs/CODE_GENERATION.md](./CODE_GENERATION.md))
-- **Code signing**: Sign your bundles with minisign for production security (separate guide coming soon)
-- **Schema embedding**: Include JSON schemas and C headers in your bundles for self-documenting APIs
+- **Binary transport**: For performance-critical paths, see [TRANSPORT.md](./TRANSPORT.md)
+- **Bundle format**: Understand the .rbp bundle format in [BUNDLE_FORMAT.md](./BUNDLE_FORMAT.md)
+- **Memory model**: Learn memory ownership patterns in [MEMORY_MODEL.md](./MEMORY_MODEL.md)
+- **Code generation**: Generate Java classes from Rust types with `rustbridge generate` (see [CODE_GENERATION.md](./CODE_GENERATION.md))
+- **Code signing**: Sign your bundles with minisign for production security (see [BUNDLE_FORMAT.md](./BUNDLE_FORMAT.md#code-signing-optional))
 
 ### 3. Real-World Patterns
 - **Database connections**: Use `on_start()` to establish connections, `on_stop()` to close them
