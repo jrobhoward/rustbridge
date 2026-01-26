@@ -196,9 +196,10 @@ fn load_signing_key(key_path: &str) -> Result<(String, SecretKey)> {
     let secret_key_box = SecretKeyBox::from_string(&key_str).context("Invalid key file format")?;
 
     // Read the public key file (same path with .pub extension)
-    let pub_key_path = format!("{key_path}.pub");
+    // Use with_extension to match keygen behavior: signing.key -> signing.pub
+    let pub_key_path = std::path::Path::new(key_path).with_extension("pub");
     let pub_key_data = fs::read_to_string(&pub_key_path)
-        .with_context(|| format!("Failed to read public key file: {pub_key_path}"))?;
+        .with_context(|| format!("Failed to read public key file: {}", pub_key_path.display()))?;
     let public_key = pub_key_data.trim().to_string();
 
     // Prompt for password
