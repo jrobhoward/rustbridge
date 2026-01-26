@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import ctypes
 import json
-from ctypes import Structure, c_void_p, memmove, sizeof
+from ctypes import Structure, addressof, c_void_p, memmove, sizeof
 from typing import Any, Callable, TypeVar
 
 from rustbridge.core.lifecycle_state import LifecycleState
@@ -196,12 +196,13 @@ class NativePlugin:
         if not self._library.has_binary_transport:
             raise PluginException("Binary transport not supported by this library")
 
-        # Convert request struct to bytes
-        request_bytes = bytes(request)
+        # Get pointer to request struct directly (avoids copy)
+        request_ptr = c_void_p(addressof(request))
+        request_size = sizeof(request)
 
         # Make the raw call
         rb_response = self._library.plugin_call_raw(
-            self._handle, message_id, request_bytes
+            self._handle, message_id, request_ptr, request_size
         )
 
         try:

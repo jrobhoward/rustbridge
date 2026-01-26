@@ -188,7 +188,7 @@ class NativeLibrary:
         return self._lib.plugin_get_rejected_count(handle)
 
     def plugin_call_raw(
-        self, handle: c_void_p, message_id: int, request: bytes
+        self, handle: c_void_p, message_id: int, request_ptr: c_void_p, request_size: int
     ) -> RbResponse:
         """
         Make a binary call to the plugin.
@@ -196,7 +196,8 @@ class NativeLibrary:
         Args:
             handle: Plugin handle from plugin_init.
             message_id: Numeric message identifier.
-            request: Request struct as bytes.
+            request_ptr: Pointer to the request struct.
+            request_size: Size of the request struct in bytes.
 
         Returns:
             RbResponse containing the binary response.
@@ -207,10 +208,7 @@ class NativeLibrary:
         if not self._has_binary_transport:
             raise PluginException("Binary transport not supported by this library")
 
-        request_array = (c_uint8 * len(request))(*request)
-        request_ptr = ctypes.cast(request_array, c_void_p)
-
-        return self._lib.plugin_call_raw(handle, message_id, request_ptr, len(request))
+        return self._lib.plugin_call_raw(handle, message_id, request_ptr, request_size)
 
     def rb_response_free(self, response: RbResponse) -> None:
         """Free a binary response."""

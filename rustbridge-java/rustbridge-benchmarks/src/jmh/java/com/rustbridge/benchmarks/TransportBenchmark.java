@@ -108,6 +108,18 @@ public class TransportBenchmark {
         }
     }
 
+    @Benchmark
+    public MemorySegment ffmBinaryZeroCopy(Blackhole bh) throws PluginException {
+        try (Arena arena = Arena.ofConfined()) {
+            SmallRequestRaw request = new SmallRequestRaw(arena, "bench_key", 0x01);
+            try (FfmPlugin.RawResponse response = ffmPlugin.callRawZeroCopy(MSG_BENCH_SMALL, request, SmallResponseRaw.BYTE_SIZE)) {
+                MemorySegment data = response.segment();
+                bh.consume(data);
+                return data;
+            }
+        }
+    }
+
     // ==================== JNI Benchmarks ====================
 
     @Benchmark

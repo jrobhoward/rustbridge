@@ -206,6 +206,132 @@ public class FfmPlugin implements Plugin {
     }
 
     /**
+     * A zero-copy response wrapper that provides direct access to native memory.
+     * <p>
+     * This class implements {@link AutoCloseable} to ensure the native memory is freed.
+     * Use with try-with-resources for safe memory management:
+     *
+     * <pre>{@code
+     * try (RawResponse response = plugin.callRawZeroCopy(MSG_ID, request, RESPONSE_SIZE)) {
+     *     MemorySegment data = response.segment();
+     *     // Read data directly from native memory...
+     * } // Native memory freed here
+     * }</pre>
+     */
+    public class RawResponse implements AutoCloseable {
+        private final MemorySegment responseStruct;
+        private final MemorySegment data;
+        private volatile boolean closed = false;
+
+        private RawResponse(MemorySegment responseStruct, MemorySegment data) {
+            this.responseStruct = responseStruct;
+            this.data = data;
+        }
+
+        /**
+         * Get the response data as a MemorySegment.
+         * <p>
+         * This provides zero-copy access to the native response data.
+         * The segment is valid until {@link #close()} is called.
+         *
+         * @return the response data segment
+         * @throws IllegalStateException if the response has been closed
+         */
+        public @NotNull MemorySegment segment() {
+            if (closed) {
+                throw new IllegalStateException("RawResponse has been closed");
+            }
+            return data;
+        }
+
+        @Override
+        public void close() {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            freeRawResponse(responseStruct);
+        }
+    }
+
+    /**
+     * Call the plugin with a binary struct request, returning a zero-copy response wrapper.
+     * <p>
+     * This is the <b>fastest</b> binary transport method as it provides direct access
+     * to native memory without any copying. The response must be used within a
+     * try-with-resources block to ensure proper memory cleanup.
+     *
+     * <pre>{@code
+     * try (RawResponse response = plugin.callRawZeroCopy(MSG_ID, request, MyResponse.SIZE)) {
+     *     MemorySegment data = response.segment();
+     *     int value = data.get(ValueLayout.JAVA_INT, 0);
+     *     // Process data...
+     * } // Native memory freed here
+     * }</pre>
+     *
+     * @param messageId    the binary message ID
+     * @param request      the request struct
+     * @param responseSize expected response size in bytes
+     * @return a zero-copy response wrapper (must be closed after use)
+     * @throws PluginException if the call fails
+     */
+    public @NotNull RawResponse callRawZeroCopy(int messageId, @NotNull BinaryStruct request, long responseSize)
+            throws PluginException {
+        if (closed) {
+            throw new PluginException(1, "Plugin has been closed");
+        }
+
+        try {
+            // Use confined arena for the FFI call struct only
+            Arena ffiArena = Arena.ofConfined();
+            MemorySegment resultBuffer = (MemorySegment) bindings.pluginCallRaw().invoke(
+                    ffiArena,
+                    handle,
+                    messageId,
+                    request.segment(),
+                    request.byteSize()
+            );
+
+            // Parse and validate (but don't copy or free)
+            int errorCode = resultBuffer.get(ValueLayout.JAVA_INT, 0);
+            int len = resultBuffer.get(ValueLayout.JAVA_INT, 4);
+            MemorySegment data = resultBuffer.get(ValueLayout.ADDRESS, 16);
+
+            if (errorCode != 0) {
+                String errorMessage = "Unknown error";
+                if (!data.equals(MemorySegment.NULL) && len > 0) {
+                    MemorySegment slice = data.reinterpret(len);
+                    errorMessage = new String(slice.toArray(ValueLayout.JAVA_BYTE), StandardCharsets.UTF_8);
+                }
+                freeRawResponse(resultBuffer);
+                ffiArena.close();
+                throw new PluginException(errorCode, errorMessage);
+            }
+
+            if (data.equals(MemorySegment.NULL) || len == 0) {
+                freeRawResponse(resultBuffer);
+                ffiArena.close();
+                throw new PluginException("Empty response from raw call");
+            }
+
+            if (len != responseSize) {
+                freeRawResponse(resultBuffer);
+                ffiArena.close();
+                throw new PluginException(String.format(
+                        "Response size mismatch: expected %d, got %d", responseSize, len));
+            }
+
+            // Return wrapper with direct access to native memory (no copy!)
+            // The ffiArena is intentionally NOT closed - it will be kept alive with resultBuffer
+            return new RawResponse(resultBuffer, data.reinterpret(len));
+        } catch (PluginException e) {
+            throw e;
+        } catch (Throwable t) {
+            throw new PluginException("Native raw call failed", t);
+        }
+    }
+
+    /**
      * Call the plugin with a binary struct request, returning response as byte array.
      * <p>
      * This is the <b>simplest</b> high-performance binary transport method. No arena
