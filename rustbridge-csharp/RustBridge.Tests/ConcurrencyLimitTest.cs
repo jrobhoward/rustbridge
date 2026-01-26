@@ -77,7 +77,7 @@ public class ConcurrencyLimitTest : IDisposable
     {
         SkipIfPluginNotAvailable();
 
-        var config = PluginConfig.Defaults().WithMaxConcurrentOps(2);
+        var config = PluginConfig.Defaults().MaxConcurrentOps(2);
 
         using var plugin = NativePluginLoader.Load(_pluginPath!, config);
 
@@ -89,7 +89,7 @@ public class ConcurrencyLimitTest : IDisposable
         var tasks = new List<Task>();
         for (int i = 0; i < 15; i++)
         {
-            var task = Task.Run(async () =>
+            var task = Task.Run(() =>
             {
                 try
                 {
@@ -132,7 +132,7 @@ public class ConcurrencyLimitTest : IDisposable
     {
         SkipIfPluginNotAvailable();
 
-        var config = PluginConfig.Defaults().WithMaxConcurrentOps(0); // Unlimited
+        var config = PluginConfig.Defaults().MaxConcurrentOps(0); // Unlimited
 
         using var plugin = NativePluginLoader.Load(_pluginPath!, config);
 
@@ -174,7 +174,7 @@ public class ConcurrencyLimitTest : IDisposable
     {
         SkipIfPluginNotAvailable();
 
-        var config = PluginConfig.Defaults().WithMaxConcurrentOps(1);
+        var config = PluginConfig.Defaults().MaxConcurrentOps(1);
 
         using var plugin = NativePluginLoader.Load(_pluginPath!, config);
 
@@ -194,7 +194,7 @@ public class ConcurrencyLimitTest : IDisposable
     {
         SkipIfPluginNotAvailable();
 
-        var config = PluginConfig.Defaults().WithMaxConcurrentOps(2);
+        var config = PluginConfig.Defaults().MaxConcurrentOps(2);
 
         using var plugin = NativePluginLoader.Load(_pluginPath!, config);
 
