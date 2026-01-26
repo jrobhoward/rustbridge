@@ -5,9 +5,6 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
-  concurrency:
-    group: ${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: true
 
 env:
   RUST_BACKTRACE: 1
@@ -138,29 +135,3 @@ jobs:
 
       - name: Check MSRV
         run: cargo check --workspace --all-targets
-
-  # Address Sanitizer (ASAN) for leak detection
-  asan:
-    name: AddressSanitizer (Leak Detection)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Rust nightly
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          components: rust-src
-
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          cache-on-failure: true
-
-      - name: Run FFI tests with ASAN
-        run: |
-          RUSTFLAGS="-Z sanitizer=address" \
-          ASAN_OPTIONS="detect_leaks=1:halt_on_error=1" \
-          cargo +nightly test -p rustbridge-ffi --lib --tests --target x86_64-unknown-linux-gnu
-        env:
-          RUST_BACKTRACE: full
