@@ -12,6 +12,7 @@ C# bindings for the RustBridge plugin framework.
 - **RustBridge.Core** - Core interfaces and types (IPlugin, PluginConfig, etc.)
 - **RustBridge.Native** - P/Invoke-based native plugin loader
 - **RustBridge.Tests** - Unit and integration tests
+- **RustBridge.Benchmarks** - BenchmarkDotNet performance benchmarks
 
 ## Quick Start
 
@@ -36,6 +37,29 @@ var result = plugin.Call<MyRequest, MyResponse>("my.operation", new MyRequest { 
 dotnet build
 dotnet test
 ```
+
+## Benchmarks
+
+Run performance benchmarks using BenchmarkDotNet:
+
+```bash
+# Build the hello-plugin first
+cargo build --release -p hello-plugin
+
+# Run all benchmarks
+cd RustBridge.Benchmarks
+dotnet run -c Release
+
+# Run specific benchmark
+dotnet run -c Release -- --filter "*TransportBenchmark*"
+dotnet run -c Release -- --filter "*ThroughputBenchmark*"
+dotnet run -c Release -- --filter "*ConcurrentBenchmark*"
+```
+
+Available benchmarks:
+- **TransportBenchmark** - Latency comparison between JSON and binary transport
+- **ThroughputBenchmark** - Operations per second for sustained load
+- **ConcurrentBenchmark** - Multi-threaded scalability (100 concurrent tasks)
 
 ## Configuration
 
