@@ -8,22 +8,24 @@
 
 | Language | Transport | Latency | Throughput | Memory |
 |----------|-----------|---------|------------|--------|
-| **C#** | Binary | 360 ns | 3.2M ops/s | 40 B |
-| **C#** | JSON | 2.72 μs | 385K ops/s | 688 B |
-| **Java JNI** | Binary | 602 ns | 1.68M ops/s | - |
-| **Java JNI** | JSON | 5.81 μs | 173K ops/s | - |
-| **Java FFM** | Binary (bytes) | 728 ns | 1.35M ops/s | - |
-| **Java FFM** | Binary (segment) | 1.16 μs | 1.35M ops/s | - |
-| **Java FFM** | JSON | 3.11 μs | 328K ops/s | - |
-| **Python** | Binary | 18.2 μs | 55K ops/s | - |
-| **Python** | JSON | 26-31 μs | 32-38K ops/s | - |
+| **C#** | Binary | 326 ns | 3.2M ops/s | 40 B |
+| **C#** | JSON | 2.55 μs | 393K ops/s | 688 B |
+| **Java JNI** | Binary | 579 ns | 1.76M ops/s | - |
+| **Java JNI** | JSON | 6.05 μs | 167K ops/s | - |
+| **Java FFM** | Binary (zero-copy) | 667 ns | 1.50M ops/s | - |
+| **Java FFM** | Binary (bytes) | 742 ns | 1.35M ops/s | - |
+| **Java FFM** | Binary (segment) | 908 ns | 1.10M ops/s | - |
+| **Java FFM** | JSON | 3.26 μs | 325K ops/s | - |
+| **Python** | Binary | 5.73 μs | 175K ops/s | - |
+| **Python** | JSON | 27-32 μs | 32-37K ops/s | - |
 
 **Key Findings:**
-- Binary transport is **7-10x faster** than JSON across all languages
-- C# achieves the lowest latency (360 ns binary, 2.72 μs JSON)
-- Java JNI binary (602 ns) outperforms Java FFM binary (728 ns)
-- Java FFM JSON (3.11 μs) outperforms Java JNI JSON (5.81 μs)
-- Python has higher overhead due to ctypes FFI layer
+- Binary transport is **5-10x faster** than JSON across all languages
+- C# achieves the lowest latency (326 ns binary, 2.55 μs JSON)
+- Java JNI binary (579 ns) outperforms Java FFM binary (667 ns zero-copy)
+- Java FFM JSON (3.26 μs) outperforms Java JNI JSON (6.05 μs) by ~46%
+- **Java FFM zero-copy** is the fastest FFM binary option (667 ns vs 742 ns bytes vs 908 ns segment)
+- **Python binary improved 3.2x** after optimization (5.73 μs, was 18.2 μs)
 
 ---
 
@@ -33,28 +35,28 @@
 
 | Method | Mean | Error | StdDev | Ratio | Allocated |
 |--------|------|-------|--------|-------|-----------|
-| JSON transport | 2,722.2 ns | 7.24 ns | 6.77 ns | 1.00 | 688 B |
-| Binary transport | 359.6 ns | 0.64 ns | 0.60 ns | 0.13 | 40 B |
+| JSON transport | 2,552.5 ns | 5.53 ns | 4.90 ns | 1.00 | 688 B |
+| Binary transport | 326.0 ns | 0.50 ns | 0.44 ns | 0.13 | 40 B |
 
-**Binary is 7.6x faster than JSON with 17x less memory allocation.**
+**Binary is 7.8x faster than JSON with 17x less memory allocation.**
 
 ### Throughput (1000 ops/invoke)
 
 | Method | Mean | Error | StdDev | Ratio | Allocated |
 |--------|------|-------|--------|-------|-----------|
-| JSON throughput | 2,597.4 ns | 10.03 ns | 9.39 ns | 1.00 | 696 B |
-| Binary throughput | 312.9 ns | 0.43 ns | 0.40 ns | 0.12 | 40 B |
+| JSON throughput | 2,544.0 ns | 7.56 ns | 7.07 ns | 1.00 | 696 B |
+| Binary throughput | 314.6 ns | 0.20 ns | 0.18 ns | 0.12 | 40 B |
 
-**Binary achieves 8.3x higher throughput.**
+**Binary achieves 8.1x higher throughput.**
 
 ### Concurrent (100 parallel tasks)
 
 | Method | Mean | Error | StdDev | Ratio | Allocated |
 |--------|------|-------|--------|-------|-----------|
-| JSON concurrent | 124.64 μs | 1.027 μs | 0.911 μs | 1.00 | 83.91 KB |
-| Binary concurrent | 69.16 μs | 1.155 μs | 1.080 μs | 0.55 | 33.90 KB |
+| JSON concurrent | 122.63 μs | 0.749 μs | 0.664 μs | 1.00 | 83.91 KB |
+| Binary concurrent | 70.94 μs | 0.507 μs | 0.450 μs | 0.58 | 33.90 KB |
 
-**Binary concurrent calls complete in 55% of the time with 40% memory.**
+**Binary concurrent calls complete in 58% of the time with 40% memory.**
 
 ---
 
@@ -64,27 +66,27 @@
 
 | Method | Mean | Error | StdDev |
 |--------|------|-------|--------|
-| jniJson | 5.806 μs | 2.570 μs | 0.141 μs |
-| jniBinary | 0.602 μs | 0.044 μs | 0.002 μs |
+| jniJson | 6.053 μs | 0.308 μs | 0.017 μs |
+| jniBinary | 0.579 μs | 0.040 μs | 0.002 μs |
 
-**Binary is 9.6x faster than JSON.**
+**Binary is 10.5x faster than JSON.**
 
 ### Throughput
 
 | Method | Throughput (ops/s) | Error |
 |--------|-------------------|-------|
-| jniBinaryThroughput | 1,682,356 | ±341,651 |
-| jniJsonThroughput | 172,586 | ±10,359 |
+| jniBinaryThroughput | 1,759,411 | ±202,894 |
+| jniJsonThroughput | 166,694 | ±21,282 |
 
-**Binary achieves 9.7x higher throughput.**
+**Binary achieves 10.6x higher throughput.**
 
 ### Concurrent Scaling
 
 | Threads | Binary (ops/s) | JSON (ops/s) | Binary/JSON Ratio |
 |---------|----------------|--------------|-------------------|
-| 1 | 1,553,367 | 173,019 | 9.0x |
-| 4 | 2,389,852 | 582,815 | 4.1x |
-| 8 | 1,670,946 | 1,133,888 | 1.5x |
+| 1 | 1,572,661 | 168,506 | 9.3x |
+| 4 | 2,420,161 | 592,009 | 4.1x |
+| 8 | 1,534,061 | 1,119,235 | 1.4x |
 
 ---
 
@@ -94,21 +96,22 @@
 
 | Method | Mean | Error | StdDev |
 |--------|------|-------|--------|
-| ffmJson | 3.110 μs | 0.173 μs | 0.009 μs |
-| ffmBinary (MemorySegment) | 1.157 μs | 0.121 μs | 0.007 μs |
-| ffmBinaryBytes (byte[]) | 0.728 μs | 0.087 μs | 0.005 μs |
+| ffmJson | 3.264 μs | 0.125 μs | 0.007 μs |
+| ffmBinary (MemorySegment) | 0.908 μs | 0.007 μs | 0.001 μs |
+| ffmBinaryBytes (byte[]) | 0.742 μs | 0.085 μs | 0.005 μs |
+| **ffmBinaryZeroCopy** | **0.667 μs** | 0.024 μs | 0.001 μs |
 
 **Notes:**
-- `ffmBinary` returns a `MemorySegment` (zero-copy, stays in native memory)
+- `ffmBinaryZeroCopy` is the **fastest** - returns direct native memory reference (no copy)
 - `ffmBinaryBytes` returns a `byte[]` (copied to JVM heap)
-- `ffmBinaryBytes` is faster because it avoids Arena allocation overhead in the hot path
+- `ffmBinary` returns a `MemorySegment` (copied to Arena-managed memory)
 
 ### Throughput
 
 | Method | Throughput (ops/s) | Error |
 |--------|-------------------|-------|
-| ffmBinaryThroughput | 1,348,265 | ±35,528 |
-| ffmJsonThroughput | 328,142 | ±2,064 |
+| ffmBinaryThroughput | 1,349,179 | ±189,407 |
+| ffmJsonThroughput | 325,231 | ±11,194 |
 
 **Binary achieves 4.1x higher throughput.**
 
@@ -116,22 +119,22 @@
 
 | Threads | Binary (ops/s) | JSON (ops/s) | Binary/JSON Ratio |
 |---------|----------------|--------------|-------------------|
-| 1 | 1,335,285 | 289,475 | 4.6x |
-| 4 | 1,530,894 | 822,239 | 1.9x |
-| 8 | 2,126,683 | 1,305,481 | 1.6x |
+| 1 | 1,340,305 | 326,371 | 4.1x |
+| 4 | 1,817,613 | 835,024 | 2.2x |
+| 8 | 2,289,383 | 1,398,446 | 1.6x |
 
 ---
 
 ## Java: JNI vs FFM Comparison
 
-| Metric | JNI Binary | FFM Binary | JNI JSON | FFM JSON |
-|--------|------------|------------|----------|----------|
-| Latency | 602 ns | 728 ns | 5.81 μs | 3.11 μs |
-| Throughput | 1.68M ops/s | 1.35M ops/s | 173K ops/s | 328K ops/s |
+| Metric | JNI Binary | FFM Binary (zero-copy) | JNI JSON | FFM JSON |
+|--------|------------|------------------------|----------|----------|
+| Latency | 579 ns | 667 ns | 6.05 μs | 3.26 μs |
+| Throughput | 1.76M ops/s | 1.35M ops/s | 167K ops/s | 325K ops/s |
 
 **Analysis:**
-- **Binary transport:** JNI is 17% faster than FFM (602 ns vs 728 ns)
-- **JSON transport:** FFM is 47% faster than JNI (3.11 μs vs 5.81 μs)
+- **Binary transport:** JNI is 13% faster than FFM zero-copy (579 ns vs 667 ns)
+- **JSON transport:** FFM is 46% faster than JNI (3.26 μs vs 6.05 μs)
 - JNI has lower overhead for raw byte operations
 - FFM has better string handling, likely due to more efficient memory management
 
@@ -143,22 +146,22 @@
 
 | Test | Mean | StdDev | Ops/s |
 |------|------|--------|-------|
-| Binary (small) | 18.21 μs | 8.48 μs | 54,907 |
-| JSON (small math) | 26.33 μs | 8.32 μs | 37,981 |
-| JSON (small greet) | 28.08 μs | 8.21 μs | 35,607 |
-| JSON (small echo) | 30.69 μs | 32.94 μs | 32,580 |
-| JSON (medium ~1KB) | 207.63 μs | 12.65 μs | 4,816 |
-| JSON (large ~100KB) | 19,834 μs | 223.02 μs | 50 |
+| Binary (small) | 5.73 μs | 0.77 μs | 174,545 |
+| JSON (small math) | 26.70 μs | 7.58 μs | 37,450 |
+| JSON (small greet) | 27.63 μs | 7.22 μs | 36,192 |
+| JSON (small echo) | 31.59 μs | 35.96 μs | 31,655 |
+| JSON (medium ~1KB) | 205.99 μs | 13.24 μs | 4,855 |
+| JSON (large ~100KB) | 20,021 μs | 90.25 μs | 50 |
 
-**Binary is 1.5-1.7x faster than JSON for small payloads.**
+**Binary is 4.7-5.5x faster than JSON for small payloads.**
 
 ### Throughput & Lifecycle
 
 | Test | Mean | Ops/s |
 |------|------|-------|
-| Sequential (100 calls) | 2,809 μs | 356 |
-| Concurrent (100 tasks) | 12,510 μs | 80 |
-| Load/unload cycle | 15,456 μs | 65 |
+| Sequential (100 calls) | 2,810 μs | 356 |
+| Concurrent (100 tasks) | 12,391 μs | 81 |
+| Load/unload cycle | 15,672 μs | 64 |
 
 ---
 
@@ -168,16 +171,16 @@
 
 ```
 Binary Transport:
-C#          ████ 360 ns
-Java JNI    ██████ 602 ns
-Java FFM    ███████ 728 ns
-Python      ██████████████████████████████████████████████████████████████████████████ 18,213 ns
+C#              ████ 326 ns
+Java JNI        ██████ 579 ns
+Java FFM        ███████ 667 ns (zero-copy)
+Python          ██████████████████████████████████████████████████ 5,729 ns
 
 JSON Transport:
-C#          █████████ 2,722 ns
-Java FFM    ██████████ 3,110 ns
-Java JNI    ███████████████████ 5,806 ns
-Python      █████████████████████████████████████████████████████████████████████████████ 26,329 ns
+C#              █████████ 2,552 ns
+Java FFM        ████████████ 3,264 ns
+Java JNI        ██████████████████████ 6,053 ns
+Python          ████████████████████████████████████████████████████████████████████████████████████████████████ 26,702 ns
 ```
 
 ### Why the Performance Differences?
@@ -191,10 +194,32 @@ Python      ██████████████████████�
 
 | Language | Speedup Factor |
 |----------|---------------|
-| Java JNI | 9.6x |
-| C# | 7.6x |
-| Java FFM | 4.3x |
-| Python | 1.5x |
+| Java JNI | 10.5x |
+| C# | 7.8x |
+| Java FFM | 4.9x |
+| Python | 4.7x |
+
+---
+
+## Recent Optimizations
+
+### Python Binary Transport (v0.1.0)
+
+**Before:** 18.2 μs per call
+**After:** 5.73 μs per call
+**Improvement:** 3.2x faster
+
+**Change:** Eliminated double-copy in `call_raw()` by using `ctypes.addressof()` to pass the struct pointer directly instead of converting to bytes first.
+
+### Java FFM Zero-Copy (v0.1.0)
+
+**New method:** `callRawZeroCopy()` returns `RawResponse` wrapper with direct native memory access.
+
+| Method | Latency | Improvement |
+|--------|---------|-------------|
+| ffmBinary (segment) | 908 ns | baseline |
+| ffmBinaryBytes (byte[]) | 742 ns | 18% faster |
+| **ffmBinaryZeroCopy** | **667 ns** | **27% faster** |
 
 ---
 
@@ -229,11 +254,19 @@ Python      ██████████████████████�
 
 | Scenario | Recommendation |
 |----------|---------------|
-| Binary-heavy workload | JNI (17% faster) |
-| JSON-heavy workload | FFM (47% faster) |
+| Binary-heavy workload | JNI (13% faster) |
+| JSON-heavy workload | FFM (46% faster) |
 | Mixed workload | FFM (better overall balance) |
 | Java 8-20 compatibility | JNI (only option) |
 | Future-proofing | FFM (modern API, will improve) |
+
+### Java FFM: Which Binary Method?
+
+| Scenario | Recommended Method |
+|----------|-------------------|
+| Maximum performance | `callRawZeroCopy()` - 667 ns |
+| Need byte[] for existing APIs | `callRawBytes()` - 742 ns |
+| Need Arena lifetime management | `callRaw()` - 908 ns |
 
 ---
 
