@@ -77,54 +77,64 @@ public class ConcurrencyLimitTest : IDisposable
     {
         SkipIfPluginNotAvailable();
 
-        var config = PluginConfig.Defaults().MaxConcurrentOps(2);
+        const int concurrencyLimit = 2;
+        const int additionalRequests = 5;
+        var config = PluginConfig.Defaults().MaxConcurrentOps(concurrencyLimit);
 
         using var plugin = NativePluginLoader.Load(_pluginPath!, config);
 
-        var successCount = 0;
-        var errorCount = 0;
+        var blockingSuccessCount = 0;
+        var additionalErrorCount = 0;
         var lockObj = new object();
 
-        // Submit 15 requests, staggered to ensure we hit the limit
-        var tasks = new List<Task>();
-        for (int i = 0; i < 15; i++)
+        // Phase 1: Start blocking calls that will hold all permits
+        // These sleep for 3 seconds, holding permits the entire time
+        var blockingTasks = new List<Task>();
+        for (int i = 0; i < concurrencyLimit; i++)
+        {
+            var task = Task.Run(() =>
+            {
+                plugin.Call("test.sleep", """{"duration_ms": 3000}""");
+                lock (lockObj) { blockingSuccessCount++; }
+            });
+            blockingTasks.Add(task);
+        }
+
+        // Phase 2: Wait for blocking calls to acquire permits
+        // Give them time to enter the sleep (500ms is plenty for FFI overhead)
+        await Task.Delay(500);
+
+        // Phase 3: Try additional requests - these should all be rejected
+        // since all permits are held by the blocking calls
+        var additionalTasks = new List<Task>();
+        for (int i = 0; i < additionalRequests; i++)
         {
             var task = Task.Run(() =>
             {
                 try
                 {
-                    // Use sleep handler to hold permits longer (300ms)
-                    plugin.Call("test.sleep", """{"duration_ms": 300}""");
-                    lock (lockObj) { successCount++; }
+                    plugin.Call("greet", """{"name": "ShouldFail"}""");
                 }
                 catch (PluginException)
                 {
-                    lock (lockObj) { errorCount++; }
+                    lock (lockObj) { additionalErrorCount++; }
                 }
             });
-            tasks.Add(task);
-
-            // Small delay to stagger requests
-            await Task.Delay(10);
+            additionalTasks.Add(task);
         }
 
-        await Task.WhenAll(tasks);
+        // Wait for additional requests to complete (they should fail fast)
+        await Task.WhenAll(additionalTasks);
 
-        Console.WriteLine($"Success: {successCount}, Errors: {errorCount}");
+        // Verify all additional requests were rejected
+        Assert.Equal(additionalRequests, additionalErrorCount);
+        Assert.Equal(additionalRequests, plugin.RejectedRequestCount);
 
-        // With limit of 2 and 15 requests staggered by 10ms with 300ms sleep each:
-        // Expected: 2-6 succeed (first batch), 9+ rejected
-        var total = successCount + errorCount;
-        Assert.Equal(15, total);
-        Assert.InRange(successCount, 2, 6);
-        Assert.True(errorCount >= 9, $"Expected at least 9 rejected requests, got {errorCount}");
+        Console.WriteLine($"Rejected count: {plugin.RejectedRequestCount}");
 
-        // Check rejected count
-        var rejectedCount = plugin.RejectedRequestCount;
-        Assert.True(rejectedCount >= 9, $"Rejected count should be at least 9, got {rejectedCount}");
-        Assert.Equal(errorCount, rejectedCount);
-
-        Console.WriteLine($"Rejected count: {rejectedCount}");
+        // Wait for blocking tasks to complete
+        await Task.WhenAll(blockingTasks);
+        Assert.Equal(concurrencyLimit, blockingSuccessCount);
     }
 
     [SkippableFact]
@@ -194,45 +204,60 @@ public class ConcurrencyLimitTest : IDisposable
     {
         SkipIfPluginNotAvailable();
 
-        var config = PluginConfig.Defaults().MaxConcurrentOps(2);
+        const int concurrencyLimit = 2;
+        const int additionalRequests = 10;
+        var config = PluginConfig.Defaults().MaxConcurrentOps(concurrencyLimit);
 
         using var plugin = NativePluginLoader.Load(_pluginPath!, config);
 
-        // Use a barrier to release all threads at once to create contention
-        using var barrier = new Barrier(20);
-
-        var tasks = new List<Task>();
-        for (int i = 0; i < 20; i++)
+        // Phase 1: Start blocking calls that will hold all permits
+        var blockingTasks = new List<Task>();
+        for (int i = 0; i < concurrencyLimit; i++)
         {
-            var id = i;
             var task = Task.Run(() =>
             {
                 try
                 {
-                    // Wait for all threads to be ready
-                    barrier.SignalAndWait(TimeSpan.FromSeconds(5));
-                    // Use sleep handler to hold permits longer (100ms)
-                    plugin.Call("test.sleep", """{"duration_ms": 100}""");
+                    plugin.Call("test.sleep", """{"duration_ms": 2000}""");
                 }
                 catch (PluginException)
                 {
-                    // Ignore errors for this test
-                }
-                catch (BarrierPostPhaseException)
-                {
-                    // Ignore
+                    // Unexpected, but don't fail the test
                 }
             });
-            tasks.Add(task);
+            blockingTasks.Add(task);
         }
 
-        await Task.WhenAll(tasks);
+        // Phase 2: Wait for blocking calls to acquire permits
+        await Task.Delay(500);
 
-        // Check that some requests were rejected
+        // Phase 3: Try additional requests - these should all be rejected
+        var additionalTasks = new List<Task>();
+        for (int i = 0; i < additionalRequests; i++)
+        {
+            var task = Task.Run(() =>
+            {
+                try
+                {
+                    plugin.Call("greet", """{"name": "ShouldFail"}""");
+                }
+                catch (PluginException)
+                {
+                    // Expected
+                }
+            });
+            additionalTasks.Add(task);
+        }
+
+        await Task.WhenAll(additionalTasks);
+
+        // Verify rejected count is tracked correctly
         var rejectedCount = plugin.RejectedRequestCount;
-        Assert.True(rejectedCount > 0,
-            $"Some requests should have been rejected with limit of 2 and 20 concurrent requests, got {rejectedCount}");
+        Assert.Equal(additionalRequests, rejectedCount);
 
         Console.WriteLine($"Rejected count: {rejectedCount}");
+
+        // Wait for blocking tasks to complete
+        await Task.WhenAll(blockingTasks);
     }
 }

@@ -178,7 +178,8 @@ class ConcurrencyLimitTest {
                     try {
                         // Wait for all threads to be ready
                         startLatch.await();
-                        return plugin.call("greet", "{\"name\": \"User" + id + "\"}");
+                        // Use sleep handler to hold permits long enough to cause contention
+                        return plugin.call("test.sleep", "{\"duration_ms\": 100}");
                     } catch (PluginException e) {
                         return null; // Ignore errors for this test
                     } catch (InterruptedException e) {
