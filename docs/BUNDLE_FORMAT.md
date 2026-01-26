@@ -5,11 +5,12 @@ This document specifies the rustbridge plugin bundle (`.rbp`) format for portabl
 ## Overview
 
 A `.rbp` file is a ZIP archive containing:
-- Multi-platform native libraries
-- Manifest with metadata and checksums
+- Multi-platform native libraries with variant support (release, debug, etc.)
+- Manifest with metadata, checksums, and build information
 - Optional schemas for message types
-- Optional documentation
+- Optional documentation and license notices
 - Optional code signatures (minisign)
+- Optional Software Bill of Materials (SBOM)
 
 **Bundle Version**: 1.0
 
@@ -21,23 +22,35 @@ my-plugin-1.0.0.rbp
 ├── manifest.json.minisig            # Optional: Manifest signature
 ├── lib/
 │   ├── linux-x86_64/
-│   │   ├── libmyplugin.so           # Native library
-│   │   └── libmyplugin.so.minisig   # Optional: Library signature
+│   │   ├── release/
+│   │   │   ├── libmyplugin.so
+│   │   │   └── libmyplugin.so.minisig
+│   │   └── debug/                   # Optional variant
+│   │       └── libmyplugin.so
 │   ├── linux-aarch64/
-│   │   └── libmyplugin.so
+│   │   └── release/
+│   │       └── libmyplugin.so
 │   ├── darwin-x86_64/
-│   │   └── libmyplugin.dylib
+│   │   └── release/
+│   │       └── libmyplugin.dylib
 │   ├── darwin-aarch64/
-│   │   └── libmyplugin.dylib
+│   │   └── release/
+│   │       └── libmyplugin.dylib
 │   ├── windows-x86_64/
-│   │   └── myplugin.dll
+│   │   └── release/
+│   │       └── myplugin.dll
 │   └── windows-aarch64/
-│       └── myplugin.dll
+│       └── release/
+│           └── myplugin.dll
 ├── schema/                          # Optional
-│   ├── messages.json                # JSON Schema definitions
-│   └── messages.h                   # C header for binary transport
-└── docs/                            # Optional
-    └── README.md
+│   ├── messages.json
+│   └── messages.h
+├── docs/                            # Optional
+│   ├── README.md
+│   └── NOTICES.txt
+└── sbom/                            # Optional
+    ├── sbom.cdx.json                # CycloneDX format
+    └── sbom.spdx.json               # SPDX format
 ```
 
 ## Manifest Schema
@@ -55,76 +68,219 @@ The `manifest.json` file describes the bundle contents:
     "license": "MIT",
     "repository": "https://github.com/example/my-plugin"
   },
-  "public_key": "RWTxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   "platforms": {
     "linux-x86_64": {
-      "library": "lib/linux-x86_64/libmyplugin.so",
-      "checksum": "sha256:abc123def456..."
-    },
-    "linux-aarch64": {
-      "library": "lib/linux-aarch64/libmyplugin.so",
-      "checksum": "sha256:..."
-    },
-    "darwin-x86_64": {
-      "library": "lib/darwin-x86_64/libmyplugin.dylib",
-      "checksum": "sha256:..."
+      "variants": {
+        "release": {
+          "library": "lib/linux-x86_64/release/libmyplugin.so",
+          "checksum": "sha256:abc123def456...",
+          "build": {
+            "profile": "release",
+            "opt_level": "3",
+            "features": ["json", "binary"]
+          }
+        },
+        "debug": {
+          "library": "lib/linux-x86_64/debug/libmyplugin.so",
+          "checksum": "sha256:789xyz...",
+          "build": {
+            "profile": "debug",
+            "opt_level": "0"
+          }
+        }
+      }
     },
     "darwin-aarch64": {
-      "library": "lib/darwin-aarch64/libmyplugin.dylib",
-      "checksum": "sha256:..."
-    },
-    "windows-x86_64": {
-      "library": "lib/windows-x86_64/myplugin.dll",
-      "checksum": "sha256:..."
-    },
-    "windows-aarch64": {
-      "library": "lib/windows-aarch64/myplugin.dll",
-      "checksum": "sha256:..."
+      "variants": {
+        "release": {
+          "library": "lib/darwin-aarch64/release/libmyplugin.dylib",
+          "checksum": "sha256:..."
+        }
+      }
     }
   },
+  "build_info": {
+    "built_by": "GitHub Actions",
+    "built_at": "2025-01-26T10:30:00Z",
+    "host": "x86_64-unknown-linux-gnu",
+    "compiler": "rustc 1.85.0",
+    "rustbridge_version": "0.2.0",
+    "git": {
+      "commit": "a1b2c3d4e5f6",
+      "branch": "main",
+      "tag": "v1.0.0",
+      "dirty": false
+    }
+  },
+  "sbom": {
+    "cyclonedx": "sbom/sbom.cdx.json",
+    "spdx": "sbom/sbom.spdx.json"
+  },
+  "schema_checksum": "sha256:combined_hash_of_all_schemas",
+  "notices": "docs/NOTICES.txt",
+  "public_key": "RWTxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   "api": {
     "min_rustbridge_version": "0.1.0",
     "transports": ["json", "cstruct"],
-    "messages": [
-      {
-        "type_tag": "echo",
-        "message_id": 1,
-        "description": "Echo a message back",
-        "transport": ["json", "cstruct"]
-      },
-      {
-        "type_tag": "greet",
-        "message_id": 2,
-        "description": "Generate a greeting",
-        "transport": ["json"]
-      }
-    ]
+    "messages": [...]
   },
   "schemas": {
     "json_schema": {
       "path": "schema/messages.json",
       "format": "json-schema-draft-07",
       "checksum": "sha256:..."
-    },
-    "c_header": {
-      "path": "schema/messages.h",
-      "format": "c-header",
-      "checksum": "sha256:..."
     }
   }
 }
 ```
 
-### Required Fields
+## Variants
+
+Each platform contains one or more **variants** of the native library. This allows a single bundle to include release builds, debug builds, builds with different feature flags, or builds from different compilers.
+
+### Variant Rules
+
+| Rule | Description |
+|------|-------------|
+| `release` is mandatory | Every platform must have a `release` variant |
+| `release` is the default | Loaders use `release` unless explicitly told otherwise |
+| Other variants are optional | Add `debug`, `nightly`, `opt-size`, etc. as needed |
+| Variant names | Lowercase alphanumeric with hyphens (e.g., `release`, `debug`, `nightly-experimental`) |
+
+### Variant Structure
+
+Each variant contains:
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `library` | Yes | Relative path to the library within the bundle |
+| `checksum` | Yes | SHA256 checksum (format: `sha256:hexdigest`) |
+| `build` | No | Build metadata (flexible JSON object) |
+
+### Build Metadata (Flexible Schema)
+
+The `build` field accepts **any JSON object** to support different toolchains:
+
+```json
+{
+  "variants": {
+    "release": {
+      "library": "lib/linux-x86_64/release/libplugin.so",
+      "checksum": "sha256:...",
+      "build": {
+        "profile": "release",
+        "opt_level": "3",
+        "features": ["json", "binary"],
+        "lto": true
+      }
+    }
+  }
+}
+```
+
+**For Rust projects**, common fields include:
+- `profile` - Build profile (release, debug)
+- `opt_level` - Optimization level (0, 1, 2, 3, s, z)
+- `features` - Enabled cargo features
+- `lto` - Link-time optimization enabled
+
+**For Go projects**:
+- `go_version` - Go compiler version
+- `go_tags` - Build tags
+- `cgo` - CGO enabled
+
+**For C/C++ projects**:
+- `compiler` - Compiler used (gcc, clang, msvc)
+- `cflags` - Compiler flags
+- `ldflags` - Linker flags
+
+**For any project**:
+- `notes` - Freeform build notes
+
+## Build Information
+
+The optional `build_info` section provides traceability for the bundle:
+
+```json
+{
+  "build_info": {
+    "built_by": "GitHub Actions",
+    "built_at": "2025-01-26T10:30:00Z",
+    "host": "x86_64-unknown-linux-gnu",
+    "compiler": "rustc 1.85.0",
+    "rustbridge_version": "0.2.0",
+    "git": {
+      "commit": "a1b2c3d4e5f6789012345678901234567890abcd",
+      "branch": "main",
+      "tag": "v1.0.0",
+      "dirty": false
+    }
+  }
+}
+```
+
+### Build Info Fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `built_by` | No | Builder identity (username, CI system) |
+| `built_at` | No | Build timestamp (ISO 8601) |
+| `host` | No | Host platform that built the bundle |
+| `compiler` | No | Compiler version |
+| `rustbridge_version` | No | rustbridge CLI version used |
+| `git` | No | Git repository information |
+
+### Git Information
+
+The `git` section is **optional** - omit it entirely if not using git:
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `commit` | Yes* | Full or short commit hash (*required if `git` section present) |
+| `branch` | No | Branch name |
+| `tag` | No | Git tag if on a tagged commit |
+| `dirty` | No | `true` if working directory had uncommitted changes |
+
+## Software Bill of Materials (SBOM)
+
+Bundles can include SBOM files for dependency transparency:
+
+```json
+{
+  "sbom": {
+    "cyclonedx": "sbom/sbom.cdx.json",
+    "spdx": "sbom/sbom.spdx.json"
+  }
+}
+```
+
+Both formats can be included simultaneously. Supported formats:
+- **CycloneDX** 1.5 (JSON) - `sbom/sbom.cdx.json`
+- **SPDX** 2.3 (JSON) - `sbom/sbom.spdx.json`
+
+## Schema Checksum
+
+The `schema_checksum` field contains a combined hash of all schema files, used to verify schema compatibility when combining bundles:
+
+```json
+{
+  "schema_checksum": "sha256:abc123..."
+}
+```
+
+This checksum is computed by hashing the concatenation of all schema file checksums in sorted order.
+
+## Required Fields
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `bundle_version` | string | Bundle format version (currently "1.0") |
 | `plugin.name` | string | Plugin identifier (lowercase, hyphens allowed) |
 | `plugin.version` | string | Semantic version (e.g., "1.0.0") |
-| `platforms` | object | Map of platform keys to library info |
+| `platforms` | object | Map of platform keys to variant info |
+| `platforms.{key}.variants.release` | object | Release variant (mandatory for each platform) |
 
-### Optional Fields
+## Optional Fields
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -132,6 +288,10 @@ The `manifest.json` file describes the bundle contents:
 | `plugin.authors` | string[] | List of authors |
 | `plugin.license` | string | SPDX license identifier |
 | `plugin.repository` | string | Source repository URL |
+| `build_info` | object | Build metadata and provenance |
+| `sbom` | object | Paths to SBOM files |
+| `schema_checksum` | string | Combined hash of schema files |
+| `notices` | string | Path to license notices file |
 | `public_key` | string | Minisign public key for signature verification |
 | `api` | object | API metadata including message definitions |
 | `schemas` | object | Schema file references |
@@ -182,7 +342,7 @@ Bundles support code signing using [minisign](https://jedisct1.github.io/minisig
 | File | Signs | Purpose |
 |------|-------|---------|
 | `manifest.json.minisig` | `manifest.json` | Verifies manifest integrity |
-| `lib/{platform}/*.minisig` | Native library | Verifies library integrity |
+| `lib/{platform}/{variant}/*.minisig` | Native library | Verifies library integrity |
 
 ### Public Key in Manifest
 
@@ -206,33 +366,33 @@ When signing is used, the `public_key` field in the manifest contains the minisi
 
 ```bash
 # Generate a keypair (one-time)
-minisign -G -s private.key -p public.key
+rustbridge keygen --output signing.key
 
 # Sign files during bundle creation
 rustbridge bundle create \
   --name my-plugin \
   --version 1.0.0 \
   --lib linux-x86_64:target/release/libmyplugin.so \
-  --sign private.key \
+  --sign-key signing.key \
   --output my-plugin-1.0.0.rbp
 ```
 
 ### Verifying Signatures
 
 ```python
-# Python
-loader = BundleLoader(
-    bundle_path="my-plugin-1.0.0.rbp",
-    verify_signatures=True  # Default
-)
+# Python - verification enabled by default
+plugin = BundleLoader.load("my-plugin-1.0.0.rbp")
+
+# Disable verification (testing only)
+plugin = BundleLoader.load("my-plugin-1.0.0.rbp", verify_signatures=False)
 ```
 
 ```java
-// Java
-BundleLoader loader = BundleLoader.builder()
-    .bundlePath("my-plugin-1.0.0.rbp")
-    .verifySignatures(true)  // Default
-    .build();
+// Java - verification enabled by default
+Plugin plugin = BundleLoader.load("my-plugin-1.0.0.rbp");
+
+// Disable verification (testing only)
+Plugin plugin = BundleLoader.load("my-plugin-1.0.0.rbp", false);
 ```
 
 ## Schema Embedding
@@ -348,18 +508,19 @@ flowchart TD
     C -->|No| G
     G --> H{Platform in manifest?}
     H -->|No| I[Error: unsupported platform]
-    H -->|Yes| J[Extract library to temp]
-    J --> K[Verify library checksum]
-    K --> L{Checksum valid?}
-    L -->|No| M[Error: corrupted library]
-    L -->|Yes| N{Verify library signature?}
-    N -->|Yes| O[Verify .minisig]
-    N -->|No| P[Load library]
-    O --> Q{Valid?}
-    Q -->|No| R[Reject library]
-    Q -->|Yes| P
-    P --> S[Call plugin_init]
-    S --> T[Plugin ready]
+    H -->|Yes| J[Select variant]
+    J --> K[Extract library to temp]
+    K --> L[Verify library checksum]
+    L --> M{Checksum valid?}
+    M -->|No| N[Error: corrupted library]
+    M -->|Yes| O{Verify library signature?}
+    O -->|Yes| P[Verify .minisig]
+    O -->|No| Q[Load library]
+    P --> R{Valid?}
+    R -->|No| S[Reject library]
+    R -->|Yes| Q
+    Q --> T[Call plugin_init]
+    T --> U[Plugin ready]
 ```
 
 ## Creating Bundles
@@ -367,33 +528,68 @@ flowchart TD
 ### Using rustbridge CLI
 
 ```bash
-# Single platform
+# Single platform, release only (default)
 rustbridge bundle create \
   --name my-plugin \
   --version 1.0.0 \
   --lib linux-x86_64:target/release/libmyplugin.so \
   --output my-plugin-1.0.0.rbp
 
-# Multi-platform
+# With debug variant
+rustbridge bundle create \
+  --name my-plugin \
+  --version 1.0.0 \
+  --lib linux-x86_64:release:target/release/libmyplugin.so \
+  --lib linux-x86_64:debug:target/debug/libmyplugin.so \
+  --output my-plugin-1.0.0.rbp
+
+# Multi-platform with SBOM
 rustbridge bundle create \
   --name my-plugin \
   --version 1.0.0 \
   --lib linux-x86_64:target/x86_64-unknown-linux-gnu/release/libmyplugin.so \
-  --lib linux-aarch64:target/aarch64-unknown-linux-gnu/release/libmyplugin.so \
-  --lib darwin-x86_64:target/x86_64-apple-darwin/release/libmyplugin.dylib \
   --lib darwin-aarch64:target/aarch64-apple-darwin/release/libmyplugin.dylib \
   --lib windows-x86_64:target/x86_64-pc-windows-msvc/release/myplugin.dll \
   --schema schema/messages.json \
-  --schema schema/messages.h \
+  --sbom cyclonedx,spdx \
+  --notices NOTICES.txt \
+  --sign-key signing.key \
   --output my-plugin-1.0.0.rbp
+```
 
-# With signing
-rustbridge bundle create \
-  --name my-plugin \
-  --version 1.0.0 \
-  --lib linux-x86_64:target/release/libmyplugin.so \
-  --sign private.key \
-  --output my-plugin-1.0.0.rbp
+### Combining Bundles
+
+Merge multiple single-platform bundles into one multi-platform bundle:
+
+```bash
+rustbridge bundle combine \
+  --output combined.rbp \
+  --sign-key signing.key \
+  linux-only.rbp macos-only.rbp windows-only.rbp
+```
+
+Schema validation is enforced by default (error if `schema_checksum` differs):
+
+```bash
+# Warn instead of error
+rustbridge bundle combine --schema-mismatch warn ...
+
+# Skip schema check
+rustbridge bundle combine --schema-mismatch ignore ...
+```
+
+### Slimming Bundles
+
+Extract a subset of platforms/variants from a larger bundle:
+
+```bash
+rustbridge bundle slim \
+  --input developer.rbp \
+  --output production.rbp \
+  --platforms linux-x86_64,darwin-aarch64 \
+  --variants release \
+  --exclude-docs \
+  --sign-key signing.key
 ```
 
 ### Inspecting Bundles
@@ -402,17 +598,123 @@ rustbridge bundle create \
 # List contents
 rustbridge bundle list my-plugin-1.0.0.rbp
 
-# Output:
-# Bundle: my-plugin v1.0.0
-# Bundle format: v1.0
-# Signed: yes (public key: RWT...)
-#
-# Platforms:
-#   linux-x86_64:
-#     Library: lib/linux-x86_64/libmyplugin.so
-#     Checksum: sha256:abc123...
-#     Size: 1.2 MB
-#     Signature: valid
+# Detailed info with build metadata
+rustbridge bundle info --show-build --show-variants my-plugin-1.0.0.rbp
+
+# JSON output for scripting
+rustbridge bundle info --json my-plugin-1.0.0.rbp
+```
+
+## Loading Bundles
+
+### Default Behavior
+
+All loaders automatically select the `release` variant:
+
+```python
+# Python
+plugin = BundleLoader.load("plugin.rbp")
+```
+
+```java
+// Java
+Plugin plugin = BundleLoader.load("plugin.rbp");
+```
+
+```csharp
+// C#
+var plugin = BundleLoader.Load("plugin.rbp");
+```
+
+### Selecting a Variant
+
+To load a specific variant (e.g., debug):
+
+```python
+# Python
+plugin = BundleLoader.load("plugin.rbp", variant="debug")
+```
+
+```java
+// Java
+Plugin plugin = BundleLoader.load("plugin.rbp", "debug");
+```
+
+```csharp
+// C#
+var plugin = BundleLoader.Load("plugin.rbp", variant: "debug");
+```
+
+### Listing Available Variants
+
+```python
+# Python
+variants = BundleLoader.list_variants("plugin.rbp", "linux-x86_64")
+# Returns: ["release", "debug"]
+```
+
+```java
+// Java
+List<String> variants = BundleLoader.listVariants("plugin.rbp", "linux-x86_64");
+```
+
+## For Non-Rust Developers
+
+The `.rbp` bundle format is language-agnostic. You can create bundles manually or with tooling in any language.
+
+### Manual Bundle Creation
+
+1. Create a ZIP archive with the required structure
+2. Write a `manifest.json` with at least:
+   - `bundle_version`: `"1.0"`
+   - `plugin.name` and `plugin.version`
+   - `platforms` with at least one platform containing a `release` variant
+3. Compute SHA256 checksums for each library
+4. Optionally sign with minisign
+
+### Required FFI Symbols
+
+Your shared library must export these C-ABI symbols:
+
+| Symbol | Signature | Description |
+|--------|-----------|-------------|
+| `plugin_init` | `fn(*const PluginConfig) -> i32` | Initialize plugin |
+| `plugin_shutdown` | `fn() -> i32` | Shutdown plugin |
+| `plugin_send` | `fn(*const u8, usize, *mut FfiBuffer) -> i32` | Send message |
+| `plugin_free_buffer` | `fn(*mut FfiBuffer)` | Free response buffer |
+
+See [FFI.md](./FFI.md) for detailed type definitions.
+
+### Example: Go Plugin
+
+```go
+package main
+
+import "C"
+
+//export plugin_init
+func plugin_init(config *C.PluginConfig) C.int {
+    // Initialize
+    return 0
+}
+
+//export plugin_shutdown
+func plugin_shutdown() C.int {
+    // Cleanup
+    return 0
+}
+
+// ... other exports
+```
+
+Build and package:
+
+```bash
+go build -buildmode=c-shared -o libmyplugin.so
+
+# Create manifest.json manually
+# Compute checksum: sha256sum libmyplugin.so
+# Create ZIP archive with correct structure
 ```
 
 ## Version Compatibility
@@ -421,7 +723,7 @@ rustbridge bundle list my-plugin-1.0.0.rbp
 
 | Version | Changes | Min rustbridge |
 |---------|---------|----------------|
-| 1.0 | Initial release | 0.1.0 |
+| 1.0 | Multi-variant support, build_info, SBOM, schema_checksum | 0.2.0 |
 
 ### Forward Compatibility
 
@@ -434,3 +736,4 @@ rustbridge bundle list my-plugin-1.0.0.rbp
 - [TRANSPORT.md](./TRANSPORT.md) - JSON and binary transport details
 - [GETTING_STARTED.md](./GETTING_STARTED.md) - Creating your first bundle
 - [CODE_GENERATION.md](./CODE_GENERATION.md) - Generating schemas
+- [FFI.md](./FFI.md) - FFI interface specification
