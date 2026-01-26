@@ -34,7 +34,7 @@ This document tracks incomplete tasks and priorities for the rustbridge project.
 | # | Task | Language | Status | Notes |
 |---|------|----------|--------|-------|
 | 10 | Add binary transport to Java JNI | Java JNI | ✅ Done | `callRaw()`, `hasBinaryTransport()`, benchmark shows JNI Binary 20x faster than FFM Binary |
-| 11 | Add Kotlin extension APIs | Kotlin | Pending | DSL config, coroutine support, extension functions |
+| 11 | Add Kotlin extension APIs | Kotlin | ✅ Done | DSL config, coroutine support, PluginResult, loader extensions (73 tests) |
 
 ---
 
