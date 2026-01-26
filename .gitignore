@@ -27,6 +27,9 @@ build/
 .gradle/
 !gradle-wrapper.jar
 
+# C# build artifacts
+BenchmarkDotNet.Artifacts/
+
 # OS files
 .DS_Store
 .DS_Store?
