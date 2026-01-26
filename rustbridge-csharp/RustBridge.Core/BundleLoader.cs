@@ -81,24 +81,35 @@ public sealed class BundleLoader : IDisposable
     public static Builder Create() => new();
 
     /// <summary>
-    /// Extract the library for the current platform to a temporary directory.
+    /// Extract the library for the current platform to a unique temporary directory.
+    /// <para>
+    /// The library is extracted to a unique subdirectory under the system temp directory,
+    /// ensuring no conflicts with other extractions. The caller is responsible for cleaning
+    /// up the temporary directory when done.
+    /// </para>
     /// </summary>
     /// <returns>Path to the extracted library.</returns>
     /// <exception cref="IOException">If extraction fails.</exception>
     /// <exception cref="CryptographicException">If signature verification fails (when enabled).</exception>
     public string ExtractLibrary()
     {
+        // Create unique temp directory under system temp path
         var tempDir = Path.Combine(Path.GetTempPath(), "rustbridge-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(tempDir);
-        return ExtractLibrary(tempDir);
+        return ExtractLibraryInternal(DetectPlatform(), tempDir, failIfExists: false);
     }
 
     /// <summary>
     /// Extract the library for the current platform to the specified directory.
+    /// <para>
+    /// This method will fail if the library file already exists at the target path.
+    /// This prevents accidental overwrites and ensures the caller has explicit control
+    /// over file lifecycle.
+    /// </para>
     /// </summary>
     /// <param name="outputDir">Directory to extract the library to.</param>
     /// <returns>Path to the extracted library.</returns>
-    /// <exception cref="IOException">If extraction fails.</exception>
+    /// <exception cref="IOException">If extraction fails or file already exists.</exception>
     /// <exception cref="CryptographicException">If signature verification fails (when enabled).</exception>
     public string ExtractLibrary(string outputDir)
     {
@@ -107,14 +118,27 @@ public sealed class BundleLoader : IDisposable
     }
 
     /// <summary>
-    /// Extract the library for a specific platform.
+    /// Extract the library for a specific platform to the specified directory.
+    /// <para>
+    /// This method will fail if the library file already exists at the target path.
+    /// This prevents accidental overwrites and ensures the caller has explicit control
+    /// over file lifecycle.
+    /// </para>
     /// </summary>
     /// <param name="platform">Platform string (e.g., "linux-x86_64").</param>
     /// <param name="outputDir">Directory to extract the library to.</param>
     /// <returns>Path to the extracted library.</returns>
-    /// <exception cref="IOException">If extraction fails.</exception>
+    /// <exception cref="IOException">If extraction fails or file already exists.</exception>
     /// <exception cref="CryptographicException">If signature verification fails (when enabled).</exception>
     public string ExtractLibrary(string platform, string outputDir)
+    {
+        return ExtractLibraryInternal(platform, outputDir, failIfExists: true);
+    }
+
+    /// <summary>
+    /// Internal method to extract the library with configurable overwrite behavior.
+    /// </summary>
+    private string ExtractLibraryInternal(string platform, string outputDir, bool failIfExists)
     {
         if (Manifest.Platforms == null || !Manifest.Platforms.TryGetValue(platform, out var platformInfo))
         {
@@ -138,9 +162,22 @@ public sealed class BundleLoader : IDisposable
             VerifyLibrarySignature(platformInfo.Library, libData);
         }
 
-        // Write to output directory
+        // Determine output path
         var fileName = Path.GetFileName(platformInfo.Library);
         var outputPath = Path.Combine(outputDir, fileName);
+
+        // Check if file already exists when user specifies path
+        if (failIfExists && File.Exists(outputPath))
+        {
+            throw new IOException(
+                $"Library already exists at target path: {outputPath}. " +
+                "Remove the existing file or use ExtractLibrary() for automatic temp directory.");
+        }
+
+        // Ensure output directory exists
+        Directory.CreateDirectory(outputDir);
+
+        // Write the library
         File.WriteAllBytes(outputPath, libData);
 
         // Make executable on Unix

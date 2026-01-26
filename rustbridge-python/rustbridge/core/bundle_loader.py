@@ -106,10 +106,12 @@ class BundleLoader:
         if not bundle_path.exists():
             raise FileNotFoundError(f"Bundle not found: {bundle_path}")
 
-        # Extract library to temp directory
-        temp_dir = tempfile.mkdtemp(prefix="rustbridge-")
+        # Extract library to unique temp directory
+        temp_dir = tempfile.mkdtemp(prefix="rustbridge-", dir=tempfile.gettempdir())
         try:
-            lib_path = self.extract_library(bundle_path, Path(temp_dir))
+            lib_path = self._extract_library_internal(
+                bundle_path, Path(temp_dir), fail_if_exists=False
+            )
             return NativePluginLoader.load_with_config(
                 str(lib_path), config, log_callback
             )
@@ -120,9 +122,40 @@ class BundleLoader:
             shutil.rmtree(temp_dir, ignore_errors=True)
             raise
 
-    def extract_library(self, bundle_path: Path, dest_dir: Path) -> Path:
+    def extract_library_to_temp(self, bundle_path: str | Path) -> Path:
         """
-        Extract and verify library from bundle.
+        Extract and verify library from bundle to a unique temporary directory.
+
+        The library is extracted to a unique subdirectory under the system temp
+        directory, ensuring no conflicts with other extractions. The caller is
+        responsible for cleaning up the temporary directory when done.
+
+        Args:
+            bundle_path: Path to the .rbp bundle file.
+
+        Returns:
+            Path to the extracted library file.
+
+        Raises:
+            PluginException: If extraction or verification fails.
+        """
+        bundle_path = Path(bundle_path)
+        if not bundle_path.exists():
+            raise FileNotFoundError(f"Bundle not found: {bundle_path}")
+
+        # Create unique temp directory under system temp path
+        temp_dir = tempfile.mkdtemp(prefix="rustbridge-", dir=tempfile.gettempdir())
+        return self._extract_library_internal(
+            bundle_path, Path(temp_dir), fail_if_exists=False
+        )
+
+    def extract_library(self, bundle_path: str | Path, dest_dir: str | Path) -> Path:
+        """
+        Extract and verify library from bundle to the specified directory.
+
+        This method will fail if the library file already exists at the target path.
+        This prevents accidental overwrites and ensures the caller has explicit
+        control over file lifecycle.
 
         Args:
             bundle_path: Path to the .rbp bundle file.
@@ -133,6 +166,29 @@ class BundleLoader:
 
         Raises:
             PluginException: If extraction or verification fails.
+            FileExistsError: If the library file already exists at the target path.
+        """
+        bundle_path = Path(bundle_path)
+        dest_dir = Path(dest_dir)
+
+        if not bundle_path.exists():
+            raise FileNotFoundError(f"Bundle not found: {bundle_path}")
+
+        return self._extract_library_internal(bundle_path, dest_dir, fail_if_exists=True)
+
+    def _extract_library_internal(
+        self, bundle_path: Path, dest_dir: Path, *, fail_if_exists: bool
+    ) -> Path:
+        """
+        Internal method to extract the library with configurable overwrite behavior.
+
+        Args:
+            bundle_path: Path to the .rbp bundle file.
+            dest_dir: Directory to extract the library to.
+            fail_if_exists: If True, raise FileExistsError if file already exists.
+
+        Returns:
+            Path to the extracted library file.
         """
         with zipfile.ZipFile(bundle_path, "r") as zip_file:
             # Load manifest
@@ -163,9 +219,22 @@ class BundleLoader:
                     zip_file, manifest, platform_info.library, lib_data
                 )
 
-            # Write to output directory
+            # Determine output path
             lib_filename = Path(platform_info.library).name
             output_path = dest_dir / lib_filename
+
+            # Check if file already exists when user specifies path
+            if fail_if_exists and output_path.exists():
+                raise FileExistsError(
+                    f"Library already exists at target path: {output_path}. "
+                    "Remove the existing file or use extract_library_to_temp() "
+                    "for automatic temp directory."
+                )
+
+            # Ensure output directory exists
+            dest_dir.mkdir(parents=True, exist_ok=True)
+
+            # Write the library
             output_path.write_bytes(lib_data)
 
             # Make executable on Unix

@@ -99,23 +99,33 @@ public class BundleLoader implements AutoCloseable {
     }
 
     /**
-     * Extract the library for the current platform to a temporary directory.
+     * Extract the library for the current platform to a unique temporary directory.
+     *
+     * <p>The library is extracted to a unique subdirectory under the system temp directory,
+     * ensuring no conflicts with other extractions. The caller is responsible for cleaning
+     * up the temporary directory when done.
      *
      * @return path to the extracted library
      * @throws IOException        if extraction fails
      * @throws SignatureException if signature verification fails (when enabled)
      */
     public @NotNull Path extractLibrary() throws IOException, SignatureException {
-        Path tempDir = Files.createTempDirectory("rustbridge-");
-        return extractLibrary(tempDir);
+        // Create unique temp directory under system temp path
+        Path tempBase = Paths.get(System.getProperty("java.io.tmpdir"));
+        Path tempDir = Files.createTempDirectory(tempBase, "rustbridge-");
+        return extractLibraryInternal(detectPlatform(), tempDir, false);
     }
 
     /**
      * Extract the library for the current platform to the specified directory.
      *
+     * <p>This method will fail if the library file already exists at the target path.
+     * This prevents accidental overwrites and ensures the caller has explicit control
+     * over file lifecycle.
+     *
      * @param outputDir directory to extract the library to
      * @return path to the extracted library
-     * @throws IOException        if extraction fails
+     * @throws IOException        if extraction fails or file already exists
      * @throws SignatureException if signature verification fails (when enabled)
      */
     public @NotNull Path extractLibrary(@NotNull Path outputDir) throws IOException, SignatureException {
@@ -124,16 +134,36 @@ public class BundleLoader implements AutoCloseable {
     }
 
     /**
-     * Extract the library for a specific platform.
+     * Extract the library for a specific platform to the specified directory.
+     *
+     * <p>This method will fail if the library file already exists at the target path.
+     * This prevents accidental overwrites and ensures the caller has explicit control
+     * over file lifecycle.
      *
      * @param platform  platform string (e.g., "linux-x86_64")
      * @param outputDir directory to extract the library to
      * @return path to the extracted library
-     * @throws IOException        if extraction fails
+     * @throws IOException        if extraction fails or file already exists
      * @throws SignatureException if signature verification fails (when enabled)
      */
     public @NotNull Path extractLibrary(@NotNull String platform, @NotNull Path outputDir)
             throws IOException, SignatureException {
+        return extractLibraryInternal(platform, outputDir, true);
+    }
+
+    /**
+     * Internal method to extract the library with configurable overwrite behavior.
+     *
+     * @param platform           platform string (e.g., "linux-x86_64")
+     * @param outputDir          directory to extract the library to
+     * @param failIfExists       if true, fail when the target file already exists
+     * @return path to the extracted library
+     */
+    private @NotNull Path extractLibraryInternal(
+            @NotNull String platform,
+            @NotNull Path outputDir,
+            boolean failIfExists
+    ) throws IOException, SignatureException {
         BundleManifest.PlatformInfo platformInfo = manifest.platforms.get(platform);
         if (platformInfo == null) {
             throw new IOException("Platform not supported: " + platform);
@@ -159,9 +189,22 @@ public class BundleLoader implements AutoCloseable {
             verifyLibrarySignature(platformInfo.library(), libData);
         }
 
-        // Write to output directory
+        // Determine output path
         String fileName = Paths.get(platformInfo.library()).getFileName().toString();
         Path outputPath = outputDir.resolve(fileName);
+
+        // Check if file already exists when user specifies path
+        if (failIfExists && Files.exists(outputPath)) {
+            throw new IOException(
+                    "Library already exists at target path: " + outputPath + ". " +
+                    "Remove the existing file or use extractLibrary() for automatic temp directory."
+            );
+        }
+
+        // Ensure output directory exists
+        Files.createDirectories(outputDir);
+
+        // Write the library
         Files.write(outputPath, libData);
 
         // Make executable on Unix
