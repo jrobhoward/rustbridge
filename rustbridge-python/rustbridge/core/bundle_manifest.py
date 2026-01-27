@@ -117,23 +117,17 @@ class ApiInfo:
 class GitInfo:
     """Git repository information."""
 
-    commit_hash: str | None = None
-    """Full commit hash."""
-
-    commit_short: str | None = None
-    """Short commit hash."""
+    commit: str | None = None
+    """Full commit hash (required if git section present)."""
 
     branch: str | None = None
     """Branch name."""
 
     tag: str | None = None
-    """Tag name (if applicable)."""
+    """Tag name (if on a tagged commit)."""
 
     dirty: bool | None = None
     """Whether working directory had uncommitted changes."""
-
-    repository: str | None = None
-    """Repository URL."""
 
 
 @dataclass
@@ -160,34 +154,14 @@ class BuildInfo:
 
 
 @dataclass
-class DependencyInfo:
-    """Dependency information for SBOM."""
-
-    name: str
-    """Dependency name."""
-
-    version: str
-    """Dependency version."""
-
-    license: str | None = None
-    """License identifier."""
-
-    source: str | None = None
-    """Source URL."""
-
-
-@dataclass
 class Sbom:
-    """Software Bill of Materials (SBOM) information."""
+    """Software Bill of Materials (SBOM) paths."""
 
-    format: str | None = None
-    """SBOM format (e.g., "simplified", "cyclonedx-1.5")."""
+    cyclonedx: str | None = None
+    """Path to CycloneDX SBOM file (e.g., "sbom/sbom.cdx.json")."""
 
-    path: str | None = None
-    """Path to full SBOM file in bundle (optional)."""
-
-    dependencies: list[DependencyInfo] = field(default_factory=list)
-    """Inline simplified dependency list."""
+    spdx: str | None = None
+    """Path to SPDX SBOM file (e.g., "sbom/sbom.spdx.json")."""
 
 
 @dataclass
@@ -349,7 +323,7 @@ class BundleManifest:
                 description=schema_value.get("description"),
             )
 
-        # Parse build info (v2.0+)
+        # Parse build info
         build_info: BuildInfo | None = None
         build_info_data = data.get("build_info")
         if build_info_data:
@@ -357,12 +331,10 @@ class BundleManifest:
             git_data = build_info_data.get("git")
             if git_data:
                 git_info = GitInfo(
-                    commit_hash=git_data.get("commit_hash"),
-                    commit_short=git_data.get("commit_short"),
+                    commit=git_data.get("commit"),
                     branch=git_data.get("branch"),
                     tag=git_data.get("tag"),
                     dirty=git_data.get("dirty"),
-                    repository=git_data.get("repository"),
                 )
             build_info = BuildInfo(
                 built_by=build_info_data.get("built_by"),
@@ -373,24 +345,13 @@ class BundleManifest:
                 git=git_info,
             )
 
-        # Parse SBOM (v2.0+)
+        # Parse SBOM
         sbom: Sbom | None = None
         sbom_data = data.get("sbom")
         if sbom_data:
-            dependencies: list[DependencyInfo] = []
-            for dep_data in sbom_data.get("dependencies", []):
-                dependencies.append(
-                    DependencyInfo(
-                        name=dep_data.get("name", ""),
-                        version=dep_data.get("version", ""),
-                        license=dep_data.get("license"),
-                        source=dep_data.get("source"),
-                    )
-                )
             sbom = Sbom(
-                format=sbom_data.get("format"),
-                path=sbom_data.get("path"),
-                dependencies=dependencies,
+                cyclonedx=sbom_data.get("cyclonedx"),
+                spdx=sbom_data.get("spdx"),
             )
 
         return cls(

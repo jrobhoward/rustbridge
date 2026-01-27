@@ -264,16 +264,10 @@ public class BundleManifest
     public class GitInfo
     {
         /// <summary>
-        /// Full commit hash.
+        /// Full commit hash (required if git section present).
         /// </summary>
-        [JsonPropertyName("commit_hash")]
-        public string? CommitHash { get; set; }
-
-        /// <summary>
-        /// Short commit hash.
-        /// </summary>
-        [JsonPropertyName("commit_short")]
-        public string? CommitShort { get; set; }
+        [JsonPropertyName("commit")]
+        public string? Commit { get; set; }
 
         /// <summary>
         /// Branch name.
@@ -282,7 +276,7 @@ public class BundleManifest
         public string? Branch { get; set; }
 
         /// <summary>
-        /// Tag name (if applicable).
+        /// Tag name (if on a tagged commit).
         /// </summary>
         [JsonPropertyName("tag")]
         public string? Tag { get; set; }
@@ -292,12 +286,6 @@ public class BundleManifest
         /// </summary>
         [JsonPropertyName("dirty")]
         public bool? Dirty { get; set; }
-
-        /// <summary>
-        /// Repository URL.
-        /// </summary>
-        [JsonPropertyName("repository")]
-        public string? Repository { get; set; }
     }
 
     /// <summary>
@@ -343,56 +331,20 @@ public class BundleManifest
     }
 
     /// <summary>
-    /// Dependency information for SBOM.
-    /// </summary>
-    public class DependencyInfo
-    {
-        /// <summary>
-        /// Dependency name.
-        /// </summary>
-        [JsonPropertyName("name")]
-        public string Name { get; set; } = "";
-
-        /// <summary>
-        /// Dependency version.
-        /// </summary>
-        [JsonPropertyName("version")]
-        public string Version { get; set; } = "";
-
-        /// <summary>
-        /// License identifier.
-        /// </summary>
-        [JsonPropertyName("license")]
-        public string? License { get; set; }
-
-        /// <summary>
-        /// Source URL.
-        /// </summary>
-        [JsonPropertyName("source")]
-        public string? Source { get; set; }
-    }
-
-    /// <summary>
-    /// Software Bill of Materials (SBOM) information.
+    /// Software Bill of Materials (SBOM) paths.
     /// </summary>
     public class Sbom
     {
         /// <summary>
-        /// SBOM format (e.g., "simplified", "cyclonedx-1.5").
+        /// Path to CycloneDX SBOM file (e.g., "sbom/sbom.cdx.json").
         /// </summary>
-        [JsonPropertyName("format")]
-        public string? Format { get; set; }
+        [JsonPropertyName("cyclonedx")]
+        public string? Cyclonedx { get; set; }
 
         /// <summary>
-        /// Path to full SBOM file in bundle (optional).
+        /// Path to SPDX SBOM file (e.g., "sbom/sbom.spdx.json").
         /// </summary>
-        [JsonPropertyName("path")]
-        public string? Path { get; set; }
-
-        /// <summary>
-        /// Inline simplified dependency list.
-        /// </summary>
-        [JsonPropertyName("dependencies")]
-        public List<DependencyInfo>? Dependencies { get; set; }
+        [JsonPropertyName("spdx")]
+        public string? Spdx { get; set; }
     }
 }

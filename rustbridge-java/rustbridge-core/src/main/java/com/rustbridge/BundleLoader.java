@@ -793,20 +793,16 @@ public class BundleLoader implements AutoCloseable {
         /**
          * Git repository information.
          *
-         * @param commitHash  full commit hash
-         * @param commitShort short commit hash
-         * @param branch      branch name
-         * @param tag         tag name (if applicable)
-         * @param dirty       whether working directory had uncommitted changes
-         * @param repository  repository URL
+         * @param commit  full commit hash (required if git section present)
+         * @param branch  branch name
+         * @param tag     tag name (if on a tagged commit)
+         * @param dirty   whether working directory had uncommitted changes
          */
         public record GitInfo(
-                @JsonProperty("commit_hash") String commitHash,
-                @JsonProperty("commit_short") String commitShort,
+                String commit,
                 String branch,
                 String tag,
-                Boolean dirty,
-                String repository
+                Boolean dirty
         ) {}
 
         /**
@@ -829,31 +825,14 @@ public class BundleLoader implements AutoCloseable {
         ) {}
 
         /**
-         * Dependency information for SBOM.
+         * Software Bill of Materials (SBOM) paths.
          *
-         * @param name    dependency name
-         * @param version dependency version
-         * @param license license identifier
-         * @param source  source URL
-         */
-        public record DependencyInfo(
-                String name,
-                String version,
-                String license,
-                String source
-        ) {}
-
-        /**
-         * Software Bill of Materials (SBOM) information.
-         *
-         * @param format       SBOM format (e.g., "simplified", "cyclonedx-1.5")
-         * @param path         path to full SBOM file in bundle (optional)
-         * @param dependencies inline simplified dependency list
+         * @param cyclonedx path to CycloneDX SBOM file (e.g., "sbom/sbom.cdx.json")
+         * @param spdx      path to SPDX SBOM file (e.g., "sbom/sbom.spdx.json")
          */
         public record Sbom(
-                String format,
-                String path,
-                List<DependencyInfo> dependencies
+                String cyclonedx,
+                String spdx
         ) {}
     }
 }
