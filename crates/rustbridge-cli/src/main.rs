@@ -140,9 +140,12 @@ enum BundleAction {
         #[arg(short, long)]
         version: String,
 
-        /// Library to include: PLATFORM:PATH (can be repeated)
-        /// Example: --lib linux-x86_64:target/release/libmyplugin.so
-        #[arg(short, long = "lib", value_name = "PLATFORM:PATH")]
+        /// Library to include (can be repeated)
+        /// Format: PLATFORM:PATH or PLATFORM:VARIANT:PATH
+        /// Examples:
+        ///   --lib linux-x86_64:target/release/libplugin.so (release variant)
+        ///   --lib linux-x86_64:debug:target/debug/libplugin.so (debug variant)
+        #[arg(short, long = "lib", value_name = "PLATFORM[:VARIANT]:PATH")]
         libraries: Vec<String>,
 
         /// Output bundle path (default: <name>-<version>.rbp)
@@ -168,12 +171,76 @@ enum BundleAction {
         /// Example: --generate-schema src/messages.rs:schema.json
         #[arg(long, value_name = "SOURCE:SCHEMA_NAME")]
         generate_schema: Option<String>,
+
+        /// License notices file to include in the bundle
+        #[arg(long, value_name = "PATH")]
+        notices: Option<String>,
+
+        /// Skip automatic build metadata collection
+        #[arg(long)]
+        no_metadata: bool,
+    },
+
+    /// Combine multiple bundles into one
+    Combine {
+        /// Input bundle files (at least 2)
+        #[arg(required = true, num_args = 2..)]
+        bundles: Vec<String>,
+
+        /// Output bundle path
+        #[arg(short, long)]
+        output: String,
+
+        /// Path to signing key for re-signing the combined bundle
+        #[arg(long, value_name = "KEY_PATH")]
+        sign_key: Option<String>,
+
+        /// Schema mismatch handling: error (default), warn, ignore
+        #[arg(long, value_name = "MODE", default_value = "error")]
+        schema_mismatch: String,
+    },
+
+    /// Create a slimmed bundle with subset of platforms/variants
+    Slim {
+        /// Input bundle path
+        #[arg(short, long)]
+        input: String,
+
+        /// Output bundle path
+        #[arg(short, long)]
+        output: String,
+
+        /// Platforms to keep (comma-separated)
+        /// Example: --platforms linux-x86_64,darwin-aarch64
+        #[arg(long, value_name = "PLATFORMS")]
+        platforms: Option<String>,
+
+        /// Variants to keep (comma-separated, default: release)
+        /// Example: --variants release,debug
+        #[arg(long, value_name = "VARIANTS", default_value = "release")]
+        variants: String,
+
+        /// Exclude documentation files
+        #[arg(long)]
+        exclude_docs: bool,
+
+        /// Path to signing key for re-signing the slimmed bundle
+        #[arg(long, value_name = "KEY_PATH")]
+        sign_key: Option<String>,
     },
 
     /// List contents of a bundle
     List {
         /// Path to the bundle file
         bundle: String,
+
+        /// Show build info
+        #[arg(long)]
+        show_build: bool,
+
+        /// Show all variants
+        #[arg(long)]
+        show_variants: bool,
     },
 
     /// Extract library from a bundle
@@ -184,6 +251,10 @@ enum BundleAction {
         /// Target platform (default: current platform)
         #[arg(short, long)]
         platform: Option<String>,
+
+        /// Variant to extract (default: release)
+        #[arg(long, default_value = "release")]
+        variant: String,
 
         /// Output directory for extracted library
         #[arg(short, long, default_value = ".")]
@@ -265,16 +336,35 @@ fn main() -> anyhow::Result<()> {
                 sign_key,
                 generate_header,
                 generate_schema,
+                notices,
+                no_metadata,
             } => {
-                // Parse library arguments (PLATFORM:PATH)
-                let libs: Vec<(String, String)> = libraries
+                // Parse library arguments (PLATFORM:PATH or PLATFORM:VARIANT:PATH)
+                let libs: Vec<(String, String, String)> = libraries
                     .iter()
                     .map(|s| {
-                        let parts: Vec<&str> = s.splitn(2, ':').collect();
-                        if parts.len() != 2 {
-                            anyhow::bail!("Invalid library format: {s}. Expected PLATFORM:PATH");
+                        let parts: Vec<&str> = s.splitn(3, ':').collect();
+                        match parts.len() {
+                            2 => {
+                                // PLATFORM:PATH -> (platform, "release", path)
+                                Ok((
+                                    parts[0].to_string(),
+                                    "release".to_string(),
+                                    parts[1].to_string(),
+                                ))
+                            }
+                            3 => {
+                                // PLATFORM:VARIANT:PATH -> (platform, variant, path)
+                                Ok((
+                                    parts[0].to_string(),
+                                    parts[1].to_string(),
+                                    parts[2].to_string(),
+                                ))
+                            }
+                            _ => anyhow::bail!(
+                                "Invalid library format: {s}. Expected PLATFORM:PATH or PLATFORM:VARIANT:PATH"
+                            ),
                         }
-                        Ok((parts[0].to_string(), parts[1].to_string()))
                     })
                     .collect::<anyhow::Result<_>>()?;
 
@@ -292,7 +382,7 @@ fn main() -> anyhow::Result<()> {
                     })
                     .collect::<anyhow::Result<_>>()?;
 
-                bundle::run(
+                bundle::create(
                     &name,
                     &version,
                     &libs,
@@ -301,19 +391,54 @@ fn main() -> anyhow::Result<()> {
                     sign_key,
                     generate_header,
                     generate_schema,
+                    notices,
+                    no_metadata,
+                )?;
+            }
+            BundleAction::Combine {
+                bundles,
+                output,
+                sign_key,
+                schema_mismatch,
+            } => {
+                bundle::combine(&bundles, &output, sign_key, &schema_mismatch)?;
+            }
+            BundleAction::Slim {
+                input,
+                output,
+                platforms,
+                variants,
+                exclude_docs,
+                sign_key,
+            } => {
+                let platform_list: Option<Vec<String>> =
+                    platforms.map(|p| p.split(',').map(|s| s.trim().to_string()).collect());
+                let variant_list: Vec<String> =
+                    variants.split(',').map(|s| s.trim().to_string()).collect();
+
+                bundle::slim(
+                    &input,
+                    &output,
+                    platform_list,
+                    variant_list,
+                    exclude_docs,
+                    sign_key,
                 )?;
             }
             BundleAction::List {
                 bundle: bundle_path,
+                show_build,
+                show_variants,
             } => {
-                bundle::list(&bundle_path)?;
+                bundle::list(&bundle_path, show_build, show_variants)?;
             }
             BundleAction::Extract {
                 bundle: bundle_path,
                 platform,
+                variant,
                 output: output_dir,
             } => {
-                bundle::extract(&bundle_path, platform, &output_dir)?;
+                bundle::extract(&bundle_path, platform, &variant, &output_dir)?;
             }
         },
     }
