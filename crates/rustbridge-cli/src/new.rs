@@ -28,13 +28,17 @@ name = "{name}"
 version = "0.1.0"
 edition = "2021"
 
+[workspace]  # Standalone project (not part of a parent workspace)
+
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-rustbridge-core = {{ path = "../crates/rustbridge-core" }}
-rustbridge-ffi = {{ path = "../crates/rustbridge-ffi" }}
-rustbridge-macros = {{ path = "../crates/rustbridge-macros" }}
+# rustbridge dependencies (fetched from GitHub)
+rustbridge-core = {{ git = "https://github.com/jrobhoward/rustbridge.git" }}
+rustbridge-ffi = {{ git = "https://github.com/jrobhoward/rustbridge.git" }}
+rustbridge-macros = {{ git = "https://github.com/jrobhoward/rustbridge.git" }}
+
 serde = {{ version = "1.0", features = ["derive"] }}
 serde_json = "1.0"
 async-trait = "0.1"
@@ -130,6 +134,17 @@ impl Plugin for {class_name} {{
 
 // Generate FFI entry point
 rustbridge_entry!({class_name}::default);
+
+// Re-export FFI functions for the compiled library
+pub use rustbridge_ffi::{{
+    plugin_call,
+    plugin_free_buffer,
+    plugin_get_rejected_count,
+    plugin_get_state,
+    plugin_init,
+    plugin_set_log_level,
+    plugin_shutdown,
+}};
 
 #[cfg(test)]
 mod tests {{

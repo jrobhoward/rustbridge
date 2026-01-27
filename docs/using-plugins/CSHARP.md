@@ -28,6 +28,35 @@ dotnet add package RustBridge.Core
 dotnet add package RustBridge.Native
 ```
 
+## Local Development
+
+When working with rustbridge source code (not published to NuGet), reference the local projects directly:
+
+```xml
+<ItemGroup>
+    <ProjectReference Include="../rustbridge-csharp/RustBridge.Core/RustBridge.Core.csproj" />
+    <ProjectReference Include="../rustbridge-csharp/RustBridge.Native/RustBridge.Native.csproj" />
+</ItemGroup>
+```
+
+Or build and create local NuGet packages:
+
+```bash
+cd rustbridge-csharp
+dotnet build
+dotnet pack -o ./packages
+```
+
+Then add the local feed to your NuGet.config:
+
+```xml
+<configuration>
+  <packageSources>
+    <add key="local" value="./packages" />
+  </packageSources>
+</configuration>
+```
+
 ## Loading a Plugin
 
 ### From Bundle (Recommended)

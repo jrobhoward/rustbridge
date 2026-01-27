@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!-- Reference local rustbridge projects (assumes ~/rustbridge-workspace/ structure) -->
+  <ItemGroup>
+    <ProjectReference Include="$(HOME)/rustbridge-workspace/rustbridge/rustbridge-csharp/RustBridge.Core/RustBridge.Core.csproj" />
+    <ProjectReference Include="$(HOME)/rustbridge-workspace/rustbridge/rustbridge-csharp/RustBridge.Native/RustBridge.Native.csproj" />
+  </ItemGroup>
+
+  <!-- Or use NuGet packages when published:
+  <ItemGroup>
+    <PackageReference Include="RustBridge.Core" Version="0.1.0" />
+    <PackageReference Include="RustBridge.Native" Version="0.1.0" />
+  </ItemGroup>
+  -->
+
+</Project>

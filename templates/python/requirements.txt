@@ -1,0 +1,5 @@
+# Install rustbridge from source:
+# pip install -e /path/to/rustbridge/rustbridge-python
+
+# Or when published to PyPI:
+# rustbridge

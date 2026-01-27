@@ -18,18 +18,28 @@ This guide walks you through using rustbridge plugins from Python using ctypes.
 pip install rustbridge
 ```
 
-### From Source
+## Local Development
+
+When working with rustbridge source code (not published to PyPI), use a virtual environment and install in editable mode:
 
 ```bash
-cd rustbridge-python
+# Create and activate virtual environment
+python -m venv .venv
+source .venv/bin/activate  # Linux/macOS
+# .venv\Scripts\activate   # Windows
+
+# Install rustbridge in editable mode
+cd /path/to/rustbridge/rustbridge-python
 pip install -e .
 ```
 
-### With Development Dependencies
+With development dependencies (pytest, mypy, etc.):
 
 ```bash
 pip install -e ".[dev]"
 ```
+
+Editable mode (`-e`) allows changes to the rustbridge Python code to take effect immediately without reinstalling.
 
 ## Loading a Plugin
 

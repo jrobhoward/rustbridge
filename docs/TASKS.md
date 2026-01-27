@@ -120,8 +120,14 @@ This document tracks incomplete tasks and priorities for the rustbridge project.
 | Task | Priority | Notes |
 |------|----------|-------|
 | Clean up unused code warnings | Low | Dead code in runtime, logging crates |
-| JNI native implementation | Low | FFM is preferred, JNI for legacy Java 8 compatibility only |
 | Async API (plugin_call_async) | Low | Deferred: not critical for current use cases |
+
+### JNI Improvements
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| Include JNI bridge in .rbp bundle | Medium | Bundle `librustbridge_jni.so` in `.rbp` file so Java 8-17 users don't need to build it separately |
+| JNI native implementation | Low | FFM is preferred, JNI for legacy Java 8-17 compatibility only |
 
 ---
 

@@ -50,16 +50,19 @@ name = "calculator-plugin"
 version = "0.1.0"
 edition = "2024"
 
+[workspace]  # Standalone project (not part of a parent workspace)
+
 [lib]
 crate-type = ["cdylib"]  # Required for FFI
 
 [dependencies]
-rustbridge-core = "0.1"
-rustbridge-transport = "0.1"
-rustbridge-ffi = "0.1"
-rustbridge-runtime = "0.1"
-rustbridge-logging = "0.1"
-rustbridge-macros = "0.1"
+# rustbridge dependencies (fetched from GitHub)
+rustbridge-core = { git = "https://github.com/jrobhoward/rustbridge.git" }
+rustbridge-transport = { git = "https://github.com/jrobhoward/rustbridge.git" }
+rustbridge-ffi = { git = "https://github.com/jrobhoward/rustbridge.git" }
+rustbridge-runtime = { git = "https://github.com/jrobhoward/rustbridge.git" }
+rustbridge-logging = { git = "https://github.com/jrobhoward/rustbridge.git" }
+rustbridge-macros = { git = "https://github.com/jrobhoward/rustbridge.git" }
 
 async-trait = "0.1"
 serde = { version = "1.0", features = ["derive"] }
@@ -68,7 +71,10 @@ tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 ```
 
-> **Important**: `crate-type = ["cdylib"]` generates a dynamic library (.so/.dylib/.dll) loadable via FFI.
+> **Important**:
+> - `crate-type = ["cdylib"]` generates a dynamic library (.so/.dylib/.dll) loadable via FFI.
+> - `[workspace]` ensures this project is standalone, even if created inside another workspace directory.
+> - Git dependencies fetch the crates directly from GitHub (no crates.io publishing required).
 
 ## Step 2: Define Message Types
 

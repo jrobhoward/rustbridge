@@ -48,6 +48,37 @@ dependencies {
 </dependencies>
 ```
 
+## Local Development
+
+When working with rustbridge source code (not published to Maven Central), publish to MavenLocal first:
+
+```bash
+cd rustbridge-java
+./gradlew publishToMavenLocal
+```
+
+Then add the `mavenLocal()` repository to your build:
+
+**Gradle (Kotlin DSL)**
+
+```kotlin
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+```
+
+**Maven**
+
+```xml
+<repositories>
+    <repository>
+        <id>local</id>
+        <url>file://${user.home}/.m2/repository</url>
+    </repository>
+</repositories>
+```
+
 ## Loading a Plugin
 
 ### From Bundle (Recommended)

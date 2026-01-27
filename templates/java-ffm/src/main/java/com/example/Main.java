@@ -1,0 +1,39 @@
+package com.example;
+
+import com.rustbridge.BundleLoader;
+import com.rustbridge.ffm.FfmPluginLoader;
+import com.google.gson.Gson;
+
+public class Main {
+    // Define your request/response types to match your plugin's API
+    record EchoRequest(String message) {}
+    record EchoResponse(String message, int length) {}
+
+    private static final Gson gson = new Gson();
+
+    public static void main(String[] args) throws Exception {
+        // TODO: Update this path to your .rbp bundle file
+        String bundlePath = "my-plugin-1.0.0.rbp";
+
+        var bundleLoader = BundleLoader.builder()
+            .bundlePath(bundlePath)
+            .verifySignatures(false)  // Set true for production
+            .build();
+
+        var libraryPath = bundleLoader.extractLibrary();
+
+        try (var plugin = FfmPluginLoader.load(libraryPath.toString())) {
+            // Example: Call the "echo" message type
+            var request = new EchoRequest("Hello from Java!");
+            var requestJson = gson.toJson(request);
+
+            var responseJson = plugin.call("echo", requestJson);
+            var response = gson.fromJson(responseJson, EchoResponse.class);
+
+            System.out.println("Response: " + response.message());
+            System.out.println("Length: " + response.length());
+        }
+
+        bundleLoader.close();
+    }
+}

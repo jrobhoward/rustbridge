@@ -1,0 +1,47 @@
+package com.example
+
+import com.rustbridge.BundleLoader
+import com.rustbridge.ffm.FfmPluginLoader
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+
+// Define your request/response types to match your plugin's API
+data class EchoRequest(val message: String)
+data class EchoResponse(val message: String, val length: Int)
+
+val mapper = jacksonObjectMapper()
+
+// Extension function for type-safe plugin calls
+inline fun <reified T> com.rustbridge.Plugin.callTyped(
+    messageType: String,
+    request: Any
+): T {
+    val requestJson = mapper.writeValueAsString(request)
+    val responseJson = call(messageType, requestJson)
+    return mapper.readValue(responseJson)
+}
+
+fun main(args: Array<String>) {
+    // TODO: Update this path to your .rbp bundle file
+    val bundlePath = "my-plugin-1.0.0.rbp"
+
+    val bundleLoader = BundleLoader.builder()
+        .bundlePath(bundlePath)
+        .verifySignatures(false)  // Set true for production
+        .build()
+
+    val libraryPath = bundleLoader.extractLibrary()
+
+    FfmPluginLoader.load(libraryPath.toString()).use { plugin ->
+        // Example: Call the "echo" message type
+        val response = plugin.callTyped<EchoResponse>(
+            "echo",
+            EchoRequest("Hello from Kotlin!")
+        )
+
+        println("Response: ${response.message}")
+        println("Length: ${response.length}")
+    }
+
+    bundleLoader.close()
+}

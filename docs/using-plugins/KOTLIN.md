@@ -5,32 +5,63 @@ This guide walks you through using rustbridge plugins from Kotlin with idiomatic
 ## Prerequisites
 
 - **Kotlin 1.9+** - For modern language features
-- **Java 21+** - For FFM (or Java 8+ for JNI)
+- **Java 21+** - Required for FFM (Foreign Function & Memory API)
 - **Gradle** - For dependency management
 - **A rustbridge plugin** - Either a `.rbp` bundle or native library
 
-## Add Dependencies
+## Project Setup
 
 ### Gradle (Kotlin DSL)
 
 ```kotlin
 plugins {
-    kotlin("jvm") version "1.9.0"
-    kotlin("plugin.serialization") version "1.9.0"  // Optional: for kotlinx.serialization
+    kotlin("jvm") version "2.0.0"
+    application
+}
+
+application {
+    mainClass.set("com.example.MainKt")
+}
+
+repositories {
+    mavenLocal()  // For local development (see below)
+    mavenCentral()
 }
 
 dependencies {
     implementation("com.rustbridge:rustbridge-core:0.1.0")
-    implementation("com.rustbridge:rustbridge-ffm:0.1.0")  // For Java 21+
-    // OR
-    // implementation("com.rustbridge:rustbridge-jni:0.1.0")  // For Java 8+
-
-    // Serialization (pick one)
+    implementation("com.rustbridge:rustbridge-ffm:0.1.0")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
-    // OR
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+
+    testImplementation(kotlin("test"))
+}
+
+kotlin {
+    jvmToolchain(21)
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
+
+// Required for FFM native access
+tasks.withType<JavaExec> {
+    jvmArgs("--enable-preview", "--enable-native-access=ALL-UNNAMED")
 }
 ```
+
+> **Important**: The `--enable-native-access=ALL-UNNAMED` flag is required for FFM to call native code. Without it, you'll get `IllegalCallerException`.
+
+## Local Development
+
+When working with rustbridge source code (not published to Maven Central), publish to MavenLocal first:
+
+```bash
+cd rustbridge-java
+./gradlew publishToMavenLocal
+```
+
+The `mavenLocal()` repository in the build file above will then resolve the local artifacts.
 
 ## Loading a Plugin
 
@@ -39,7 +70,6 @@ dependencies {
 ```kotlin
 import com.rustbridge.BundleLoader
 import com.rustbridge.ffm.FfmPluginLoader
-import com.rustbridge.PluginConfig
 
 fun main() {
     val bundleLoader = BundleLoader.builder()
@@ -73,8 +103,6 @@ FfmPluginLoader.load(pluginPath).use { plugin ->
 
 ## Type-Safe Calls with Data Classes
 
-### Using Jackson
-
 ```kotlin
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -102,31 +130,6 @@ FfmPluginLoader.load(pluginPath).use { plugin ->
     )
     println("Message: ${response.message}")
     println("Length: ${response.length}")
-}
-```
-
-### Using kotlinx.serialization
-
-```kotlin
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-
-@Serializable
-data class EchoRequest(val message: String)
-
-@Serializable
-data class EchoResponse(val message: String, val length: Int)
-
-val json = Json { ignoreUnknownKeys = true }
-
-inline fun <reified T> com.rustbridge.Plugin.callTyped(
-    messageType: String,
-    request: Any
-): T {
-    val requestJson = json.encodeToString(request)
-    val responseJson = call(messageType, requestJson)
-    return json.decodeFromString(responseJson)
 }
 ```
 
@@ -370,6 +373,5 @@ fun main() = runBlocking {
 ## Related Documentation
 
 - [JAVA_FFM.md](./JAVA_FFM.md) - Java FFM details
-- [JAVA_JNI.md](./JAVA_JNI.md) - Java JNI details
 - [../TRANSPORT.md](../TRANSPORT.md) - Transport layer details
 - [../MEMORY_MODEL.md](../MEMORY_MODEL.md) - Memory ownership
