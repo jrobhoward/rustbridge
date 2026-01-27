@@ -10,14 +10,56 @@ from rustbridge.core.plugin_exception import PluginException
 
 
 @dataclass
-class PlatformInfo:
-    """Platform-specific library information."""
+class VariantInfo:
+    """Variant-specific library information."""
 
     library: str
     """Path to the library file within the bundle."""
 
     checksum: str
     """SHA256 checksum of the library."""
+
+    build: Any | None = None
+    """Optional build metadata (profile, opt_level, features, etc.)."""
+
+
+@dataclass
+class PlatformInfo:
+    """Platform-specific library information with variant support."""
+
+    library: str
+    """Path to the library file within the bundle (backward compat / default variant)."""
+
+    checksum: str
+    """SHA256 checksum of the library (backward compat / default variant)."""
+
+    default_variant: str | None = None
+    """The default variant name (usually "release")."""
+
+    variants: dict[str, VariantInfo] = field(default_factory=dict)
+    """Map of variant name to VariantInfo (v2.0+)."""
+
+    def get_library(self, variant: str) -> str:
+        """Get the effective library path for a variant."""
+        if self.variants and variant in self.variants:
+            return self.variants[variant].library
+        return self.library
+
+    def get_checksum(self, variant: str) -> str:
+        """Get the effective checksum for a variant."""
+        if self.variants and variant in self.variants:
+            return self.variants[variant].checksum
+        return self.checksum
+
+    def get_default_variant(self) -> str:
+        """Get the default variant name."""
+        return self.default_variant if self.default_variant else "release"
+
+    def list_variants(self) -> list[str]:
+        """List available variants for this platform."""
+        if not self.variants:
+            return ["release"]
+        return list(self.variants.keys())
 
 
 @dataclass
@@ -72,6 +114,83 @@ class ApiInfo:
 
 
 @dataclass
+class GitInfo:
+    """Git repository information."""
+
+    commit_hash: str | None = None
+    """Full commit hash."""
+
+    commit_short: str | None = None
+    """Short commit hash."""
+
+    branch: str | None = None
+    """Branch name."""
+
+    tag: str | None = None
+    """Tag name (if applicable)."""
+
+    dirty: bool | None = None
+    """Whether working directory had uncommitted changes."""
+
+    repository: str | None = None
+    """Repository URL."""
+
+
+@dataclass
+class BuildInfo:
+    """Build metadata information."""
+
+    built_by: str | None = None
+    """Who/what built the bundle (e.g., "CI/CD", "developer")."""
+
+    built_at: str | None = None
+    """ISO 8601 timestamp."""
+
+    host: str | None = None
+    """Host triple (e.g., "x86_64-unknown-linux-gnu")."""
+
+    compiler: str | None = None
+    """Compiler version (e.g., "rustc 1.85.0")."""
+
+    rustbridge_version: str | None = None
+    """rustbridge CLI version."""
+
+    git: GitInfo | None = None
+    """Git repository info."""
+
+
+@dataclass
+class DependencyInfo:
+    """Dependency information for SBOM."""
+
+    name: str
+    """Dependency name."""
+
+    version: str
+    """Dependency version."""
+
+    license: str | None = None
+    """License identifier."""
+
+    source: str | None = None
+    """Source URL."""
+
+
+@dataclass
+class Sbom:
+    """Software Bill of Materials (SBOM) information."""
+
+    format: str | None = None
+    """SBOM format (e.g., "simplified", "cyclonedx-1.5")."""
+
+    path: str | None = None
+    """Path to full SBOM file in bundle (optional)."""
+
+    dependencies: list[DependencyInfo] = field(default_factory=list)
+    """Inline simplified dependency list."""
+
+
+@dataclass
 class BundleManifest:
     """
     Bundle manifest structure.
@@ -102,6 +221,18 @@ class BundleManifest:
 
     schemas: dict[str, SchemaInfo] = field(default_factory=dict)
     """Schema files in the bundle."""
+
+    build_info: BuildInfo | None = None
+    """Build metadata (v2.0+)."""
+
+    sbom: Sbom | None = None
+    """SBOM information (v2.0+)."""
+
+    schema_checksum: str | None = None
+    """Combined schema checksum for validation (v2.0+)."""
+
+    notices: str | None = None
+    """Path to license notices file in bundle (v2.0+)."""
 
     @classmethod
     def from_json(cls, json_str: str) -> BundleManifest:
@@ -155,9 +286,21 @@ class BundleManifest:
         platforms_data = data.get("platforms", {})
         platforms: dict[str, PlatformInfo] = {}
         for platform_key, platform_value in platforms_data.items():
+            # Parse variants if present (v2.0+)
+            variants: dict[str, VariantInfo] = {}
+            variants_data = platform_value.get("variants", {})
+            for variant_name, variant_value in variants_data.items():
+                variants[variant_name] = VariantInfo(
+                    library=variant_value.get("library", ""),
+                    checksum=variant_value.get("checksum", ""),
+                    build=variant_value.get("build"),
+                )
+
             platforms[platform_key] = PlatformInfo(
                 library=platform_value.get("library", ""),
                 checksum=platform_value.get("checksum", ""),
+                default_variant=platform_value.get("default_variant"),
+                variants=variants,
             )
 
         # Parse plugin info
@@ -206,6 +349,50 @@ class BundleManifest:
                 description=schema_value.get("description"),
             )
 
+        # Parse build info (v2.0+)
+        build_info: BuildInfo | None = None
+        build_info_data = data.get("build_info")
+        if build_info_data:
+            git_info: GitInfo | None = None
+            git_data = build_info_data.get("git")
+            if git_data:
+                git_info = GitInfo(
+                    commit_hash=git_data.get("commit_hash"),
+                    commit_short=git_data.get("commit_short"),
+                    branch=git_data.get("branch"),
+                    tag=git_data.get("tag"),
+                    dirty=git_data.get("dirty"),
+                    repository=git_data.get("repository"),
+                )
+            build_info = BuildInfo(
+                built_by=build_info_data.get("built_by"),
+                built_at=build_info_data.get("built_at"),
+                host=build_info_data.get("host"),
+                compiler=build_info_data.get("compiler"),
+                rustbridge_version=build_info_data.get("rustbridge_version"),
+                git=git_info,
+            )
+
+        # Parse SBOM (v2.0+)
+        sbom: Sbom | None = None
+        sbom_data = data.get("sbom")
+        if sbom_data:
+            dependencies: list[DependencyInfo] = []
+            for dep_data in sbom_data.get("dependencies", []):
+                dependencies.append(
+                    DependencyInfo(
+                        name=dep_data.get("name", ""),
+                        version=dep_data.get("version", ""),
+                        license=dep_data.get("license"),
+                        source=dep_data.get("source"),
+                    )
+                )
+            sbom = Sbom(
+                format=sbom_data.get("format"),
+                path=sbom_data.get("path"),
+                dependencies=dependencies,
+            )
+
         return cls(
             bundle_version=bundle_version,
             plugin_name=plugin_name,
@@ -215,6 +402,10 @@ class BundleManifest:
             plugin_info=plugin_info,
             api=api,
             schemas=schemas,
+            build_info=build_info,
+            sbom=sbom,
+            schema_checksum=data.get("schema_checksum"),
+            notices=data.get("notices"),
         )
 
     def get_platform(self, platform: str) -> PlatformInfo | None:

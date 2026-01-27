@@ -105,6 +105,8 @@ public class BundleLoader implements AutoCloseable {
      * ensuring no conflicts with other extractions. The caller is responsible for cleaning
      * up the temporary directory when done.
      *
+     * <p>Uses the default variant (typically "release").
+     *
      * @return path to the extracted library
      * @throws IOException        if extraction fails
      * @throws SignatureException if signature verification fails (when enabled)
@@ -113,7 +115,9 @@ public class BundleLoader implements AutoCloseable {
         // Create unique temp directory under system temp path
         Path tempBase = Paths.get(System.getProperty("java.io.tmpdir"));
         Path tempDir = Files.createTempDirectory(tempBase, "rustbridge-");
-        return extractLibraryInternal(detectPlatform(), tempDir, false);
+        String platform = detectPlatform();
+        String variant = getDefaultVariant(platform);
+        return extractLibraryInternal(platform, variant, tempDir, false);
     }
 
     /**
@@ -122,6 +126,8 @@ public class BundleLoader implements AutoCloseable {
      * <p>This method will fail if the library file already exists at the target path.
      * This prevents accidental overwrites and ensures the caller has explicit control
      * over file lifecycle.
+     *
+     * <p>Uses the default variant (typically "release").
      *
      * @param outputDir directory to extract the library to
      * @return path to the extracted library
@@ -140,6 +146,8 @@ public class BundleLoader implements AutoCloseable {
      * This prevents accidental overwrites and ensures the caller has explicit control
      * over file lifecycle.
      *
+     * <p>Uses the default variant (typically "release").
+     *
      * @param platform  platform string (e.g., "linux-x86_64")
      * @param outputDir directory to extract the library to
      * @return path to the extracted library
@@ -148,19 +156,80 @@ public class BundleLoader implements AutoCloseable {
      */
     public @NotNull Path extractLibrary(@NotNull String platform, @NotNull Path outputDir)
             throws IOException, SignatureException {
-        return extractLibraryInternal(platform, outputDir, true);
+        String variant = getDefaultVariant(platform);
+        return extractLibraryInternal(platform, variant, outputDir, true);
+    }
+
+    /**
+     * Extract a specific variant of the library for a platform to the specified directory.
+     *
+     * <p>This method will fail if the library file already exists at the target path.
+     *
+     * @param platform  platform string (e.g., "linux-x86_64")
+     * @param variant   variant name (e.g., "release", "debug")
+     * @param outputDir directory to extract the library to
+     * @return path to the extracted library
+     * @throws IOException        if extraction fails, file already exists, or variant not found
+     * @throws SignatureException if signature verification fails (when enabled)
+     */
+    public @NotNull Path extractLibrary(
+            @NotNull String platform,
+            @NotNull String variant,
+            @NotNull Path outputDir
+    ) throws IOException, SignatureException {
+        return extractLibraryInternal(platform, variant, outputDir, true);
+    }
+
+    /**
+     * Get the default variant for a platform.
+     *
+     * @param platform platform string (e.g., "linux-x86_64")
+     * @return default variant name (typically "release")
+     */
+    public @NotNull String getDefaultVariant(@NotNull String platform) {
+        BundleManifest.PlatformInfo platformInfo = manifest.platforms.get(platform);
+        if (platformInfo == null) {
+            return "release";
+        }
+        return platformInfo.getDefaultVariant();
+    }
+
+    /**
+     * List available variants for a platform.
+     *
+     * @param platform platform string (e.g., "linux-x86_64")
+     * @return list of available variant names
+     * @throws IOException if platform is not supported
+     */
+    public @NotNull List<String> listVariants(@NotNull String platform) throws IOException {
+        BundleManifest.PlatformInfo platformInfo = manifest.platforms.get(platform);
+        if (platformInfo == null) {
+            throw new IOException("Platform not supported: " + platform);
+        }
+        return platformInfo.listVariants();
+    }
+
+    /**
+     * Get build info from the manifest (v2.0+ bundles only).
+     *
+     * @return build info, or null if not present
+     */
+    public @Nullable BundleManifest.BuildInfo getBuildInfo() {
+        return manifest.buildInfo;
     }
 
     /**
      * Internal method to extract the library with configurable overwrite behavior.
      *
      * @param platform           platform string (e.g., "linux-x86_64")
+     * @param variant            variant name (e.g., "release", "debug")
      * @param outputDir          directory to extract the library to
      * @param failIfExists       if true, fail when the target file already exists
      * @return path to the extracted library
      */
     private @NotNull Path extractLibraryInternal(
             @NotNull String platform,
+            @NotNull String variant,
             @NotNull Path outputDir,
             boolean failIfExists
     ) throws IOException, SignatureException {
@@ -169,28 +238,38 @@ public class BundleLoader implements AutoCloseable {
             throw new IOException("Platform not supported: " + platform);
         }
 
+        // Get library path and checksum for the requested variant
+        String libraryPath = platformInfo.getLibrary(variant);
+        String checksum = platformInfo.getChecksum(variant);
+
+        if (libraryPath == null || libraryPath.isEmpty()) {
+            throw new IOException(
+                    "Variant '" + variant + "' not found for platform '" + platform + "'"
+            );
+        }
+
         // Extract the library
-        ZipEntry libEntry = zipFile.getEntry(platformInfo.library());
+        ZipEntry libEntry = zipFile.getEntry(libraryPath);
         if (libEntry == null) {
-            throw new IOException("Library not found in bundle: " + platformInfo.library());
+            throw new IOException("Library not found in bundle: " + libraryPath);
         }
 
         byte[] libData = readZipEntry(libEntry);
 
         // Verify checksum
-        if (!verifyChecksum(libData, platformInfo.checksum())) {
+        if (!verifyChecksum(libData, checksum)) {
             throw new IOException(
-                    "Checksum verification failed for " + platformInfo.library()
+                    "Checksum verification failed for " + libraryPath
             );
         }
 
         // Verify signature if enabled
         if (verifySignatures) {
-            verifyLibrarySignature(platformInfo.library(), libData);
+            verifyLibrarySignature(libraryPath, libData);
         }
 
         // Determine output path
-        String fileName = Paths.get(platformInfo.library()).getFileName().toString();
+        String fileName = Paths.get(libraryPath).getFileName().toString();
         Path outputPath = outputDir.resolve(fileName);
 
         // Check if file already exists when user specifies path
@@ -554,6 +633,16 @@ public class BundleLoader implements AutoCloseable {
 
         public Map<String, SchemaInfo> schemas; // Schema files in the bundle
 
+        @JsonProperty("build_info")
+        public BuildInfo buildInfo; // Build metadata (v2.0+)
+
+        public Sbom sbom; // SBOM information (v2.0+)
+
+        @JsonProperty("schema_checksum")
+        public String schemaChecksum; // Combined schema checksum for validation (v2.0+)
+
+        public String notices; // Path to license notices file in bundle (v2.0+)
+
         /**
          * Plugin metadata information.
          *
@@ -574,15 +663,83 @@ public class BundleLoader implements AutoCloseable {
         ) {}
 
         /**
-         * Platform-specific library information.
+         * Variant-specific library information.
          *
          * @param library  path to the library file within the bundle
          * @param checksum SHA256 checksum of the library
+         * @param build    optional build metadata (profile, opt_level, features, etc.)
+         */
+        public record VariantInfo(
+                String library,
+                String checksum,
+                Object build
+        ) {}
+
+        /**
+         * Platform-specific library information with variant support.
+         *
+         * <p>For v2.0 bundles, variants contain the actual library info.
+         * For v1.0 bundles (and v2.0 backward compat), library/checksum
+         * are populated directly.
+         *
+         * @param library        path to the library file (backward compat / default variant)
+         * @param checksum       SHA256 checksum of the library (backward compat / default variant)
+         * @param defaultVariant the default variant name (usually "release")
+         * @param variants       map of variant name to VariantInfo
          */
         public record PlatformInfo(
                 String library,
-                String checksum
-        ) {}
+                String checksum,
+                @JsonProperty("default_variant") String defaultVariant,
+                Map<String, VariantInfo> variants
+        ) {
+            /**
+             * Get the effective library path, preferring variant if available.
+             *
+             * @param variant variant name (e.g., "release", "debug")
+             * @return library path
+             */
+            public String getLibrary(String variant) {
+                if (variants != null && variants.containsKey(variant)) {
+                    return variants.get(variant).library();
+                }
+                return library;
+            }
+
+            /**
+             * Get the effective checksum, preferring variant if available.
+             *
+             * @param variant variant name (e.g., "release", "debug")
+             * @return checksum
+             */
+            public String getChecksum(String variant) {
+                if (variants != null && variants.containsKey(variant)) {
+                    return variants.get(variant).checksum();
+                }
+                return checksum;
+            }
+
+            /**
+             * Get the default variant name.
+             *
+             * @return default variant name, or "release" if not specified
+             */
+            public String getDefaultVariant() {
+                return defaultVariant != null ? defaultVariant : "release";
+            }
+
+            /**
+             * List available variants for this platform.
+             *
+             * @return list of variant names
+             */
+            public List<String> listVariants() {
+                if (variants == null || variants.isEmpty()) {
+                    return List.of("release");
+                }
+                return new ArrayList<>(variants.keySet());
+            }
+        }
 
         /**
          * API information for the plugin.
@@ -631,6 +788,72 @@ public class BundleLoader implements AutoCloseable {
                 String format,
                 String checksum,
                 String description
+        ) {}
+
+        /**
+         * Git repository information.
+         *
+         * @param commitHash  full commit hash
+         * @param commitShort short commit hash
+         * @param branch      branch name
+         * @param tag         tag name (if applicable)
+         * @param dirty       whether working directory had uncommitted changes
+         * @param repository  repository URL
+         */
+        public record GitInfo(
+                @JsonProperty("commit_hash") String commitHash,
+                @JsonProperty("commit_short") String commitShort,
+                String branch,
+                String tag,
+                Boolean dirty,
+                String repository
+        ) {}
+
+        /**
+         * Build metadata information.
+         *
+         * @param builtBy           who/what built the bundle (e.g., "CI/CD", "developer")
+         * @param builtAt           ISO 8601 timestamp
+         * @param host              host triple (e.g., "x86_64-unknown-linux-gnu")
+         * @param compiler          compiler version (e.g., "rustc 1.85.0")
+         * @param rustbridgeVersion rustbridge CLI version
+         * @param git               git repository info
+         */
+        public record BuildInfo(
+                @JsonProperty("built_by") String builtBy,
+                @JsonProperty("built_at") String builtAt,
+                String host,
+                String compiler,
+                @JsonProperty("rustbridge_version") String rustbridgeVersion,
+                GitInfo git
+        ) {}
+
+        /**
+         * Dependency information for SBOM.
+         *
+         * @param name    dependency name
+         * @param version dependency version
+         * @param license license identifier
+         * @param source  source URL
+         */
+        public record DependencyInfo(
+                String name,
+                String version,
+                String license,
+                String source
+        ) {}
+
+        /**
+         * Software Bill of Materials (SBOM) information.
+         *
+         * @param format       SBOM format (e.g., "simplified", "cyclonedx-1.5")
+         * @param path         path to full SBOM file in bundle (optional)
+         * @param dependencies inline simplified dependency list
+         */
+        public record Sbom(
+                String format,
+                String path,
+                List<DependencyInfo> dependencies
         ) {}
     }
 }

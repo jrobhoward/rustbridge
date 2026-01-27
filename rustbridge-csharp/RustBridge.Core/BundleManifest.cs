@@ -44,6 +44,30 @@ public class BundleManifest
     public Dictionary<string, SchemaInfo>? Schemas { get; set; }
 
     /// <summary>
+    /// Build metadata (v2.0+).
+    /// </summary>
+    [JsonPropertyName("build_info")]
+    public BuildInfo? BuildInfoData { get; set; }
+
+    /// <summary>
+    /// SBOM information (v2.0+).
+    /// </summary>
+    [JsonPropertyName("sbom")]
+    public Sbom? SbomData { get; set; }
+
+    /// <summary>
+    /// Combined schema checksum for validation (v2.0+).
+    /// </summary>
+    [JsonPropertyName("schema_checksum")]
+    public string? SchemaChecksum { get; set; }
+
+    /// <summary>
+    /// Path to license notices file in bundle (v2.0+).
+    /// </summary>
+    [JsonPropertyName("notices")]
+    public string? Notices { get; set; }
+
+    /// <summary>
     /// Plugin metadata information.
     /// </summary>
     public class PluginInfo
@@ -68,9 +92,9 @@ public class BundleManifest
     }
 
     /// <summary>
-    /// Platform-specific library information.
+    /// Variant-specific library information.
     /// </summary>
-    public class PlatformInfo
+    public class VariantInfo
     {
         /// <summary>
         /// Path to the library file within the bundle.
@@ -83,6 +107,83 @@ public class BundleManifest
         /// </summary>
         [JsonPropertyName("checksum")]
         public string Checksum { get; set; } = "";
+
+        /// <summary>
+        /// Optional build metadata (profile, opt_level, features, etc.).
+        /// </summary>
+        [JsonPropertyName("build")]
+        public object? Build { get; set; }
+    }
+
+    /// <summary>
+    /// Platform-specific library information with variant support.
+    /// </summary>
+    public class PlatformInfo
+    {
+        /// <summary>
+        /// Path to the library file within the bundle (backward compat / default variant).
+        /// </summary>
+        [JsonPropertyName("library")]
+        public string Library { get; set; } = "";
+
+        /// <summary>
+        /// SHA256 checksum of the library (backward compat / default variant).
+        /// </summary>
+        [JsonPropertyName("checksum")]
+        public string Checksum { get; set; } = "";
+
+        /// <summary>
+        /// The default variant name (usually "release").
+        /// </summary>
+        [JsonPropertyName("default_variant")]
+        public string? DefaultVariant { get; set; }
+
+        /// <summary>
+        /// Map of variant name to VariantInfo (v2.0+).
+        /// </summary>
+        [JsonPropertyName("variants")]
+        public Dictionary<string, VariantInfo>? Variants { get; set; }
+
+        /// <summary>
+        /// Get the effective library path for a variant.
+        /// </summary>
+        public string GetLibrary(string variant)
+        {
+            if (Variants != null && Variants.TryGetValue(variant, out var variantInfo))
+            {
+                return variantInfo.Library;
+            }
+            return Library;
+        }
+
+        /// <summary>
+        /// Get the effective checksum for a variant.
+        /// </summary>
+        public string GetChecksum(string variant)
+        {
+            if (Variants != null && Variants.TryGetValue(variant, out var variantInfo))
+            {
+                return variantInfo.Checksum;
+            }
+            return Checksum;
+        }
+
+        /// <summary>
+        /// Get the default variant name.
+        /// </summary>
+        public string GetDefaultVariant() => DefaultVariant ?? "release";
+
+        /// <summary>
+        /// List available variants for this platform.
+        /// </summary>
+        public IReadOnlyList<string> ListVariants()
+        {
+            if (Variants == null || Variants.Count == 0)
+            {
+                return new[] { "release" };
+            }
+            return Variants.Keys.ToList();
+        }
     }
 
     /// <summary>
@@ -155,5 +256,143 @@ public class BundleManifest
         /// </summary>
         [JsonPropertyName("description")]
         public string? Description { get; set; }
+    }
+
+    /// <summary>
+    /// Git repository information.
+    /// </summary>
+    public class GitInfo
+    {
+        /// <summary>
+        /// Full commit hash.
+        /// </summary>
+        [JsonPropertyName("commit_hash")]
+        public string? CommitHash { get; set; }
+
+        /// <summary>
+        /// Short commit hash.
+        /// </summary>
+        [JsonPropertyName("commit_short")]
+        public string? CommitShort { get; set; }
+
+        /// <summary>
+        /// Branch name.
+        /// </summary>
+        [JsonPropertyName("branch")]
+        public string? Branch { get; set; }
+
+        /// <summary>
+        /// Tag name (if applicable).
+        /// </summary>
+        [JsonPropertyName("tag")]
+        public string? Tag { get; set; }
+
+        /// <summary>
+        /// Whether working directory had uncommitted changes.
+        /// </summary>
+        [JsonPropertyName("dirty")]
+        public bool? Dirty { get; set; }
+
+        /// <summary>
+        /// Repository URL.
+        /// </summary>
+        [JsonPropertyName("repository")]
+        public string? Repository { get; set; }
+    }
+
+    /// <summary>
+    /// Build metadata information.
+    /// </summary>
+    public class BuildInfo
+    {
+        /// <summary>
+        /// Who/what built the bundle (e.g., "CI/CD", "developer").
+        /// </summary>
+        [JsonPropertyName("built_by")]
+        public string? BuiltBy { get; set; }
+
+        /// <summary>
+        /// ISO 8601 timestamp.
+        /// </summary>
+        [JsonPropertyName("built_at")]
+        public string? BuiltAt { get; set; }
+
+        /// <summary>
+        /// Host triple (e.g., "x86_64-unknown-linux-gnu").
+        /// </summary>
+        [JsonPropertyName("host")]
+        public string? Host { get; set; }
+
+        /// <summary>
+        /// Compiler version (e.g., "rustc 1.85.0").
+        /// </summary>
+        [JsonPropertyName("compiler")]
+        public string? Compiler { get; set; }
+
+        /// <summary>
+        /// rustbridge CLI version.
+        /// </summary>
+        [JsonPropertyName("rustbridge_version")]
+        public string? RustbridgeVersion { get; set; }
+
+        /// <summary>
+        /// Git repository info.
+        /// </summary>
+        [JsonPropertyName("git")]
+        public GitInfo? Git { get; set; }
+    }
+
+    /// <summary>
+    /// Dependency information for SBOM.
+    /// </summary>
+    public class DependencyInfo
+    {
+        /// <summary>
+        /// Dependency name.
+        /// </summary>
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = "";
+
+        /// <summary>
+        /// Dependency version.
+        /// </summary>
+        [JsonPropertyName("version")]
+        public string Version { get; set; } = "";
+
+        /// <summary>
+        /// License identifier.
+        /// </summary>
+        [JsonPropertyName("license")]
+        public string? License { get; set; }
+
+        /// <summary>
+        /// Source URL.
+        /// </summary>
+        [JsonPropertyName("source")]
+        public string? Source { get; set; }
+    }
+
+    /// <summary>
+    /// Software Bill of Materials (SBOM) information.
+    /// </summary>
+    public class Sbom
+    {
+        /// <summary>
+        /// SBOM format (e.g., "simplified", "cyclonedx-1.5").
+        /// </summary>
+        [JsonPropertyName("format")]
+        public string? Format { get; set; }
+
+        /// <summary>
+        /// Path to full SBOM file in bundle (optional).
+        /// </summary>
+        [JsonPropertyName("path")]
+        public string? Path { get; set; }
+
+        /// <summary>
+        /// Inline simplified dependency list.
+        /// </summary>
+        [JsonPropertyName("dependencies")]
+        public List<DependencyInfo>? Dependencies { get; set; }
     }
 }

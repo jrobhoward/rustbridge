@@ -11,7 +11,7 @@ import zipfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
-from rustbridge.core.bundle_manifest import BundleManifest, SchemaInfo
+from rustbridge.core.bundle_manifest import BundleManifest, BuildInfo, SchemaInfo
 from rustbridge.core.minisign_verifier import MinisignVerifier
 from rustbridge.core.plugin_exception import PluginException
 
@@ -177,7 +177,12 @@ class BundleLoader:
         return self._extract_library_internal(bundle_path, dest_dir, fail_if_exists=True)
 
     def _extract_library_internal(
-        self, bundle_path: Path, dest_dir: Path, *, fail_if_exists: bool
+        self,
+        bundle_path: Path,
+        dest_dir: Path,
+        *,
+        fail_if_exists: bool,
+        variant: str | None = None,
     ) -> Path:
         """
         Internal method to extract the library with configurable overwrite behavior.
@@ -186,6 +191,7 @@ class BundleLoader:
             bundle_path: Path to the .rbp bundle file.
             dest_dir: Directory to extract the library to.
             fail_if_exists: If True, raise FileExistsError if file already exists.
+            variant: Variant to extract (defaults to platform's default variant).
 
         Returns:
             Path to the extracted library file.
@@ -204,23 +210,31 @@ class BundleLoader:
             if not platform_info:
                 raise PluginException(f"Platform not supported: {current_platform}")
 
+            # Get effective variant
+            effective_variant = variant or platform_info.get_default_variant()
+
+            # Get library path and checksum for the variant
+            library_path = platform_info.get_library(effective_variant)
+            checksum = platform_info.get_checksum(effective_variant)
+
+            if not library_path:
+                raise PluginException(
+                    f"Variant '{effective_variant}' not found for platform '{current_platform}'"
+                )
+
             # Read library data
-            lib_data = self._read_zip_entry(zip_file, platform_info.library)
+            lib_data = self._read_zip_entry(zip_file, library_path)
 
             # Verify checksum
-            if not self._verify_checksum(lib_data, platform_info.checksum):
-                raise PluginException(
-                    f"Checksum verification failed for {platform_info.library}"
-                )
+            if not self._verify_checksum(lib_data, checksum):
+                raise PluginException(f"Checksum verification failed for {library_path}")
 
             # Verify library signature if enabled
             if self._verify_signatures:
-                self._verify_library_signature(
-                    zip_file, manifest, platform_info.library, lib_data
-                )
+                self._verify_library_signature(zip_file, manifest, library_path, lib_data)
 
             # Determine output path
-            lib_filename = Path(platform_info.library).name
+            lib_filename = Path(library_path).name
             output_path = dest_dir / lib_filename
 
             # Check if file already exists when user specifies path
@@ -245,6 +259,91 @@ class BundleLoader:
                 )
 
             return output_path
+
+    def extract_library_variant(
+        self,
+        bundle_path: str | Path,
+        dest_dir: str | Path,
+        variant: str,
+    ) -> Path:
+        """
+        Extract a specific variant of the library from bundle to the specified directory.
+
+        This method will fail if the library file already exists at the target path.
+
+        Args:
+            bundle_path: Path to the .rbp bundle file.
+            dest_dir: Directory to extract the library to.
+            variant: Variant name (e.g., "release", "debug").
+
+        Returns:
+            Path to the extracted library file.
+
+        Raises:
+            PluginException: If extraction or verification fails, or variant not found.
+            FileExistsError: If the library file already exists at the target path.
+        """
+        bundle_path = Path(bundle_path)
+        dest_dir = Path(dest_dir)
+
+        if not bundle_path.exists():
+            raise FileNotFoundError(f"Bundle not found: {bundle_path}")
+
+        return self._extract_library_internal(
+            bundle_path, dest_dir, fail_if_exists=True, variant=variant
+        )
+
+    def list_variants(self, bundle_path: str | Path, platform: str | None = None) -> list[str]:
+        """
+        List available variants for a platform.
+
+        Args:
+            bundle_path: Path to the .rbp bundle file.
+            platform: Platform string (e.g., "linux-x86_64"). Defaults to current platform.
+
+        Returns:
+            List of available variant names.
+
+        Raises:
+            PluginException: If platform is not supported.
+        """
+        manifest = self.get_manifest(bundle_path)
+        platform = platform or self.get_current_platform()
+        platform_info = manifest.get_platform(platform)
+        if not platform_info:
+            raise PluginException(f"Platform not supported: {platform}")
+        return platform_info.list_variants()
+
+    def get_default_variant(self, bundle_path: str | Path, platform: str | None = None) -> str:
+        """
+        Get the default variant for a platform.
+
+        Args:
+            bundle_path: Path to the .rbp bundle file.
+            platform: Platform string (e.g., "linux-x86_64"). Defaults to current platform.
+
+        Returns:
+            Default variant name (typically "release").
+        """
+        manifest = self.get_manifest(bundle_path)
+        platform = platform or self.get_current_platform()
+        platform_info = manifest.get_platform(platform)
+        if not platform_info:
+            return "release"
+        return platform_info.get_default_variant()
+
+    def get_build_info(self, bundle_path: str | Path) -> BuildInfo | None:
+        """
+        Get build info from the manifest (v2.0+ bundles only).
+
+        Args:
+            bundle_path: Path to the .rbp bundle file.
+
+        Returns:
+            BuildInfo if present, None otherwise.
+        """
+        manifest = self.get_manifest(bundle_path)
+        return manifest.build_info
 
     def get_manifest(self, bundle_path: str | Path) -> BundleManifest:
         """

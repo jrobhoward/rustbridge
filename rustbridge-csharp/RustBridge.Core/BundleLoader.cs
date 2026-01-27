@@ -87,6 +87,7 @@ public sealed class BundleLoader : IDisposable
     /// ensuring no conflicts with other extractions. The caller is responsible for cleaning
     /// up the temporary directory when done.
     /// </para>
+    /// <para>Uses the default variant (typically "release").</para>
     /// </summary>
     /// <returns>Path to the extracted library.</returns>
     /// <exception cref="IOException">If extraction fails.</exception>
@@ -96,7 +97,9 @@ public sealed class BundleLoader : IDisposable
         // Create unique temp directory under system temp path
         var tempDir = Path.Combine(Path.GetTempPath(), "rustbridge-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(tempDir);
-        return ExtractLibraryInternal(DetectPlatform(), tempDir, failIfExists: false);
+        var platform = DetectPlatform();
+        var variant = GetDefaultVariant(platform);
+        return ExtractLibraryInternal(platform, variant, tempDir, failIfExists: false);
     }
 
     /// <summary>
@@ -106,6 +109,7 @@ public sealed class BundleLoader : IDisposable
     /// This prevents accidental overwrites and ensures the caller has explicit control
     /// over file lifecycle.
     /// </para>
+    /// <para>Uses the default variant (typically "release").</para>
     /// </summary>
     /// <param name="outputDir">Directory to extract the library to.</param>
     /// <returns>Path to the extracted library.</returns>
@@ -124,6 +128,7 @@ public sealed class BundleLoader : IDisposable
     /// This prevents accidental overwrites and ensures the caller has explicit control
     /// over file lifecycle.
     /// </para>
+    /// <para>Uses the default variant (typically "release").</para>
     /// </summary>
     /// <param name="platform">Platform string (e.g., "linux-x86_64").</param>
     /// <param name="outputDir">Directory to extract the library to.</param>
@@ -132,38 +137,99 @@ public sealed class BundleLoader : IDisposable
     /// <exception cref="CryptographicException">If signature verification fails (when enabled).</exception>
     public string ExtractLibrary(string platform, string outputDir)
     {
-        return ExtractLibraryInternal(platform, outputDir, failIfExists: true);
+        var variant = GetDefaultVariant(platform);
+        return ExtractLibraryInternal(platform, variant, outputDir, failIfExists: true);
     }
+
+    /// <summary>
+    /// Extract a specific variant of the library for a platform to the specified directory.
+    /// <para>
+    /// This method will fail if the library file already exists at the target path.
+    /// </para>
+    /// </summary>
+    /// <param name="platform">Platform string (e.g., "linux-x86_64").</param>
+    /// <param name="variant">Variant name (e.g., "release", "debug").</param>
+    /// <param name="outputDir">Directory to extract the library to.</param>
+    /// <returns>Path to the extracted library.</returns>
+    /// <exception cref="IOException">If extraction fails, file already exists, or variant not found.</exception>
+    /// <exception cref="CryptographicException">If signature verification fails (when enabled).</exception>
+    public string ExtractLibrary(string platform, string variant, string outputDir)
+    {
+        return ExtractLibraryInternal(platform, variant, outputDir, failIfExists: true);
+    }
+
+    /// <summary>
+    /// Get the default variant for a platform.
+    /// </summary>
+    /// <param name="platform">Platform string (e.g., "linux-x86_64").</param>
+    /// <returns>Default variant name (typically "release").</returns>
+    public string GetDefaultVariant(string platform)
+    {
+        if (Manifest.Platforms == null || !Manifest.Platforms.TryGetValue(platform, out var platformInfo))
+        {
+            return "release";
+        }
+        return platformInfo.GetDefaultVariant();
+    }
+
+    /// <summary>
+    /// List available variants for a platform.
+    /// </summary>
+    /// <param name="platform">Platform string (e.g., "linux-x86_64").</param>
+    /// <returns>List of available variant names.</returns>
+    /// <exception cref="IOException">If platform is not supported.</exception>
+    public IReadOnlyList<string> ListVariants(string platform)
+    {
+        if (Manifest.Platforms == null || !Manifest.Platforms.TryGetValue(platform, out var platformInfo))
+        {
+            throw new IOException($"Platform not supported: {platform}");
+        }
+        return platformInfo.ListVariants();
+    }
+
+    /// <summary>
+    /// Get build info from the manifest (v2.0+ bundles only).
+    /// </summary>
+    public BundleManifest.BuildInfo? BuildInfo => Manifest.BuildInfoData;
 
     /// <summary>
     /// Internal method to extract the library with configurable overwrite behavior.
     /// </summary>
-    private string ExtractLibraryInternal(string platform, string outputDir, bool failIfExists)
+    private string ExtractLibraryInternal(string platform, string variant, string outputDir, bool failIfExists)
     {
         if (Manifest.Platforms == null || !Manifest.Platforms.TryGetValue(platform, out var platformInfo))
         {
             throw new IOException($"Platform not supported: {platform}");
         }
 
-        var libEntry = _zipArchive.GetEntry(platformInfo.Library)
-            ?? throw new IOException($"Library not found in bundle: {platformInfo.Library}");
+        // Get library path and checksum for the requested variant
+        var libraryPath = platformInfo.GetLibrary(variant);
+        var checksum = platformInfo.GetChecksum(variant);
+
+        if (string.IsNullOrEmpty(libraryPath))
+        {
+            throw new IOException($"Variant '{variant}' not found for platform '{platform}'");
+        }
+
+        var libEntry = _zipArchive.GetEntry(libraryPath)
+            ?? throw new IOException($"Library not found in bundle: {libraryPath}");
 
         var libData = ReadZipEntry(libEntry);
 
         // Verify checksum
-        if (!VerifyChecksum(libData, platformInfo.Checksum))
+        if (!VerifyChecksum(libData, checksum))
         {
-            throw new IOException($"Checksum verification failed for {platformInfo.Library}");
+            throw new IOException($"Checksum verification failed for {libraryPath}");
         }
 
         // Verify signature if enabled
         if (_verifySignatures)
         {
-            VerifyLibrarySignature(platformInfo.Library, libData);
+            VerifyLibrarySignature(libraryPath, libData);
         }
 
         // Determine output path
-        var fileName = Path.GetFileName(platformInfo.Library);
+        var fileName = Path.GetFileName(libraryPath);
         var outputPath = Path.Combine(outputDir, fileName);
 
         // Check if file already exists when user specifies path
