@@ -435,7 +435,7 @@ Python          █████████████████████�
 | Binary-heavy workload | JNI | 13% faster | **22% faster** ⭐ |
 | JSON-heavy workload | FFM | 46% faster | 40% faster |
 | Mixed workload | FFM | Better balance | Better balance |
-| Java 8-20 compatibility | JNI | Only option | Only option |
+| Java 17-20 compatibility | JNI | Only option | Only option |
 | Future-proofing | FFM | Modern API | Modern API, Linux faster ⭐ |
 
 ### Java FFM: Which Binary Method?

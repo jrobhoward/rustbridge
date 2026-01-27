@@ -126,8 +126,8 @@ This document tracks incomplete tasks and priorities for the rustbridge project.
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| Include JNI bridge in .rbp bundle | Medium | Bundle `librustbridge_jni.so` in `.rbp` file so Java 8-17 users don't need to build it separately |
-| JNI native implementation | Low | FFM is preferred, JNI for legacy Java 8-17 compatibility only |
+| Include JNI bridge in .rbp bundle | Medium | Bundle `librustbridge_jni.so` in `.rbp` file so Java 17-20 users don't need to build it separately |
+| JNI native implementation | Low | FFM is preferred, JNI for legacy Java 17-20 compatibility only |
 
 ---
 

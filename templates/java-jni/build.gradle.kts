@@ -16,7 +16,7 @@ repositories {
 }
 
 dependencies {
-    // rustbridge dependencies (JNI for Java 8+ compatibility)
+    // rustbridge dependencies (JNI for Java 17+ compatibility)
     implementation("com.rustbridge:rustbridge-core:0.1.0")
     implementation("com.rustbridge:rustbridge-jni:0.1.0")
 
@@ -28,7 +28,7 @@ dependencies {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))  // JNI works with Java 8+; 17 is LTS
+        languageVersion.set(JavaLanguageVersion.of(17))  // JNI requires Java 17+ (LTS)
     }
 }
 

@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * JNI-based plugin implementation for Java 8+ compatibility.
+ * JNI-based plugin implementation for Java 17+ compatibility.
  * <p>
  * This implementation uses JNI to call native plugin functions.
  * Use this when FFM (Java 21+) is not available.

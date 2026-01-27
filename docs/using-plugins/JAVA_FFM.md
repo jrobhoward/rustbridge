@@ -330,7 +330,7 @@ public class CalculatorExample {
 
 ## Related Documentation
 
-- [JAVA_JNI.md](./JAVA_JNI.md) - Java 8+ JNI guide (legacy support)
+- [JAVA_JNI.md](./JAVA_JNI.md) - Java 17+ JNI guide (legacy support)
 - [KOTLIN.md](./KOTLIN.md) - Kotlin-specific guide
 - [../TRANSPORT.md](../TRANSPORT.md) - Transport layer details
 - [../MEMORY_MODEL.md](../MEMORY_MODEL.md) - Memory ownership

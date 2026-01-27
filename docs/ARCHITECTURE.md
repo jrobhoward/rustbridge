@@ -433,7 +433,7 @@ flowchart TB
         NB[NativeBindings]
     end
 
-    subgraph JNI["JNI (Java 8+)"]
+    subgraph JNI["JNI (Java 17+)"]
         JL[JniPluginLoader]
         JP[JniPlugin]
         NC[Native C Code]

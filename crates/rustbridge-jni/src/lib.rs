@@ -1,7 +1,7 @@
 //! rustbridge-jni - JNI bindings for rustbridge
 //!
 //! This crate provides JNI (Java Native Interface) bindings for rustbridge,
-//! enabling Java 8+ applications to load and interact with rustbridge plugins.
+//! enabling Java 17+ applications to load and interact with rustbridge plugins.
 //!
 //! # Architecture
 //!

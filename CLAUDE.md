@@ -43,7 +43,7 @@ Host Language → FFI Boundary → Async Runtime → Plugin Implementation → R
 **Layered crate structure:**
 - **Core** (`rustbridge-core`, `rustbridge-transport`): Traits, types, serialization
 - **Runtime** (`rustbridge-runtime`, `rustbridge-logging`): Tokio integration, tracing callbacks
-- **FFI** (`rustbridge-ffi`, `rustbridge-jni`): C ABI exports, buffer management, JNI bridge for Java 8+
+- **FFI** (`rustbridge-ffi`, `rustbridge-jni`): C ABI exports, buffer management, JNI bridge for Java 17+
 - **Tooling** (`rustbridge-macros`, `rustbridge-cli`, `rustbridge-bundle`): Code generation, build tools, `.rbp` packaging
 
 Memory follows "Rust allocates, host frees" pattern. See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for details.
@@ -92,7 +92,7 @@ All FFI functions must:
 The `rustbridge-java/` directory contains:
 - `rustbridge-core`: Core Java interfaces
 - `rustbridge-ffm`: FFM implementation (Java 21+, recommended)
-- `rustbridge-jni`: JNI implementation (Java 8+, fallback)
+- `rustbridge-jni`: JNI implementation (Java 17+, fallback)
 
 ## C# Integration
 

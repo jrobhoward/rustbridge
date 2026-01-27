@@ -13,7 +13,7 @@ interoperability and provide idiomatic examples showing best practices.
 
 1. **Java interop is excellent**: Kotlin can use Java APIs seamlessly
 2. **Single codebase**: Less maintenance burden
-3. **Compatibility**: Java 8+ users don't need Kotlin runtime
+3. **Compatibility**: Java 17+ users don't need Kotlin runtime
 4. **Simplicity**: No need to maintain parallel implementations
 
 ### Why Kotlin Examples?
@@ -28,7 +28,7 @@ interoperability and provide idiomatic examples showing best practices.
 ### For Java Users
 
 - Pure Java API (no Kotlin dependencies)
-- Works with Java 8+ (JNI) or Java 21+ (FFM)
+- Works with Java 17+ (JNI) or Java 21+ (FFM)
 - Traditional try-catch-finally patterns
 - Builder pattern for configuration
 

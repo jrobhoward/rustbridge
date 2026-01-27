@@ -453,7 +453,7 @@ Prefer Project Panama FFM for Java 21+:
 - Arena-based memory management
 - Better performance than JNI
 
-### JNI (Java 8+)
+### JNI (Java 17+)
 
 JNI fallback for older JVM compatibility:
 - More complex but widely supported

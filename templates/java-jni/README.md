@@ -1,12 +1,12 @@
 # rustbridge Java JNI Consumer Template
 
-A minimal Java 8+ project template for consuming rustbridge plugins using JNI.
+A minimal Java 17+ project template for consuming rustbridge plugins using JNI.
 
 > **Note:** For Java 21+, prefer the FFM template which has better performance for JSON workloads.
 
 ## Prerequisites
 
-- **Java 8+** - JNI works with any Java version
+- **Java 17+** - JNI requires Java 17 or later (LTS)
 - **Gradle 8.0+** - Build tool
 - **A rustbridge plugin** - Your `.rbp` bundle file
 - **JNI bridge library** - Built from rustbridge

@@ -1,10 +1,10 @@
-# Getting Started: Java 8+ (JNI)
+# Getting Started: Java 17+ (JNI)
 
-This guide walks you through using rustbridge plugins from Java 8+ using Java Native Interface (JNI). Use this for compatibility with older Java versions; prefer FFM for Java 21+.
+This guide walks you through using rustbridge plugins from Java 17+ using Java Native Interface (JNI). Use this for compatibility with Java 17-20; prefer FFM for Java 21+.
 
 ## Prerequisites
 
-- **Java 8 or later** - JNI works with any Java version
+- **Java 17 or later** - JNI requires Java 17+ (LTS)
   ```bash
   java -version  # Should be >= 8
   ```
@@ -280,14 +280,13 @@ try {
 }
 ```
 
-## Java 8 Compatibility Notes
+## Java Version Notes
 
-- Use `new LogCallback() { ... }` instead of lambdas if targeting Java 7
-- Text blocks (`"""..."""`) require Java 15+; use string concatenation for older versions
-- Records require Java 16+; use classes with getters/setters for older versions
+- Text blocks (`"""..."""`) require Java 15+; use string concatenation for older syntax
+- Records require Java 16+; use classes with getters/setters for Java 17 compatibility
 
 ```java
-// Java 8 compatible
+// Works with Java 17+
 String request = "{\"message\": \"Hello\"}";
 String response = plugin.call("echo", request);
 ```

@@ -7,7 +7,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 
 /**
- * Loader for rustbridge plugins using JNI (Java 8+ compatible).
+ * Loader for rustbridge plugins using JNI (Java 17+ compatible).
  * <p>
  * This loader uses JNI to load and interact with native plugins.
  * For Java 21+, consider using {@code FfmPluginLoader} instead for

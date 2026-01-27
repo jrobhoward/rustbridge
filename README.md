@@ -30,7 +30,7 @@ See [docs/BUNDLE_FORMAT.md](./docs/BUNDLE_FORMAT.md) for the complete specificat
 
 ## Overview
 
-rustbridge lowers the barrier for creating Rust plugins that can be loaded and called from Java, C#, Python, Go, and other languages. Instead of manually managing FFI complexity, you implement a simple `Plugin` trait and rustbridge handles:
+rustbridge lowers the barrier for creating Rust plugins that can be loaded and called from Java, C#, Python, and other languages. Instead of manually managing FFI complexity, you implement a simple `Plugin` trait and rustbridge handles:
 
 - **Memory management**: Safe buffer allocation and deallocation across FFI boundary
 - **Async runtime**: Tokio runtime included in every plugin
@@ -41,7 +41,7 @@ rustbridge lowers the barrier for creating Rust plugins that can be loaded and c
 ## Features
 
 - **Cross-language interoperability**: Call Rust code from Java, Kotlin, C#, Python, and more
-- **Multiple JVM implementations**: FFM for Java 21+ (modern, fast) and JNI for Java 8+ (compatibility)
+- **Multiple JVM implementations**: FFM for Java 21+ (modern, fast) and JNI for Java 17+ (compatibility)
 - **Kotlin-friendly**: Idiomatic Kotlin usage with data classes, extension functions, and type-safe DSL
 - **JSON-based transport**: Simple, universal data serialization
 - **OSGI-inspired lifecycle**: Structured plugin startup and shutdown
@@ -66,7 +66,7 @@ rustbridge/
 ├── rustbridge-java/              # Java/Kotlin bindings
 │   ├── rustbridge-core/          # Core interfaces
 │   ├── rustbridge-ffm/           # FFM implementation (Java 21+)
-│   └── rustbridge-jni/           # JNI fallback (Java 8+)
+│   └── rustbridge-jni/           # JNI fallback (Java 17+)
 ├── examples/
 │   ├── hello-plugin/             # Example Rust plugin
 │   └── kotlin-examples/          # Kotlin usage examples
@@ -158,7 +158,7 @@ try (Plugin plugin = FfmPluginLoader.load("libmyplugin.so")) {
 }
 ```
 
-### Using from Java (JNI, Java 8+)
+### Using from Java (JNI, Java 17+)
 
 ```java
 import com.rustbridge.jni.JniPluginLoader;
@@ -401,7 +401,7 @@ Errors are represented with stable numeric codes:
 
 | Language | Status | Implementation |
 |----------|--------|---------------|
-| Java/Kotlin | Tier 1 | FFM (Java 21+) + JNI (Java 8+) |
+| Java/Kotlin | Tier 1 | FFM (Java 21+) + JNI (Java 17+) |
 | C# | Tier 2 | P/Invoke |
 | Python | Tier 2 | ctypes/cffi |
 
@@ -409,11 +409,11 @@ Errors are represented with stable numeric codes:
 
 ### Getting Started
 - [docs/GETTING_STARTED.md](./docs/GETTING_STARTED.md) - Tutorial for creating your first plugin
-- [docs/getting-started/JAVA_FFM.md](./docs/getting-started/JAVA_FFM.md) - Java 21+ FFM guide
-- [docs/getting-started/JAVA_JNI.md](./docs/getting-started/JAVA_JNI.md) - Java 8+ JNI guide
-- [docs/getting-started/KOTLIN.md](./docs/getting-started/KOTLIN.md) - Kotlin guide
-- [docs/getting-started/CSHARP.md](./docs/getting-started/CSHARP.md) - C# guide
-- [docs/getting-started/PYTHON.md](./docs/getting-started/PYTHON.md) - Python guide
+- [docs/using-plugins/JAVA_FFM.md](./docs/using-plugins/JAVA_FFM.md) - Java 21+ FFM guide
+- [docs/using-plugins/JAVA_JNI.md](./docs/using-plugins/JAVA_JNI.md) - Java 17+ JNI guide
+- [docs/using-plugins/KOTLIN.md](./docs/using-plugins/KOTLIN.md) - Kotlin guide
+- [docs/using-plugins/CSHARP.md](./docs/using-plugins/CSHARP.md) - C# guide
+- [docs/using-plugins/PYTHON.md](./docs/using-plugins/PYTHON.md) - Python guide
 
 ### Architecture & Design
 - [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) - System architecture and design decisions

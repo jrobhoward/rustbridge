@@ -111,7 +111,7 @@ try (Arena arena = Arena.ofConfined()) {
 // Arena cleanup happens here
 ```
 
-### Java JNI (Java 8+)
+### Java JNI (Java 17+)
 
 JNI uses explicit memory management with reference tracking.
 

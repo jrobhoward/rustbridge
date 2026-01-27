@@ -161,7 +161,7 @@ cp ~/rustbridge-workspace/my-plugin/my-plugin-1.0.0.rbp .
 ./gradlew run
 ```
 
-> Uses the Foreign Function & Memory (FFM) API. For Java 8-17, see [Java JNI](#java-jni---java-8-17) below.
+> Uses the Foreign Function & Memory (FFM) API. For Java 17-20, see [Java JNI](#java-jni---java-17-20) below.
 
 ### C#
 
@@ -190,7 +190,7 @@ pip install -e ~/rustbridge-workspace/rustbridge/rustbridge-python
 python main.py
 ```
 
-### Java (JNI) - Java 8-17
+### Java (JNI) - Java 17-20
 
 > **Note**: JNI is provided for legacy Java compatibility (8-17). If you're using Java 21+, prefer the [FFM approach](#java---java-21-recommended) above—it's simpler and doesn't require building a separate bridge library.
 
@@ -257,7 +257,7 @@ All templates are in the `templates/` directory:
 | `templates/plugin` | Rust plugin starter | Rust 1.85+ |
 | `templates/kotlin` | Kotlin consumer | Java 21+ |
 | `templates/java-ffm` | Java FFM consumer (recommended) | Java 21+ |
-| `templates/java-jni` | Java JNI consumer (legacy) | Java 8+ |
+| `templates/java-jni` | Java JNI consumer (legacy) | Java 17+ |
 | `templates/csharp` | C# consumer | .NET 6.0+ |
 | `templates/python` | Python consumer | Python 3.9+ |
 

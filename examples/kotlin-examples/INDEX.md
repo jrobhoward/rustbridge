@@ -148,7 +148,7 @@ No! Use the Java API directly. These examples are optional.
 Yes! Copy and modify freely (MIT/Apache-2.0 license).
 
 **Q: Should I use FFM or JNI?**
-FFM (Java 21+) is preferred. JNI (Java 8+) for compatibility.
+FFM (Java 21+) is preferred. JNI (Java 17+) for compatibility with Java 17-20.
 
 **Q: Where's the Kotlin wrapper library?**
 There isn't one - Kotlin uses the Java API directly via interop.
