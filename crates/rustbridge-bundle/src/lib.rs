@@ -48,7 +48,10 @@ pub mod loader;
 pub use builder::BundleBuilder;
 pub use error::BundleError;
 pub use loader::BundleLoader;
-pub use manifest::{ApiInfo, Manifest, MessageInfo, PlatformInfo, PluginInfo};
+pub use manifest::{
+    ApiInfo, BuildInfo, GitInfo, Manifest, MessageInfo, PlatformInfo, PluginInfo, Sbom, SchemaInfo,
+    VariantInfo,
+};
 pub use platform::Platform;
 
 /// Result type for bundle operations.

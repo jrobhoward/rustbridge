@@ -1,7 +1,8 @@
 //! Manifest schema for plugin bundles.
 //!
 //! The manifest describes the plugin metadata, supported platforms,
-//! and available API messages.
+//! and available API messages. Supports multi-variant builds (release, debug, etc.)
+//! with the `release` variant being mandatory and the implicit default.
 
 use crate::{BUNDLE_VERSION, BundleError, BundleResult, Platform};
 use serde::{Deserialize, Serialize};
@@ -21,6 +22,24 @@ pub struct Manifest {
     /// Platform-specific library information.
     /// Key is the platform string (e.g., "linux-x86_64").
     pub platforms: HashMap<String, PlatformInfo>,
+
+    /// Build information (optional).
+    /// Contains metadata about when/how the bundle was built.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub build_info: Option<BuildInfo>,
+
+    /// SBOM (Software Bill of Materials) paths.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sbom: Option<Sbom>,
+
+    /// Combined checksum of all schema files.
+    /// Used to verify schema compatibility when combining bundles.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub schema_checksum: Option<String>,
+
+    /// Path to license notices file within the bundle.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub notices: Option<String>,
 
     /// API information (optional).
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -62,14 +81,182 @@ pub struct PluginInfo {
     pub repository: Option<String>,
 }
 
-/// Platform-specific library information.
+/// Platform-specific library information with variant support.
+///
+/// Each platform must have at least a `release` variant.
+/// The `release` variant is the implicit default when no variant is specified.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlatformInfo {
+    /// Available variants for this platform.
+    /// Must contain at least `release` (mandatory).
+    pub variants: HashMap<String, VariantInfo>,
+}
+
+impl PlatformInfo {
+    /// Create new platform info with a single release variant.
+    pub fn new(library: String, checksum: String) -> Self {
+        let mut variants = HashMap::new();
+        variants.insert(
+            "release".to_string(),
+            VariantInfo {
+                library,
+                checksum,
+                build: None,
+            },
+        );
+        Self { variants }
+    }
+
+    /// Get the release variant (always present after validation).
+    #[must_use]
+    pub fn release(&self) -> Option<&VariantInfo> {
+        self.variants.get("release")
+    }
+
+    /// Get a specific variant by name.
+    #[must_use]
+    pub fn variant(&self, name: &str) -> Option<&VariantInfo> {
+        self.variants.get(name)
+    }
+
+    /// Get the default variant (release).
+    #[must_use]
+    pub fn default_variant(&self) -> Option<&VariantInfo> {
+        self.release()
+    }
+
+    /// List all available variant names.
+    #[must_use]
+    pub fn variant_names(&self) -> Vec<&str> {
+        self.variants.keys().map(String::as_str).collect()
+    }
+
+    /// Check if a variant exists.
+    #[must_use]
+    pub fn has_variant(&self, name: &str) -> bool {
+        self.variants.contains_key(name)
+    }
+
+    /// Add a variant to this platform.
+    pub fn add_variant(&mut self, name: String, info: VariantInfo) {
+        self.variants.insert(name, info);
+    }
+}
+
+/// Variant-specific library information.
+///
+/// Each variant represents a different build configuration (release, debug, etc.)
+/// of the same plugin for a specific platform.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VariantInfo {
     /// Relative path to the library within the bundle.
+    /// Example: "lib/linux-x86_64/release/libplugin.so"
     pub library: String,
 
     /// SHA256 checksum of the library file.
+    /// Format: "sha256:hexstring"
     pub checksum: String,
+
+    /// Flexible build metadata - any JSON object.
+    /// This can contain toolchain-specific fields like:
+    /// - `profile`: "release" or "debug"
+    /// - `opt_level`: "0", "1", "2", "3", "s", "z"
+    /// - `features`: ["json", "binary"]
+    /// - `cflags`: "-O3 -march=native" (for C/C++)
+    /// - `go_tags`: ["production"] (for Go)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub build: Option<serde_json::Value>,
+}
+
+/// Build information (all fields optional).
+///
+/// Contains metadata about when and how the bundle was built.
+/// Useful for traceability and debugging but not required.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct BuildInfo {
+    /// Who/what built this bundle (e.g., "GitHub Actions", "local")
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub built_by: Option<String>,
+
+    /// When the bundle was built (ISO 8601 timestamp).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub built_at: Option<String>,
+
+    /// Host triple where the build ran.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub host: Option<String>,
+
+    /// Compiler version used.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub compiler: Option<String>,
+
+    /// rustbridge version used to create the bundle.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rustbridge_version: Option<String>,
+
+    /// Git repository information (optional).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub git: Option<GitInfo>,
+}
+
+/// Git repository information.
+///
+/// All fields except `commit` are optional. This section is only
+/// present if the project uses git.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GitInfo {
+    /// Full commit hash (required if git section present).
+    pub commit: String,
+
+    /// Branch name.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub branch: Option<String>,
+
+    /// Git tag (if on a tagged commit).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tag: Option<String>,
+
+    /// Whether the working tree had uncommitted changes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dirty: Option<bool>,
+}
+
+/// SBOM (Software Bill of Materials) paths.
+///
+/// Points to SBOM files within the bundle. Both CycloneDX and SPDX
+/// formats are supported and can be included simultaneously.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Sbom {
+    /// Path to CycloneDX SBOM file (e.g., "sbom/sbom.cdx.json").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cyclonedx: Option<String>,
+
+    /// Path to SPDX SBOM file (e.g., "sbom/sbom.spdx.json").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spdx: Option<String>,
+}
+
+/// Check if a variant name is valid.
+///
+/// Valid variant names are lowercase alphanumeric with hyphens.
+/// Examples: "release", "debug", "nightly", "opt-size"
+fn is_valid_variant_name(name: &str) -> bool {
+    if name.is_empty() {
+        return false;
+    }
+
+    // Must start and end with alphanumeric
+    let chars: Vec<char> = name.chars().collect();
+    if !chars[0].is_ascii_lowercase() && !chars[0].is_ascii_digit() {
+        return false;
+    }
+    if !chars[chars.len() - 1].is_ascii_lowercase() && !chars[chars.len() - 1].is_ascii_digit() {
+        return false;
+    }
+
+    // All characters must be lowercase alphanumeric or hyphen
+    name.chars()
+        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
 }
 
 /// Schema file information.
@@ -151,19 +338,68 @@ impl Manifest {
                 repository: None,
             },
             platforms: HashMap::new(),
+            build_info: None,
+            sbom: None,
+            schema_checksum: None,
+            notices: None,
             api: None,
             public_key: None,
             schemas: HashMap::new(),
         }
     }
 
-    /// Add a platform to the manifest.
+    /// Add a platform with a release variant to the manifest.
+    ///
+    /// This is a convenience method that adds the library as the `release` variant.
+    /// For multiple variants, use `add_platform_variant` instead.
     pub fn add_platform(&mut self, platform: Platform, library_path: &str, checksum: &str) {
-        self.platforms.insert(
-            platform.as_str().to_string(),
-            PlatformInfo {
+        let platform_key = platform.as_str().to_string();
+
+        if let Some(platform_info) = self.platforms.get_mut(&platform_key) {
+            // Platform exists, add/update release variant
+            platform_info.variants.insert(
+                "release".to_string(),
+                VariantInfo {
+                    library: library_path.to_string(),
+                    checksum: format!("sha256:{checksum}"),
+                    build: None,
+                },
+            );
+        } else {
+            // New platform
+            self.platforms.insert(
+                platform_key,
+                PlatformInfo::new(library_path.to_string(), format!("sha256:{checksum}")),
+            );
+        }
+    }
+
+    /// Add a specific variant to a platform.
+    ///
+    /// If the platform doesn't exist, it will be created.
+    pub fn add_platform_variant(
+        &mut self,
+        platform: Platform,
+        variant: &str,
+        library_path: &str,
+        checksum: &str,
+        build: Option<serde_json::Value>,
+    ) {
+        let platform_key = platform.as_str().to_string();
+
+        let platform_info = self
+            .platforms
+            .entry(platform_key)
+            .or_insert_with(|| PlatformInfo {
+                variants: HashMap::new(),
+            });
+
+        platform_info.variants.insert(
+            variant.to_string(),
+            VariantInfo {
                 library: library_path.to_string(),
                 checksum: format!("sha256:{checksum}"),
+                build,
             },
         );
     }
@@ -191,6 +427,75 @@ impl Manifest {
                 description,
             },
         );
+    }
+
+    /// Set the build information.
+    pub fn set_build_info(&mut self, build_info: BuildInfo) {
+        self.build_info = Some(build_info);
+    }
+
+    /// Get the build information.
+    #[must_use]
+    pub fn get_build_info(&self) -> Option<&BuildInfo> {
+        self.build_info.as_ref()
+    }
+
+    /// Set the SBOM paths.
+    pub fn set_sbom(&mut self, sbom: Sbom) {
+        self.sbom = Some(sbom);
+    }
+
+    /// Get the SBOM paths.
+    #[must_use]
+    pub fn get_sbom(&self) -> Option<&Sbom> {
+        self.sbom.as_ref()
+    }
+
+    /// Set the schema checksum for bundle combining validation.
+    pub fn set_schema_checksum(&mut self, checksum: String) {
+        self.schema_checksum = Some(checksum);
+    }
+
+    /// Get the schema checksum.
+    #[must_use]
+    pub fn get_schema_checksum(&self) -> Option<&str> {
+        self.schema_checksum.as_deref()
+    }
+
+    /// Set the notices file path.
+    pub fn set_notices(&mut self, path: String) {
+        self.notices = Some(path);
+    }
+
+    /// Get the notices file path.
+    #[must_use]
+    pub fn get_notices(&self) -> Option<&str> {
+        self.notices.as_deref()
+    }
+
+    /// Get a specific variant for a platform.
+    ///
+    /// Returns the release variant if `variant` is None.
+    #[must_use]
+    pub fn get_variant(&self, platform: Platform, variant: Option<&str>) -> Option<&VariantInfo> {
+        let platform_info = self.platforms.get(platform.as_str())?;
+        let variant_name = variant.unwrap_or("release");
+        platform_info.variants.get(variant_name)
+    }
+
+    /// Get the release variant for a platform (default).
+    #[must_use]
+    pub fn get_release_variant(&self, platform: Platform) -> Option<&VariantInfo> {
+        self.get_variant(platform, Some("release"))
+    }
+
+    /// List all variants for a platform.
+    #[must_use]
+    pub fn list_variants(&self, platform: Platform) -> Vec<&str> {
+        self.platforms
+            .get(platform.as_str())
+            .map(|p| p.variant_names())
+            .unwrap_or_default()
     }
 
     /// Get platform info for a specific platform.
@@ -252,22 +557,47 @@ impl Manifest {
                 )));
             }
 
-            if info.library.is_empty() {
+            // Each platform must have at least one variant
+            if info.variants.is_empty() {
                 return Err(BundleError::InvalidManifest(format!(
-                    "platform {key}: library path is required"
+                    "platform {key}: at least one variant is required"
                 )));
             }
 
-            if info.checksum.is_empty() {
+            // Release variant is mandatory
+            if !info.variants.contains_key("release") {
                 return Err(BundleError::InvalidManifest(format!(
-                    "platform {key}: checksum is required"
+                    "platform {key}: 'release' variant is required"
                 )));
             }
 
-            if !info.checksum.starts_with("sha256:") {
-                return Err(BundleError::InvalidManifest(format!(
-                    "platform {key}: checksum must start with 'sha256:'"
-                )));
+            // Validate each variant
+            for (variant_name, variant_info) in &info.variants {
+                // Validate variant name (lowercase alphanumeric + hyphens)
+                if !is_valid_variant_name(variant_name) {
+                    return Err(BundleError::InvalidManifest(format!(
+                        "platform {key}: invalid variant name '{variant_name}' \
+                         (must be lowercase alphanumeric with hyphens)"
+                    )));
+                }
+
+                if variant_info.library.is_empty() {
+                    return Err(BundleError::InvalidManifest(format!(
+                        "platform {key}, variant {variant_name}: library path is required"
+                    )));
+                }
+
+                if variant_info.checksum.is_empty() {
+                    return Err(BundleError::InvalidManifest(format!(
+                        "platform {key}, variant {variant_name}: checksum is required"
+                    )));
+                }
+
+                if !variant_info.checksum.starts_with("sha256:") {
+                    return Err(BundleError::InvalidManifest(format!(
+                        "platform {key}, variant {variant_name}: checksum must start with 'sha256:'"
+                    )));
+                }
             }
         }
 
@@ -324,8 +654,9 @@ mod tests {
         assert!(!manifest.supports_platform(Platform::WindowsX86_64));
 
         let info = manifest.get_platform(Platform::LinuxX86_64).unwrap();
-        assert_eq!(info.library, "lib/linux-x86_64/libtest.so");
-        assert_eq!(info.checksum, "sha256:abc123");
+        let release = info.release().unwrap();
+        assert_eq!(release.library, "lib/linux-x86_64/libtest.so");
+        assert_eq!(release.checksum, "sha256:abc123");
     }
 
     #[test]
@@ -335,8 +666,9 @@ mod tests {
         manifest.add_platform(Platform::LinuxX86_64, "lib/new.so", "new");
 
         let info = manifest.get_platform(Platform::LinuxX86_64).unwrap();
-        assert_eq!(info.library, "lib/new.so");
-        assert_eq!(info.checksum, "sha256:new");
+        let release = info.release().unwrap();
+        assert_eq!(release.library, "lib/new.so");
+        assert_eq!(release.checksum, "sha256:new");
     }
 
     #[test]
@@ -374,14 +706,19 @@ mod tests {
     #[test]
     fn Manifest___validate___rejects_invalid_checksum_format() {
         let mut manifest = Manifest::new("test", "1.0.0");
-        // Manually insert platform with wrong checksum format
-        manifest.platforms.insert(
-            "linux-x86_64".to_string(),
-            PlatformInfo {
+        // Manually insert platform with wrong checksum format (no sha256: prefix)
+        let mut variants = HashMap::new();
+        variants.insert(
+            "release".to_string(),
+            VariantInfo {
                 library: "lib/test.so".to_string(),
                 checksum: "abc123".to_string(), // Missing "sha256:" prefix
+                build: None,
             },
         );
+        manifest
+            .platforms
+            .insert("linux-x86_64".to_string(), PlatformInfo { variants });
 
         let result = manifest.validate();
 
@@ -395,10 +732,7 @@ mod tests {
         // Manually insert invalid platform key
         manifest.platforms.insert(
             "invalid-platform".to_string(),
-            PlatformInfo {
-                library: "lib/test.so".to_string(),
-                checksum: "sha256:abc123".to_string(),
-            },
+            PlatformInfo::new("lib/test.so".to_string(), "sha256:abc123".to_string()),
         );
 
         let result = manifest.validate();
@@ -410,13 +744,18 @@ mod tests {
     #[test]
     fn Manifest___validate___rejects_empty_library_path() {
         let mut manifest = Manifest::new("test", "1.0.0");
-        manifest.platforms.insert(
-            "linux-x86_64".to_string(),
-            PlatformInfo {
+        let mut variants = HashMap::new();
+        variants.insert(
+            "release".to_string(),
+            VariantInfo {
                 library: "".to_string(),
                 checksum: "sha256:abc123".to_string(),
+                build: None,
             },
         );
+        manifest
+            .platforms
+            .insert("linux-x86_64".to_string(), PlatformInfo { variants });
 
         let result = manifest.validate();
 
@@ -432,13 +771,18 @@ mod tests {
     #[test]
     fn Manifest___validate___rejects_empty_checksum() {
         let mut manifest = Manifest::new("test", "1.0.0");
-        manifest.platforms.insert(
-            "linux-x86_64".to_string(),
-            PlatformInfo {
+        let mut variants = HashMap::new();
+        variants.insert(
+            "release".to_string(),
+            VariantInfo {
                 library: "lib/test.so".to_string(),
                 checksum: "".to_string(),
+                build: None,
             },
         );
+        manifest
+            .platforms
+            .insert("linux-x86_64".to_string(), PlatformInfo { variants });
 
         let result = manifest.validate();
 
@@ -448,6 +792,68 @@ mod tests {
                 .unwrap_err()
                 .to_string()
                 .contains("checksum is required")
+        );
+    }
+
+    #[test]
+    fn Manifest___validate___rejects_missing_release_variant() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        let mut variants = HashMap::new();
+        variants.insert(
+            "debug".to_string(), // Only debug, no release
+            VariantInfo {
+                library: "lib/test.so".to_string(),
+                checksum: "sha256:abc123".to_string(),
+                build: None,
+            },
+        );
+        manifest
+            .platforms
+            .insert("linux-x86_64".to_string(), PlatformInfo { variants });
+
+        let result = manifest.validate();
+
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("'release' variant is required")
+        );
+    }
+
+    #[test]
+    fn Manifest___validate___rejects_invalid_variant_name() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        let mut variants = HashMap::new();
+        variants.insert(
+            "release".to_string(),
+            VariantInfo {
+                library: "lib/test.so".to_string(),
+                checksum: "sha256:abc123".to_string(),
+                build: None,
+            },
+        );
+        variants.insert(
+            "INVALID".to_string(), // Uppercase is invalid
+            VariantInfo {
+                library: "lib/test.so".to_string(),
+                checksum: "sha256:abc123".to_string(),
+                build: None,
+            },
+        );
+        manifest
+            .platforms
+            .insert("linux-x86_64".to_string(), PlatformInfo { variants });
+
+        let result = manifest.validate();
+
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("invalid variant name")
         );
     }
 
@@ -629,5 +1035,182 @@ mod tests {
         assert_eq!(api.transports, vec!["json"]);
         assert!(api.messages.is_empty());
         assert!(api.min_rustbridge_version.is_none());
+    }
+
+    #[test]
+    fn BuildInfo___default___all_fields_none() {
+        let build_info = BuildInfo::default();
+
+        assert!(build_info.built_by.is_none());
+        assert!(build_info.built_at.is_none());
+        assert!(build_info.host.is_none());
+        assert!(build_info.compiler.is_none());
+        assert!(build_info.rustbridge_version.is_none());
+        assert!(build_info.git.is_none());
+    }
+
+    #[test]
+    fn Manifest___build_info___roundtrip() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+        manifest.set_build_info(BuildInfo {
+            built_by: Some("GitHub Actions".to_string()),
+            built_at: Some("2025-01-26T10:30:00Z".to_string()),
+            host: Some("x86_64-unknown-linux-gnu".to_string()),
+            compiler: Some("rustc 1.85.0".to_string()),
+            rustbridge_version: Some("0.2.0".to_string()),
+            git: Some(GitInfo {
+                commit: "abc123".to_string(),
+                branch: Some("main".to_string()),
+                tag: Some("v1.0.0".to_string()),
+                dirty: Some(false),
+            }),
+        });
+
+        let json = manifest.to_json().unwrap();
+        let parsed = Manifest::from_json(&json).unwrap();
+
+        let build_info = parsed.get_build_info().unwrap();
+        assert_eq!(build_info.built_by, Some("GitHub Actions".to_string()));
+        assert_eq!(build_info.compiler, Some("rustc 1.85.0".to_string()));
+
+        let git = build_info.git.as_ref().unwrap();
+        assert_eq!(git.commit, "abc123");
+        assert_eq!(git.branch, Some("main".to_string()));
+        assert_eq!(git.dirty, Some(false));
+    }
+
+    #[test]
+    fn Manifest___sbom___roundtrip() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+        manifest.set_sbom(Sbom {
+            cyclonedx: Some("sbom/sbom.cdx.json".to_string()),
+            spdx: Some("sbom/sbom.spdx.json".to_string()),
+        });
+
+        let json = manifest.to_json().unwrap();
+        let parsed = Manifest::from_json(&json).unwrap();
+
+        let sbom = parsed.get_sbom().unwrap();
+        assert_eq!(sbom.cyclonedx, Some("sbom/sbom.cdx.json".to_string()));
+        assert_eq!(sbom.spdx, Some("sbom/sbom.spdx.json".to_string()));
+    }
+
+    #[test]
+    fn Manifest___variants___roundtrip() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.add_platform_variant(
+            Platform::LinuxX86_64,
+            "release",
+            "lib/linux-x86_64/release/libtest.so",
+            "hash1",
+            Some(serde_json::json!({
+                "profile": "release",
+                "opt_level": "3"
+            })),
+        );
+        manifest.add_platform_variant(
+            Platform::LinuxX86_64,
+            "debug",
+            "lib/linux-x86_64/debug/libtest.so",
+            "hash2",
+            Some(serde_json::json!({
+                "profile": "debug",
+                "opt_level": "0"
+            })),
+        );
+
+        let json = manifest.to_json().unwrap();
+        let parsed = Manifest::from_json(&json).unwrap();
+
+        let variants = parsed.list_variants(Platform::LinuxX86_64);
+        assert_eq!(variants.len(), 2);
+        assert!(variants.contains(&"release"));
+        assert!(variants.contains(&"debug"));
+
+        let release = parsed
+            .get_variant(Platform::LinuxX86_64, Some("release"))
+            .unwrap();
+        assert_eq!(release.library, "lib/linux-x86_64/release/libtest.so");
+        assert_eq!(
+            release.build.as_ref().unwrap()["profile"],
+            serde_json::json!("release")
+        );
+    }
+
+    #[test]
+    fn Manifest___schema_checksum___roundtrip() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+        manifest.set_schema_checksum("sha256:abcdef123456".to_string());
+
+        let json = manifest.to_json().unwrap();
+        let parsed = Manifest::from_json(&json).unwrap();
+
+        assert_eq!(parsed.get_schema_checksum(), Some("sha256:abcdef123456"));
+    }
+
+    #[test]
+    fn Manifest___notices___roundtrip() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+        manifest.set_notices("docs/NOTICES.txt".to_string());
+
+        let json = manifest.to_json().unwrap();
+        let parsed = Manifest::from_json(&json).unwrap();
+
+        assert_eq!(parsed.get_notices(), Some("docs/NOTICES.txt"));
+    }
+
+    #[test]
+    fn is_valid_variant_name___accepts_valid_names() {
+        assert!(is_valid_variant_name("release"));
+        assert!(is_valid_variant_name("debug"));
+        assert!(is_valid_variant_name("nightly"));
+        assert!(is_valid_variant_name("opt-size"));
+        assert!(is_valid_variant_name("v1"));
+        assert!(is_valid_variant_name("build123"));
+    }
+
+    #[test]
+    fn is_valid_variant_name___rejects_invalid_names() {
+        assert!(!is_valid_variant_name("")); // Empty
+        assert!(!is_valid_variant_name("RELEASE")); // Uppercase
+        assert!(!is_valid_variant_name("Release")); // Mixed case
+        assert!(!is_valid_variant_name("-debug")); // Starts with hyphen
+        assert!(!is_valid_variant_name("debug-")); // Ends with hyphen
+        assert!(!is_valid_variant_name("debug build")); // Contains space
+        assert!(!is_valid_variant_name("debug_build")); // Contains underscore
+    }
+
+    #[test]
+    fn PlatformInfo___new___creates_release_variant() {
+        let platform_info =
+            PlatformInfo::new("lib/test.so".to_string(), "sha256:abc123".to_string());
+
+        assert!(platform_info.has_variant("release"));
+        let release = platform_info.release().unwrap();
+        assert_eq!(release.library, "lib/test.so");
+        assert_eq!(release.checksum, "sha256:abc123");
+    }
+
+    #[test]
+    fn PlatformInfo___variant_names___returns_all_variants() {
+        let mut platform_info =
+            PlatformInfo::new("lib/release.so".to_string(), "sha256:abc".to_string());
+        platform_info.add_variant(
+            "debug".to_string(),
+            VariantInfo {
+                library: "lib/debug.so".to_string(),
+                checksum: "sha256:def".to_string(),
+                build: None,
+            },
+        );
+
+        let names = platform_info.variant_names();
+        assert_eq!(names.len(), 2);
+        assert!(names.contains(&"release"));
+        assert!(names.contains(&"debug"));
     }
 }

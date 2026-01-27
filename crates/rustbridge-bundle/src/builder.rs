@@ -67,14 +67,81 @@ impl BundleBuilder {
         self
     }
 
-    /// Add a platform-specific library to the bundle.
+    /// Add a platform-specific library to the bundle as the release variant.
     ///
     /// This reads the library file, computes its SHA256 checksum,
     /// and updates the manifest with the platform information.
+    ///
+    /// This is a convenience method that adds the library as the `release` variant.
+    /// For other variants, use `add_library_variant` instead.
     pub fn add_library<P: AsRef<Path>>(
-        mut self,
+        self,
         platform: Platform,
         library_path: P,
+    ) -> BundleResult<Self> {
+        self.add_library_variant(platform, "release", library_path)
+    }
+
+    /// Add a variant-specific library to the bundle.
+    ///
+    /// This reads the library file, computes its SHA256 checksum,
+    /// and updates the manifest with the platform and variant information.
+    ///
+    /// # Arguments
+    /// * `platform` - Target platform
+    /// * `variant` - Variant name (e.g., "release", "debug")
+    /// * `library_path` - Path to the library file
+    pub fn add_library_variant<P: AsRef<Path>>(
+        mut self,
+        platform: Platform,
+        variant: &str,
+        library_path: P,
+    ) -> BundleResult<Self> {
+        let library_path = library_path.as_ref();
+
+        // Read the library file
+        let contents = fs::read(library_path).map_err(|e| {
+            BundleError::LibraryNotFound(format!("{}: {}", library_path.display(), e))
+        })?;
+
+        // Compute SHA256 checksum
+        let checksum = compute_sha256(&contents);
+
+        // Determine the archive path (now includes variant)
+        let file_name = library_path
+            .file_name()
+            .ok_or_else(|| {
+                BundleError::InvalidManifest(format!(
+                    "Invalid library path: {}",
+                    library_path.display()
+                ))
+            })?
+            .to_string_lossy();
+        let archive_path = format!("lib/{}/{}/{}", platform.as_str(), variant, file_name);
+
+        // Update manifest
+        self.manifest
+            .add_platform_variant(platform, variant, &archive_path, &checksum, None);
+
+        // Add to files list
+        self.files.push(BundleFile {
+            archive_path,
+            contents,
+        });
+
+        Ok(self)
+    }
+
+    /// Add a variant-specific library with build metadata.
+    ///
+    /// Similar to `add_library_variant` but also attaches build metadata
+    /// to the variant (e.g., compiler flags, features, etc.).
+    pub fn add_library_variant_with_build<P: AsRef<Path>>(
+        mut self,
+        platform: Platform,
+        variant: &str,
+        library_path: P,
+        build: serde_json::Value,
     ) -> BundleResult<Self> {
         let library_path = library_path.as_ref();
 
@@ -96,11 +163,16 @@ impl BundleBuilder {
                 ))
             })?
             .to_string_lossy();
-        let archive_path = format!("lib/{}/{}", platform.as_str(), file_name);
+        let archive_path = format!("lib/{}/{}/{}", platform.as_str(), variant, file_name);
 
-        // Update manifest
-        self.manifest
-            .add_platform(platform, &archive_path, &checksum);
+        // Update manifest with build metadata
+        self.manifest.add_platform_variant(
+            platform,
+            variant,
+            &archive_path,
+            &checksum,
+            Some(build),
+        );
 
         // Add to files list
         self.files.push(BundleFile {
@@ -196,6 +268,73 @@ impl BundleBuilder {
             contents,
         });
         self
+    }
+
+    /// Set the build information for the bundle.
+    pub fn with_build_info(mut self, build_info: crate::BuildInfo) -> Self {
+        self.manifest.set_build_info(build_info);
+        self
+    }
+
+    /// Set the SBOM paths.
+    pub fn with_sbom(mut self, sbom: crate::Sbom) -> Self {
+        self.manifest.set_sbom(sbom);
+        self
+    }
+
+    /// Add a notices file to the bundle.
+    ///
+    /// The file will be stored in the `docs/` directory.
+    pub fn add_notices_file<P: AsRef<Path>>(mut self, source_path: P) -> BundleResult<Self> {
+        let source_path = source_path.as_ref();
+
+        let contents = fs::read(source_path).map_err(|e| {
+            BundleError::Io(std::io::Error::new(
+                e.kind(),
+                format!(
+                    "Failed to read notices file {}: {}",
+                    source_path.display(),
+                    e
+                ),
+            ))
+        })?;
+
+        let archive_path = "docs/NOTICES.txt".to_string();
+        self.manifest.set_notices(archive_path.clone());
+
+        self.files.push(BundleFile {
+            archive_path,
+            contents,
+        });
+
+        Ok(self)
+    }
+
+    /// Add an SBOM file to the bundle.
+    ///
+    /// The file will be stored in the `sbom/` directory.
+    pub fn add_sbom_file<P: AsRef<Path>>(
+        mut self,
+        source_path: P,
+        archive_name: &str,
+    ) -> BundleResult<Self> {
+        let source_path = source_path.as_ref();
+
+        let contents = fs::read(source_path).map_err(|e| {
+            BundleError::Io(std::io::Error::new(
+                e.kind(),
+                format!("Failed to read SBOM file {}: {}", source_path.display(), e),
+            ))
+        })?;
+
+        let archive_path = format!("sbom/{archive_name}");
+
+        self.files.push(BundleFile {
+            archive_path,
+            contents,
+        });
+
+        Ok(self)
     }
 
     /// Write the bundle to a file.
@@ -410,8 +549,42 @@ mod tests {
             .manifest
             .get_platform(Platform::LinuxX86_64)
             .unwrap();
-        assert!(platform_info.checksum.starts_with("sha256:"));
-        assert_eq!(platform_info.library, "lib/linux-x86_64/libtest.so");
+        let release = platform_info.release().unwrap();
+        assert!(release.checksum.starts_with("sha256:"));
+        assert_eq!(release.library, "lib/linux-x86_64/release/libtest.so");
+    }
+
+    #[test]
+    fn BundleBuilder___add_library_variant___adds_multiple_variants() {
+        let temp_dir = TempDir::new().unwrap();
+        let release_lib = temp_dir.path().join("libtest_release.so");
+        let debug_lib = temp_dir.path().join("libtest_debug.so");
+        fs::write(&release_lib, b"release library").unwrap();
+        fs::write(&debug_lib, b"debug library").unwrap();
+
+        let manifest = Manifest::new("test", "1.0.0");
+        let builder = BundleBuilder::new(manifest)
+            .add_library_variant(Platform::LinuxX86_64, "release", &release_lib)
+            .unwrap()
+            .add_library_variant(Platform::LinuxX86_64, "debug", &debug_lib)
+            .unwrap();
+
+        let platform_info = builder
+            .manifest
+            .get_platform(Platform::LinuxX86_64)
+            .unwrap();
+
+        assert!(platform_info.has_variant("release"));
+        assert!(platform_info.has_variant("debug"));
+
+        let release = platform_info.variant("release").unwrap();
+        let debug = platform_info.variant("debug").unwrap();
+
+        assert_eq!(
+            release.library,
+            "lib/linux-x86_64/release/libtest_release.so"
+        );
+        assert_eq!(debug.library, "lib/linux-x86_64/debug/libtest_debug.so");
     }
 
     #[test]

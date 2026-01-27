@@ -40,6 +40,18 @@ pub enum BundleError {
     /// Library file not found.
     #[error("Library not found: {0}")]
     LibraryNotFound(String),
+
+    /// Requested variant not found for platform.
+    #[error("Variant '{variant}' not found for platform '{platform}'")]
+    VariantNotFound { platform: String, variant: String },
+
+    /// Invalid variant name format.
+    #[error("Invalid variant name '{0}': must be lowercase alphanumeric with hyphens")]
+    InvalidVariantName(String),
+
+    /// Schema mismatch when combining bundles.
+    #[error("Schema mismatch: {0}")]
+    SchemaMismatch(String),
 }
 
 #[cfg(test)]
@@ -104,5 +116,34 @@ mod tests {
         let bundle_err: BundleError = io_err.into();
 
         assert!(matches!(bundle_err, BundleError::Io(_)));
+    }
+
+    #[test]
+    fn BundleError___variant_not_found___displays_details() {
+        let err = BundleError::VariantNotFound {
+            platform: "linux-x86_64".to_string(),
+            variant: "debug".to_string(),
+        };
+
+        let msg = err.to_string();
+        assert!(msg.contains("debug"));
+        assert!(msg.contains("linux-x86_64"));
+    }
+
+    #[test]
+    fn BundleError___invalid_variant_name___displays_name() {
+        let err = BundleError::InvalidVariantName("INVALID".to_string());
+
+        assert_eq!(
+            err.to_string(),
+            "Invalid variant name 'INVALID': must be lowercase alphanumeric with hyphens"
+        );
+    }
+
+    #[test]
+    fn BundleError___schema_mismatch___displays_reason() {
+        let err = BundleError::SchemaMismatch("checksums differ".to_string());
+
+        assert_eq!(err.to_string(), "Schema mismatch: checksums differ");
     }
 }

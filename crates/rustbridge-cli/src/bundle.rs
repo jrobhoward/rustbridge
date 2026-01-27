@@ -148,8 +148,14 @@ pub fn list(bundle_path: &str) -> Result<()> {
     println!("\nPlatforms:");
     for (platform, info) in &manifest.platforms {
         println!("  {platform}:");
-        println!("    Library: {}", info.library);
-        println!("    Checksum: {}", info.checksum);
+        for (variant_name, variant_info) in &info.variants {
+            println!("    Variant: {variant_name}");
+            println!("      Library: {}", variant_info.library);
+            println!("      Checksum: {}", variant_info.checksum);
+            if let Some(build) = &variant_info.build {
+                println!("      Build: {}", build);
+            }
+        }
     }
 
     println!("\nFiles:");

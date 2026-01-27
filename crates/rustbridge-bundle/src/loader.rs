@@ -75,10 +75,25 @@ impl BundleLoader {
 
     /// Extract the library for a specific platform to a directory.
     ///
+    /// Extracts the release variant (default). For other variants,
+    /// use `extract_library_variant` instead.
+    ///
     /// Returns the path to the extracted library file.
     pub fn extract_library<P: AsRef<Path>>(
         &mut self,
         platform: Platform,
+        output_dir: P,
+    ) -> BundleResult<PathBuf> {
+        self.extract_library_variant(platform, "release", output_dir)
+    }
+
+    /// Extract a specific variant of the library for a platform.
+    ///
+    /// Returns the path to the extracted library file.
+    pub fn extract_library_variant<P: AsRef<Path>>(
+        &mut self,
+        platform: Platform,
+        variant: &str,
         output_dir: P,
     ) -> BundleResult<PathBuf> {
         let output_dir = output_dir.as_ref();
@@ -91,8 +106,17 @@ impl BundleLoader {
             ))
         })?;
 
-        let library_path = platform_info.library.clone();
-        let expected_checksum = platform_info.checksum.clone();
+        // Get the specific variant
+        let variant_info =
+            platform_info
+                .variant(variant)
+                .ok_or_else(|| BundleError::VariantNotFound {
+                    platform: platform.as_str().to_string(),
+                    variant: variant.to_string(),
+                })?;
+
+        let library_path = variant_info.library.clone();
+        let expected_checksum = variant_info.checksum.clone();
 
         // Read the library from the archive
         let contents = {
@@ -138,6 +162,33 @@ impl BundleLoader {
         }
 
         Ok(output_path)
+    }
+
+    /// List all available variants for a platform.
+    #[must_use]
+    pub fn list_variants(&self, platform: Platform) -> Vec<&str> {
+        self.manifest.list_variants(platform)
+    }
+
+    /// Check if a specific variant exists for a platform.
+    #[must_use]
+    pub fn has_variant(&self, platform: Platform, variant: &str) -> bool {
+        self.manifest
+            .get_platform(platform)
+            .map(|p| p.has_variant(variant))
+            .unwrap_or(false)
+    }
+
+    /// Get the build info from the manifest.
+    #[must_use]
+    pub fn build_info(&self) -> Option<&crate::BuildInfo> {
+        self.manifest.get_build_info()
+    }
+
+    /// Get the SBOM info from the manifest.
+    #[must_use]
+    pub fn sbom(&self) -> Option<&crate::Sbom> {
+        self.manifest.get_sbom()
     }
 
     /// Extract the library for the current platform to a directory.
@@ -475,7 +526,8 @@ mod tests {
         if Platform::current() == Some(Platform::LinuxX86_64) {
             let info = loader.current_platform_info();
             assert!(info.is_some());
-            assert!(info.unwrap().library.contains("libtest.so"));
+            let release = info.unwrap().release().unwrap();
+            assert!(release.library.contains("libtest.so"));
         }
     }
 
@@ -519,8 +571,9 @@ mod tests {
             .manifest()
             .get_platform(Platform::LinuxX86_64)
             .unwrap();
+        let release = platform_info.release().unwrap();
         let expected_checksum = format!("sha256:{}", compute_sha256(lib_contents));
-        assert_eq!(platform_info.checksum, expected_checksum);
+        assert_eq!(release.checksum, expected_checksum);
 
         // Verify library extraction
         let extract_dir = temp_dir.path().join("extract");
