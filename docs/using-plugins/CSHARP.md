@@ -4,9 +4,9 @@ This guide walks you through using rustbridge plugins from C# using P/Invoke.
 
 ## Prerequisites
 
-- **.NET 6.0 or later** - Recommended for best performance
+- **.NET 8.0 or later** - Required for latest features
   ```bash
-  dotnet --version  # Should be >= 6.0
+  dotnet --version  # Should be >= 8.0
   ```
 - **A rustbridge plugin** - Either a `.rbp` bundle or native library
 
@@ -66,10 +66,10 @@ using RustBridge.Core;
 using RustBridge.Native;
 
 // Load bundle and extract library for current platform
-using var bundleLoader = new BundleLoader(
-    "my-plugin-1.0.0.rbp",
-    verifySignatures: false  // Set true for production
-);
+using var bundleLoader = BundleLoader.Create()
+    .WithBundlePath("my-plugin-1.0.0.rbp")
+    .WithSignatureVerification(false)  // Set true for production
+    .Build();
 
 string libraryPath = bundleLoader.ExtractLibrary();
 
@@ -125,13 +125,11 @@ Console.WriteLine($"Length: {parsedResponse?.Length}");
 ```csharp
 using RustBridge.Core;
 
-var config = new PluginConfig
-{
-    LogLevel = LogLevel.Debug,
-    WorkerThreads = 4,
-    MaxConcurrentOps = 100,
-    ShutdownTimeoutMs = 5000
-};
+var config = PluginConfig.Defaults()
+    .WithLogLevel(LogLevel.Debug)
+    .WorkerThreads(4)
+    .MaxConcurrentOps(100)
+    .ShutdownTimeoutMs(5000);
 
 using var plugin = NativePluginLoader.Load(pluginPath, config);
 ```
@@ -352,10 +350,8 @@ class Program
 {
     static void Main()
     {
-        var config = new PluginConfig
-        {
-            LogLevel = LogLevel.Info
-        };
+        var config = PluginConfig.Defaults()
+            .WithLogLevel(LogLevel.Info);
 
         void LogCallback(LogLevel level, string target, string message)
         {

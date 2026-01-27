@@ -4,9 +4,9 @@ This guide walks you through using rustbridge plugins from Python using ctypes.
 
 ## Prerequisites
 
-- **Python 3.9 or later** - For type hints and modern features
+- **Python 3.10 or later** - For type hints and modern features
   ```bash
-  python --version  # Should be >= 3.9
+  python --version  # Should be >= 3.10
   ```
 - **A rustbridge plugin** - Either a `.rbp` bundle or native library
 
@@ -46,17 +46,16 @@ Editable mode (`-e`) allows changes to the rustbridge Python code to take effect
 ### From Bundle (Recommended)
 
 ```python
-from rustbridge.core import BundleLoader
-from rustbridge.native import NativePluginLoader
+from rustbridge import BundleLoader, NativePluginLoader
 
-# Load bundle and extract library for current platform
-with BundleLoader("my-plugin-1.0.0.rbp", verify_signatures=False) as bundle:
-    library_path = bundle.extract_library()
+# Create bundle loader and extract library for current platform
+loader = BundleLoader(verify_signatures=False)
+library_path = loader.extract_library("my-plugin-1.0.0.rbp", "/tmp/plugin")
 
-    # Load the plugin
-    with NativePluginLoader.load(library_path) as plugin:
-        response = plugin.call("echo", '{"message": "Hello"}')
-        print(response)
+# Load the plugin
+with NativePluginLoader.load(str(library_path)) as plugin:
+    response = plugin.call("echo", '{"message": "Hello"}')
+    print(response)
 ```
 
 ### From Raw Library
@@ -159,16 +158,15 @@ with NativePluginLoader.load(plugin_path) as plugin:
 ## Configuration
 
 ```python
-from rustbridge.core import PluginConfig, LogLevel
+from rustbridge import PluginConfig, LogLevel, NativePluginLoader
 
-config = PluginConfig(
-    log_level=LogLevel.DEBUG,
-    worker_threads=4,
-    max_concurrent_ops=100,
-    shutdown_timeout_ms=5000
-)
+config = (PluginConfig.defaults()
+    .log_level(LogLevel.DEBUG)
+    .worker_threads(4)
+    .max_concurrent_ops(100)
+    .shutdown_timeout_ms(5000))
 
-with NativePluginLoader.load(plugin_path, config=config) as plugin:
+with NativePluginLoader.load_with_config(plugin_path, config) as plugin:
     # Plugin configured...
     pass
 ```
@@ -176,17 +174,25 @@ with NativePluginLoader.load(plugin_path, config=config) as plugin:
 ## Logging
 
 ```python
-from rustbridge.core import LogLevel
+from rustbridge import LogLevel, NativePluginLoader
 
 def log_callback(level: int, target: str, message: str) -> None:
-    level_name = LogLevel(level).name
+    level_name = LogLevel.from_code(level).name
     print(f"[{level_name}] {target}: {message}")
 
-with NativePluginLoader.load(plugin_path, log_callback=log_callback) as plugin:
+with NativePluginLoader.load(plugin_path) as plugin:
     plugin.call("echo", '{"message": "test"}')
 
-# Change log level dynamically
-plugin.set_log_level(LogLevel.DEBUG)
+    # Change log level dynamically
+    plugin.set_log_level(LogLevel.DEBUG)
+```
+
+To use a log callback with configuration:
+
+```python
+config = PluginConfig.defaults().log_level(LogLevel.DEBUG)
+with NativePluginLoader.load_with_config(plugin_path, config, log_callback) as plugin:
+    plugin.call("echo", '{"message": "test"}')
 ```
 
 ## Binary Transport (Advanced)
@@ -230,9 +236,8 @@ msg = b"Hello"
 request.message = msg.ljust(256, b'\x00')
 request.message_len = len(msg)
 
-# Call binary transport
-response_bytes = plugin.call_raw(MSG_ECHO, request, sizeof(EchoResponseRaw))
-response = EchoResponseRaw.from_buffer_copy(response_bytes)
+# Call binary transport - pass response type class, returns instance
+response = plugin.call_raw(MSG_ECHO, request, EchoResponseRaw)
 
 print(f"Length: {response.length}")
 ```
@@ -338,8 +343,7 @@ finally:
 ```python
 import json
 from dataclasses import dataclass
-from rustbridge.core import PluginConfig, LogLevel
-from rustbridge.native import NativePluginLoader
+from rustbridge import PluginConfig, LogLevel, NativePluginLoader
 
 @dataclass
 class AddRequest:
@@ -351,15 +355,15 @@ class AddResponse:
     result: int
 
 def main():
-    config = PluginConfig(log_level=LogLevel.INFO)
+    config = PluginConfig.defaults().log_level(LogLevel.INFO)
 
     def log_callback(level: int, target: str, message: str) -> None:
-        print(f"[{LogLevel(level).name}] {message}")
+        print(f"[{LogLevel.from_code(level).name}] {message}")
 
-    with NativePluginLoader.load(
+    with NativePluginLoader.load_with_config(
         "target/release/libcalculator_plugin.so",
-        config=config,
-        log_callback=log_callback
+        config,
+        log_callback
     ) as plugin:
         # Make typed call
         request = AddRequest(a=42, b=58)

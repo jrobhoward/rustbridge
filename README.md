@@ -401,9 +401,9 @@ Errors are represented with stable numeric codes:
 
 | Language | Status | Implementation |
 |----------|--------|---------------|
-| Java/Kotlin | Tier 1 | FFM (Java 21+) + JNI (Java 17+) |
-| C# | Tier 2 | P/Invoke |
-| Python | Tier 2 | ctypes/cffi |
+| Java/Kotlin | Tier 1 | FFM (Java 21+) + JNI (Java 21+, targets Java 17 bytecode) |
+| C# | Tier 2 | P/Invoke (.NET 8.0+) |
+| Python | Tier 2 | ctypes (Python 3.10+) |
 
 ## Documentation
 

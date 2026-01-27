@@ -1,12 +1,12 @@
-# Getting Started: Java 17+ (JNI)
+# Getting Started: Java (JNI)
 
-This guide walks you through using rustbridge plugins from Java 17+ using Java Native Interface (JNI). Use this for compatibility with Java 17-20; prefer FFM for Java 21+.
+This guide walks you through using rustbridge plugins from Java using Java Native Interface (JNI). The JNI module targets Java 17 bytecode compatibility but requires Java 21+ to build. Prefer FFM for Java 21+ for better performance.
 
 ## Prerequisites
 
-- **Java 17 or later** - JNI requires Java 17+ (LTS)
+- **Java 21 or later** - Required for building (targets Java 17 bytecode)
   ```bash
-  java -version  # Should be >= 8
+  java -version  # Should be >= 21
   ```
 - **Gradle or Maven** - For dependency management
 - **A rustbridge plugin** - Either a `.rbp` bundle or `.so`/`.dylib`/`.dll` file

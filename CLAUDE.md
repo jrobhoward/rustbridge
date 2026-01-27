@@ -24,6 +24,10 @@ cargo test -p rustbridge-ffi                                       # Test specif
 cargo test lifecycle___installed                                   # Run tests matching pattern
 cargo bench -p rustbridge-transport -- small_roundtrip             # Run specific benchmark
 
+# Bundle operations
+rustbridge bundle create --name my-plugin --version 1.0.0 \
+  --lib linux-x86_64:target/release/libmyplugin.so --output plugin.rbp
+
 # Java/Kotlin (from rustbridge-java/)
 ./gradlew build && ./gradlew test    # Linux/macOS
 gradlew.bat build && gradlew.bat test  # Windows
@@ -67,6 +71,8 @@ Memory follows "Rust allocates, host frees" pattern. See [docs/ARCHITECTURE.md](
 
 **Never call external code while holding a lock.** This includes logging, callbacks, and async operations. Release locks before any external calls. See [docs/SKILLS.md](./docs/SKILLS.md) for patterns.
 
+The workspace enforces `await_holding_lock = "deny"` to catch async violations at compile time.
+
 ## Testing Conventions
 
 See [docs/TESTING.md](./docs/TESTING.md), [docs/TESTING_KOTLIN.md](./docs/TESTING_KOTLIN.md), [docs/TESTING_JAVA.md](./docs/TESTING_JAVA.md), [docs/TESTING_CSHARP.md](./docs/TESTING_CSHARP.md).
@@ -93,13 +99,17 @@ The `rustbridge-java/` directory contains:
 - `rustbridge-core`: Core Java interfaces
 - `rustbridge-ffm`: FFM implementation (Java 21+, recommended)
 - `rustbridge-jni`: JNI implementation (Java 17+, fallback)
+- `rustbridge-kotlin`: Kotlin extensions and DSL
 
 ## C# Integration
+
+**Requires .NET 8.0 or later.**
 
 The `rustbridge-csharp/` directory contains:
 - `RustBridge.Core`: Core interfaces and types (IPlugin, PluginConfig)
 - `RustBridge.Native`: P/Invoke-based native plugin loader
 - `RustBridge.Tests`: Unit and integration tests
+- `RustBridge.Benchmarks`: Performance benchmarks
 
 ```bash
 # C# development (from rustbridge-csharp/)
@@ -137,3 +147,5 @@ See [docs/TESTING_PYTHON.md](./docs/TESTING_PYTHON.md) for Python testing conven
 - [docs/SKILLS.md](./docs/SKILLS.md) - Development best practices
 - [docs/PLUGIN_LIFECYCLE.md](./docs/PLUGIN_LIFECYCLE.md) - Plugin lifecycle and resource cleanup
 - [docs/CODE_GENERATION.md](./docs/CODE_GENERATION.md) - Code generation guide
+- [docs/ERROR_HANDLING.md](./docs/ERROR_HANDLING.md) - Error types and FFI error codes
+- [docs/DEBUGGING.md](./docs/DEBUGGING.md) - Debugging techniques

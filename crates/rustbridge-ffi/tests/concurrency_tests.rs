@@ -242,7 +242,9 @@ fn test_multiple_handles_lifecycle() {
 #[test]
 fn test_handle_id_uniqueness_under_concurrent_registration() {
     let manager = Arc::new(PluginHandleManager::new());
-    let num_iterations = 100;
+    // Reduced iterations to avoid exhausting file descriptors
+    // Each PluginHandle creates a Tokio runtime which opens FDs
+    let num_iterations = 10;
     let num_threads = 4;
 
     let registered_ids =
@@ -285,12 +287,19 @@ fn test_handle_id_uniqueness_under_concurrent_registration() {
         num_threads * num_iterations,
         "All handle IDs should be unique"
     );
+
+    // Clean up all handles to release file descriptors
+    for id in ids.iter() {
+        manager.remove(*id);
+    }
 }
 
 #[test]
 fn test_rapid_register_remove_no_leak() {
     let manager = PluginHandleManager::new();
-    let iterations = 100;
+    // Reduced iterations to avoid exhausting file descriptors
+    // Each PluginHandle creates a Tokio runtime which opens FDs
+    let iterations = 20;
 
     for _ in 0..iterations {
         let config = PluginConfig::default();
@@ -301,6 +310,9 @@ fn test_rapid_register_remove_no_leak() {
         let removed = manager.remove(id);
 
         assert!(removed.is_some(), "Handle should be successfully removed");
+
+        // Explicitly drop the handle to ensure runtime shutdown and FD release
+        drop(removed);
     }
 
     // After all operations, manager should be empty

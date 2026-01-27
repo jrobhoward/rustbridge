@@ -31,7 +31,11 @@ repositories {
 dependencies {
     implementation("com.rustbridge:rustbridge-core:0.1.0")
     implementation("com.rustbridge:rustbridge-ffm:0.1.0")
+    implementation("com.rustbridge:rustbridge-kotlin:0.1.0")  // Kotlin extensions
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
+
+    // Optional: for coroutine support
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 
     testImplementation(kotlin("test"))
 }
@@ -51,6 +55,16 @@ tasks.withType<JavaExec> {
 ```
 
 > **Important**: The `--enable-native-access=ALL-UNNAMED` flag is required for FFM to call native code. Without it, you'll get `IllegalCallerException`.
+
+## The rustbridge-kotlin Module
+
+The `rustbridge-kotlin` module provides idiomatic Kotlin extensions:
+
+- **Type-safe calls** with reified generics (`call<T, R>()`)
+- **Coroutine support** with suspend functions (`callAsync<T, R>()`)
+- **Result-based error handling** with sealed classes (`PluginResult`)
+- **DSL for configuration** (`pluginConfig { ... }`)
+- **Plugin lifecycle helpers** (`withPlugin`, `lazyPlugin`)
 
 ## Local Development
 
@@ -103,37 +117,47 @@ FfmPluginLoader.load(pluginPath).use { plugin ->
 
 ## Type-Safe Calls with Data Classes
 
+The `rustbridge-kotlin` module provides built-in type-safe extensions:
+
 ```kotlin
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
+import com.rustbridge.kotlin.call  // Extension functions
 
 data class EchoRequest(val message: String)
 data class EchoResponse(val message: String, val length: Int)
 
-val mapper = jacksonObjectMapper()
-
-// Extension function for type-safe calls
-inline fun <reified T> com.rustbridge.Plugin.callTyped(
-    messageType: String,
-    request: Any
-): T {
-    val requestJson = mapper.writeValueAsString(request)
-    val responseJson = call(messageType, requestJson)
-    return mapper.readValue(responseJson)
-}
-
-// Usage
+// Using built-in extension (recommended)
 FfmPluginLoader.load(pluginPath).use { plugin ->
-    val response = plugin.callTyped<EchoResponse>(
-        "echo",
-        EchoRequest("Hello, Kotlin!")
-    )
+    val response: EchoResponse = plugin.call("echo", EchoRequest("Hello, Kotlin!"))
     println("Message: ${response.message}")
     println("Length: ${response.length}")
 }
 ```
 
+Available type-safe call variants:
+
+```kotlin
+// Typed request and response
+val response: EchoResponse = plugin.call("echo", EchoRequest("Hello"))
+
+// JSON request, typed response
+val response: EchoResponse = plugin.call("echo", """{"message": "Hello"}""")
+
+// Typed request, JSON response
+val json: String = plugin.callJson("echo", EchoRequest("Hello"))
+
+// With Result wrapper (no exceptions)
+val result: Result<EchoResponse> = plugin.callResult("echo", EchoRequest("Hello"))
+
+// Null on failure
+val response: EchoResponse? = plugin.callOrNull("echo", EchoRequest("Hello"))
+
+// Default on failure
+val response: EchoResponse = plugin.callOrDefault("echo", request) { EchoResponse("", 0) }
+```
+
 ## Configuration
+
+### Using Java Builder
 
 ```kotlin
 import com.rustbridge.PluginConfig
@@ -147,6 +171,27 @@ val config = PluginConfig.defaults()
 
 FfmPluginLoader.load(pluginPath, config).use { plugin ->
     // Plugin configured...
+}
+```
+
+### Using Kotlin DSL (Recommended)
+
+```kotlin
+import com.rustbridge.kotlin.pluginConfig
+import com.rustbridge.kotlin.sec
+import com.rustbridge.LogLevel
+
+val config = pluginConfig {
+    logLevel = LogLevel.DEBUG
+    workerThreads = 4
+    maxConcurrentOps = 100
+    shutdownTimeout = 5.sec  // Kotlin Duration extension
+    data {
+        "custom_key" to "custom_value"
+    }
+    initParams {
+        "init_key" to 42
+    }
 }
 ```
 
@@ -166,23 +211,24 @@ FfmPluginLoader.load(pluginPath, config, callback).use { plugin ->
 
 ## Coroutines Integration
 
-Wrap plugin calls in suspending functions for async usage:
+The `rustbridge-kotlin` module provides built-in suspend functions:
 
 ```kotlin
+import com.rustbridge.kotlin.callAsync
+import com.rustbridge.kotlin.callAsyncResult
 import kotlinx.coroutines.*
-
-suspend fun <T> Plugin.callAsync(
-    messageType: String,
-    request: Any
-): T = withContext(Dispatchers.IO) {
-    callTyped(messageType, request)
-}
 
 // Usage
 runBlocking {
     FfmPluginLoader.load(pluginPath).use { plugin ->
-        val response = plugin.callAsync<EchoResponse>("echo", EchoRequest("Hello"))
+        // Suspending call
+        val response: EchoResponse = plugin.callAsync("echo", EchoRequest("Hello"))
         println(response)
+
+        // With Result wrapper
+        val result: Result<EchoResponse> = plugin.callAsyncResult("echo", EchoRequest("Hello"))
+        result.onSuccess { println(it) }
+              .onFailure { println("Error: ${it.message}") }
     }
 }
 ```
@@ -222,28 +268,29 @@ try {
 
 ### Result-Based Error Handling
 
+The `rustbridge-kotlin` module provides a `PluginResult` sealed class:
+
 ```kotlin
-sealed class PluginResult<out T> {
-    data class Success<T>(val value: T) : PluginResult<T>()
-    data class Error(val code: Int, val message: String) : PluginResult<Nothing>()
-}
+import com.rustbridge.kotlin.callSafe
+import com.rustbridge.kotlin.PluginResult
 
-inline fun <reified T> Plugin.callSafe(
-    messageType: String,
-    request: Any
-): PluginResult<T> {
-    return try {
-        PluginResult.Success(callTyped(messageType, request))
-    } catch (e: PluginException) {
-        PluginResult.Error(e.errorCode, e.message ?: "Unknown error")
-    }
-}
+// Using built-in PluginResult
+val result: PluginResult<EchoResponse> = plugin.callSafe("echo", request)
 
-// Usage
-when (val result = plugin.callSafe<EchoResponse>("echo", request)) {
+when (result) {
     is PluginResult.Success -> println("Result: ${result.value}")
     is PluginResult.Error -> println("Error ${result.code}: ${result.message}")
 }
+
+// PluginResult utility methods
+result.getOrNull()                           // Returns value or null
+result.getOrThrow()                          // Returns value or throws
+result.getOrElse { EchoResponse("", 0) }     // Returns value or default
+result.map { it.message }                    // Transform success value
+result.recover { "fallback" }               // Recover from error
+result.onSuccess { println(it) }            // Side effect on success
+result.onError { println(it.message) }      // Side effect on error
+result.toResult()                           // Convert to kotlin.Result
 ```
 
 ## Binary Transport
@@ -276,43 +323,36 @@ fun Plugin.callBinaryEcho(message: String): Int {
 }
 ```
 
-## DSL-Style API
+## Plugin Lifecycle Helpers
 
-Create a Kotlin DSL for plugin calls:
+The `rustbridge-kotlin` module provides convenient lifecycle management:
 
 ```kotlin
-class PluginScope(private val plugin: Plugin) {
-    inline fun <reified T> call(
-        messageType: String,
-        builder: RequestBuilder.() -> Unit
-    ): T {
-        val request = RequestBuilder().apply(builder).build()
-        return plugin.callTyped(messageType, request)
-    }
+import com.rustbridge.kotlin.loadPlugin
+import com.rustbridge.kotlin.withPlugin
+import com.rustbridge.kotlin.lazyPlugin
+
+// DSL-style loading
+val plugin = loadPlugin(pluginPath) {
+    logLevel = LogLevel.DEBUG
+    workerThreads = 4
 }
 
-class RequestBuilder {
-    private val map = mutableMapOf<String, Any>()
-
-    operator fun String.invoke(value: Any) {
-        map[this] = value
-    }
-
-    fun build(): Map<String, Any> = map
+// Auto-closing block
+withPlugin(pluginPath) { plugin ->
+    val response: EchoResponse = plugin.call("echo", EchoRequest("Hello"))
+    println(response)
 }
 
-fun Plugin.scope(block: PluginScope.() -> Unit) {
-    PluginScope(this).block()
+// Receiver-style block
+withPluginContext(pluginPath) {
+    val response: EchoResponse = call("echo", EchoRequest("Hello"))
+    println(response)
 }
 
-// Usage
-FfmPluginLoader.load(pluginPath).use { plugin ->
-    plugin.scope {
-        val response: EchoResponse = call("echo") {
-            "message"("Hello, DSL!")
-        }
-        println(response)
-    }
+// Lazy initialization
+val lazyPlugin by lazyPlugin(pluginPath) {
+    logLevel = LogLevel.INFO
 }
 ```
 
@@ -321,24 +361,16 @@ FfmPluginLoader.load(pluginPath).use { plugin ->
 ```kotlin
 import com.rustbridge.*
 import com.rustbridge.ffm.FfmPluginLoader
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
+import com.rustbridge.kotlin.*
 import kotlinx.coroutines.*
 
 data class AddRequest(val a: Long, val b: Long)
 data class AddResponse(val result: Long)
 
-val mapper = jacksonObjectMapper()
-
-inline fun <reified T> Plugin.callTyped(messageType: String, request: Any): T {
-    val requestJson = mapper.writeValueAsString(request)
-    val responseJson = call(messageType, requestJson)
-    return mapper.readValue(responseJson)
-}
-
 fun main() = runBlocking {
-    val config = PluginConfig.defaults()
-        .logLevel(LogLevel.INFO)
+    val config = pluginConfig {
+        logLevel = LogLevel.INFO
+    }
 
     val callback = LogCallback { level, _, message ->
         println("[$level] $message")
@@ -349,17 +381,14 @@ fun main() = runBlocking {
         config,
         callback
     ).use { plugin ->
-        // Single call
-        val response = plugin.callTyped<AddResponse>(
-            "math.add",
-            AddRequest(42, 58)
-        )
+        // Single call using built-in extension
+        val response: AddResponse = plugin.call("math.add", AddRequest(42, 58))
         println("42 + 58 = ${response.result}")
 
-        // Concurrent calls
+        // Concurrent calls using built-in async extension
         val results = (1..10).map { i ->
             async(Dispatchers.IO) {
-                plugin.callTyped<AddResponse>("math.add", AddRequest(i.toLong(), i.toLong()))
+                plugin.callAsync<AddRequest, AddResponse>("math.add", AddRequest(i.toLong(), i.toLong()))
             }
         }.awaitAll()
 
