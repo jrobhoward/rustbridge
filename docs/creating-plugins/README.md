@@ -56,13 +56,13 @@ edition = "2024"
 crate-type = ["cdylib"]  # Required for FFI
 
 [dependencies]
-# rustbridge dependencies (fetched from GitHub)
-rustbridge-core = { git = "https://github.com/jrobhoward/rustbridge.git" }
-rustbridge-transport = { git = "https://github.com/jrobhoward/rustbridge.git" }
-rustbridge-ffi = { git = "https://github.com/jrobhoward/rustbridge.git" }
-rustbridge-runtime = { git = "https://github.com/jrobhoward/rustbridge.git" }
-rustbridge-logging = { git = "https://github.com/jrobhoward/rustbridge.git" }
-rustbridge-macros = { git = "https://github.com/jrobhoward/rustbridge.git" }
+# rustbridge dependencies
+rustbridge-core = "0.5"
+rustbridge-transport = "0.5"
+rustbridge-ffi = "0.5"
+rustbridge-runtime = "0.5"
+rustbridge-logging = "0.5"
+rustbridge-macros = "0.5"
 
 async-trait = "0.1"
 serde = { version = "1.0", features = ["derive"] }
@@ -74,7 +74,6 @@ tracing = "0.1"
 > **Important**:
 > - `crate-type = ["cdylib"]` generates a dynamic library (.so/.dylib/.dll) loadable via FFI.
 > - `[workspace]` ensures this project is standalone, even if created inside another workspace directory.
-> - Git dependencies fetch the crates directly from GitHub (no crates.io publishing required).
 
 ## Step 2: Define Message Types
 

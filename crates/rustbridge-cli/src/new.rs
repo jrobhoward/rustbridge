@@ -34,10 +34,10 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-# rustbridge dependencies (fetched from GitHub)
-rustbridge-core = {{ git = "https://github.com/jrobhoward/rustbridge.git" }}
-rustbridge-ffi = {{ git = "https://github.com/jrobhoward/rustbridge.git" }}
-rustbridge-macros = {{ git = "https://github.com/jrobhoward/rustbridge.git" }}
+# rustbridge dependencies
+rustbridge-core = "0.5"
+rustbridge-ffi = "0.5"
+rustbridge-macros = "0.5"
 
 serde = {{ version = "1.0", features = ["derive"] }}
 serde_json = "1.0"
