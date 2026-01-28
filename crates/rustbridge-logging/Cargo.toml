@@ -4,7 +4,10 @@ description = "Tracing to FFI callback bridge for rustbridge"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 rust-version.workspace = true
+keywords = ["ffi", "plugin", "logging", "tracing", "callback"]
+categories = ["development-tools::ffi", "development-tools::debugging"]
 
 [dependencies]
 rustbridge-core = { workspace = true }

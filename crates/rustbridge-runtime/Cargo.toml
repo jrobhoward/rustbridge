@@ -4,7 +4,10 @@ description = "Tokio async runtime integration for rustbridge"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 rust-version.workspace = true
+keywords = ["ffi", "plugin", "async", "tokio", "runtime"]
+categories = ["development-tools::ffi", "asynchronous"]
 
 [dependencies]
 rustbridge-core = { workspace = true }

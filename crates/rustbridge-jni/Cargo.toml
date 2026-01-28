@@ -1,11 +1,13 @@
 [package]
 name = "rustbridge-jni"
+description = "JNI bindings for rustbridge - enables Java 17+ support"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
-description = "JNI bindings for rustbridge - enables Java 17+ support"
+keywords = ["ffi", "jni", "java", "plugin", "interop"]
+categories = ["development-tools::ffi", "api-bindings"]
 
 [lib]
 crate-type = ["cdylib"]
@@ -20,7 +22,7 @@ libloading = "0.8"
 # Internal crates
 # NOTE: We do NOT link against rustbridge-ffi to avoid symbol resolution conflicts
 # with the plugin's own rustbridge-ffi linkage. All FFI types are defined locally.
-rustbridge-core = { path = "../rustbridge-core" }
+rustbridge-core = { workspace = true }
 
 # Serialization
 serde_json = { workspace = true }

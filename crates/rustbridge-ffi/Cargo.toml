@@ -4,7 +4,10 @@ description = "C ABI exports and FFI buffer management for rustbridge"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 rust-version.workspace = true
+keywords = ["ffi", "plugin", "c-abi", "bindings", "interop"]
+categories = ["development-tools::ffi", "api-bindings"]
 
 [dependencies]
 rustbridge-core = { workspace = true }

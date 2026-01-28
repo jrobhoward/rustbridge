@@ -4,7 +4,10 @@ description = "Plugin bundle format for rustbridge"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 rust-version.workspace = true
+keywords = ["ffi", "plugin", "bundle", "packaging", "distribution"]
+categories = ["development-tools::ffi", "development-tools::build-utils"]
 
 [dependencies]
 serde = { workspace = true }

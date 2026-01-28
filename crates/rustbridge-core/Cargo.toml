@@ -4,7 +4,10 @@ description = "Core traits, types, and lifecycle management for rustbridge"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 rust-version.workspace = true
+keywords = ["ffi", "plugin", "interop", "async", "bindings"]
+categories = ["development-tools::ffi", "asynchronous"]
 
 [dependencies]
 serde = { workspace = true }

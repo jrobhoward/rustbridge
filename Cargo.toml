@@ -22,13 +22,13 @@ rust-version = "1.90"
 
 [workspace.dependencies]
 # Internal crates
-rustbridge-core = { path = "crates/rustbridge-core" }
-rustbridge-transport = { path = "crates/rustbridge-transport" }
-rustbridge-ffi = { path = "crates/rustbridge-ffi" }
-rustbridge-runtime = { path = "crates/rustbridge-runtime" }
-rustbridge-logging = { path = "crates/rustbridge-logging" }
-rustbridge-macros = { path = "crates/rustbridge-macros" }
-rustbridge-bundle = { path = "crates/rustbridge-bundle" }
+rustbridge-core = { path = "crates/rustbridge-core", version = "0.5.0" }
+rustbridge-transport = { path = "crates/rustbridge-transport", version = "0.5.0" }
+rustbridge-ffi = { path = "crates/rustbridge-ffi", version = "0.5.0" }
+rustbridge-runtime = { path = "crates/rustbridge-runtime", version = "0.5.0" }
+rustbridge-logging = { path = "crates/rustbridge-logging", version = "0.5.0" }
+rustbridge-macros = { path = "crates/rustbridge-macros", version = "0.5.0" }
+rustbridge-bundle = { path = "crates/rustbridge-bundle", version = "0.5.0" }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }

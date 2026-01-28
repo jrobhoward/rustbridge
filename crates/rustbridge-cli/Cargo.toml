@@ -4,7 +4,10 @@ description = "Build tool and code generator for rustbridge"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 rust-version.workspace = true
+keywords = ["ffi", "plugin", "cli", "build-tool", "codegen"]
+categories = ["development-tools::ffi", "development-tools::build-utils", "command-line-utilities"]
 
 [[bin]]
 name = "rustbridge"
