@@ -147,22 +147,101 @@ pub fn derive_message(input: TokenStream) -> TokenStream {
 /// This macro creates the `plugin_create` extern function that the FFI layer
 /// calls to instantiate the plugin.
 ///
-/// # Example
+/// # Usage
 ///
+/// For plugins using `Default`:
 /// ```ignore
 /// rustbridge_entry!(MyPlugin::default);
 /// ```
+///
+/// For plugins using `PluginFactory::create` (receives config at construction time):
+/// ```ignore
+/// rustbridge_entry!(MyPlugin::create);
+/// ```
+///
+/// When using `::create`, the macro generates both `plugin_create()` and
+/// `plugin_create_with_config(config_json, config_len)` FFI functions.
 #[proc_macro]
 pub fn rustbridge_entry(input: TokenStream) -> TokenStream {
     let factory_path = parse_macro_input!(input as syn::ExprPath);
 
-    let expanded = quote! {
-        /// FFI entry point - creates a new plugin instance
-        #[unsafe(no_mangle)]
-        pub unsafe extern "C" fn plugin_create() -> *mut ::std::ffi::c_void {
-            let plugin: Box<dyn ::rustbridge_core::Plugin> = Box::new(#factory_path());
-            let boxed: Box<Box<dyn ::rustbridge_core::Plugin>> = Box::new(plugin);
-            Box::into_raw(boxed) as *mut ::std::ffi::c_void
+    // Check if the path ends with "::create" to enable PluginFactory support
+    let is_factory_create = factory_path
+        .path
+        .segments
+        .last()
+        .is_some_and(|seg| seg.ident == "create");
+
+    let expanded = if is_factory_create {
+        // Extract the type path (everything except the final ::create)
+        let type_path: syn::Path = {
+            let mut path = factory_path.path.clone();
+            path.segments.pop(); // Remove "create"
+            // Remove trailing punctuation if present
+            if let Some(pair) = path.segments.pop() {
+                path.segments.push(pair.into_value());
+            }
+            path
+        };
+
+        quote! {
+            /// FFI entry point - creates a new plugin instance with default config
+            #[unsafe(no_mangle)]
+            pub unsafe extern "C" fn plugin_create() -> *mut ::std::ffi::c_void {
+                let config = ::rustbridge_core::PluginConfig::default();
+                match <#type_path as ::rustbridge_core::PluginFactory>::create(&config) {
+                    Ok(plugin) => {
+                        let plugin: Box<dyn ::rustbridge_core::Plugin> = Box::new(plugin);
+                        let boxed: Box<Box<dyn ::rustbridge_core::Plugin>> = Box::new(plugin);
+                        Box::into_raw(boxed) as *mut ::std::ffi::c_void
+                    }
+                    Err(_) => ::std::ptr::null_mut()
+                }
+            }
+
+            /// FFI entry point - creates a new plugin instance with provided config
+            ///
+            /// # Safety
+            ///
+            /// - `config_json` must be a valid pointer to a UTF-8 JSON string, or null
+            /// - `config_len` must be the length of the JSON string in bytes
+            /// - If `config_json` is null, a default config is used
+            #[unsafe(no_mangle)]
+            pub unsafe extern "C" fn plugin_create_with_config(
+                config_json: *const u8,
+                config_len: usize,
+            ) -> *mut ::std::ffi::c_void {
+                let config = if config_json.is_null() || config_len == 0 {
+                    ::rustbridge_core::PluginConfig::default()
+                } else {
+                    // SAFETY: Caller guarantees config_json is valid for config_len bytes
+                    let bytes = unsafe { ::std::slice::from_raw_parts(config_json, config_len) };
+                    match ::rustbridge_core::PluginConfig::from_json(bytes) {
+                        Ok(c) => c,
+                        Err(_) => return ::std::ptr::null_mut(),
+                    }
+                };
+
+                match <#type_path as ::rustbridge_core::PluginFactory>::create(&config) {
+                    Ok(plugin) => {
+                        let plugin: Box<dyn ::rustbridge_core::Plugin> = Box::new(plugin);
+                        let boxed: Box<Box<dyn ::rustbridge_core::Plugin>> = Box::new(plugin);
+                        Box::into_raw(boxed) as *mut ::std::ffi::c_void
+                    }
+                    Err(_) => ::std::ptr::null_mut()
+                }
+            }
+        }
+    } else {
+        // Original behavior for ::default or other factory functions
+        quote! {
+            /// FFI entry point - creates a new plugin instance
+            #[unsafe(no_mangle)]
+            pub unsafe extern "C" fn plugin_create() -> *mut ::std::ffi::c_void {
+                let plugin: Box<dyn ::rustbridge_core::Plugin> = Box::new(#factory_path());
+                let boxed: Box<Box<dyn ::rustbridge_core::Plugin>> = Box::new(plugin);
+                Box::into_raw(boxed) as *mut ::std::ffi::c_void
+            }
         }
     };
 

@@ -179,6 +179,11 @@ enum BundleAction {
         /// Skip automatic build metadata collection
         #[arg(long)]
         no_metadata: bool,
+
+        /// SBOM file to include: SOURCE:ARCHIVE_NAME (can be repeated)
+        /// Example: --sbom sbom.cdx.json:sbom.cdx.json --sbom sbom.spdx.json:sbom.spdx.json
+        #[arg(long, value_name = "SOURCE:ARCHIVE_NAME")]
+        sbom: Vec<String>,
     },
 
     /// Combine multiple bundles into one
@@ -338,6 +343,7 @@ fn main() -> anyhow::Result<()> {
                 generate_schema,
                 notices,
                 no_metadata,
+                sbom,
             } => {
                 // Parse library arguments (PLATFORM:PATH or PLATFORM:VARIANT:PATH)
                 let libs: Vec<(String, String, String)> = libraries
@@ -382,6 +388,18 @@ fn main() -> anyhow::Result<()> {
                     })
                     .collect::<anyhow::Result<_>>()?;
 
+                // Parse SBOM arguments (SOURCE:ARCHIVE_NAME)
+                let sbom_files: Vec<(String, String)> = sbom
+                    .iter()
+                    .map(|s| {
+                        let parts: Vec<&str> = s.splitn(2, ':').collect();
+                        if parts.len() != 2 {
+                            anyhow::bail!("Invalid sbom format: {s}. Expected SOURCE:ARCHIVE_NAME");
+                        }
+                        Ok((parts[0].to_string(), parts[1].to_string()))
+                    })
+                    .collect::<anyhow::Result<_>>()?;
+
                 bundle::create(
                     &name,
                     &version,
@@ -393,6 +411,7 @@ fn main() -> anyhow::Result<()> {
                     generate_schema,
                     notices,
                     no_metadata,
+                    &sbom_files,
                 )?;
             }
             BundleAction::Combine {

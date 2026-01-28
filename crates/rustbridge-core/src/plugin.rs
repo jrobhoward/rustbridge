@@ -142,6 +142,58 @@ pub trait Plugin: Send + Sync + 'static {
     }
 }
 
+/// Factory trait for creating plugins with optional configuration.
+///
+/// The framework calls `create()` which handles the null-config case
+/// automatically by falling back to `Default::default()`.
+///
+/// Plugin authors only need to override `create_configured()` if they
+/// want to use config.data for initialization.
+///
+/// # Example
+///
+/// ```ignore
+/// use rustbridge_core::prelude::*;
+///
+/// struct MyPlugin {
+///     cache_size: usize,
+/// }
+///
+/// impl Default for MyPlugin {
+///     fn default() -> Self {
+///         Self { cache_size: 100 }
+///     }
+/// }
+///
+/// impl PluginFactory for MyPlugin {
+///     fn create_configured(config: &PluginConfig) -> PluginResult<Self> {
+///         let size = config.get::<usize>("cache_size").unwrap_or(100);
+///         Ok(Self { cache_size: size })
+///     }
+/// }
+/// ```
+pub trait PluginFactory: Default + Plugin + Sized {
+    /// Create a plugin instance. Called by the framework.
+    ///
+    /// Default implementation: uses `Default` when config.data is null,
+    /// otherwise calls `create_configured()`.
+    fn create(config: &PluginConfig) -> PluginResult<Self> {
+        if config.data.is_null() {
+            Ok(Self::default())
+        } else {
+            Self::create_configured(config)
+        }
+    }
+
+    /// Create a plugin with non-null config.data.
+    ///
+    /// Override this to parse and use configuration data.
+    /// Default implementation ignores config and uses `Default`.
+    fn create_configured(_config: &PluginConfig) -> PluginResult<Self> {
+        Ok(Self::default())
+    }
+}
+
 #[cfg(test)]
 #[path = "plugin/plugin_tests.rs"]
 mod plugin_tests;

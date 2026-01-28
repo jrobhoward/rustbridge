@@ -15,7 +15,7 @@ mod request;
 pub use config::{PluginConfig, PluginMetadata};
 pub use error::{PluginError, PluginResult};
 pub use lifecycle::LifecycleState;
-pub use plugin::{Plugin, PluginContext};
+pub use plugin::{Plugin, PluginContext, PluginFactory};
 pub use request::{RequestContext, ResponseBuilder};
 
 /// Log levels for FFI callbacks
@@ -59,8 +59,8 @@ impl std::fmt::Display for LogLevel {
 /// Prelude module for convenient imports
 pub mod prelude {
     pub use crate::{
-        LifecycleState, LogLevel, Plugin, PluginConfig, PluginContext, PluginError, PluginResult,
-        RequestContext, ResponseBuilder,
+        LifecycleState, LogLevel, Plugin, PluginConfig, PluginContext, PluginError, PluginFactory,
+        PluginResult, RequestContext, ResponseBuilder,
     };
 }
 

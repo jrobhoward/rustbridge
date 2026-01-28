@@ -22,6 +22,7 @@ pub fn create(
     generate_schema: Option<String>,
     notices_path: Option<String>,
     no_metadata: bool,
+    sbom_files: &[(String, String)],
 ) -> Result<()> {
     println!("Creating bundle: {name} v{version}");
 
@@ -123,6 +124,31 @@ pub fn create(
         builder = builder
             .add_notices_file(&notices)
             .with_context(|| format!("Failed to add notices file: {notices}"))?;
+    }
+
+    // Add SBOM files
+    if !sbom_files.is_empty() {
+        let mut sbom = rustbridge_bundle::Sbom {
+            cyclonedx: None,
+            spdx: None,
+        };
+
+        for (source, archive_name) in sbom_files {
+            println!("  Adding SBOM: {source} -> sbom/{archive_name}");
+            builder = builder
+                .add_sbom_file(source, archive_name)
+                .with_context(|| format!("Failed to add SBOM file: {source}"))?;
+
+            // Update SBOM metadata based on file name
+            let archive_path = format!("sbom/{archive_name}");
+            if archive_name.contains("cdx") || archive_name.contains("cyclonedx") {
+                sbom.cyclonedx = Some(archive_path);
+            } else if archive_name.contains("spdx") {
+                sbom.spdx = Some(archive_path);
+            }
+        }
+
+        builder = builder.with_sbom(sbom);
     }
 
     // Add build metadata if not disabled
@@ -788,6 +814,7 @@ mod tests {
             None,
             None,
             true, // Skip metadata for test
+            &[],  // No SBOM files
         )
         .unwrap();
 
@@ -830,6 +857,7 @@ mod tests {
             None,
             None,
             true,
+            &[],
         )
         .unwrap();
 
@@ -867,6 +895,7 @@ mod tests {
             None,
             None,
             true,
+            &[],
         )
         .unwrap();
 
@@ -910,6 +939,7 @@ mod tests {
             None,
             None,
             true,
+            &[],
         )
         .unwrap();
 
