@@ -811,7 +811,7 @@ public class BundleLoader implements AutoCloseable {
          * @param builtBy           who/what built the bundle (e.g., "CI/CD", "developer")
          * @param builtAt           ISO 8601 timestamp
          * @param host              host triple (e.g., "x86_64-unknown-linux-gnu")
-         * @param compiler          compiler version (e.g., "rustc 1.85.0")
+         * @param compiler          compiler version (e.g., "rustc 1.90.0")
          * @param rustbridgeVersion rustbridge CLI version
          * @param git               git repository info
          */

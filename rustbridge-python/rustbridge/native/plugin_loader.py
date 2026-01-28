@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import platform
+import sys
 from pathlib import Path
 from typing import Callable
 
@@ -193,8 +194,6 @@ class NativePluginLoader:
                 callback(log_level, target_str, message_str)
             except Exception as e:
                 # Don't let exceptions propagate back to native code
-                import sys
-
                 print(f"Error in log callback: {e}", file=sys.stderr)
 
         return LogCallbackFnType(wrapper)

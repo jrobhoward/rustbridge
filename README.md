@@ -1,7 +1,13 @@
 # rustbridge
 
-> [!WARNING]
-> This project is in early development. APIs are unstable and may change without notice.
+[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
+[![Rust](https://img.shields.io/badge/rust-1.90%2B-orange.svg)](https://www.rust-lang.org)
+[![Java](https://img.shields.io/badge/java-17%2B-red.svg)](https://openjdk.org)
+[![.NET](https://img.shields.io/badge/.NET-8.0%2B-purple.svg)](https://dotnet.microsoft.com)
+[![Python](https://img.shields.io/badge/python-3.10%2B-green.svg)](https://www.python.org)
+
+> [!NOTE]
+> This project is in beta. The core API is stable, but some features may change before 1.0.
 
 A framework for developing Rust shared libraries callable from other languages. Uses C ABI under the hood but abstracts the complexity, providing OSGI-like lifecycle, mandatory async (Tokio), logging callbacks, and JSON-based data transport with optional binary transport for performance-critical paths.
 
@@ -59,14 +65,18 @@ rustbridge/
 │   ├── rustbridge-core/          # Core traits, types, lifecycle
 │   ├── rustbridge-transport/     # JSON codec, message envelopes
 │   ├── rustbridge-ffi/           # C ABI exports, buffer management
+│   ├── rustbridge-jni/           # JNI bindings for Java 17+
 │   ├── rustbridge-runtime/       # Tokio integration
 │   ├── rustbridge-logging/       # Tracing → FFI callback bridge
 │   ├── rustbridge-macros/        # Procedural macros
-│   └── rustbridge-cli/           # Build tool and code generator
+│   ├── rustbridge-bundle/        # .rbp bundle creation and parsing
+│   └── rustbridge-cli/           # Build tool and CLI
 ├── rustbridge-java/              # Java/Kotlin bindings
 │   ├── rustbridge-core/          # Core interfaces
 │   ├── rustbridge-ffm/           # FFM implementation (Java 21+)
-│   └── rustbridge-jni/           # JNI fallback (Java 17+)
+│   └── rustbridge-kotlin/        # Kotlin extensions
+├── rustbridge-csharp/            # C# bindings (.NET 8.0+)
+├── rustbridge-python/            # Python bindings (3.10+)
 ├── examples/
 │   ├── hello-plugin/             # Example Rust plugin
 │   └── kotlin-examples/          # Kotlin usage examples
@@ -296,13 +306,20 @@ rustbridge new my-plugin
 # Build a plugin
 rustbridge build --release
 
-# Generate host language bindings
-rustbridge generate --lang java --output ./generated
-rustbridge generate --lang csharp --output ./generated
-rustbridge generate --lang python --output ./generated
+# Generate JSON Schema from Rust message types
+rustbridge generate json-schema -i src/messages.rs -o schema.json
 
 # Validate manifest
 rustbridge check
+
+# Create a bundle for distribution
+rustbridge bundle create \
+  --name my-plugin --version 1.0.0 \
+  --lib linux-x86_64:target/release/libmyplugin.so \
+  --output my-plugin.rbp
+
+# Generate signing keys
+rustbridge keygen --output signing.key
 ```
 
 ## Configuration
@@ -401,7 +418,7 @@ Errors are represented with stable numeric codes:
 
 | Language | Status | Implementation |
 |----------|--------|---------------|
-| Java/Kotlin | Tier 1 | FFM (Java 21+) + JNI (Java 21+, targets Java 17 bytecode) |
+| Java/Kotlin | Tier 1 | FFM (Java 21+, recommended) + JNI (Java 17+) |
 | C# | Tier 2 | P/Invoke (.NET 8.0+) |
 | Python | Tier 2 | ctypes (Python 3.10+) |
 
@@ -429,10 +446,16 @@ Errors are represented with stable numeric codes:
 
 ## Contributing
 
+We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+
+**Quick start:**
 1. Read [docs/SKILLS.md](./docs/SKILLS.md) for coding conventions
 2. Read [docs/TESTING.md](./docs/TESTING.md) for testing guidelines
 3. Check [docs/TASKS.md](./docs/TASKS.md) for open tasks
-4. Follow the git workflow (user controls commits)
+
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md) for version history and release notes.
 
 ## License
 

@@ -6,7 +6,7 @@ plugins {
 
 allprojects {
     group = "com.rustbridge"
-    version = "0.1.0"
+    version = "0.5.0"
 
     repositories {
         mavenCentral()
@@ -49,6 +49,18 @@ subprojects {
         publications {
             create<MavenPublication>("maven") {
                 from(components["java"])
+                pom {
+                    licenses {
+                        license {
+                            name.set("MIT License")
+                            url.set("https://opensource.org/licenses/MIT")
+                        }
+                        license {
+                            name.set("Apache License, Version 2.0")
+                            url.set("https://www.apache.org/licenses/LICENSE-2.0")
+                        }
+                    }
+                }
             }
         }
     }

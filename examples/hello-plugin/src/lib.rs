@@ -437,7 +437,7 @@ impl Plugin for HelloPlugin {
     }
 
     fn metadata(&self) -> Option<PluginMetadata> {
-        Some(PluginMetadata::new("hello-plugin", "0.1.0"))
+        Some(PluginMetadata::new("hello-plugin", "0.5.0"))
     }
 
     fn supported_types(&self) -> Vec<&'static str> {

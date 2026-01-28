@@ -48,10 +48,3 @@ ehthumbs.db
 *.profdata
 coverage/
 lcov.info
-
-# Personal notes and brainstorming
-ideas.txt
-
-# User test projects (not part of repo)
-kotlin_consumer2/
-my-plugin/

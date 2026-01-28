@@ -220,7 +220,7 @@ class NativePlugin:
 
             # Create response struct and copy data into it
             response = response_type()
-            memmove(ctypes.addressof(response), rb_response.data, expected_size)
+            memmove(addressof(response), rb_response.data, expected_size)
 
             return response
         finally:

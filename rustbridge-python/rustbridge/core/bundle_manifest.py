@@ -144,7 +144,7 @@ class BuildInfo:
     """Host triple (e.g., "x86_64-unknown-linux-gnu")."""
 
     compiler: str | None = None
-    """Compiler version (e.g., "rustc 1.85.0")."""
+    """Compiler version (e.g., "rustc 1.90.0")."""
 
     rustbridge_version: str | None = None
     """rustbridge CLI version."""

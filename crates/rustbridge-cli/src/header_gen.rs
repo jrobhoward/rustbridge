@@ -108,10 +108,10 @@ fn parse_rust_file(source_path: &Path) -> Result<(Vec<CStruct>, Vec<CConstant>)>
     for item in ast.items {
         match item {
             Item::Struct(s) => {
-                if is_repr_c(&s.attrs) {
-                    if let Some(c_struct) = parse_struct(&s) {
-                        structs.push(c_struct);
-                    }
+                if is_repr_c(&s.attrs)
+                    && let Some(c_struct) = parse_struct(&s)
+                {
+                    structs.push(c_struct);
                 }
             }
             Item::Const(c) => {
@@ -129,10 +129,10 @@ fn parse_rust_file(source_path: &Path) -> Result<(Vec<CStruct>, Vec<CConstant>)>
 /// Check if a struct has `#[repr(C)]` attribute
 fn is_repr_c(attrs: &[Attribute]) -> bool {
     attrs.iter().any(|attr| {
-        if attr.path().is_ident("repr") {
-            if let Ok(nested) = attr.parse_args::<syn::Ident>() {
-                return nested == "C";
-            }
+        if attr.path().is_ident("repr")
+            && let Ok(nested) = attr.parse_args::<syn::Ident>()
+        {
+            return nested == "C";
         }
         false
     })
@@ -143,16 +143,14 @@ fn extract_doc_comment(attrs: &[Attribute]) -> Option<String> {
     let docs: Vec<String> = attrs
         .iter()
         .filter_map(|attr| {
-            if attr.path().is_ident("doc") {
-                if let syn::Meta::NameValue(meta) = &attr.meta {
-                    if let syn::Expr::Lit(syn::ExprLit {
-                        lit: syn::Lit::Str(s),
-                        ..
-                    }) = &meta.value
-                    {
-                        return Some(s.value().trim().to_string());
-                    }
-                }
+            if attr.path().is_ident("doc")
+                && let syn::Meta::NameValue(meta) = &attr.meta
+                && let syn::Expr::Lit(syn::ExprLit {
+                    lit: syn::Lit::Str(s),
+                    ..
+                }) = &meta.value
+            {
+                return Some(s.value().trim().to_string());
             }
             None
         })

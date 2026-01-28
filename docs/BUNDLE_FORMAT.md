@@ -103,7 +103,7 @@ The `manifest.json` file describes the bundle contents:
     "built_by": "GitHub Actions",
     "built_at": "2025-01-26T10:30:00Z",
     "host": "x86_64-unknown-linux-gnu",
-    "compiler": "rustc 1.85.0",
+    "compiler": "rustc 1.90.0",
     "rustbridge_version": "0.2.0",
     "git": {
       "commit": "a1b2c3d4e5f6",
@@ -120,7 +120,7 @@ The `manifest.json` file describes the bundle contents:
   "notices": "docs/NOTICES.txt",
   "public_key": "RWTxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   "api": {
-    "min_rustbridge_version": "0.1.0",
+    "min_rustbridge_version": "0.5.0",
     "transports": ["json", "cstruct"],
     "messages": [...]
   },
@@ -207,7 +207,7 @@ The optional `build_info` section provides traceability for the bundle:
     "built_by": "GitHub Actions",
     "built_at": "2025-01-26T10:30:00Z",
     "host": "x86_64-unknown-linux-gnu",
-    "compiler": "rustc 1.85.0",
+    "compiler": "rustc 1.90.0",
     "rustbridge_version": "0.2.0",
     "git": {
       "commit": "a1b2c3d4e5f6789012345678901234567890abcd",
@@ -464,7 +464,7 @@ The `api` section describes the plugin's message interface:
 ```json
 {
   "api": {
-    "min_rustbridge_version": "0.1.0",
+    "min_rustbridge_version": "0.5.0",
     "transports": ["json", "cstruct"],
     "messages": [
       {
@@ -735,5 +735,4 @@ go build -buildmode=c-shared -o libmyplugin.so
 
 - [TRANSPORT.md](./TRANSPORT.md) - JSON and binary transport details
 - [GETTING_STARTED.md](./GETTING_STARTED.md) - Creating your first bundle
-- [CODE_GENERATION.md](./CODE_GENERATION.md) - Generating schemas
-- [FFI.md](./FFI.md) - FFI interface specification
+- [MEMORY_MODEL.md](./MEMORY_MODEL.md) - Memory ownership patterns

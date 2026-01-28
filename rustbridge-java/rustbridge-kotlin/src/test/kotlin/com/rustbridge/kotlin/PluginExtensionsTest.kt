@@ -60,9 +60,9 @@ class PluginExtensionsTest {
 
     @Test
     @Order(2)
-    @DisplayName("call___json_request_typed_response___returns_deserialized_response")
-    fun call___json_request_typed_response___returns_deserialized_response() {
-        val response = plugin.call<EchoResponse>("echo", """{"message": "json test"}""")
+    @DisplayName("callAs___json_request_typed_response___returns_deserialized_response")
+    fun callAs___json_request_typed_response___returns_deserialized_response() {
+        val response = plugin.callAs<EchoResponse>("echo", """{"message": "json test"}""")
 
         assertEquals("json test", response.message)
         assertEquals(9, response.length)

@@ -56,11 +56,13 @@ flowchart TD
 
     subgraph FFI["FFI Layer"]
         RF[rustbridge-ffi]
+        RJ[rustbridge-jni]
     end
 
     subgraph Tools["Tooling"]
         RM[rustbridge-macros]
         CLI[rustbridge-cli]
+        RB[rustbridge-bundle]
     end
 
     subgraph Plugin["User Plugin"]
@@ -73,9 +75,11 @@ flowchart TD
     RT --> RF
     RR --> RF
     RL --> RF
+    RF --> RJ
     RC --> RM
     RC --> CLI
     RT --> CLI
+    RC --> RB
 
     RF --> UP
     RM --> UP
@@ -91,8 +95,10 @@ flowchart TD
 | **rustbridge-runtime** | Async execution | `AsyncRuntime`, `AsyncBridge`, `ShutdownSignal` |
 | **rustbridge-logging** | Log forwarding | `FfiLoggingLayer`, `LogCallbackManager` |
 | **rustbridge-ffi** | C ABI exports | `FfiBuffer`, `PluginHandle`, FFI functions |
+| **rustbridge-jni** | JNI bindings | JNI bridge for Java 17+ |
 | **rustbridge-macros** | Code generation | `#[rustbridge_plugin]`, `derive(Message)` |
 | **rustbridge-cli** | Build tooling | `new`, `build`, `generate`, `check` commands |
+| **rustbridge-bundle** | Bundle handling | `.rbp` bundle creation, parsing, verification |
 
 ## Plugin Lifecycle
 

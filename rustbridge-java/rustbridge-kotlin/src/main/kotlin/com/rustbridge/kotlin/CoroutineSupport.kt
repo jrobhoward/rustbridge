@@ -3,7 +3,6 @@
 package com.rustbridge.kotlin
 
 import com.rustbridge.Plugin
-import com.rustbridge.PluginException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -51,7 +50,7 @@ suspend inline fun <reified R> Plugin.callAsync(
     typeTag: String,
     requestJson: String
 ): R = withContext(Dispatchers.IO) {
-    call<R>(typeTag, requestJson)
+    callAs<R>(typeTag, requestJson)
 }
 
 /**

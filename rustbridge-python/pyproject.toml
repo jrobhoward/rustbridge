@@ -1,9 +1,9 @@
 [project]
 name = "rustbridge"
-version = "0.1.0"
+version = "0.5.0"
 description = "Python bindings for rustbridge - Rust shared libraries callable from Python"
 readme = "README.md"
-license = {text = "MIT"}
+license = {text = "MIT OR Apache-2.0"}
 requires-python = ">=3.10"
 authors = [
     { name = "RustBridge Authors" }

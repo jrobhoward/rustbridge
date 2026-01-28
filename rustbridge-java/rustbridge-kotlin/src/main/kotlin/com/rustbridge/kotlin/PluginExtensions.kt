@@ -44,10 +44,12 @@ inline fun <reified T, reified R> Plugin.call(typeTag: String, request: T): R {
 }
 
 /**
- * Call the plugin with a JSON request and typed response.
+ * Call the plugin with a JSON request and return a typed response.
+ *
+ * Use this when you have raw JSON and want automatic deserialization.
  *
  * ```kotlin
- * val response = plugin.call<EchoResponse>("echo", """{"message": "hello"}""")
+ * val response = plugin.callAs<EchoResponse>("echo", """{"message": "hello"}""")
  * ```
  *
  * @param R the response type
@@ -55,7 +57,7 @@ inline fun <reified T, reified R> Plugin.call(typeTag: String, request: T): R {
  * @param requestJson the JSON request string
  * @return the deserialized response
  */
-inline fun <reified R> Plugin.call(typeTag: String, requestJson: String): R {
+inline fun <reified R> Plugin.callAs(typeTag: String, requestJson: String): R {
     val responseJson = call(typeTag, requestJson)
     return objectMapper.readValue(responseJson)
 }

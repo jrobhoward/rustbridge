@@ -17,8 +17,8 @@ repositories {
 
 dependencies {
     // rustbridge dependencies
-    implementation("com.rustbridge:rustbridge-core:0.1.0")
-    implementation("com.rustbridge:rustbridge-ffm:0.1.0")
+    implementation("com.rustbridge:rustbridge-core:0.5.0")
+    implementation("com.rustbridge:rustbridge-ffm:0.5.0")
 
     // JSON serialization
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")

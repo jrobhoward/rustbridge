@@ -258,7 +258,7 @@ Metadata is stored in `manifest.json`:
     "built_by": "GitHub Actions",
     "built_at": "2025-01-26T10:30:00Z",
     "host": "x86_64-unknown-linux-gnu",
-    "compiler": "rustc 1.85.0",
+    "compiler": "rustc 1.90.0",
     "git": {
       "commit": "abc123...",
       "branch": "main",
@@ -394,4 +394,3 @@ Store your signing key as a GitHub secret:
 
 - **[Bundle Format Specification](../BUNDLE_FORMAT.md)** - Detailed format reference
 - **[Using Plugins](../using-plugins/README.md)** - Load bundles from host languages
-- **[Code Generation](../CODE_GENERATION.md)** - Generate typed clients from schemas

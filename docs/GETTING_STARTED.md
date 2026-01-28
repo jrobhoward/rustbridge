@@ -254,7 +254,7 @@ All templates are in the `templates/` directory:
 
 | Template | Description | Requirements |
 |----------|-------------|--------------|
-| `templates/plugin` | Rust plugin starter | Rust 1.85+ |
+| `templates/plugin` | Rust plugin starter | Rust 1.90+ |
 | `templates/kotlin` | Kotlin consumer | Java 21+ |
 | `templates/java-ffm` | Java FFM consumer (recommended) | Java 21+ |
 | `templates/java-jni` | Java JNI consumer (legacy) | Java 17+ |

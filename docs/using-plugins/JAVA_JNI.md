@@ -18,8 +18,8 @@ This guide walks you through using rustbridge plugins from Java using Java Nativ
 
 ```kotlin
 dependencies {
-    implementation("com.rustbridge:rustbridge-core:0.1.0")
-    implementation("com.rustbridge:rustbridge-jni:0.1.0")
+    implementation("com.rustbridge:rustbridge-core:0.5.0")
+    implementation("com.rustbridge:rustbridge-jni:0.5.0")
 }
 ```
 
@@ -27,8 +27,8 @@ dependencies {
 
 ```groovy
 dependencies {
-    implementation 'com.rustbridge:rustbridge-core:0.1.0'
-    implementation 'com.rustbridge:rustbridge-jni:0.1.0'
+    implementation 'com.rustbridge:rustbridge-core:0.5.0'
+    implementation 'com.rustbridge:rustbridge-jni:0.5.0'
 }
 ```
 
@@ -39,12 +39,12 @@ dependencies {
     <dependency>
         <groupId>com.rustbridge</groupId>
         <artifactId>rustbridge-core</artifactId>
-        <version>0.1.0</version>
+        <version>0.5.0</version>
     </dependency>
     <dependency>
         <groupId>com.rustbridge</groupId>
         <artifactId>rustbridge-jni</artifactId>
-        <version>0.1.0</version>
+        <version>0.5.0</version>
     </dependency>
 </dependencies>
 ```

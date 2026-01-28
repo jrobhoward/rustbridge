@@ -25,7 +25,7 @@ pub fn run(name: &str, path: Option<String>) -> Result<()> {
     let cargo_toml = format!(
         r#"[package]
 name = "{name}"
-version = "0.1.0"
+version = "0.5.0"
 edition = "2021"
 
 [workspace]  # Standalone project (not part of a parent workspace)
@@ -53,7 +53,7 @@ tracing = "0.1"
     let manifest = format!(
         r#"[plugin]
 name = "{name}"
-version = "0.1.0"
+version = "0.5.0"
 description = "A rustbridge plugin"
 
 [messages."echo"]

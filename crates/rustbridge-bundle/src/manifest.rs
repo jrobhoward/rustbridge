@@ -1057,7 +1057,7 @@ mod tests {
             built_by: Some("GitHub Actions".to_string()),
             built_at: Some("2025-01-26T10:30:00Z".to_string()),
             host: Some("x86_64-unknown-linux-gnu".to_string()),
-            compiler: Some("rustc 1.85.0".to_string()),
+            compiler: Some("rustc 1.90.0".to_string()),
             rustbridge_version: Some("0.2.0".to_string()),
             git: Some(GitInfo {
                 commit: "abc123".to_string(),
@@ -1072,7 +1072,7 @@ mod tests {
 
         let build_info = parsed.get_build_info().unwrap();
         assert_eq!(build_info.built_by, Some("GitHub Actions".to_string()));
-        assert_eq!(build_info.compiler, Some("rustc 1.85.0".to_string()));
+        assert_eq!(build_info.compiler, Some("rustc 1.90.0".to_string()));
 
         let git = build_info.git.as_ref().unwrap();
         assert_eq!(git.commit, "abc123");

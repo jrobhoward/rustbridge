@@ -48,11 +48,11 @@ where
         tracing::error!("FFI panic caught: {}", panic_msg);
 
         // Mark plugin as failed if we have a valid handle
-        if handle_id != 0 {
-            if let Some(h) = PluginHandleManager::global().get(handle_id) {
-                h.mark_failed();
-                tracing::warn!("Plugin handle {} marked as failed due to panic", handle_id);
-            }
+        if handle_id != 0
+            && let Some(h) = PluginHandleManager::global().get(handle_id)
+        {
+            h.mark_failed();
+            tracing::warn!("Plugin handle {} marked as failed due to panic", handle_id);
         }
 
         // Return error buffer with InternalError code (11)

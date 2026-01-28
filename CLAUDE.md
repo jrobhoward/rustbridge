@@ -35,7 +35,7 @@ gradlew.bat build && gradlew.bat test  # Windows
 
 ## Rust Version
 
-- **Edition**: Rust 2024 | **MSRV**: 1.85.0
+- **Edition**: Rust 2024 | **MSRV**: 1.90.0
 - Use `cargo msrv verify` when adding dependencies
 
 ## Architecture Overview
@@ -146,6 +146,5 @@ See [docs/TESTING_PYTHON.md](./docs/TESTING_PYTHON.md) for Python testing conven
 - [docs/MEMORY_MODEL.md](./docs/MEMORY_MODEL.md) - Memory ownership patterns
 - [docs/SKILLS.md](./docs/SKILLS.md) - Development best practices
 - [docs/PLUGIN_LIFECYCLE.md](./docs/PLUGIN_LIFECYCLE.md) - Plugin lifecycle and resource cleanup
-- [docs/CODE_GENERATION.md](./docs/CODE_GENERATION.md) - Code generation guide
 - [docs/ERROR_HANDLING.md](./docs/ERROR_HANDLING.md) - Error types and FFI error codes
 - [docs/DEBUGGING.md](./docs/DEBUGGING.md) - Debugging techniques

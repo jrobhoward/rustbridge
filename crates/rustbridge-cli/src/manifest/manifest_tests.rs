@@ -35,7 +35,7 @@ fn Manifest___from_str___parses_minimal_manifest() {
     let toml = r#"
 [plugin]
 name = "minimal"
-version = "0.1.0"
+version = "0.5.0"
 "#;
 
     let manifest = Manifest::from_str(toml).unwrap();

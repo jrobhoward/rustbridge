@@ -5,13 +5,9 @@ from __future__ import annotations
 import ctypes
 from ctypes import c_bool, c_char_p, c_size_t, c_uint8, c_uint32, c_uint64, c_void_p, POINTER
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from rustbridge.core.plugin_exception import PluginException
 from rustbridge.native.structures import FfiBuffer, RbResponse, LogCallbackFnType
-
-if TYPE_CHECKING:
-    pass
 
 
 class NativeLibrary:

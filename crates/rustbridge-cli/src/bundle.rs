@@ -278,16 +278,16 @@ pub fn combine(
     // Now merge platforms from all bundles
     for entry in library_entries {
         // Check for conflicts
-        if let Some(variants) = added_platforms.get(&entry.platform_str) {
-            if variants.contains_key(&entry.variant_name) {
-                anyhow::bail!(
-                    "Duplicate platform/variant: {}:{} (in {} and {})",
-                    entry.platform_str,
-                    entry.variant_name,
-                    variants.get(&entry.variant_name).unwrap(),
-                    bundle_paths[entry.bundle_idx]
-                );
-            }
+        if let Some(variants) = added_platforms.get(&entry.platform_str)
+            && variants.contains_key(&entry.variant_name)
+        {
+            anyhow::bail!(
+                "Duplicate platform/variant: {}:{} (in {} and {})",
+                entry.platform_str,
+                entry.variant_name,
+                variants.get(&entry.variant_name).unwrap(),
+                bundle_paths[entry.bundle_idx]
+            );
         }
 
         // Read the library file from this bundle
@@ -404,11 +404,11 @@ pub fn slim(
     // Filter and copy platforms/variants
     for (platform_str, platform_info) in &source_manifest.platforms {
         // Check if this platform should be included
-        if let Some(ref allowed_platforms) = platforms {
-            if !allowed_platforms.contains(platform_str) {
-                println!("  Skipping platform: {platform_str}");
-                continue;
-            }
+        if let Some(ref allowed_platforms) = platforms
+            && !allowed_platforms.contains(platform_str)
+        {
+            println!("  Skipping platform: {platform_str}");
+            continue;
         }
 
         for (variant_name, variant_info) in &platform_info.variants {
@@ -498,32 +498,30 @@ pub fn list(bundle_path: &str, show_build: bool, show_variants: bool) -> Result<
     }
 
     // Show build info if requested
-    if show_build {
-        if let Some(build_info) = manifest.get_build_info() {
-            println!("\nBuild Info:");
-            if let Some(built_by) = &build_info.built_by {
-                println!("  Built by: {built_by}");
+    if show_build && let Some(build_info) = manifest.get_build_info() {
+        println!("\nBuild Info:");
+        if let Some(built_by) = &build_info.built_by {
+            println!("  Built by: {built_by}");
+        }
+        if let Some(built_at) = &build_info.built_at {
+            println!("  Built at: {built_at}");
+        }
+        if let Some(host) = &build_info.host {
+            println!("  Host: {host}");
+        }
+        if let Some(compiler) = &build_info.compiler {
+            println!("  Compiler: {compiler}");
+        }
+        if let Some(git) = &build_info.git {
+            println!("  Git commit: {}", git.commit);
+            if let Some(branch) = &git.branch {
+                println!("  Git branch: {branch}");
             }
-            if let Some(built_at) = &build_info.built_at {
-                println!("  Built at: {built_at}");
+            if let Some(tag) = &git.tag {
+                println!("  Git tag: {tag}");
             }
-            if let Some(host) = &build_info.host {
-                println!("  Host: {host}");
-            }
-            if let Some(compiler) = &build_info.compiler {
-                println!("  Compiler: {compiler}");
-            }
-            if let Some(git) = &build_info.git {
-                println!("  Git commit: {}", git.commit);
-                if let Some(branch) = &git.branch {
-                    println!("  Git branch: {branch}");
-                }
-                if let Some(tag) = &git.tag {
-                    println!("  Git tag: {tag}");
-                }
-                if let Some(dirty) = git.dirty {
-                    println!("  Dirty: {dirty}");
-                }
+            if let Some(dirty) = git.dirty {
+                println!("  Dirty: {dirty}");
             }
         }
     }
@@ -659,14 +657,12 @@ fn collect_git_info() -> Option<rustbridge_bundle::GitInfo> {
     if let Ok(output) = std::process::Command::new("git")
         .args(["rev-parse", "--abbrev-ref", "HEAD"])
         .output()
+        && output.status.success()
+        && let Ok(branch) = String::from_utf8(output.stdout)
     {
-        if output.status.success() {
-            if let Ok(branch) = String::from_utf8(output.stdout) {
-                let branch = branch.trim();
-                if branch != "HEAD" {
-                    git_info.branch = Some(branch.to_string());
-                }
-            }
+        let branch = branch.trim();
+        if branch != "HEAD" {
+            git_info.branch = Some(branch.to_string());
         }
     }
 
@@ -674,22 +670,19 @@ fn collect_git_info() -> Option<rustbridge_bundle::GitInfo> {
     if let Ok(output) = std::process::Command::new("git")
         .args(["describe", "--tags", "--exact-match"])
         .output()
+        && output.status.success()
+        && let Ok(tag) = String::from_utf8(output.stdout)
     {
-        if output.status.success() {
-            if let Ok(tag) = String::from_utf8(output.stdout) {
-                git_info.tag = Some(tag.trim().to_string());
-            }
-        }
+        git_info.tag = Some(tag.trim().to_string());
     }
 
     // Check if dirty
     if let Ok(output) = std::process::Command::new("git")
         .args(["status", "--porcelain"])
         .output()
+        && output.status.success()
     {
-        if output.status.success() {
-            git_info.dirty = Some(!output.stdout.is_empty());
-        }
+        git_info.dirty = Some(!output.stdout.is_empty());
     }
 
     Some(git_info)

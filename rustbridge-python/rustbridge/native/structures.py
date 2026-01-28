@@ -1,6 +1,6 @@
 """ctypes structures for FFI interop."""
 
-from ctypes import Structure, c_uint8, c_uint32, c_uint64, c_size_t, POINTER
+from ctypes import CFUNCTYPE, POINTER, Structure, c_char_p, c_size_t, c_uint8, c_uint32, c_uint64
 
 
 class FfiBuffer(Structure):
@@ -110,6 +110,4 @@ class RbResponse(Structure):
 
 # Log callback function type
 # void (*)(uint8_t level, const char* target, const char* message, size_t message_len)
-from ctypes import CFUNCTYPE, c_char_p
-
 LogCallbackFnType = CFUNCTYPE(None, c_uint8, c_char_p, c_char_p, c_size_t)

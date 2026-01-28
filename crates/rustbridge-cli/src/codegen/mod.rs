@@ -1,46 +1,21 @@
-//! Code generation from Rust message types.
+//! JSON Schema generation from Rust message types.
 //!
-//! This module provides functionality to generate language bindings from Rust structs
+//! This module provides functionality to generate JSON Schema from Rust structs
 //! marked with `#[derive(Serialize, Deserialize)]` or `#[derive(Message)]`.
 //!
-//! # Supported Generators
+//! # Use Cases
 //!
-//! - **JSON Schema**: Generate JSON Schema Draft-07 definitions for API documentation
-//! - **Java**: Generate Java POJOs with Gson annotations for JVM languages
-//! - **Future**: C#, Kotlin, TypeScript
-//!
-//! # Architecture
-//!
-//! The code generation uses a two-stage pipeline:
-//!
-//! ```text
-//! Rust Source
-//!     ↓
-//!  [Parser]
-//!     ↓
-//!    IR (MessageType)
-//!     ↓
-//!  ├─→ [JSON Schema Generator] → schema.json
-//!  └─→ [Java Generator] → *.java
-//! ```
-//!
-//! This architecture provides:
-//! - **Shared parsing logic** across all generators
-//! - **Easy language additions** without re-implementing parsing
-//! - **Consistent transformations** applied to all targets
+//! - API documentation and contract definition
+//! - Validation schemas for JSON payloads
+//! - OpenAPI/Swagger integration
+//! - Self-documenting plugin bundles
 //!
 //! # Usage
 //!
 //! ## Command Line
 //!
-//! Generate JSON Schema:
 //! ```bash
 //! rustbridge generate json-schema -i src/messages.rs -o schema.json
-//! ```
-//!
-//! Generate Java classes:
-//! ```bash
-//! rustbridge generate java -i src/messages.rs -o src/main/java -p com.example
 //! ```
 //!
 //! ## Programmatic
@@ -86,22 +61,11 @@
 //! }
 //! ```
 //!
-//! Generates JSON Schema with proper types, documentation, and required fields.
-//! Generates Java with camelCase fields, `@SerializedName` annotations, getters/setters.
-//!
-//! # See Also
-//!
-//! - [`ir`] module for the intermediate representation
-//! - [`json_schema`] module for JSON Schema generation
-//! - [`java`] module for Java class generation
-//! - [Code Generation Guide](../../../docs/CODE_GENERATION.md) for comprehensive docs
+//! The generated JSON Schema will include proper types, documentation from doc comments,
+//! and required field annotations.
 
 pub mod ir;
-pub mod java;
 pub mod json_schema;
-pub mod jvm_types;
-pub mod naming;
 
 pub use ir::MessageType;
-pub use java::generate_java;
 pub use json_schema::generate_json_schema;

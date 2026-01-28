@@ -13,9 +13,9 @@ This demonstrates the core concepts: message types, request handling, and cross-
 
 ## Prerequisites
 
-- **Rust 1.85.0+** (2024 edition required)
+- **Rust 1.90.0+** (2024 edition required)
   ```bash
-  rustc --version  # Should be >= 1.85.0
+  rustc --version  # Should be >= 1.90.0
   ```
   Install or update: https://rustup.rs/
 
@@ -47,7 +47,7 @@ Edit `Cargo.toml`:
 ```toml
 [package]
 name = "calculator-plugin"
-version = "0.1.0"
+version = "0.5.0"
 edition = "2024"
 
 [workspace]  # Standalone project (not part of a parent workspace)
@@ -312,10 +312,9 @@ Use `PluginError` for structured errors:
     let req: DivideRequest = serde_json::from_slice(payload)?;
 
     if req.b == 0 {
-        return Err(PluginError::InvalidInput {
-            field: "b".to_string(),
-            message: "Division by zero".to_string(),
-        });
+        return Err(PluginError::HandlerError(
+            "Division by zero: field 'b' cannot be zero".to_string()
+        ));
     }
 
     let result = req.a / req.b;
@@ -345,7 +344,6 @@ Errors are propagated to the host language with error codes and messages.
 - **[Packaging Guide](../packaging/README.md)** - Multi-platform bundles, signing
 - **[Using Plugins](../using-plugins/README.md)** - Load from Java/Kotlin/C#/Python
 - **[Binary Transport](../TRANSPORT.md)** - Faster alternative to JSON
-- **[Code Generation](../CODE_GENERATION.md)** - Generate Java/C# classes from Rust types
 
 ## Complete Example
 

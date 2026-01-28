@@ -7,6 +7,8 @@ import org.jetbrains.annotations.Nullable;
  * Exception thrown by rustbridge plugin operations.
  */
 public class PluginException extends Exception {
+    private static final long serialVersionUID = 1L;
+
     private final int errorCode;
 
     /**

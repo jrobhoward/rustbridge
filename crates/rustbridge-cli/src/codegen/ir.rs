@@ -142,10 +142,10 @@ impl MessageType {
         let mut messages = Vec::new();
 
         for item in &file.items {
-            if let syn::Item::Struct(s) = item {
-                if is_message_struct(&s.attrs) {
-                    messages.push(Self::from_struct(s)?);
-                }
+            if let syn::Item::Struct(s) = item
+                && is_message_struct(&s.attrs)
+            {
+                messages.push(Self::from_struct(s)?);
             }
         }
 
@@ -199,15 +199,15 @@ impl Field {
 /// Check if a struct has derives that indicate it's a message type.
 fn is_message_struct(attrs: &[Attribute]) -> bool {
     for attr in attrs {
-        if let Meta::List(meta_list) = &attr.meta {
-            if meta_list.path.is_ident("derive") {
-                let tokens = meta_list.tokens.to_string();
-                // Check for Message derive or Serialize + Deserialize
-                if tokens.contains("Message")
-                    || (tokens.contains("Serialize") && tokens.contains("Deserialize"))
-                {
-                    return true;
-                }
+        if let Meta::List(meta_list) = &attr.meta
+            && meta_list.path.is_ident("derive")
+        {
+            let tokens = meta_list.tokens.to_string();
+            // Check for Message derive or Serialize + Deserialize
+            if tokens.contains("Message")
+                || (tokens.contains("Serialize") && tokens.contains("Deserialize"))
+            {
+                return true;
             }
         }
     }
@@ -219,17 +219,15 @@ fn extract_docs(attrs: &[Attribute]) -> Vec<String> {
     let mut docs = Vec::new();
 
     for attr in attrs {
-        if attr.path().is_ident("doc") {
-            if let Meta::NameValue(meta) = &attr.meta {
-                if let syn::Expr::Lit(expr_lit) = &meta.value {
-                    if let syn::Lit::Str(lit_str) = &expr_lit.lit {
-                        let doc = lit_str.value();
-                        let doc = doc.trim();
-                        if !doc.is_empty() {
-                            docs.push(doc.to_string());
-                        }
-                    }
-                }
+        if attr.path().is_ident("doc")
+            && let Meta::NameValue(meta) = &attr.meta
+            && let syn::Expr::Lit(expr_lit) = &meta.value
+            && let syn::Lit::Str(lit_str) = &expr_lit.lit
+        {
+            let doc = lit_str.value();
+            let doc = doc.trim();
+            if !doc.is_empty() {
+                docs.push(doc.to_string());
             }
         }
     }
@@ -240,15 +238,15 @@ fn extract_docs(attrs: &[Attribute]) -> Vec<String> {
 /// Extract serde(rename = "...") attribute.
 fn extract_serde_rename(attrs: &[Attribute]) -> Option<String> {
     for attr in attrs {
-        if attr.path().is_ident("serde") {
-            if let Meta::List(meta_list) = &attr.meta {
-                // Parse nested meta items
-                let nested = meta_list.tokens.to_string();
-                if let Some(rename) = nested.strip_prefix("rename = \"") {
-                    if let Some(end) = rename.find('"') {
-                        return Some(rename[..end].to_string());
-                    }
-                }
+        if attr.path().is_ident("serde")
+            && let Meta::List(meta_list) = &attr.meta
+        {
+            // Parse nested meta items
+            let nested = meta_list.tokens.to_string();
+            if let Some(rename) = nested.strip_prefix("rename = \"")
+                && let Some(end) = rename.find('"')
+            {
+                return Some(rename[..end].to_string());
             }
         }
     }
@@ -303,22 +301,20 @@ fn parse_field_type(ty: &Type) -> Result<(FieldType, bool)> {
             if let Some(segment) = path.segments.last() {
                 let ident = &segment.ident;
 
-                if ident == "Vec" {
-                    if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
-                        if let Some(syn::GenericArgument::Type(inner_ty)) = args.args.first() {
-                            let (inner_field_type, _) = parse_field_type(inner_ty)?;
-                            return Ok((FieldType::Vec(Box::new(inner_field_type)), false));
-                        }
-                    }
+                if ident == "Vec"
+                    && let syn::PathArguments::AngleBracketed(args) = &segment.arguments
+                    && let Some(syn::GenericArgument::Type(inner_ty)) = args.args.first()
+                {
+                    let (inner_field_type, _) = parse_field_type(inner_ty)?;
+                    return Ok((FieldType::Vec(Box::new(inner_field_type)), false));
                 }
 
-                if ident == "Option" {
-                    if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
-                        if let Some(syn::GenericArgument::Type(inner_ty)) = args.args.first() {
-                            let (inner_field_type, _) = parse_field_type(inner_ty)?;
-                            return Ok((inner_field_type, true)); // Return inner type with optional=true
-                        }
-                    }
+                if ident == "Option"
+                    && let syn::PathArguments::AngleBracketed(args) = &segment.arguments
+                    && let Some(syn::GenericArgument::Type(inner_ty)) = args.args.first()
+                {
+                    let (inner_field_type, _) = parse_field_type(inner_ty)?;
+                    return Ok((inner_field_type, true)); // Return inner type with optional=true
                 }
 
                 // Custom type

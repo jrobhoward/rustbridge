@@ -312,7 +312,7 @@ public class BundleManifest
         public string? Host { get; set; }
 
         /// <summary>
-        /// Compiler version (e.g., "rustc 1.85.0").
+        /// Compiler version (e.g., "rustc 1.90.0").
         /// </summary>
         [JsonPropertyName("compiler")]
         public string? Compiler { get; set; }

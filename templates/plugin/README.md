@@ -4,7 +4,7 @@ A minimal Rust plugin template for rustbridge.
 
 ## Prerequisites
 
-- **Rust 1.85.0+** (2024 edition)
+- **Rust 1.90.0+** (2024 edition)
 - **rustbridge CLI** - For creating bundles
 
 ## Quick Start

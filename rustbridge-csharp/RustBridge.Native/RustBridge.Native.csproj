@@ -9,10 +9,11 @@
 
     <!-- Package metadata -->
     <PackageId>RustBridge.Native</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.5.0</Version>
     <Authors>RustBridge Contributors</Authors>
     <Description>P/Invoke bindings for RustBridge - load and call Rust plugins from .NET</Description>
     <PackageTags>rust;ffi;interop;plugin;pinvoke</PackageTags>
+    <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>

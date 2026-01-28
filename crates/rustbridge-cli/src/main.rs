@@ -111,21 +111,6 @@ enum GenerateAction {
         #[arg(short, long)]
         output: String,
     },
-
-    /// Generate Java classes from Rust message types
-    Java {
-        /// Path to Rust source file(s) containing message types
-        #[arg(short, long)]
-        input: String,
-
-        /// Output directory for generated Java classes
-        #[arg(short, long)]
-        output: String,
-
-        /// Java package name for generated classes
-        #[arg(short, long, default_value = "com.rustbridge.messages")]
-        package: String,
-    },
 }
 
 #[derive(Subcommand)]
@@ -295,24 +280,6 @@ fn main() -> anyhow::Result<()> {
                 // Write to output file
                 std::fs::write(&output, serde_json::to_string_pretty(&schema)?)?;
                 println!("  JSON Schema written to {output}");
-            }
-            GenerateAction::Java {
-                input,
-                output,
-                package,
-            } => {
-                use codegen::{MessageType, generate_java};
-                use std::path::Path;
-
-                println!("Generating Java classes from {input}");
-
-                // Parse message types from Rust source
-                let messages = MessageType::parse_file(Path::new(&input))?;
-                println!("  Found {} message type(s)", messages.len());
-
-                // Generate Java classes
-                generate_java(&messages, Path::new(&output), &package)?;
-                println!("  Java classes written to {output}");
             }
         },
         Commands::New { name, path } => {
