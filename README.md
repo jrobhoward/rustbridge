@@ -1,5 +1,6 @@
 # rustbridge
 
+[![CI](https://github.com/jrobhoward/rustbridge/actions/workflows/ci.yml/badge.svg)](https://github.com/jrobhoward/rustbridge/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
 [![Rust](https://img.shields.io/badge/rust-1.90%2B-orange.svg)](https://www.rust-lang.org)
 [![Java](https://img.shields.io/badge/java-17%2B-red.svg)](https://openjdk.org)
