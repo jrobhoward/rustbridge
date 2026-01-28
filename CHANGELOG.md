@@ -7,20 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Removed
-- Experimental Java code generation feature (deferred to future release)
-- `rustbridge generate java` CLI command
-- `docs/CODE_GENERATION.md` (JSON Schema generation still available)
-- `examples/codegen/` directory with Java examples
-
-### Changed
-- MSRV updated from 1.85 to 1.90 (Rust Edition 2024)
-- Simplified docs/TASKS.md to focus on active work items
+## [0.5.1] - 2025-01-27
 
 ### Added
-- CONTRIBUTING.md with contribution guidelines
-- LICENSE-MIT and LICENSE-APACHE license files
-- License files in template directories
+- Published all crates to [crates.io](https://crates.io/crates/rustbridge-core)
+- CI status badge in README
+
+### Changed
+- Plugin templates now use crates.io dependencies instead of git
 
 ## [0.5.0] - 2025-01-26
 
@@ -103,5 +97,6 @@ Initial public release.
 - No `.unwrap()` or `.expect()` in production code
 - Minisign signature verification for bundle integrity
 
-[Unreleased]: https://github.com/jrobhoward/rustbridge/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/jrobhoward/rustbridge/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/jrobhoward/rustbridge/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/jrobhoward/rustbridge/releases/tag/v0.5.0
