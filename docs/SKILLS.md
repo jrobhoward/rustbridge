@@ -11,6 +11,26 @@ This document captures best practices and conventions for the rustbridge workspa
 - **Describe changes**: When asked to commit, summarize what changed clearly
 - **Stage selectively**: Only stage files related to the current task
 
+### Creating Release Tags
+
+Use annotated tags for releases (includes tagger name, date, and message):
+
+```bash
+# Create an annotated tag
+git tag -a v0.5.0 -m "Release v0.5.0"
+
+# Push the tag to remote
+git push origin v0.5.0
+
+# Or push branch and tag together
+git push origin main v0.5.0
+
+# Or push all tags at once
+git push origin --tags
+```
+
+Lightweight tags (without `-a`) are just pointers to commits and lack metadata.
+
 ## Error Handling
 
 ### Use `thiserror` for Error Types
