@@ -6,6 +6,7 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
+readme = "../../README.md"
 keywords = ["ffi", "plugin", "c-abi", "bindings", "interop"]
 categories = ["development-tools::ffi", "api-bindings"]
 
