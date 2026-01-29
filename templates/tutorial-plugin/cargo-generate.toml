@@ -5,22 +5,7 @@ ignore = [
     "target",
 ]
 
-[placeholders.include_regex]
+[placeholders.completed]
 type = "bool"
-prompt = "Include regex matching?"
-default = true
-
-[placeholders.include_cache]
-type = "bool"
-prompt = "Include LRU cache?"
-default = true
-
-[placeholders.include_config]
-type = "bool"
-prompt = "Include configuration support?"
-default = true
-
-[placeholders.include_logging]
-type = "bool"
-prompt = "Include logging examples?"
-default = true
+prompt = "Include completed regex implementation? (false = basic echo template)"
+default = false

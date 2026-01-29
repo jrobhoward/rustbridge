@@ -1,35 +1,31 @@
 # Section 1: Scaffold the Project
 
-In this section, you'll generate a new plugin project using cargo-generate and verify it builds correctly.
+In this section, you'll create a new plugin project from the basic template and verify it builds correctly.
 
-## Generate the Project
+## Create the Project
 
-We'll use the tutorial template to create a minimal starting point:
+We'll start with the basic plugin template and build up features incrementally:
 
 ```bash
 cd ~/rustbridge-workspace
 
-cargo generate --git https://github.com/jrobhoward/rustbridge templates/tutorial-plugin --name regex-plugin
-```
+cargo generate --git https://github.com/jrobhoward/rustbridge \
+  templates/tutorial-plugin --name regex-plugin
 
-When prompted, choose these options for now (we'll add features incrementally):
-
-| Prompt | Value | Reason |
-|--------|-------|--------|
-| Include regex matching? | **false** | We'll add this manually |
-| Include LRU cache? | **false** | We'll add this in section 3 |
-| Include configuration support? | **false** | We'll add this in section 4 |
-| Include logging examples? | **false** | We'll add this throughout |
-
-> **Tip**: If you want to skip ahead and see the completed plugin, generate with all options set to `true`.
-
-## Explore the Generated Project
-
-```bash
 cd regex-plugin
 ```
 
-The generated structure:
+When prompted for "Include completed regex implementation?", press Enter to accept the default (`false`). This gives you the basic echo template to start from.
+
+> **Tip**: If you want to skip ahead and see the completed plugin, run with `-d completed=true`:
+> ```bash
+> cargo generate --git https://github.com/jrobhoward/rustbridge \
+>   templates/tutorial-plugin --name regex-plugin -d completed=true
+> ```
+
+## Explore the Project
+
+The project structure:
 
 ```
 regex-plugin/
@@ -47,6 +43,7 @@ Open `src/lib.rs`. The template provides a basic echo plugin:
 
 ```rust
 use rustbridge::prelude::*;
+use rustbridge::{serde_json, tracing};
 
 // Message types
 #[derive(Debug, Clone, Serialize, Deserialize, Message)]
@@ -63,11 +60,12 @@ pub struct EchoResponse {
 
 // Plugin implementation
 #[derive(Default)]
-pub struct RegexPluginPlugin;
+pub struct RegexPlugin;
 
 #[async_trait]
-impl Plugin for RegexPluginPlugin {
+impl Plugin for RegexPlugin {
     async fn on_start(&self, _ctx: &PluginContext) -> PluginResult<()> {
+        tracing::info!("regex-plugin started");
         Ok(())
     }
 
@@ -78,12 +76,20 @@ impl Plugin for RegexPluginPlugin {
         payload: &[u8],
     ) -> PluginResult<Vec<u8>> {
         match type_tag {
-            "echo" => { /* ... */ }
+            "echo" => {
+                let req: EchoRequest = serde_json::from_slice(payload)?;
+                let response = EchoResponse {
+                    length: req.message.len(),
+                    message: req.message,
+                };
+                Ok(serde_json::to_vec(&response)?)
+            }
             _ => Err(PluginError::UnknownMessageType(type_tag.to_string())),
         }
     }
 
     async fn on_stop(&self, _ctx: &PluginContext) -> PluginResult<()> {
+        tracing::info!("regex-plugin stopped");
         Ok(())
     }
 
@@ -93,7 +99,7 @@ impl Plugin for RegexPluginPlugin {
 }
 
 // FFI entry point
-rustbridge_entry!(RegexPluginPlugin::default);
+rustbridge_entry!(RegexPlugin::default);
 pub use rustbridge::ffi_exports::*;
 ```
 
@@ -106,6 +112,12 @@ Key components:
 5. **FFI exports**: Required for the shared library to work
 
 ## Build and Test
+
+Format the generated code:
+
+```bash
+cargo fmt
+```
 
 Build the project:
 
@@ -123,7 +135,7 @@ You should see output like:
 
 ```
 running 1 test
-test tests::handle_request___echo___returns_message_with_length ... ok
+test tests::test_echo ... ok
 
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 ```

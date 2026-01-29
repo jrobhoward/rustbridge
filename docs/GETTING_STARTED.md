@@ -77,12 +77,18 @@ pip install -e .
 
 ## Step 2: Create a Plugin
 
-Copy the plugin template:
+Generate a plugin from the template:
 
 ```bash
-cp -r ~/rustbridge-workspace/rustbridge/templates/plugin ~/rustbridge-workspace/my-plugin
-cd ~/rustbridge-workspace/my-plugin
+cd ~/rustbridge-workspace
+
+cargo generate --git https://github.com/jrobhoward/rustbridge \
+  templates/tutorial-plugin --name my-plugin
+
+cd my-plugin
 ```
+
+When prompted for "Include completed regex implementation?", press Enter to accept the default (`false`). This gives you a basic echo plugin template.
 
 Build it:
 
@@ -260,8 +266,8 @@ All templates are in the `templates/` directory:
 
 | Template | Description | Requirements |
 |----------|-------------|--------------|
-| `templates/plugin` | Rust plugin starter | Rust 1.90+ |
-| `templates/tutorial-plugin` | cargo-generate template with optional features | Rust 1.90+, cargo-generate |
+| `templates/tutorial-plugin` | Rust plugin (basic or completed regex example) | Rust 1.90+, cargo-generate |
+| `templates/plugin` | Rust plugin starter (for manual copy) | Rust 1.90+ |
 | `templates/kotlin` | Kotlin consumer | Java 21+ |
 | `templates/java-ffm` | Java FFM consumer (recommended) | Java 21+ |
 | `templates/java-jni` | Java JNI consumer (legacy) | Java 17+ |

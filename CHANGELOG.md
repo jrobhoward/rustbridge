@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `examples/regex-plugin/` - Complete reference implementation with LRU caching and configuration
 
 ### Changed
+- `templates/tutorial-plugin/` - Unified basic and completed templates with `completed` boolean option
+  - Default (`false`) generates basic echo plugin (replaces manual `cp` of `templates/plugin`)
+  - With `-d completed=true` generates full regex plugin with LRU caching
+- Templates and examples now use proper `use` imports instead of fully qualified paths
+- Templates generate clippy-clean code (fixed `field_reassign_with_default` warnings)
 - `templates/plugin/` - Fixed tokio test dependency for standalone template usage
 
 ### Fixed

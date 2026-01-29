@@ -1,6 +1,8 @@
 # Tutorial Plugin Template
 
-A cargo-generate template for creating rustbridge plugins with configurable features.
+A cargo-generate template that creates a complete regex-matching plugin with LRU caching, configuration, and logging.
+
+This is the "finished product" from the [rustbridge tutorials](../../docs/tutorials/README.md).
 
 ## Usage
 
@@ -14,29 +16,34 @@ Or from a local clone:
 cargo generate --path ~/rustbridge-workspace/rustbridge/templates/tutorial-plugin
 ```
 
-## Features
+## After Generating
 
-When generating a project, you'll be prompted for:
+```bash
+cd your-plugin-name
+cargo fmt
+cargo test
+cargo build --release
+```
 
-| Feature | Default | Description |
-|---------|---------|-------------|
-| `include_regex` | true | Regex pattern matching with the `regex` crate |
-| `include_cache` | true | LRU cache for compiled patterns |
-| `include_config` | true | Plugin configuration via `PluginFactory` |
-| `include_logging` | true | Structured logging with `tracing` |
+## What's Included
 
-## Generated Project
+The generated plugin includes:
 
-The generated project includes:
+- **Regex pattern matching** with the `regex` crate
+- **LRU cache** for compiled patterns (configurable size)
+- **Configuration support** via `PluginFactory`
+- **Structured logging** with `tracing`
+- **Tests** for basic functionality
 
-- **Message types**: Either echo or regex matching
-- **Plugin struct**: With optional cache storage
-- **Configuration**: Optional `PluginConfigData` struct
-- **Tests**: Basic test coverage
+## Starting Simpler?
 
-## Tutorial
+If you want to start with a minimal echo plugin and build up incrementally (as the tutorial does), use the basic template instead:
 
-This template is used in the [rustbridge tutorials](../../docs/tutorials/README.md) to guide you through building a production-quality plugin step by step.
+```bash
+cp -r ~/rustbridge-workspace/rustbridge/templates/plugin ~/my-plugin
+```
+
+Then follow the [tutorials](../../docs/tutorials/README.md) to add features step by step.
 
 ## License
 

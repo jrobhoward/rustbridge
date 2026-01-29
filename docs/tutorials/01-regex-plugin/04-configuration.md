@@ -90,13 +90,13 @@ impl PluginFactory for RegexPlugin {
     /// Called when config.data contains JSON configuration
     fn create_configured(config: &PluginConfig) -> PluginResult<Self> {
         // Parse the configuration
-        let config_data: PluginConfigData = rustbridge::serde_json::from_value(config.data.clone())?;
+        let config_data: PluginConfigData = serde_json::from_value(config.data.clone())?;
 
         // Handle invalid cache size gracefully
         let cache_size = NonZeroUsize::new(config_data.cache_size)
             .unwrap_or_else(|| NonZeroUsize::new(DEFAULT_CACHE_SIZE).expect("default is non-zero"));
 
-        rustbridge::tracing::info!(
+        tracing::info!(
             cache_size = cache_size.get(),
             "Creating regex plugin with custom configuration"
         );
@@ -128,7 +128,7 @@ Update `on_start` to log the configured cache size:
 
 ```rust
 async fn on_start(&self, _ctx: &PluginContext) -> PluginResult<()> {
-    rustbridge::tracing::info!(
+    tracing::info!(
         cache_size = self.cache_size,
         "regex-plugin started"
     );
@@ -151,8 +151,10 @@ async fn create___with_null_config___uses_default_cache_size() {
 #[tokio::test]
 async fn create___with_custom_config___uses_configured_cache_size() {
     let config_data = PluginConfigData { cache_size: 50 };
-    let mut config = PluginConfig::default();
-    config.data = rustbridge::serde_json::to_value(config_data).unwrap();
+    let config = PluginConfig {
+        data: serde_json::to_value(config_data).unwrap(),
+        ..Default::default()
+    };
 
     let plugin = RegexPlugin::create(&config).unwrap();
 
@@ -162,8 +164,10 @@ async fn create___with_custom_config___uses_configured_cache_size() {
 #[tokio::test]
 async fn create___with_zero_cache_size___uses_default() {
     let config_data = PluginConfigData { cache_size: 0 };  // Invalid!
-    let mut config = PluginConfig::default();
-    config.data = rustbridge::serde_json::to_value(config_data).unwrap();
+    let config = PluginConfig {
+        data: serde_json::to_value(config_data).unwrap(),
+        ..Default::default()
+    };
 
     let plugin = RegexPlugin::create(&config).unwrap();
 
@@ -182,6 +186,7 @@ Here's the complete implementation:
 use lru::LruCache;
 use regex::Regex;
 use rustbridge::prelude::*;
+use rustbridge::{serde_json, tracing};
 use std::num::NonZeroUsize;
 use std::sync::Mutex;
 
@@ -240,12 +245,12 @@ impl Default for RegexPlugin {
 
 impl PluginFactory for RegexPlugin {
     fn create_configured(config: &PluginConfig) -> PluginResult<Self> {
-        let config_data: PluginConfigData = rustbridge::serde_json::from_value(config.data.clone())?;
+        let config_data: PluginConfigData = serde_json::from_value(config.data.clone())?;
 
         let cache_size = NonZeroUsize::new(config_data.cache_size)
             .unwrap_or_else(|| NonZeroUsize::new(DEFAULT_CACHE_SIZE).expect("default is non-zero"));
 
-        rustbridge::tracing::info!(
+        tracing::info!(
             cache_size = cache_size.get(),
             "Creating regex plugin with custom configuration"
         );
@@ -260,7 +265,7 @@ impl PluginFactory for RegexPlugin {
 #[async_trait]
 impl Plugin for RegexPlugin {
     async fn on_start(&self, _ctx: &PluginContext) -> PluginResult<()> {
-        rustbridge::tracing::info!(cache_size = self.cache_size, "regex-plugin started");
+        tracing::info!(cache_size = self.cache_size, "regex-plugin started");
         Ok(())
     }
 
@@ -272,9 +277,9 @@ impl Plugin for RegexPlugin {
     ) -> PluginResult<Vec<u8>> {
         match type_tag {
             "match" => {
-                let req: MatchRequest = rustbridge::serde_json::from_slice(payload)?;
+                let req: MatchRequest = serde_json::from_slice(payload)?;
 
-                rustbridge::tracing::debug!(
+                tracing::debug!(
                     pattern = %req.pattern,
                     text_len = req.text.len(),
                     "Processing match request"
@@ -286,7 +291,7 @@ impl Plugin for RegexPlugin {
                     (regex, true)
                 } else {
                     let regex = Regex::new(&req.pattern).map_err(|e| {
-                        rustbridge::tracing::warn!(
+                        tracing::warn!(
                             pattern = %req.pattern,
                             error = %e,
                             "Invalid regex pattern"
@@ -299,7 +304,7 @@ impl Plugin for RegexPlugin {
 
                 let matches = regex.is_match(&req.text);
 
-                rustbridge::tracing::debug!(
+                tracing::debug!(
                     pattern = %req.pattern,
                     matches,
                     cached,
@@ -307,7 +312,7 @@ impl Plugin for RegexPlugin {
                 );
 
                 let response = MatchResponse { matches, cached };
-                Ok(rustbridge::serde_json::to_vec(&response)?)
+                Ok(serde_json::to_vec(&response)?)
             }
             _ => Err(PluginError::UnknownMessageType(type_tag.to_string())),
         }
@@ -315,7 +320,7 @@ impl Plugin for RegexPlugin {
 
     async fn on_stop(&self, _ctx: &PluginContext) -> PluginResult<()> {
         let cache = self.cache.lock().expect("cache lock poisoned");
-        rustbridge::tracing::info!(cached_patterns = cache.len(), "regex-plugin stopped");
+        tracing::info!(cached_patterns = cache.len(), "regex-plugin stopped");
         Ok(())
     }
 

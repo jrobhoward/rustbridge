@@ -32,6 +32,7 @@ The plugin now needs to hold the cache. We use `Mutex` for thread safety:
 use lru::LruCache;
 use regex::Regex;
 use rustbridge::prelude::*;
+use rustbridge::{serde_json, tracing};
 use std::num::NonZeroUsize;
 use std::sync::Mutex;
 
@@ -87,7 +88,7 @@ async fn handle_request(
 ) -> PluginResult<Vec<u8>> {
     match type_tag {
         "match" => {
-            let req: MatchRequest = rustbridge::serde_json::from_slice(payload)?;
+            let req: MatchRequest = serde_json::from_slice(payload)?;
 
             // Lock the cache
             let mut cache = self.cache.lock().expect("cache lock poisoned");
@@ -107,7 +108,7 @@ async fn handle_request(
             let matches = regex.is_match(&req.text);
 
             let response = MatchResponse { matches, cached };
-            Ok(rustbridge::serde_json::to_vec(&response)?)
+            Ok(serde_json::to_vec(&response)?)
         }
         _ => Err(PluginError::UnknownMessageType(type_tag.to_string())),
     }
@@ -120,13 +121,13 @@ Add some tracing to see what's happening:
 
 ```rust
 async fn on_start(&self, _ctx: &PluginContext) -> PluginResult<()> {
-    rustbridge::tracing::info!("regex-plugin started with cache size: {}", DEFAULT_CACHE_SIZE);
+    tracing::info!("regex-plugin started with cache size: {}", DEFAULT_CACHE_SIZE);
     Ok(())
 }
 
 async fn on_stop(&self, _ctx: &PluginContext) -> PluginResult<()> {
     let cache = self.cache.lock().expect("cache lock poisoned");
-    rustbridge::tracing::info!(
+    tracing::info!(
         cached_patterns = cache.len(),
         "regex-plugin stopped"
     );
@@ -137,7 +138,7 @@ async fn on_stop(&self, _ctx: &PluginContext) -> PluginResult<()> {
 And in `handle_request`, after matching:
 
 ```rust
-rustbridge::tracing::debug!(
+tracing::debug!(
     pattern = %req.pattern,
     matches,
     cached,
@@ -160,14 +161,14 @@ mod tests {
         let plugin = RegexPlugin::default();
         let ctx = PluginContext::new(PluginConfig::default());
 
-        let request = rustbridge::serde_json::to_vec(&MatchRequest {
+        let request = serde_json::to_vec(&MatchRequest {
             pattern: r"\d+".to_string(),
             text: "test123".to_string(),
         })
         .unwrap();
 
         let response = plugin.handle_request(&ctx, "match", &request).await.unwrap();
-        let match_response: MatchResponse = rustbridge::serde_json::from_slice(&response).unwrap();
+        let match_response: MatchResponse = serde_json::from_slice(&response).unwrap();
 
         assert!(match_response.matches);
         assert!(!match_response.cached);  // First time, not cached
@@ -179,7 +180,7 @@ mod tests {
         let ctx = PluginContext::new(PluginConfig::default());
 
         // First request
-        let request = rustbridge::serde_json::to_vec(&MatchRequest {
+        let request = serde_json::to_vec(&MatchRequest {
             pattern: r"\d+".to_string(),
             text: "test123".to_string(),
         })
@@ -188,14 +189,14 @@ mod tests {
         let _ = plugin.handle_request(&ctx, "match", &request).await.unwrap();
 
         // Second request with same pattern
-        let request = rustbridge::serde_json::to_vec(&MatchRequest {
+        let request = serde_json::to_vec(&MatchRequest {
             pattern: r"\d+".to_string(),
             text: "456".to_string(),
         })
         .unwrap();
 
         let response = plugin.handle_request(&ctx, "match", &request).await.unwrap();
-        let match_response: MatchResponse = rustbridge::serde_json::from_slice(&response).unwrap();
+        let match_response: MatchResponse = serde_json::from_slice(&response).unwrap();
 
         assert!(match_response.matches);
         assert!(match_response.cached);  // Second time, from cache!
@@ -227,7 +228,7 @@ async fn bench___cache_effectiveness() {
 
     // Warm up the cache
     for pattern in &patterns {
-        let request = rustbridge::serde_json::to_vec(&MatchRequest {
+        let request = serde_json::to_vec(&MatchRequest {
             pattern: pattern.to_string(),
             text: sample.to_string(),
         })
@@ -239,7 +240,7 @@ async fn bench___cache_effectiveness() {
     let start = Instant::now();
     for _ in 0..iterations {
         for pattern in &patterns {
-            let request = rustbridge::serde_json::to_vec(&MatchRequest {
+            let request = serde_json::to_vec(&MatchRequest {
                 pattern: pattern.to_string(),
                 text: sample.to_string(),
             })

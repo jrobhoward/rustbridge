@@ -14,12 +14,10 @@ rustbridge = "0.6"
 # Serde is needed as a direct dependency because derive macros expand to
 # code that references ::serde:: directly
 serde = { version = "1.0", features = ["derive"] }
-{% if include_regex %}
+{% if completed %}
 
 # Regex pattern matching
 regex = "1.10"
-{% endif %}
-{% if include_cache %}
 
 # LRU cache for compiled patterns
 lru = "0.12"

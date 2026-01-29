@@ -4,6 +4,7 @@
 //! Modify it to add your own message types and business logic.
 
 use rustbridge::prelude::*;
+use rustbridge::{serde_json, tracing};
 
 // ============================================================================
 // Message Types
@@ -34,7 +35,7 @@ pub struct MyPlugin;
 #[async_trait]
 impl Plugin for MyPlugin {
     async fn on_start(&self, _ctx: &PluginContext) -> PluginResult<()> {
-        rustbridge::tracing::info!("my-plugin started");
+        tracing::info!("my-plugin started");
         Ok(())
     }
 
@@ -46,19 +47,19 @@ impl Plugin for MyPlugin {
     ) -> PluginResult<Vec<u8>> {
         match type_tag {
             "echo" => {
-                let req: EchoRequest = rustbridge::serde_json::from_slice(payload)?;
+                let req: EchoRequest = serde_json::from_slice(payload)?;
                 let response = EchoResponse {
                     length: req.message.len(),
                     message: req.message,
                 };
-                Ok(rustbridge::serde_json::to_vec(&response)?)
+                Ok(serde_json::to_vec(&response)?)
             }
             _ => Err(PluginError::UnknownMessageType(type_tag.to_string())),
         }
     }
 
     async fn on_stop(&self, _ctx: &PluginContext) -> PluginResult<()> {
-        rustbridge::tracing::info!("my-plugin stopped");
+        tracing::info!("my-plugin stopped");
         Ok(())
     }
 
@@ -90,14 +91,13 @@ mod tests {
         let plugin = MyPlugin;
         let ctx = PluginContext::new(PluginConfig::default());
 
-        let request = rustbridge::serde_json::to_vec(&EchoRequest {
+        let request = serde_json::to_vec(&EchoRequest {
             message: "Hello, World!".to_string(),
         })
         .unwrap();
 
         let response = plugin.handle_request(&ctx, "echo", &request).await.unwrap();
-        let echo_response: EchoResponse =
-            rustbridge::serde_json::from_slice(&response).unwrap();
+        let echo_response: EchoResponse = serde_json::from_slice(&response).unwrap();
 
         assert_eq!(echo_response.message, "Hello, World!");
         assert_eq!(echo_response.length, 13);

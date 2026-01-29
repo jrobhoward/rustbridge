@@ -22,6 +22,7 @@ Replace the echo types in `src/lib.rs` with regex match types:
 ```rust
 use regex::Regex;
 use rustbridge::prelude::*;
+use rustbridge::serde_json;
 
 // ============================================================================
 // Message Types
@@ -79,7 +80,7 @@ impl Plugin for RegexPlugin {
         match type_tag {
             "match" => {
                 // Deserialize the request
-                let req: MatchRequest = rustbridge::serde_json::from_slice(payload)?;
+                let req: MatchRequest = serde_json::from_slice(payload)?;
 
                 // Compile the regex (this can fail for invalid patterns)
                 let regex = Regex::new(&req.pattern).map_err(|e| {
@@ -91,7 +92,7 @@ impl Plugin for RegexPlugin {
 
                 // Build and serialize the response
                 let response = MatchResponse { matches };
-                Ok(rustbridge::serde_json::to_vec(&response)?)
+                Ok(serde_json::to_vec(&response)?)
             }
             _ => Err(PluginError::UnknownMessageType(type_tag.to_string())),
         }
@@ -135,14 +136,14 @@ mod tests {
 
         plugin.on_start(&ctx).await.unwrap();
 
-        let request = rustbridge::serde_json::to_vec(&MatchRequest {
+        let request = serde_json::to_vec(&MatchRequest {
             pattern: r"\d+".to_string(),
             text: "test123".to_string(),
         })
         .unwrap();
 
         let response = plugin.handle_request(&ctx, "match", &request).await.unwrap();
-        let match_response: MatchResponse = rustbridge::serde_json::from_slice(&response).unwrap();
+        let match_response: MatchResponse = serde_json::from_slice(&response).unwrap();
 
         assert!(match_response.matches);
     }
@@ -152,14 +153,14 @@ mod tests {
         let plugin = RegexPlugin::default();
         let ctx = PluginContext::new(PluginConfig::default());
 
-        let request = rustbridge::serde_json::to_vec(&MatchRequest {
+        let request = serde_json::to_vec(&MatchRequest {
             pattern: r"^\d+$".to_string(),  // Must be ALL digits
             text: "test123".to_string(),     // Has letters
         })
         .unwrap();
 
         let response = plugin.handle_request(&ctx, "match", &request).await.unwrap();
-        let match_response: MatchResponse = rustbridge::serde_json::from_slice(&response).unwrap();
+        let match_response: MatchResponse = serde_json::from_slice(&response).unwrap();
 
         assert!(!match_response.matches);
     }
@@ -169,7 +170,7 @@ mod tests {
         let plugin = RegexPlugin::default();
         let ctx = PluginContext::new(PluginConfig::default());
 
-        let request = rustbridge::serde_json::to_vec(&MatchRequest {
+        let request = serde_json::to_vec(&MatchRequest {
             pattern: r"[invalid".to_string(),  // Unclosed bracket
             text: "test".to_string(),
         })
@@ -217,7 +218,7 @@ async fn bench___compilation_overhead() {
     let text = "user@example.com";
     let iterations = 1000;
 
-    let request = rustbridge::serde_json::to_vec(&MatchRequest {
+    let request = serde_json::to_vec(&MatchRequest {
         pattern: pattern.to_string(),
         text: text.to_string(),
     })

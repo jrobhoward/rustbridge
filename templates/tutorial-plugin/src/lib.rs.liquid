@@ -1,38 +1,20 @@
-//! {{project-name}} - A rustbridge plugin
-//!
-//! This plugin implements:
-{% if include_regex %}
-//! - Regex pattern matching
-{% else %}
-//! - Echo message handling
-{% endif %}
-{% if include_cache %}
-//! - LRU caching for compiled patterns
-{% endif %}
-{% if include_config %}
-//! - Configuration support via PluginFactory
-{% endif %}
-{% if include_logging %}
-//! - Structured logging examples
-{% endif %}
+//! {{project-name}} - A rustbridge plugin{% if completed %} demonstrating regex matching with LRU caching{% endif %}
 
-{% if include_cache %}
+{% if completed -%}
 use lru::LruCache;
-{% endif %}
-{% if include_regex %}
 use regex::Regex;
-{% endif %}
+{%- endif %}
 use rustbridge::prelude::*;
-{% if include_cache %}
+use rustbridge::{serde_json, tracing};
+{% if completed -%}
 use std::num::NonZeroUsize;
 use std::sync::Mutex;
-{% endif %}
+{%- endif %}
 
 // ============================================================================
 // Message Types
 // ============================================================================
-{% if include_regex %}
-
+{% if completed %}
 /// Regex match request message
 #[derive(Debug, Clone, Serialize, Deserialize, Message)]
 #[message(tag = "match")]
@@ -48,13 +30,27 @@ pub struct MatchRequest {
 pub struct MatchResponse {
     /// Whether the pattern matched the text
     pub matches: bool,
-{% if include_cache %}
     /// Whether the pattern was retrieved from cache
     pub cached: bool,
-{% endif %}
+}
+
+// ============================================================================
+// Plugin Configuration
+// ============================================================================
+
+/// Plugin configuration data (parsed from config.data JSON)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PluginConfigData {
+    /// Maximum number of compiled regex patterns to cache
+    pub cache_size: usize,
+}
+
+impl Default for PluginConfigData {
+    fn default() -> Self {
+        Self { cache_size: 100 }
+    }
 }
 {% else %}
-
 /// Echo request message
 #[derive(Debug, Clone, Serialize, Deserialize, Message)]
 #[message(tag = "echo")]
@@ -69,57 +65,21 @@ pub struct EchoResponse {
     pub length: usize,
 }
 {% endif %}
-{% if include_config %}
-
-// ============================================================================
-// Plugin Configuration
-// ============================================================================
-
-/// Plugin configuration data (parsed from config.data JSON)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PluginConfigData {
-{% if include_cache %}
-    /// Maximum number of compiled regex patterns to cache
-    pub cache_size: usize,
-{% else %}
-    /// Example configuration field
-    pub example_field: String,
-{% endif %}
-}
-
-impl Default for PluginConfigData {
-    fn default() -> Self {
-        Self {
-{% if include_cache %}
-            cache_size: 100,
-{% else %}
-            example_field: "default".to_string(),
-{% endif %}
-        }
-    }
-}
-{% endif %}
-
 // ============================================================================
 // Plugin Implementation
 // ============================================================================
-{% if include_cache %}
-
+{% if completed %}
 const DEFAULT_CACHE_SIZE: usize = 100;
-{% endif %}
 
-/// Plugin implementation
-pub struct {{project-name | pascal_case}}Plugin {
-{% if include_cache %}
+/// Regex plugin with configurable LRU caching
+pub struct {{project-name | pascal_case}} {
     /// LRU cache of compiled regexes (pattern -> Regex)
     cache: Mutex<LruCache<String, Regex>>,
     /// The configured cache size (for logging)
     cache_size: usize,
-{% endif %}
 }
-{% if include_cache %}
 
-impl Default for {{project-name | pascal_case}}Plugin {
+impl Default for {{project-name | pascal_case}} {
     fn default() -> Self {
         let cache_size = NonZeroUsize::new(DEFAULT_CACHE_SIZE).expect("default is non-zero");
         Self {
@@ -128,65 +88,33 @@ impl Default for {{project-name | pascal_case}}Plugin {
         }
     }
 }
-{% else %}
 
-impl Default for {{project-name | pascal_case}}Plugin {
-    fn default() -> Self {
-        Self {}
-    }
-}
-{% endif %}
-{% if include_config %}
-
-impl PluginFactory for {{project-name | pascal_case}}Plugin {
+impl PluginFactory for {{project-name | pascal_case}} {
     /// Called when config.data contains JSON configuration
     fn create_configured(config: &PluginConfig) -> PluginResult<Self> {
-        let config_data: PluginConfigData = rustbridge::serde_json::from_value(config.data.clone())?;
-{% if include_cache %}
+        // Parse the configuration
+        let config_data: PluginConfigData = serde_json::from_value(config.data.clone())?;
 
+        // Handle invalid cache size gracefully
         let cache_size = NonZeroUsize::new(config_data.cache_size)
             .unwrap_or_else(|| NonZeroUsize::new(DEFAULT_CACHE_SIZE).expect("default is non-zero"));
-{% if include_logging %}
 
-        rustbridge::tracing::info!(
+        tracing::info!(
             cache_size = cache_size.get(),
-            "Creating plugin with custom configuration"
+            "Creating regex plugin with custom configuration"
         );
-{% endif %}
 
         Ok(Self {
             cache: Mutex::new(LruCache::new(cache_size)),
             cache_size: cache_size.get(),
         })
-{% else %}
-{% if include_logging %}
-
-        rustbridge::tracing::info!(
-            example_field = %config_data.example_field,
-            "Creating plugin with custom configuration"
-        );
-{% endif %}
-
-        let _ = config_data; // Use the config
-        Ok(Self::default())
-{% endif %}
     }
 }
-{% endif %}
 
 #[async_trait]
-impl Plugin for {{project-name | pascal_case}}Plugin {
+impl Plugin for {{project-name | pascal_case}} {
     async fn on_start(&self, _ctx: &PluginContext) -> PluginResult<()> {
-{% if include_logging %}
-{% if include_cache %}
-        rustbridge::tracing::info!(
-            cache_size = self.cache_size,
-            "{{project-name}} started"
-        );
-{% else %}
-        rustbridge::tracing::info!("{{project-name}} started");
-{% endif %}
-{% endif %}
+        tracing::info!(cache_size = self.cache_size, "{{project-name}} started");
         Ok(())
     }
 
@@ -197,34 +125,26 @@ impl Plugin for {{project-name | pascal_case}}Plugin {
         payload: &[u8],
     ) -> PluginResult<Vec<u8>> {
         match type_tag {
-{% if include_regex %}
             "match" => {
-                let req: MatchRequest = rustbridge::serde_json::from_slice(payload)?;
-{% if include_logging %}
+                let req: MatchRequest = serde_json::from_slice(payload)?;
 
-                rustbridge::tracing::debug!(
+                tracing::debug!(
                     pattern = %req.pattern,
                     text_len = req.text.len(),
                     "Processing match request"
                 );
-{% endif %}
-{% if include_cache %}
 
                 let mut cache = self.cache.lock().expect("cache lock poisoned");
 
-                // Check if regex is in cache
                 let (regex, cached) = if let Some(regex) = cache.get(&req.pattern) {
                     (regex, true)
                 } else {
-                    // Compile the regex and add it to the cache
                     let regex = Regex::new(&req.pattern).map_err(|e| {
-{% if include_logging %}
-                        rustbridge::tracing::warn!(
+                        tracing::warn!(
                             pattern = %req.pattern,
                             error = %e,
                             "Invalid regex pattern"
                         );
-{% endif %}
                         PluginError::HandlerError(format!("Invalid regex pattern: {}", e))
                     })?;
                     cache.put(req.pattern.clone(), regex);
@@ -232,105 +152,38 @@ impl Plugin for {{project-name | pascal_case}}Plugin {
                 };
 
                 let matches = regex.is_match(&req.text);
-{% if include_logging %}
 
-                rustbridge::tracing::debug!(
+                tracing::debug!(
                     pattern = %req.pattern,
                     matches,
                     cached,
                     "Match completed"
                 );
-{% endif %}
 
                 let response = MatchResponse { matches, cached };
-{% else %}
-
-                let regex = Regex::new(&req.pattern).map_err(|e| {
-{% if include_logging %}
-                    rustbridge::tracing::warn!(
-                        pattern = %req.pattern,
-                        error = %e,
-                        "Invalid regex pattern"
-                    );
-{% endif %}
-                    PluginError::HandlerError(format!("Invalid regex pattern: {}", e))
-                })?;
-
-                let matches = regex.is_match(&req.text);
-{% if include_logging %}
-
-                rustbridge::tracing::debug!(
-                    pattern = %req.pattern,
-                    matches,
-                    "Match completed"
-                );
-{% endif %}
-
-                let response = MatchResponse { matches };
-{% endif %}
-                Ok(rustbridge::serde_json::to_vec(&response)?)
+                Ok(serde_json::to_vec(&response)?)
             }
-{% else %}
-            "echo" => {
-                let req: EchoRequest = rustbridge::serde_json::from_slice(payload)?;
-{% if include_logging %}
-
-                rustbridge::tracing::debug!(
-                    message = %req.message,
-                    "Processing echo request"
-                );
-{% endif %}
-
-                let response = EchoResponse {
-                    length: req.message.len(),
-                    message: req.message,
-                };
-                Ok(rustbridge::serde_json::to_vec(&response)?)
-            }
-{% endif %}
             _ => Err(PluginError::UnknownMessageType(type_tag.to_string())),
         }
     }
 
     async fn on_stop(&self, _ctx: &PluginContext) -> PluginResult<()> {
-{% if include_logging %}
-{% if include_cache %}
         let cache = self.cache.lock().expect("cache lock poisoned");
-        rustbridge::tracing::info!(
-            cached_patterns = cache.len(),
-            "{{project-name}} stopped"
-        );
-{% else %}
-        rustbridge::tracing::info!("{{project-name}} stopped");
-{% endif %}
-{% endif %}
+        tracing::info!(cached_patterns = cache.len(), "{{project-name}} stopped");
         Ok(())
     }
 
     fn supported_types(&self) -> Vec<&'static str> {
-{% if include_regex %}
         vec!["match"]
-{% else %}
-        vec!["echo"]
-{% endif %}
     }
 }
 
 // ============================================================================
 // FFI Entry Point
 // ============================================================================
-{% if include_config %}
 
-// Generate FFI entry point - the macro calls PluginFactory::create()
-// which handles null config automatically
-rustbridge_entry!({{project-name | pascal_case}}Plugin::create);
-{% else %}
-
-// Generate FFI entry point
-rustbridge_entry!({{project-name | pascal_case}}Plugin::default);
-{% endif %}
-
-// Re-export FFI functions for the shared library
+// Generate FFI entry point - uses PluginFactory::create()
+rustbridge_entry!({{project-name | pascal_case}}::create);
 pub use rustbridge::ffi_exports::*;
 
 // ============================================================================
@@ -341,96 +194,188 @@ pub use rustbridge::ffi_exports::*;
 #[allow(non_snake_case)]
 mod tests {
     use super::*;
-{% if include_config %}
 
     #[tokio::test]
-    async fn create___with_null_config___uses_defaults() {
-        let config = PluginConfig::default();
+    async fn create___with_null_config___uses_default_cache_size() {
+        let config = PluginConfig::default(); // data is Value::Null
 
-        let plugin = {{project-name | pascal_case}}Plugin::create(&config).unwrap();
-{% if include_cache %}
+        let plugin = {{project-name | pascal_case}}::create(&config).unwrap();
 
         assert_eq!(plugin.cache_size, DEFAULT_CACHE_SIZE);
-{% else %}
-
-        let _ = plugin; // Plugin created successfully
-{% endif %}
     }
-{% endif %}
 
     #[tokio::test]
-{% if include_regex %}
-    async fn handle_request___matching_pattern___returns_true() {
-{% if include_config %}
-        let config = PluginConfig::default();
-        let plugin = {{project-name | pascal_case}}Plugin::create(&config).unwrap();
-        let ctx = PluginContext::new(config);
-{% else %}
-        let plugin = {{project-name | pascal_case}}Plugin::default();
+    async fn create___with_custom_config___uses_configured_cache_size() {
+        let config_data = PluginConfigData { cache_size: 50 };
+        let config = PluginConfig {
+            data: serde_json::to_value(config_data).unwrap(),
+            ..Default::default()
+        };
+
+        let plugin = {{project-name | pascal_case}}::create(&config).unwrap();
+
+        assert_eq!(plugin.cache_size, 50);
+    }
+
+    #[tokio::test]
+    async fn create___with_zero_cache_size___uses_default() {
+        let config_data = PluginConfigData { cache_size: 0 }; // Invalid!
+        let config = PluginConfig {
+            data: serde_json::to_value(config_data).unwrap(),
+            ..Default::default()
+        };
+
+        let plugin = {{project-name | pascal_case}}::create(&config).unwrap();
+
+        // Zero is invalid for NonZeroUsize, so we fall back to default
+        assert_eq!(plugin.cache_size, DEFAULT_CACHE_SIZE);
+    }
+
+    #[tokio::test]
+    async fn handle_request___first_request___not_cached() {
+        let plugin = {{project-name | pascal_case}}::default();
         let ctx = PluginContext::new(PluginConfig::default());
-{% endif %}
 
-        plugin.on_start(&ctx).await.unwrap();
-
-        let request = rustbridge::serde_json::to_vec(&MatchRequest {
+        let request = serde_json::to_vec(&MatchRequest {
             pattern: r"\d+".to_string(),
             text: "test123".to_string(),
         })
         .unwrap();
 
-        let response = plugin.handle_request(&ctx, "match", &request).await.unwrap();
-        let match_response: MatchResponse = rustbridge::serde_json::from_slice(&response).unwrap();
+        let response = plugin
+            .handle_request(&ctx, "match", &request)
+            .await
+            .unwrap();
+        let match_response: MatchResponse = serde_json::from_slice(&response).unwrap();
 
         assert!(match_response.matches);
+        assert!(!match_response.cached); // First time, not cached
     }
 
     #[tokio::test]
-    async fn handle_request___non_matching_pattern___returns_false() {
-{% if include_config %}
-        let config = PluginConfig::default();
-        let plugin = {{project-name | pascal_case}}Plugin::create(&config).unwrap();
-        let ctx = PluginContext::new(config);
-{% else %}
-        let plugin = {{project-name | pascal_case}}Plugin::default();
+    async fn handle_request___same_pattern_twice___second_is_cached() {
+        let plugin = {{project-name | pascal_case}}::default();
         let ctx = PluginContext::new(PluginConfig::default());
-{% endif %}
 
-        plugin.on_start(&ctx).await.unwrap();
-
-        let request = rustbridge::serde_json::to_vec(&MatchRequest {
-            pattern: r"^\d+$".to_string(),
+        // First request
+        let request = serde_json::to_vec(&MatchRequest {
+            pattern: r"\d+".to_string(),
             text: "test123".to_string(),
         })
         .unwrap();
 
-        let response = plugin.handle_request(&ctx, "match", &request).await.unwrap();
-        let match_response: MatchResponse = rustbridge::serde_json::from_slice(&response).unwrap();
+        let _ = plugin
+            .handle_request(&ctx, "match", &request)
+            .await
+            .unwrap();
 
-        assert!(!match_response.matches);
+        // Second request with same pattern
+        let request = serde_json::to_vec(&MatchRequest {
+            pattern: r"\d+".to_string(),
+            text: "456".to_string(),
+        })
+        .unwrap();
+
+        let response = plugin
+            .handle_request(&ctx, "match", &request)
+            .await
+            .unwrap();
+        let match_response: MatchResponse = serde_json::from_slice(&response).unwrap();
+
+        assert!(match_response.matches);
+        assert!(match_response.cached); // Second time, from cache!
     }
-{% else %}
-    async fn handle_request___echo___returns_message_with_length() {
-{% if include_config %}
-        let config = PluginConfig::default();
-        let plugin = {{project-name | pascal_case}}Plugin::create(&config).unwrap();
-        let ctx = PluginContext::new(config);
-{% else %}
-        let plugin = {{project-name | pascal_case}}Plugin::default();
+
+    #[tokio::test]
+    async fn handle_request___invalid_regex___returns_error() {
+        let plugin = {{project-name | pascal_case}}::default();
         let ctx = PluginContext::new(PluginConfig::default());
-{% endif %}
 
-        plugin.on_start(&ctx).await.unwrap();
+        let request = serde_json::to_vec(&MatchRequest {
+            pattern: r"[invalid".to_string(), // Unclosed bracket
+            text: "test".to_string(),
+        })
+        .unwrap();
 
-        let request = rustbridge::serde_json::to_vec(&EchoRequest {
+        let result = plugin.handle_request(&ctx, "match", &request).await;
+
+        assert!(result.is_err());
+    }
+}
+{% else %}
+/// Plugin implementation
+#[derive(Default)]
+pub struct {{project-name | pascal_case}};
+
+#[async_trait]
+impl Plugin for {{project-name | pascal_case}} {
+    async fn on_start(&self, _ctx: &PluginContext) -> PluginResult<()> {
+        tracing::info!("{{project-name}} started");
+        Ok(())
+    }
+
+    async fn handle_request(
+        &self,
+        _ctx: &PluginContext,
+        type_tag: &str,
+        payload: &[u8],
+    ) -> PluginResult<Vec<u8>> {
+        match type_tag {
+            "echo" => {
+                let req: EchoRequest = serde_json::from_slice(payload)?;
+                let response = EchoResponse {
+                    length: req.message.len(),
+                    message: req.message,
+                };
+                Ok(serde_json::to_vec(&response)?)
+            }
+            _ => Err(PluginError::UnknownMessageType(type_tag.to_string())),
+        }
+    }
+
+    async fn on_stop(&self, _ctx: &PluginContext) -> PluginResult<()> {
+        tracing::info!("{{project-name}} stopped");
+        Ok(())
+    }
+
+    fn supported_types(&self) -> Vec<&'static str> {
+        vec!["echo"]
+    }
+}
+
+// ============================================================================
+// FFI Entry Point
+// ============================================================================
+
+// Generate FFI entry point
+rustbridge_entry!({{project-name | pascal_case}}::default);
+
+// Re-export FFI functions for the shared library
+pub use rustbridge::ffi_exports::*;
+
+// ============================================================================
+// Tests
+// ============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_echo() {
+        let plugin = {{project-name | pascal_case}};
+        let ctx = PluginContext::new(PluginConfig::default());
+
+        let request = serde_json::to_vec(&EchoRequest {
             message: "Hello, World!".to_string(),
         })
         .unwrap();
 
         let response = plugin.handle_request(&ctx, "echo", &request).await.unwrap();
-        let echo_response: EchoResponse = rustbridge::serde_json::from_slice(&response).unwrap();
+        let echo_response: EchoResponse = serde_json::from_slice(&response).unwrap();
 
         assert_eq!(echo_response.message, "Hello, World!");
         assert_eq!(echo_response.length, 13);
     }
-{% endif %}
 }
+{% endif %}
