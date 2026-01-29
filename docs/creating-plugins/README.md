@@ -340,10 +340,12 @@ Errors are propagated to the host language with error codes and messages.
 
 ## Next Steps
 
+- **[Tutorials](../tutorials/README.md)** - Step-by-step guide to building a regex plugin with caching
 - **[Packaging Guide](../packaging/README.md)** - Multi-platform bundles, signing
 - **[Using Plugins](../using-plugins/README.md)** - Load from Java/Kotlin/C#/Python
 - **[Binary Transport](../TRANSPORT.md)** - Faster alternative to JSON
 
-## Complete Example
+## Complete Examples
 
-See `examples/hello-plugin/` for a complete working example.
+- `examples/hello-plugin/` - Minimal plugin example
+- `examples/regex-plugin/` - Full-featured regex plugin with LRU caching and configuration

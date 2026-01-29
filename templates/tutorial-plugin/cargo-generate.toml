@@ -1,0 +1,26 @@
+[template]
+cargo_generate_version = ">=0.18.0"
+ignore = [
+    ".git",
+    "target",
+]
+
+[placeholders.include_regex]
+type = "bool"
+prompt = "Include regex matching?"
+default = true
+
+[placeholders.include_cache]
+type = "bool"
+prompt = "Include LRU cache?"
+default = true
+
+[placeholders.include_config]
+type = "bool"
+prompt = "Include configuration support?"
+default = true
+
+[placeholders.include_logging]
+type = "bool"
+prompt = "Include logging examples?"
+default = true

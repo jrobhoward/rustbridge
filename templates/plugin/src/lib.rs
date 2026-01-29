@@ -85,7 +85,7 @@ pub use rustbridge::ffi_exports::*;
 mod tests {
     use super::*;
 
-    #[rustbridge::tokio::test]
+    #[tokio::test]
     async fn test_echo() {
         let plugin = MyPlugin;
         let ctx = PluginContext::new(PluginConfig::default());

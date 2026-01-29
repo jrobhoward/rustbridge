@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Tutorial system with step-by-step guides for building plugins
+  - Chapter 1: Building a Regex Plugin (scaffold, matching, LRU cache, configuration)
+  - Chapter 2: Calling from Kotlin (setup, JSON calls, logging, type-safe wrappers, benchmarking)
+- `templates/tutorial-plugin/` - cargo-generate template with configurable features (regex, cache, config, logging)
+- `examples/regex-plugin/` - Complete reference implementation with LRU caching and configuration
+
+### Changed
+- `templates/plugin/` - Fixed tokio test dependency for standalone template usage
+
 ### Fixed
 - Clarified in README that `rustbridge.toml` is a development-time config file, not the bundle manifest (`manifest.json`)
 

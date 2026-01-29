@@ -1,6 +1,6 @@
 [package]
-name = "my-plugin"
-version = "0.6.0"
+name = "{{project-name}}"
+version = "0.1.0"
 edition = "2021"
 
 [workspace]  # Standalone project (not part of a parent workspace)
@@ -14,6 +14,16 @@ rustbridge = "0.6"
 # Serde is needed as a direct dependency because derive macros expand to
 # code that references ::serde:: directly
 serde = { version = "1.0", features = ["derive"] }
+{% if include_regex %}
+
+# Regex pattern matching
+regex = "1.10"
+{% endif %}
+{% if include_cache %}
+
+# LRU cache for compiled patterns
+lru = "0.12"
+{% endif %}
 
 [dev-dependencies]
 tokio = { version = "1.35", features = ["rt", "macros"] }

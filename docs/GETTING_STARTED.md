@@ -227,7 +227,13 @@ The template plugin implements an "echo" message type:
 
 ## Next Steps
 
-### Evolve Your Plugin
+### Tutorials
+
+Follow the step-by-step tutorials to build a production-quality plugin:
+
+- **[Tutorials](./tutorials/README.md)** - Build a regex plugin with caching, configuration, and call it from Kotlin
+
+### Language Guides
 
 The language guides walk you through evolving the echo template into a calculator with multiple message types:
 
@@ -255,6 +261,7 @@ All templates are in the `templates/` directory:
 | Template | Description | Requirements |
 |----------|-------------|--------------|
 | `templates/plugin` | Rust plugin starter | Rust 1.90+ |
+| `templates/tutorial-plugin` | cargo-generate template with optional features | Rust 1.90+, cargo-generate |
 | `templates/kotlin` | Kotlin consumer | Java 21+ |
 | `templates/java-ffm` | Java FFM consumer (recommended) | Java 21+ |
 | `templates/java-jni` | Java JNI consumer (legacy) | Java 17+ |
