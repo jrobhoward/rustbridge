@@ -3,10 +3,8 @@
 //! This plugin demonstrates the basic structure of a rustbridge plugin,
 //! including message handling, lifecycle management, and FFI integration.
 
-use async_trait::async_trait;
-use rustbridge_core::{Plugin, PluginContext, PluginError, PluginMetadata, PluginResult};
-use rustbridge_macros::{Message, rustbridge_entry};
-use serde::{Deserialize, Serialize};
+use rustbridge::prelude::*;
+use rustbridge::{PluginMetadata, serde_json, tokio, tracing};
 
 pub mod binary_messages;
 
@@ -437,7 +435,7 @@ impl Plugin for HelloPlugin {
     }
 
     fn metadata(&self) -> Option<PluginMetadata> {
-        Some(PluginMetadata::new("hello-plugin", "0.5.0"))
+        Some(PluginMetadata::new("hello-plugin", "0.6.0"))
     }
 
     fn supported_types(&self) -> Vec<&'static str> {
@@ -457,12 +455,8 @@ impl Plugin for HelloPlugin {
 // Generate the FFI entry point
 rustbridge_entry!(HelloPlugin::new);
 
-// Re-export FFI functions from rustbridge-ffi
-pub use rustbridge_ffi::{
-    plugin_call, plugin_call_async, plugin_cancel_async, plugin_free_buffer,
-    plugin_get_rejected_count, plugin_get_state, plugin_init, plugin_set_log_level,
-    plugin_shutdown,
-};
+// Re-export FFI functions for the shared library
+pub use rustbridge::ffi_exports::*;
 
 // ============================================================================
 // Utilities

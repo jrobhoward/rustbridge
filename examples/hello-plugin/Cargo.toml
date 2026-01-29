@@ -10,18 +10,12 @@ rust-version.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-rustbridge-core = { workspace = true }
-rustbridge-transport = { workspace = true }
-rustbridge-ffi = { workspace = true }
-rustbridge-runtime = { workspace = true }
-rustbridge-logging = { workspace = true }
-rustbridge-macros = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
+rustbridge = { workspace = true }
 uuid = { workspace = true }
-tokio = { workspace = true }
-tracing = { workspace = true }
-async-trait = "0.1"
+
+# Serde is needed as a direct dependency because derive macros expand to
+# code that references ::serde:: directly
+serde = { workspace = true }
 
 # Example plugin - explicitly configure lints (can't override workspace lints)
 # Allow unwrap/expect since examples should be simple and clear

@@ -3,10 +3,7 @@
 //! This template implements a simple "echo" message type.
 //! Modify it to add your own message types and business logic.
 
-use async_trait::async_trait;
-use rustbridge_core::{Plugin, PluginConfig, PluginContext, PluginError, PluginResult};
-use rustbridge_macros::{rustbridge_entry, Message};
-use serde::{Deserialize, Serialize};
+use rustbridge::prelude::*;
 
 // ============================================================================
 // Message Types
@@ -37,7 +34,7 @@ pub struct MyPlugin;
 #[async_trait]
 impl Plugin for MyPlugin {
     async fn on_start(&self, _ctx: &PluginContext) -> PluginResult<()> {
-        tracing::info!("my-plugin started");
+        rustbridge::tracing::info!("my-plugin started");
         Ok(())
     }
 
@@ -49,19 +46,19 @@ impl Plugin for MyPlugin {
     ) -> PluginResult<Vec<u8>> {
         match type_tag {
             "echo" => {
-                let req: EchoRequest = serde_json::from_slice(payload)?;
+                let req: EchoRequest = rustbridge::serde_json::from_slice(payload)?;
                 let response = EchoResponse {
                     length: req.message.len(),
                     message: req.message,
                 };
-                Ok(serde_json::to_vec(&response)?)
+                Ok(rustbridge::serde_json::to_vec(&response)?)
             }
             _ => Err(PluginError::UnknownMessageType(type_tag.to_string())),
         }
     }
 
     async fn on_stop(&self, _ctx: &PluginContext) -> PluginResult<()> {
-        tracing::info!("my-plugin stopped");
+        rustbridge::tracing::info!("my-plugin stopped");
         Ok(())
     }
 
@@ -77,16 +74,8 @@ impl Plugin for MyPlugin {
 // Generate FFI entry point
 rustbridge_entry!(MyPlugin::default);
 
-// Re-export FFI functions for the compiled library
-pub use rustbridge_ffi::{
-    plugin_call,
-    plugin_free_buffer,
-    plugin_get_rejected_count,
-    plugin_get_state,
-    plugin_init,
-    plugin_set_log_level,
-    plugin_shutdown,
-};
+// Re-export FFI functions for the shared library
+pub use rustbridge::ffi_exports::*;
 
 // ============================================================================
 // Tests
@@ -96,18 +85,19 @@ pub use rustbridge_ffi::{
 mod tests {
     use super::*;
 
-    #[tokio::test]
+    #[rustbridge::tokio::test]
     async fn test_echo() {
         let plugin = MyPlugin;
         let ctx = PluginContext::new(PluginConfig::default());
 
-        let request = serde_json::to_vec(&EchoRequest {
+        let request = rustbridge::serde_json::to_vec(&EchoRequest {
             message: "Hello, World!".to_string(),
         })
         .unwrap();
 
         let response = plugin.handle_request(&ctx, "echo", &request).await.unwrap();
-        let echo_response: EchoResponse = serde_json::from_slice(&response).unwrap();
+        let echo_response: EchoResponse =
+            rustbridge::serde_json::from_slice(&response).unwrap();
 
         assert_eq!(echo_response.message, "Hello, World!");
         assert_eq!(echo_response.length, 13);

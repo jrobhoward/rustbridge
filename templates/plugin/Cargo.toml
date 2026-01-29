@@ -1,6 +1,6 @@
 [package]
 name = "my-plugin"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 
 [workspace]  # Standalone project (not part of a parent workspace)
@@ -9,13 +9,8 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-# rustbridge dependencies
-rustbridge-core = "0.5"
-rustbridge-ffi = "0.5"
-rustbridge-macros = "0.5"
+rustbridge = "0.6"
 
+# Serde is needed as a direct dependency because derive macros expand to
+# code that references ::serde:: directly
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-async-trait = "0.1"
-tokio = { version = "1.35", features = ["full"] }
-tracing = "0.1"

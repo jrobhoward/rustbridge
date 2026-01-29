@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2025-01-28
+
+### Added
+- New `rustbridge` facade crate - single dependency for plugin development
+  - Re-exports core types, macros, and FFI functions
+  - Includes common dependencies: `async-trait`, `serde`, `serde_json`, `tokio`, `tracing`
+  - Use `rustbridge::prelude::*` for convenient imports
+  - Use `rustbridge::ffi_exports::*` for FFI function re-exports
+
+### Changed
+- All README documentation links now use absolute GitHub URLs (fixes broken links on crates.io)
+- Plugin template (`rustbridge new`) now uses single `rustbridge` dependency instead of multiple crates
+- Version bumped to 0.6.0
+
 ## [0.5.1] - 2025-01-27
 
 ### Added
@@ -97,6 +111,7 @@ Initial public release.
 - No `.unwrap()` or `.expect()` in production code
 - Minisign signature verification for bundle integrity
 
-[Unreleased]: https://github.com/jrobhoward/rustbridge/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/jrobhoward/rustbridge/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/jrobhoward/rustbridge/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/jrobhoward/rustbridge/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/jrobhoward/rustbridge/releases/tag/v0.5.0

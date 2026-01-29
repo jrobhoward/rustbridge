@@ -25,7 +25,7 @@ pub fn run(name: &str, path: Option<String>) -> Result<()> {
     let cargo_toml = format!(
         r#"[package]
 name = "{name}"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 
 [workspace]  # Standalone project (not part of a parent workspace)
@@ -34,16 +34,11 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-# rustbridge dependencies
-rustbridge-core = "0.5"
-rustbridge-ffi = "0.5"
-rustbridge-macros = "0.5"
+rustbridge = "0.6"
 
+# Serde is needed as a direct dependency because derive macros expand to
+# code that references ::serde:: directly
 serde = {{ version = "1.0", features = ["derive"] }}
-serde_json = "1.0"
-async-trait = "0.1"
-tokio = {{ version = "1.35", features = ["full"] }}
-tracing = "0.1"
 "#,
         name = name,
     );
@@ -53,7 +48,7 @@ tracing = "0.1"
     let manifest = format!(
         r#"[plugin]
 name = "{name}"
-version = "0.5.0"
+version = "0.6.0"
 description = "A rustbridge plugin"
 
 [messages."echo"]
@@ -73,10 +68,7 @@ windows-x86_64 = "{name}.dll"
     let lib_rs = format!(
         r#"//! {name} - A rustbridge plugin
 
-use async_trait::async_trait;
-use rustbridge_core::{{Plugin, PluginConfig, PluginContext, PluginError, PluginResult}};
-use rustbridge_macros::{{rustbridge_entry, Message}};
-use serde::{{Deserialize, Serialize}};
+use rustbridge::prelude::*;
 
 /// Echo request message
 #[derive(Debug, Clone, Serialize, Deserialize, Message)]
@@ -99,7 +91,7 @@ pub struct {class_name};
 #[async_trait]
 impl Plugin for {class_name} {{
     async fn on_start(&self, _ctx: &PluginContext) -> PluginResult<()> {{
-        tracing::info!("{name} plugin started");
+        rustbridge::tracing::info!("{name} plugin started");
         Ok(())
     }}
 
@@ -111,19 +103,19 @@ impl Plugin for {class_name} {{
     ) -> PluginResult<Vec<u8>> {{
         match type_tag {{
             "echo" => {{
-                let req: EchoRequest = serde_json::from_slice(payload)?;
+                let req: EchoRequest = rustbridge::serde_json::from_slice(payload)?;
                 let response = EchoResponse {{
                     length: req.message.len(),
                     message: req.message,
                 }};
-                Ok(serde_json::to_vec(&response)?)
+                Ok(rustbridge::serde_json::to_vec(&response)?)
             }}
             _ => Err(PluginError::UnknownMessageType(type_tag.to_string())),
         }}
     }}
 
     async fn on_stop(&self, _ctx: &PluginContext) -> PluginResult<()> {{
-        tracing::info!("{name} plugin stopped");
+        rustbridge::tracing::info!("{name} plugin stopped");
         Ok(())
     }}
 
@@ -135,33 +127,25 @@ impl Plugin for {class_name} {{
 // Generate FFI entry point
 rustbridge_entry!({class_name}::default);
 
-// Re-export FFI functions for the compiled library
-pub use rustbridge_ffi::{{
-    plugin_call,
-    plugin_free_buffer,
-    plugin_get_rejected_count,
-    plugin_get_state,
-    plugin_init,
-    plugin_set_log_level,
-    plugin_shutdown,
-}};
+// Re-export FFI functions for the shared library
+pub use rustbridge::ffi_exports::*;
 
 #[cfg(test)]
 mod tests {{
     use super::*;
 
-    #[tokio::test]
+    #[rustbridge::tokio::test]
     async fn test_echo() {{
         let plugin = {class_name};
         let ctx = PluginContext::new(PluginConfig::default());
 
-        let request = serde_json::to_vec(&EchoRequest {{
+        let request = rustbridge::serde_json::to_vec(&EchoRequest {{
             message: "Hello, World!".to_string(),
         }})
         .unwrap();
 
         let response = plugin.handle_request(&ctx, "echo", &request).await.unwrap();
-        let echo_response: EchoResponse = serde_json::from_slice(&response).unwrap();
+        let echo_response: EchoResponse = rustbridge::serde_json::from_slice(&response).unwrap();
 
         assert_eq!(echo_response.message, "Hello, World!");
         assert_eq!(echo_response.length, 13);

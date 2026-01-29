@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use super::*;
-use rustbridge_core::PluginConfig;
+use rustbridge::PluginConfig;
 
 fn create_test_context() -> PluginContext {
     PluginContext::new(PluginConfig::default())
@@ -118,7 +118,7 @@ fn HelloPlugin___metadata___returns_correct_name_and_version() {
     let metadata = plugin.metadata().unwrap();
 
     assert_eq!(metadata.name, "hello-plugin");
-    assert_eq!(metadata.version, "0.5.0");
+    assert_eq!(metadata.version, "0.6.0");
 }
 
 // HelloPlugin::supported_types tests

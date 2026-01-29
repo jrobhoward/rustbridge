@@ -1,0 +1,27 @@
+[package]
+name = "rustbridge"
+description = "A framework for developing Rust shared libraries callable from other languages"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+readme = "../../README.md"
+keywords = ["ffi", "plugin", "interop", "async", "bindings"]
+categories = ["development-tools::ffi", "asynchronous"]
+
+[dependencies]
+# Core rustbridge crates
+rustbridge-core = { workspace = true }
+rustbridge-macros = { workspace = true }
+rustbridge-ffi = { workspace = true }
+
+# Re-export common dependencies that plugin authors need
+async-trait = "0.1"
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[lints]
+workspace = true

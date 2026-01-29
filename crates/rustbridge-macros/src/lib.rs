@@ -188,11 +188,11 @@ pub fn rustbridge_entry(input: TokenStream) -> TokenStream {
             /// FFI entry point - creates a new plugin instance with default config
             #[unsafe(no_mangle)]
             pub unsafe extern "C" fn plugin_create() -> *mut ::std::ffi::c_void {
-                let config = ::rustbridge_core::PluginConfig::default();
-                match <#type_path as ::rustbridge_core::PluginFactory>::create(&config) {
+                let config = ::rustbridge::PluginConfig::default();
+                match <#type_path as ::rustbridge::PluginFactory>::create(&config) {
                     Ok(plugin) => {
-                        let plugin: Box<dyn ::rustbridge_core::Plugin> = Box::new(plugin);
-                        let boxed: Box<Box<dyn ::rustbridge_core::Plugin>> = Box::new(plugin);
+                        let plugin: Box<dyn ::rustbridge::Plugin> = Box::new(plugin);
+                        let boxed: Box<Box<dyn ::rustbridge::Plugin>> = Box::new(plugin);
                         Box::into_raw(boxed) as *mut ::std::ffi::c_void
                     }
                     Err(_) => ::std::ptr::null_mut()
@@ -212,20 +212,20 @@ pub fn rustbridge_entry(input: TokenStream) -> TokenStream {
                 config_len: usize,
             ) -> *mut ::std::ffi::c_void {
                 let config = if config_json.is_null() || config_len == 0 {
-                    ::rustbridge_core::PluginConfig::default()
+                    ::rustbridge::PluginConfig::default()
                 } else {
                     // SAFETY: Caller guarantees config_json is valid for config_len bytes
                     let bytes = unsafe { ::std::slice::from_raw_parts(config_json, config_len) };
-                    match ::rustbridge_core::PluginConfig::from_json(bytes) {
+                    match ::rustbridge::PluginConfig::from_json(bytes) {
                         Ok(c) => c,
                         Err(_) => return ::std::ptr::null_mut(),
                     }
                 };
 
-                match <#type_path as ::rustbridge_core::PluginFactory>::create(&config) {
+                match <#type_path as ::rustbridge::PluginFactory>::create(&config) {
                     Ok(plugin) => {
-                        let plugin: Box<dyn ::rustbridge_core::Plugin> = Box::new(plugin);
-                        let boxed: Box<Box<dyn ::rustbridge_core::Plugin>> = Box::new(plugin);
+                        let plugin: Box<dyn ::rustbridge::Plugin> = Box::new(plugin);
+                        let boxed: Box<Box<dyn ::rustbridge::Plugin>> = Box::new(plugin);
                         Box::into_raw(boxed) as *mut ::std::ffi::c_void
                     }
                     Err(_) => ::std::ptr::null_mut()
@@ -238,8 +238,8 @@ pub fn rustbridge_entry(input: TokenStream) -> TokenStream {
             /// FFI entry point - creates a new plugin instance
             #[unsafe(no_mangle)]
             pub unsafe extern "C" fn plugin_create() -> *mut ::std::ffi::c_void {
-                let plugin: Box<dyn ::rustbridge_core::Plugin> = Box::new(#factory_path());
-                let boxed: Box<Box<dyn ::rustbridge_core::Plugin>> = Box::new(plugin);
+                let plugin: Box<dyn ::rustbridge::Plugin> = Box::new(#factory_path());
+                let boxed: Box<Box<dyn ::rustbridge::Plugin>> = Box::new(plugin);
                 Box::into_raw(boxed) as *mut ::std::ffi::c_void
             }
         }

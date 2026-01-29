@@ -33,7 +33,7 @@ rustbridge bundle create \
 plugin = BundleLoader.load("my-plugin-1.0.0.rbp")
 ```
 
-See [docs/BUNDLE_FORMAT.md](./docs/BUNDLE_FORMAT.md) for the complete specification.
+See [docs/BUNDLE_FORMAT.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/BUNDLE_FORMAT.md) for the complete specification.
 
 ## Overview
 
@@ -91,7 +91,7 @@ rustbridge/
 
 ## Quick Start
 
-> 📖 **New to rustbridge?** See the [complete Getting Started guide](./docs/GETTING_STARTED.md) for a step-by-step tutorial.
+> 📖 **New to rustbridge?** See the [complete Getting Started guide](https://github.com/jrobhoward/rustbridge/blob/main/docs/GETTING_STARTED.md) for a step-by-step tutorial.
 
 ### Creating a Plugin (Rust)
 
@@ -204,7 +204,7 @@ FfmPluginLoader.load("libmyplugin.so").use { plugin ->
 }
 ```
 
-See [examples/kotlin-examples](./examples/kotlin-examples) for complete examples.
+See [examples/kotlin-examples](https://github.com/jrobhoward/rustbridge/blob/main/examples/kotlin-examples) for complete examples.
 
 ## FFI API
 
@@ -426,37 +426,37 @@ Errors are represented with stable numeric codes:
 ## Documentation
 
 ### Getting Started
-- [docs/GETTING_STARTED.md](./docs/GETTING_STARTED.md) - Tutorial for creating your first plugin
-- [docs/using-plugins/JAVA_FFM.md](./docs/using-plugins/JAVA_FFM.md) - Java 21+ FFM guide
-- [docs/using-plugins/JAVA_JNI.md](./docs/using-plugins/JAVA_JNI.md) - Java 17+ JNI guide
-- [docs/using-plugins/KOTLIN.md](./docs/using-plugins/KOTLIN.md) - Kotlin guide
-- [docs/using-plugins/CSHARP.md](./docs/using-plugins/CSHARP.md) - C# guide
-- [docs/using-plugins/PYTHON.md](./docs/using-plugins/PYTHON.md) - Python guide
+- [docs/GETTING_STARTED.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/GETTING_STARTED.md) - Tutorial for creating your first plugin
+- [docs/using-plugins/JAVA_FFM.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_FFM.md) - Java 21+ FFM guide
+- [docs/using-plugins/JAVA_JNI.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_JNI.md) - Java 17+ JNI guide
+- [docs/using-plugins/KOTLIN.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/KOTLIN.md) - Kotlin guide
+- [docs/using-plugins/CSHARP.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/CSHARP.md) - C# guide
+- [docs/using-plugins/PYTHON.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/PYTHON.md) - Python guide
 
 ### Architecture & Design
-- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) - System architecture and design decisions
-- [docs/BUNDLE_FORMAT.md](./docs/BUNDLE_FORMAT.md) - .rbp bundle specification
-- [docs/TRANSPORT.md](./docs/TRANSPORT.md) - JSON and binary transport layer
-- [docs/MEMORY_MODEL.md](./docs/MEMORY_MODEL.md) - Memory ownership patterns
+- [docs/ARCHITECTURE.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/ARCHITECTURE.md) - System architecture and design decisions
+- [docs/BUNDLE_FORMAT.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/BUNDLE_FORMAT.md) - .rbp bundle specification
+- [docs/TRANSPORT.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/TRANSPORT.md) - JSON and binary transport layer
+- [docs/MEMORY_MODEL.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/MEMORY_MODEL.md) - Memory ownership patterns
 
 ### Development
-- [docs/SKILLS.md](./docs/SKILLS.md) - Development best practices and coding conventions
-- [docs/TESTING.md](./docs/TESTING.md) - Testing conventions and guidelines
-- [docs/ERROR_HANDLING.md](./docs/ERROR_HANDLING.md) - Error handling patterns
-- [docs/DEBUGGING.md](./docs/DEBUGGING.md) - Debugging techniques
+- [docs/SKILLS.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/SKILLS.md) - Development best practices and coding conventions
+- [docs/TESTING.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/TESTING.md) - Testing conventions and guidelines
+- [docs/ERROR_HANDLING.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/ERROR_HANDLING.md) - Error handling patterns
+- [docs/DEBUGGING.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/DEBUGGING.md) - Debugging techniques
 
 ## Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+We welcome contributions! Please see [CONTRIBUTING.md](https://github.com/jrobhoward/rustbridge/blob/main/CONTRIBUTING.md) for guidelines.
 
 **Quick start:**
-1. Read [docs/SKILLS.md](./docs/SKILLS.md) for coding conventions
-2. Read [docs/TESTING.md](./docs/TESTING.md) for testing guidelines
-3. Check [docs/TASKS.md](./docs/TASKS.md) for open tasks
+1. Read [docs/SKILLS.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/SKILLS.md) for coding conventions
+2. Read [docs/TESTING.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/TESTING.md) for testing guidelines
+3. Check [docs/TASKS.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/TASKS.md) for open tasks
 
 ## Changelog
 
-See [CHANGELOG.md](./CHANGELOG.md) for version history and release notes.
+See [CHANGELOG.md](https://github.com/jrobhoward/rustbridge/blob/main/CHANGELOG.md) for version history and release notes.
 
 ## License
 
@@ -464,4 +464,4 @@ MIT OR Apache-2.0
 
 ### Attribution
 
-This project includes software licensed under the Unicode License (Unicode-3.0). See [NOTICES](./NOTICES) for details.
+This project includes software licensed under the Unicode License (Unicode-3.0). See [NOTICES](https://github.com/jrobhoward/rustbridge/blob/main/NOTICES) for details.

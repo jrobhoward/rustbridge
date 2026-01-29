@@ -11,8 +11,7 @@
 //! | bench.medium | 2 |
 //! | bench.large | 3 |
 
-use rustbridge_core::PluginResult;
-use rustbridge_ffi::{PluginHandle, register_binary_handler};
+use rustbridge::{PluginError, PluginHandle, PluginResult, register_binary_handler};
 
 /// Message ID for small benchmark
 pub const MSG_BENCH_SMALL: u32 = 1;
@@ -136,9 +135,7 @@ pub fn register_benchmark_handlers() {
 fn handle_bench_small_raw(_handle: &PluginHandle, request: &[u8]) -> PluginResult<Vec<u8>> {
     // Validate request size
     if request.len() < std::mem::size_of::<SmallRequestRaw>() {
-        return Err(rustbridge_core::PluginError::HandlerError(
-            "Request too small".to_string(),
-        ));
+        return Err(PluginError::HandlerError("Request too small".to_string()));
     }
 
     // SAFETY: We validated the size, and SmallRequestRaw is repr(C)
@@ -146,7 +143,7 @@ fn handle_bench_small_raw(_handle: &PluginHandle, request: &[u8]) -> PluginResul
 
     // Validate version for forward compatibility
     if req.version != SmallRequestRaw::VERSION {
-        return Err(rustbridge_core::PluginError::HandlerError(format!(
+        return Err(PluginError::HandlerError(format!(
             "Unsupported request version: {} (expected {})",
             req.version,
             SmallRequestRaw::VERSION
@@ -255,16 +252,14 @@ mod tests {
     // Test helper that doesn't require PluginHandle
     fn handle_bench_small_raw_test(request: &[u8]) -> PluginResult<Vec<u8>> {
         if request.len() < std::mem::size_of::<SmallRequestRaw>() {
-            return Err(rustbridge_core::PluginError::HandlerError(
-                "Request too small".to_string(),
-            ));
+            return Err(PluginError::HandlerError("Request too small".to_string()));
         }
 
         let req = unsafe { &*(request.as_ptr() as *const SmallRequestRaw) };
 
         // Validate version
         if req.version != SmallRequestRaw::VERSION {
-            return Err(rustbridge_core::PluginError::HandlerError(format!(
+            return Err(PluginError::HandlerError(format!(
                 "Unsupported request version: {} (expected {})",
                 req.version,
                 SmallRequestRaw::VERSION
