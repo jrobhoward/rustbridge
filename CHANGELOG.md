@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Clarified in README that `rustbridge.toml` is a development-time config file, not the bundle manifest (`manifest.json`)
+
 ## [0.6.0] - 2025-01-28
 
 ### Added

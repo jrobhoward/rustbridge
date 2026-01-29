@@ -369,7 +369,9 @@ try (Plugin plugin = FfmPluginLoader.load(pluginPath, config)) {
 }
 ```
 
-### Manifest (rustbridge.toml)
+### Project Manifest (rustbridge.toml)
+
+The `rustbridge.toml` file is a development-time configuration used by CLI tools for validation, code generation, and bundle creation. It is **not** included in `.rbp` bundles directly - bundles contain a separate `manifest.json` file (see [docs/BUNDLE_FORMAT.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/BUNDLE_FORMAT.md) for the bundle manifest schema).
 
 ```toml
 [plugin]
