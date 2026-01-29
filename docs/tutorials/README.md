@@ -70,7 +70,7 @@ The completed plugin is available at [`examples/regex-plugin/`](../../examples/r
 **Want to skip the tutorial?** Use the completed [regex-plugin example](../../examples/regex-plugin/) or generate a plugin with all features:
 
 ```bash
-cargo generate --git https://github.com/jrobhoward/rustbridge --path templates/tutorial-plugin
+cargo generate --git https://github.com/jrobhoward/rustbridge templates/tutorial-plugin
 ```
 
 ## Getting Help

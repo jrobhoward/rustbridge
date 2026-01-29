@@ -9,7 +9,7 @@ We'll use the tutorial template to create a minimal starting point:
 ```bash
 cd ~/rustbridge-workspace
 
-cargo generate --git https://github.com/jrobhoward/rustbridge --path templates/tutorial-plugin --name regex-plugin
+cargo generate --git https://github.com/jrobhoward/rustbridge templates/tutorial-plugin --name regex-plugin
 ```
 
 When prompted, choose these options for now (we'll add features incrementally):

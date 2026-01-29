@@ -5,7 +5,7 @@ A cargo-generate template for creating rustbridge plugins with configurable feat
 ## Usage
 
 ```bash
-cargo generate --git https://github.com/jrobhoward/rustbridge --path templates/tutorial-plugin
+cargo generate --git https://github.com/jrobhoward/rustbridge templates/tutorial-plugin
 ```
 
 Or from a local clone:
