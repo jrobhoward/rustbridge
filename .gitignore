@@ -1,5 +1,5 @@
 # Rust/Cargo build artifacts
-/target/
+**/target/
 **/*.rs.bk
 
 # Cargo.lock - uncomment to include (recommended for applications, optional for libraries)

@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `--kotlin`, `--java-ffm`, `--java-jni`, `--csharp`, `--python`, `--all`
   - Generated consumers placed in `consumers/` subdirectory
 - `templates/rust/` - New canonical Rust plugin template with placeholder substitution
+- Tutorial Chapter 3: Building a JSON Plugin (scaffold, validate message, prettify message, error handling)
+- Tutorial Chapter 4: Calling from Java (project setup, type-safe calls with records/Gson, error handling)
+- `examples/json-plugin/` - Reference implementation for JSON validation and prettification
 
 ### Changed
 - `rustbridge new` now uses embedded templates via `include_str!` instead of `cargo-generate`

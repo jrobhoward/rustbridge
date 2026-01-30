@@ -4,19 +4,19 @@ Learn to build custom plugins with rustbridge through hands-on tutorials.
 
 ## Overview
 
-These tutorials guide you through building a **regex matching plugin** with LRU caching, configuration, and structured logging. You'll then call it from Kotlin with type-safe wrappers.
+These tutorials guide you through building Rust plugins and calling them from multiple languages. Start with the regex plugin to learn core concepts, then explore JSON processing and language-specific consumers.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                          What You'll Build                                  │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  Rust Plugin (Chapter 1)              Kotlin Consumer (Chapter 2)           │
-│  ─────────────────────────            ────────────────────────────          │
-│  • Regex pattern matching             • Load plugin from .rbp bundle        │
-│  • LRU cache for patterns             • Type-safe JSON calls                │
-│  • Configurable cache size            • Logging callbacks                   │
-│  • Structured logging                 • Performance benchmarking            │
+│  Rust Plugins (Chapters 1, 3)         Language Consumers (Chapters 2, 4)   │
+│  ─────────────────────────────        ──────────────────────────────────   │
+│  • Regex pattern matching             • Kotlin: Load bundles, logging      │
+│  • LRU cache for patterns             • Java: FFM API, type-safe calls     │
+│  • JSON validation/prettify           • Error handling patterns            │
+│  • Configurable behavior              • Performance benchmarking           │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -54,19 +54,46 @@ Call your plugin from Kotlin with type safety and logging.
 | [04-type-safe-calls.md](./02-kotlin-consumer/04-type-safe-calls.md) | Data classes, extension functions |
 | [05-benchmarking.md](./02-kotlin-consumer/05-benchmarking.md) | Debug vs release, cache effectiveness |
 
-## Reference Implementation
+### [Chapter 3: Building a JSON Plugin](./03-json-plugin/README.md)
 
-The completed plugin is available at [`examples/regex-plugin/`](../../examples/regex-plugin/) for reference. If you get stuck, compare your code against the working example.
+Build a JSON validation and prettification plugin to learn message handling patterns.
+
+| Section | What You'll Learn |
+|---------|-------------------|
+| [01-scaffold.md](./03-json-plugin/01-scaffold.md) | Generate project structure |
+| [02-validate-message.md](./03-json-plugin/02-validate-message.md) | Implement JSON validation endpoint |
+| [03-prettify-message.md](./03-json-plugin/03-prettify-message.md) | Add JSON prettification with custom indent |
+| [04-error-handling.md](./03-json-plugin/04-error-handling.md) | Error patterns, build bundle |
+
+### [Chapter 4: Calling from Java](./04-java-consumer/README.md)
+
+Load your plugin from Java using the Foreign Function & Memory (FFM) API.
+
+| Section | What You'll Learn |
+|---------|-------------------|
+| [01-project-setup.md](./04-java-consumer/01-project-setup.md) | Set up Java FFM consumer project |
+| [02-calling-plugin.md](./04-java-consumer/02-calling-plugin.md) | Load bundle, type-safe calls with records |
+| [03-error-handling.md](./04-java-consumer/03-error-handling.md) | Handle plugin errors gracefully |
+
+## Reference Implementations
+
+Completed examples are available for reference. If you get stuck, compare your code against these working implementations:
+
+- **Regex plugin** (Chapters 1-2): [`examples/regex-plugin/`](../../examples/regex-plugin/)
+- **JSON plugin** (Chapters 3-4): [`examples/json-plugin/`](../../examples/json-plugin/)
 
 ## Choosing Your Path
 
 **New to rustbridge?** Start with the [Getting Started Guide](../GETTING_STARTED.md), then return here for the deeper dive.
 
-**Want to skip the tutorial?** Use the completed [regex-plugin example](../../examples/regex-plugin/) as a reference:
+**Want to skip the tutorial?** Use the completed examples as a reference:
 
 ```bash
-# Copy the completed example
+# Copy the regex plugin example
 cp -r ~/rustbridge-workspace/rustbridge/examples/regex-plugin ~/rustbridge-workspace/my-plugin
+
+# Or the JSON plugin example
+cp -r ~/rustbridge-workspace/rustbridge/examples/json-plugin ~/rustbridge-workspace/my-plugin
 ```
 
 ## Getting Help
