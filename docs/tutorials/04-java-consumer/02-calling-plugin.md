@@ -101,6 +101,7 @@ var bundleLoader = BundleLoader.builder()
 ```
 
 The `BundleLoader`:
+
 - Opens the `.rbp` ZIP file
 - Reads the manifest to find the right library for your platform
 - Extracts it to a temp directory
@@ -115,6 +116,7 @@ try (var plugin = FfmPluginLoader.load(libraryPath.toString())) {
 ```
 
 The `FfmPluginLoader`:
+
 - Uses Java 21's Foreign Function & Memory API
 - Loads the native library
 - Provides a `call(messageType, jsonPayload)` method
@@ -128,6 +130,7 @@ record ValidateResponse(boolean valid) {}
 ```
 
 Records provide:
+
 - Immutable data classes
 - Automatic `equals()`, `hashCode()`, `toString()`
 - Accessor methods matching field names (e.g., `valid()`)
@@ -147,6 +150,7 @@ private static <Req, Resp> Resp call(
 ```
 
 This helper:
+
 - Serializes any request object to JSON
 - Calls the plugin with the message type
 - Deserializes the response to the expected type

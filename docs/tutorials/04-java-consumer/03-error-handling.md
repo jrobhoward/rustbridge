@@ -92,13 +92,13 @@ Error code: 3
 
 The `PluginException` includes an error code that maps to rustbridge error types:
 
-| Code | Error Type |
-|------|------------|
-| 1 | Initialization error |
-| 2 | Unknown message type |
-| 3 | Handler error (your custom errors) |
-| 4 | Serialization error |
-| 5 | Shutdown error |
+| Code | Error Type                         |
+|------|------------------------------------|
+| 1    | Initialization error               |
+| 2    | Unknown message type               |
+| 3    | Handler error (your custom errors) |
+| 4    | Serialization error                |
+| 5    | Shutdown error                     |
 
 ## Graceful Error Handling
 
@@ -201,6 +201,7 @@ public class Main {
 ## Summary
 
 You've built a Java application that:
+
 - Loads a rustbridge plugin bundle
 - Makes type-safe calls using records and Gson
 - Handles plugin errors gracefully
@@ -208,6 +209,7 @@ You've built a Java application that:
 ## Next Steps
 
 Continue to [Chapter 5: Production Bundles](../05-production-bundles/README.md) to learn about:
+
 - Embedding JSON schemas in bundles
 - Code signing with minisign
 - Software Bill of Materials (SBOM)

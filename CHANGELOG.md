@@ -14,7 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `templates/rust/` - New canonical Rust plugin template with placeholder substitution
 - Tutorial Chapter 3: Building a JSON Plugin (scaffold, validate message, prettify message, error handling)
 - Tutorial Chapter 4: Calling from Java (project setup, type-safe calls with records/Gson, error handling)
+- Tutorial Chapter 5: Production Bundles (code signing, JSON schemas, build metadata, SBOM)
+- Tutorial Chapter 6: Cross-Compilation (platform overview, native toolchains, cross-compilation)
 - `examples/json-plugin/` - Reference implementation for JSON validation and prettification
+- `--license PATH` flag for `rustbridge bundle create` to include the plugin's own LICENSE file
+- `--metadata KEY=VALUE` flag for `rustbridge bundle create` for arbitrary custom metadata
 
 ### Changed
 - `rustbridge new` now uses embedded templates via `include_str!` instead of `cargo-generate`

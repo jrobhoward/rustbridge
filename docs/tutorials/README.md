@@ -18,6 +18,13 @@ These tutorials guide you through building Rust plugins and calling them from mu
 │  • JSON validation/prettify           • Error handling patterns            │
 │  • Configurable behavior              • Performance benchmarking           │
 │                                                                             │
+│  Production Bundles (Chapter 5)       Cross-Compilation (Chapter 6)       │
+│  ──────────────────────────────       ──────────────────────────────       │
+│  • Code signing with minisign         • Multi-platform bundles             │
+│  • JSON schemas for validation        • Native and cross builds            │
+│  • Build metadata and provenance      • Bundle combining                   │
+│  • SBOM for compliance                                                     │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -74,6 +81,27 @@ Load your plugin from Java using the Foreign Function & Memory (FFM) API.
 | [01-project-setup.md](./04-java-consumer/01-project-setup.md) | Set up Java FFM consumer project |
 | [02-calling-plugin.md](./04-java-consumer/02-calling-plugin.md) | Load bundle, type-safe calls with records |
 | [03-error-handling.md](./04-java-consumer/03-error-handling.md) | Handle plugin errors gracefully |
+
+### [Chapter 5: Production Bundles](./05-production-bundles/README.md)
+
+Create production-ready bundles with signing, schemas, and compliance features.
+
+| Section | What You'll Learn |
+|---------|-------------------|
+| [01-code-signing.md](./05-production-bundles/01-code-signing.md) | Generate keys, sign bundles with minisign |
+| [02-json-schemas.md](./05-production-bundles/02-json-schemas.md) | Embed schemas for validation |
+| [03-build-metadata.md](./05-production-bundles/03-build-metadata.md) | Include provenance and git info |
+| [04-sbom.md](./05-production-bundles/04-sbom.md) | Add Software Bill of Materials |
+
+### [Chapter 6: Cross-Compilation](./06-cross-compilation/README.md)
+
+Build multi-platform bundles for Linux, macOS, and Windows.
+
+| Section | What You'll Learn |
+|---------|-------------------|
+| [01-platform-overview.md](./06-cross-compilation/01-platform-overview.md) | Platform identifiers and target triples |
+| [02-native-toolchains.md](./06-cross-compilation/02-native-toolchains.md) | Build natively on each platform |
+| [03-cross-compilation.md](./06-cross-compilation/03-cross-compilation.md) | Cross-compile with `cross` or cargo |
 
 ## Reference Implementations
 

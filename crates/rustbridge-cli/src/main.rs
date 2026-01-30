@@ -27,6 +27,7 @@ struct Cli {
 }
 
 #[derive(Subcommand)]
+#[allow(clippy::large_enum_variant)] // BundleAction has many options; boxing would complicate clap usage
 enum Commands {
     /// Build a rustbridge plugin
     Build {
@@ -185,6 +186,11 @@ enum BundleAction {
         #[arg(long, value_name = "PATH")]
         notices: Option<String>,
 
+        /// Plugin's own license file to include in the bundle
+        /// Example: --license LICENSE
+        #[arg(long, value_name = "PATH")]
+        license: Option<String>,
+
         /// Skip automatic build metadata collection
         #[arg(long)]
         no_metadata: bool,
@@ -193,6 +199,13 @@ enum BundleAction {
         /// Example: --sbom sbom.cdx.json:sbom.cdx.json --sbom sbom.spdx.json:sbom.spdx.json
         #[arg(long, value_name = "SOURCE:ARCHIVE_NAME")]
         sbom: Vec<String>,
+
+        /// Custom metadata as KEY=VALUE (can be repeated)
+        /// Adds arbitrary key/value pairs to build_info.custom for informational purposes.
+        /// Example: --metadata repository=https://github.com/user/project
+        /// Example: --metadata ci_job_id=12345
+        #[arg(long, value_name = "KEY=VALUE")]
+        metadata: Vec<String>,
     },
 
     /// Combine multiple bundles into one
@@ -349,8 +362,10 @@ fn main() -> anyhow::Result<()> {
                 generate_header,
                 generate_schema,
                 notices,
+                license,
                 no_metadata,
                 sbom,
+                metadata,
             } => {
                 // Parse library arguments (PLATFORM:PATH or PLATFORM:VARIANT:PATH)
                 let libs: Vec<(String, String, String)> = libraries
@@ -407,6 +422,18 @@ fn main() -> anyhow::Result<()> {
                     })
                     .collect::<anyhow::Result<_>>()?;
 
+                // Parse custom metadata arguments (KEY=VALUE)
+                let custom_metadata: Vec<(String, String)> = metadata
+                    .iter()
+                    .map(|s| {
+                        let parts: Vec<&str> = s.splitn(2, '=').collect();
+                        if parts.len() != 2 {
+                            anyhow::bail!("Invalid metadata format: {s}. Expected KEY=VALUE");
+                        }
+                        Ok((parts[0].to_string(), parts[1].to_string()))
+                    })
+                    .collect::<anyhow::Result<_>>()?;
+
                 bundle::create(
                     &name,
                     &version,
@@ -417,8 +444,10 @@ fn main() -> anyhow::Result<()> {
                     generate_header,
                     generate_schema,
                     notices,
+                    license,
                     no_metadata,
                     &sbom_files,
+                    &custom_metadata,
                 )?;
             }
             BundleAction::Combine {

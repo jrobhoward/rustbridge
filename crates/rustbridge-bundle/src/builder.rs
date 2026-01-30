@@ -310,6 +310,35 @@ impl BundleBuilder {
         Ok(self)
     }
 
+    /// Add the plugin's license file to the bundle.
+    ///
+    /// The file will be stored in the `legal/` directory as `LICENSE`.
+    /// This is for the plugin's own license, not third-party notices.
+    pub fn add_license_file<P: AsRef<Path>>(mut self, source_path: P) -> BundleResult<Self> {
+        let source_path = source_path.as_ref();
+
+        let contents = fs::read(source_path).map_err(|e| {
+            BundleError::Io(std::io::Error::new(
+                e.kind(),
+                format!(
+                    "Failed to read license file {}: {}",
+                    source_path.display(),
+                    e
+                ),
+            ))
+        })?;
+
+        let archive_path = "legal/LICENSE".to_string();
+        self.manifest.set_license_file(archive_path.clone());
+
+        self.files.push(BundleFile {
+            archive_path,
+            contents,
+        });
+
+        Ok(self)
+    }
+
     /// Add an SBOM file to the bundle.
     ///
     /// The file will be stored in the `sbom/` directory.
@@ -714,5 +743,32 @@ mod tests {
     #[test]
     fn detect_schema_format___hpp_extension___returns_c_header() {
         assert_eq!(detect_schema_format("types.hpp"), "c-header");
+    }
+
+    #[test]
+    fn BundleBuilder___add_license_file___adds_file_to_legal_dir() {
+        let temp_dir = TempDir::new().unwrap();
+        let license_path = temp_dir.path().join("LICENSE");
+        fs::write(&license_path, b"MIT License\n\nCopyright...").unwrap();
+
+        let manifest = Manifest::new("test", "1.0.0");
+        let builder = BundleBuilder::new(manifest)
+            .add_license_file(&license_path)
+            .unwrap();
+
+        // Check file was added
+        assert_eq!(builder.files.len(), 1);
+        assert_eq!(builder.files[0].archive_path, "legal/LICENSE");
+
+        // Check manifest was updated
+        assert_eq!(builder.manifest.get_license_file(), Some("legal/LICENSE"));
+    }
+
+    #[test]
+    fn BundleBuilder___add_license_file___nonexistent___returns_error() {
+        let manifest = Manifest::new("test", "1.0.0");
+        let result = BundleBuilder::new(manifest).add_license_file("/nonexistent/LICENSE");
+
+        assert!(result.is_err());
     }
 }

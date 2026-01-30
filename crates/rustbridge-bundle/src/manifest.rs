@@ -41,6 +41,10 @@ pub struct Manifest {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub notices: Option<String>,
 
+    /// Path to the plugin's own license file within the bundle.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub license_file: Option<String>,
+
     /// API information (optional).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub api: Option<ApiInfo>,
@@ -197,6 +201,11 @@ pub struct BuildInfo {
     /// Git repository information (optional).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub git: Option<GitInfo>,
+
+    /// Custom key/value metadata for informational purposes.
+    /// Can include arbitrary data like repository URL, CI job ID, etc.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub custom: Option<HashMap<String, String>>,
 }
 
 /// Git repository information.
@@ -342,6 +351,7 @@ impl Manifest {
             sbom: None,
             schema_checksum: None,
             notices: None,
+            license_file: None,
             api: None,
             public_key: None,
             schemas: HashMap::new(),
@@ -471,6 +481,17 @@ impl Manifest {
     #[must_use]
     pub fn get_notices(&self) -> Option<&str> {
         self.notices.as_deref()
+    }
+
+    /// Set the license file path.
+    pub fn set_license_file(&mut self, path: String) {
+        self.license_file = Some(path);
+    }
+
+    /// Get the license file path.
+    #[must_use]
+    pub fn get_license_file(&self) -> Option<&str> {
+        self.license_file.as_deref()
     }
 
     /// Get a specific variant for a platform.
@@ -1065,6 +1086,7 @@ mod tests {
                 tag: Some("v1.0.0".to_string()),
                 dirty: Some(false),
             }),
+            custom: None,
         });
 
         let json = manifest.to_json().unwrap();
@@ -1161,6 +1183,18 @@ mod tests {
         let parsed = Manifest::from_json(&json).unwrap();
 
         assert_eq!(parsed.get_notices(), Some("docs/NOTICES.txt"));
+    }
+
+    #[test]
+    fn Manifest___license_file___roundtrip() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+        manifest.set_license_file("legal/LICENSE".to_string());
+
+        let json = manifest.to_json().unwrap();
+        let parsed = Manifest::from_json(&json).unwrap();
+
+        assert_eq!(parsed.get_license_file(), Some("legal/LICENSE"));
     }
 
     #[test]

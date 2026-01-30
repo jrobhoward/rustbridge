@@ -21,8 +21,10 @@ pub fn create(
     generate_header: Option<String>,
     generate_schema: Option<String>,
     notices_path: Option<String>,
+    license_path: Option<String>,
     no_metadata: bool,
     sbom_files: &[(String, String)],
+    custom_metadata: &[(String, String)],
 ) -> Result<()> {
     println!("Creating bundle: {name} v{version}");
 
@@ -126,6 +128,14 @@ pub fn create(
             .with_context(|| format!("Failed to add notices file: {notices}"))?;
     }
 
+    // Add license file if provided
+    if let Some(license) = license_path {
+        println!("  Adding license: {license}");
+        builder = builder
+            .add_license_file(&license)
+            .with_context(|| format!("Failed to add license file: {license}"))?;
+    }
+
     // Add SBOM files
     if !sbom_files.is_empty() {
         let mut sbom = rustbridge_bundle::Sbom {
@@ -153,9 +163,30 @@ pub fn create(
 
     // Add build metadata if not disabled
     if !no_metadata {
-        let build_info = collect_build_info();
+        let mut build_info = collect_build_info();
+
+        // Add custom metadata if provided
+        if !custom_metadata.is_empty() {
+            let custom: HashMap<String, String> = custom_metadata.iter().cloned().collect();
+            build_info.custom = Some(custom);
+            for (key, value) in custom_metadata {
+                println!("  Custom metadata: {key}={value}");
+            }
+        }
+
         builder = builder.with_build_info(build_info);
         println!("  Build metadata collected");
+    } else if !custom_metadata.is_empty() {
+        // Even with --no-metadata, allow custom metadata
+        let custom: HashMap<String, String> = custom_metadata.iter().cloned().collect();
+        let build_info = rustbridge_bundle::BuildInfo {
+            custom: Some(custom),
+            ..Default::default()
+        };
+        builder = builder.with_build_info(build_info);
+        for (key, value) in custom_metadata {
+            println!("  Custom metadata: {key}={value}");
+        }
     }
 
     // Determine output path
@@ -350,6 +381,14 @@ pub fn combine(
         }
     }
 
+    // Copy license file from first bundle
+    for file in first_loader.list_files() {
+        if file.starts_with("legal/") {
+            let contents = first_loader.read_file(&file)?;
+            builder = builder.add_bytes(&file, contents);
+        }
+    }
+
     // Write the combined bundle
     builder
         .write(output_path)
@@ -472,6 +511,14 @@ pub fn slim(
         }
     }
 
+    // Copy license file if present
+    for file in loader.list_files() {
+        if file.starts_with("legal/") {
+            let contents = loader.read_file(&file)?;
+            builder = builder.add_bytes(&file, contents);
+        }
+    }
+
     // Write the slimmed bundle
     builder
         .write(output_path)
@@ -524,6 +571,12 @@ pub fn list(bundle_path: &str, show_build: bool, show_variants: bool) -> Result<
                 println!("  Dirty: {dirty}");
             }
         }
+        if let Some(custom) = &build_info.custom {
+            println!("  Custom metadata:");
+            for (key, value) in custom {
+                println!("    {key}: {value}");
+            }
+        }
     }
 
     println!("\nPlatforms:");
@@ -553,6 +606,10 @@ pub fn list(bundle_path: &str, show_build: bool, show_variants: bool) -> Result<
         if let Some(spdx) = &sbom.spdx {
             println!("  SPDX: {spdx}");
         }
+    }
+
+    if let Some(license_file) = manifest.get_license_file() {
+        println!("\nLicense: {license_file}");
     }
 
     println!("\nFiles:");
@@ -624,6 +681,7 @@ fn collect_build_info() -> rustbridge_bundle::BuildInfo {
         compiler,
         rustbridge_version: Some(env!("CARGO_PKG_VERSION").to_string()),
         git: collect_git_info(),
+        custom: None,
     }
 }
 
@@ -806,8 +864,10 @@ mod tests {
             None,
             None,
             None,
+            None, // No license file
             true, // Skip metadata for test
             &[],  // No SBOM files
+            &[],  // No custom metadata
         )
         .unwrap();
 
@@ -849,7 +909,9 @@ mod tests {
             None,
             None,
             None,
+            None,
             true,
+            &[],
             &[],
         )
         .unwrap();
@@ -887,7 +949,9 @@ mod tests {
             None,
             None,
             None,
+            None,
             true,
+            &[],
             &[],
         )
         .unwrap();
@@ -931,7 +995,9 @@ mod tests {
             None,
             None,
             None,
+            None,
             true,
+            &[],
             &[],
         )
         .unwrap();
