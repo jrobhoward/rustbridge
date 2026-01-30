@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-01-30
+
 ### Added
 - `rustbridge new` now supports multi-language consumer generation with flags:
   - `--kotlin`, `--java-ffm`, `--java-jni`, `--csharp`, `--python`, `--all`

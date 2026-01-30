@@ -15,7 +15,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.6.1"
+version = "0.6.2"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/jrobhoward/rustbridge"
@@ -23,14 +23,14 @@ rust-version = "1.90"
 
 [workspace.dependencies]
 # Internal crates
-rustbridge = { path = "crates/rustbridge", version = "0.6.1" }
-rustbridge-core = { path = "crates/rustbridge-core", version = "0.6.1" }
-rustbridge-transport = { path = "crates/rustbridge-transport", version = "0.6.1" }
-rustbridge-ffi = { path = "crates/rustbridge-ffi", version = "0.6.1" }
-rustbridge-runtime = { path = "crates/rustbridge-runtime", version = "0.6.1" }
-rustbridge-logging = { path = "crates/rustbridge-logging", version = "0.6.1" }
-rustbridge-macros = { path = "crates/rustbridge-macros", version = "0.6.1" }
-rustbridge-bundle = { path = "crates/rustbridge-bundle", version = "0.6.1" }
+rustbridge = { path = "crates/rustbridge", version = "0.6.2" }
+rustbridge-core = { path = "crates/rustbridge-core", version = "0.6.2" }
+rustbridge-transport = { path = "crates/rustbridge-transport", version = "0.6.2" }
+rustbridge-ffi = { path = "crates/rustbridge-ffi", version = "0.6.2" }
+rustbridge-runtime = { path = "crates/rustbridge-runtime", version = "0.6.2" }
+rustbridge-logging = { path = "crates/rustbridge-logging", version = "0.6.2" }
+rustbridge-macros = { path = "crates/rustbridge-macros", version = "0.6.2" }
+rustbridge-bundle = { path = "crates/rustbridge-bundle", version = "0.6.2" }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
