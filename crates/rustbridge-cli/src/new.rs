@@ -13,69 +13,64 @@ use std::path::Path;
 
 mod templates {
     // Rust plugin templates
-    pub const RUST_CARGO_TOML: &str = include_str!("../../../templates/rust/Cargo.toml.tmpl");
-    pub const RUST_RUSTBRIDGE_TOML: &str =
-        include_str!("../../../templates/rust/rustbridge.toml.tmpl");
-    pub const RUST_LIB_RS: &str = include_str!("../../../templates/rust/src/lib.rs.tmpl");
-    pub const RUST_GITIGNORE: &str = include_str!("../../../templates/rust/.gitignore");
+    pub const RUST_CARGO_TOML: &str = include_str!("../templates/rust/Cargo.toml.tmpl");
+    pub const RUST_RUSTBRIDGE_TOML: &str = include_str!("../templates/rust/rustbridge.toml.tmpl");
+    pub const RUST_LIB_RS: &str = include_str!("../templates/rust/src/lib.rs.tmpl");
+    pub const RUST_GITIGNORE: &str = include_str!("../templates/rust/.gitignore");
 
     // Kotlin consumer templates
-    pub const KOTLIN_BUILD_GRADLE: &str =
-        include_str!("../../../templates/kotlin/build.gradle.kts");
+    pub const KOTLIN_BUILD_GRADLE: &str = include_str!("../templates/kotlin/build.gradle.kts");
     pub const KOTLIN_SETTINGS_GRADLE: &str =
-        include_str!("../../../templates/kotlin/settings.gradle.kts.tmpl");
+        include_str!("../templates/kotlin/settings.gradle.kts.tmpl");
     pub const KOTLIN_GRADLE_PROPERTIES: &str =
-        include_str!("../../../templates/kotlin/gradle.properties");
+        include_str!("../templates/kotlin/gradle.properties");
     pub const KOTLIN_MAIN: &str =
-        include_str!("../../../templates/kotlin/src/main/kotlin/com/example/Main.kt.tmpl");
-    pub const KOTLIN_GITIGNORE: &str = include_str!("../../../templates/kotlin/.gitignore");
-    pub const KOTLIN_GRADLEW: &str = include_str!("../../../templates/kotlin/gradlew");
-    pub const KOTLIN_GRADLEW_BAT: &str = include_str!("../../../templates/kotlin/gradlew.bat");
+        include_str!("../templates/kotlin/src/main/kotlin/com/example/Main.kt.tmpl");
+    pub const KOTLIN_GITIGNORE: &str = include_str!("../templates/kotlin/.gitignore");
+    pub const KOTLIN_GRADLEW: &str = include_str!("../templates/kotlin/gradlew");
+    pub const KOTLIN_GRADLEW_BAT: &str = include_str!("../templates/kotlin/gradlew.bat");
     pub const KOTLIN_GRADLE_WRAPPER_PROPERTIES: &str =
-        include_str!("../../../templates/kotlin/gradle/wrapper/gradle-wrapper.properties");
+        include_str!("../templates/kotlin/gradle/wrapper/gradle-wrapper.properties");
     pub const KOTLIN_GRADLE_WRAPPER_JAR: &[u8] =
-        include_bytes!("../../../templates/kotlin/gradle/wrapper/gradle-wrapper.jar");
+        include_bytes!("../templates/kotlin/gradle/wrapper/gradle-wrapper.jar");
 
     // Java FFM consumer templates
-    pub const JAVA_FFM_BUILD_GRADLE: &str =
-        include_str!("../../../templates/java-ffm/build.gradle.kts");
+    pub const JAVA_FFM_BUILD_GRADLE: &str = include_str!("../templates/java-ffm/build.gradle.kts");
     pub const JAVA_FFM_SETTINGS_GRADLE: &str =
-        include_str!("../../../templates/java-ffm/settings.gradle.kts.tmpl");
+        include_str!("../templates/java-ffm/settings.gradle.kts.tmpl");
     pub const JAVA_FFM_MAIN: &str =
-        include_str!("../../../templates/java-ffm/src/main/java/com/example/Main.java.tmpl");
-    pub const JAVA_FFM_GITIGNORE: &str = include_str!("../../../templates/java-ffm/.gitignore");
-    pub const JAVA_FFM_GRADLEW: &str = include_str!("../../../templates/java-ffm/gradlew");
-    pub const JAVA_FFM_GRADLEW_BAT: &str = include_str!("../../../templates/java-ffm/gradlew.bat");
+        include_str!("../templates/java-ffm/src/main/java/com/example/Main.java.tmpl");
+    pub const JAVA_FFM_GITIGNORE: &str = include_str!("../templates/java-ffm/.gitignore");
+    pub const JAVA_FFM_GRADLEW: &str = include_str!("../templates/java-ffm/gradlew");
+    pub const JAVA_FFM_GRADLEW_BAT: &str = include_str!("../templates/java-ffm/gradlew.bat");
     pub const JAVA_FFM_GRADLE_WRAPPER_PROPERTIES: &str =
-        include_str!("../../../templates/java-ffm/gradle/wrapper/gradle-wrapper.properties");
+        include_str!("../templates/java-ffm/gradle/wrapper/gradle-wrapper.properties");
     pub const JAVA_FFM_GRADLE_WRAPPER_JAR: &[u8] =
-        include_bytes!("../../../templates/java-ffm/gradle/wrapper/gradle-wrapper.jar");
+        include_bytes!("../templates/java-ffm/gradle/wrapper/gradle-wrapper.jar");
 
     // Java JNI consumer templates
-    pub const JAVA_JNI_BUILD_GRADLE: &str =
-        include_str!("../../../templates/java-jni/build.gradle.kts");
+    pub const JAVA_JNI_BUILD_GRADLE: &str = include_str!("../templates/java-jni/build.gradle.kts");
     pub const JAVA_JNI_SETTINGS_GRADLE: &str =
-        include_str!("../../../templates/java-jni/settings.gradle.kts.tmpl");
+        include_str!("../templates/java-jni/settings.gradle.kts.tmpl");
     pub const JAVA_JNI_MAIN: &str =
-        include_str!("../../../templates/java-jni/src/main/java/com/example/Main.java.tmpl");
-    pub const JAVA_JNI_GITIGNORE: &str = include_str!("../../../templates/java-jni/.gitignore");
-    pub const JAVA_JNI_GRADLEW: &str = include_str!("../../../templates/java-jni/gradlew");
-    pub const JAVA_JNI_GRADLEW_BAT: &str = include_str!("../../../templates/java-jni/gradlew.bat");
+        include_str!("../templates/java-jni/src/main/java/com/example/Main.java.tmpl");
+    pub const JAVA_JNI_GITIGNORE: &str = include_str!("../templates/java-jni/.gitignore");
+    pub const JAVA_JNI_GRADLEW: &str = include_str!("../templates/java-jni/gradlew");
+    pub const JAVA_JNI_GRADLEW_BAT: &str = include_str!("../templates/java-jni/gradlew.bat");
     pub const JAVA_JNI_GRADLE_WRAPPER_PROPERTIES: &str =
-        include_str!("../../../templates/java-jni/gradle/wrapper/gradle-wrapper.properties");
+        include_str!("../templates/java-jni/gradle/wrapper/gradle-wrapper.properties");
     pub const JAVA_JNI_GRADLE_WRAPPER_JAR: &[u8] =
-        include_bytes!("../../../templates/java-jni/gradle/wrapper/gradle-wrapper.jar");
+        include_bytes!("../templates/java-jni/gradle/wrapper/gradle-wrapper.jar");
 
     // C# consumer templates
-    pub const CSHARP_CSPROJ: &str = include_str!("../../../templates/csharp/Consumer.csproj.tmpl");
-    pub const CSHARP_PROGRAM: &str = include_str!("../../../templates/csharp/Program.cs.tmpl");
-    pub const CSHARP_GITIGNORE: &str = include_str!("../../../templates/csharp/.gitignore");
+    pub const CSHARP_CSPROJ: &str = include_str!("../templates/csharp/Consumer.csproj.tmpl");
+    pub const CSHARP_PROGRAM: &str = include_str!("../templates/csharp/Program.cs.tmpl");
+    pub const CSHARP_GITIGNORE: &str = include_str!("../templates/csharp/.gitignore");
 
     // Python consumer templates
-    pub const PYTHON_MAIN: &str = include_str!("../../../templates/python/main.py.tmpl");
-    pub const PYTHON_REQUIREMENTS: &str =
-        include_str!("../../../templates/python/requirements.txt");
-    pub const PYTHON_GITIGNORE: &str = include_str!("../../../templates/python/.gitignore");
+    pub const PYTHON_MAIN: &str = include_str!("../templates/python/main.py.tmpl");
+    pub const PYTHON_REQUIREMENTS: &str = include_str!("../templates/python/requirements.txt");
+    pub const PYTHON_GITIGNORE: &str = include_str!("../templates/python/.gitignore");
 }
 
 // ============================================================================

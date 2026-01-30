@@ -165,12 +165,11 @@ rustbridge/
 │   ├── rustbridge-logging/  # Tracing bridge
 │   ├── rustbridge-macros/   # Procedural macros
 │   ├── rustbridge-bundle/   # Bundle format
-│   ├── rustbridge-cli/      # CLI tool
+│   ├── rustbridge-cli/      # CLI tool (includes templates/)
 │   └── rustbridge-jni/      # JNI bridge
 ├── rustbridge-java/         # Java/Kotlin bindings
 ├── rustbridge-csharp/       # C# bindings
 ├── rustbridge-python/       # Python bindings
-├── templates/               # Project templates
 ├── examples/                # Example plugins
 └── docs/                    # Documentation
 ```

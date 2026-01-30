@@ -7,13 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.6.2] - 2026-01-30
-
 ### Added
 - `rustbridge new` now supports multi-language consumer generation with flags:
   - `--kotlin`, `--java-ffm`, `--java-jni`, `--csharp`, `--python`, `--all`
   - Generated consumers placed in `consumers/` subdirectory
-- `templates/rust/` - New canonical Rust plugin template with placeholder substitution
+- Rust plugin template with placeholder substitution (embedded in CLI)
 - Tutorial Chapter 3: Building a JSON Plugin (scaffold, validate message, prettify message, error handling)
 - Tutorial Chapter 4: Calling from Java (project setup, type-safe calls with records/Gson, error handling)
 - Tutorial Chapter 5: Production Bundles (code signing, JSON schemas, build metadata, SBOM)
@@ -26,11 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `rustbridge new` now uses embedded templates via `include_str!` instead of `cargo-generate`
   - No external dependency on `cargo-generate` required
   - Templates are versioned with the CLI binary
+  - Templates moved from `templates/` to `crates/rustbridge-cli/templates/` for crates.io compatibility
 - Tutorials and documentation updated to use `rustbridge new` instead of `cargo generate`
 - Generated projects use Option B structure: Rust plugin at root, consumers in `consumers/`
 
 ### Removed
-- `templates/plugin/` - Replaced by `templates/rust/`
+- `templates/` (workspace root) - Templates moved to `crates/rustbridge-cli/templates/`
+- `templates/plugin/` - Replaced by embedded `rust` template
 - `templates/tutorial-plugin/` - No longer needed; tutorials use `rustbridge new` + `examples/regex-plugin` as reference
 
 ## [0.6.1] - 2025-01-29

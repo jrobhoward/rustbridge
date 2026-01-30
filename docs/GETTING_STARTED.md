@@ -295,7 +295,7 @@ calculator with multiple message types:
 
 ## Templates Reference
 
-The `rustbridge new` command generates projects from templates in the `templates/` directory:
+The `rustbridge new` command generates projects from templates embedded in the CLI:
 
 ```bash
 rustbridge new my-plugin                    # Rust plugin only
@@ -307,14 +307,14 @@ rustbridge new my-plugin --python           # Rust + Python consumer
 rustbridge new my-plugin --all              # Rust + all consumers
 ```
 
-| Template             | Description                     | Requirements |
-|----------------------|---------------------------------|--------------|
-| `templates/rust`     | Rust plugin                     | Rust 1.90+   |
-| `templates/kotlin`   | Kotlin consumer                 | Java 21+     |
-| `templates/java-ffm` | Java FFM consumer (recommended) | Java 21+     |
-| `templates/java-jni` | Java JNI consumer (legacy)      | Java 17+     |
-| `templates/csharp`   | C# consumer                     | .NET 8.0+    |
-| `templates/python`   | Python consumer                 | Python 3.9+  |
+| Template  | Description                     | Requirements |
+|-----------|---------------------------------|--------------|
+| rust      | Rust plugin                     | Rust 1.90+   |
+| kotlin    | Kotlin consumer                 | Java 21+     |
+| java-ffm  | Java FFM consumer (recommended) | Java 21+     |
+| java-jni  | Java JNI consumer (legacy)      | Java 17+     |
+| csharp    | C# consumer                     | .NET 8.0+    |
+| python    | Python consumer                 | Python 3.9+  |
 
 ---
 

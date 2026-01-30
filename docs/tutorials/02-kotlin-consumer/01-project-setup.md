@@ -2,35 +2,41 @@
 
 In this section, you'll set up a Kotlin project to consume your regex plugin.
 
-## Copy the Kotlin Template
+## Generate the Kotlin Consumer
 
 ```bash
 cd ~/rustbridge-workspace
 
-cp -r rustbridge/templates/kotlin regex-kotlin-app
-cd regex-kotlin-app
+rustbridge new regex-kotlin-app --kotlin
+cd regex-kotlin-app/consumers/kotlin
 ```
 
 ## Verify the Project Structure
 
+The `rustbridge new` command creates a Rust plugin at the root with consumers in the `consumers/` directory:
+
 ```
 regex-kotlin-app/
-├── build.gradle.kts
-├── settings.gradle.kts
-├── gradle/
-├── gradlew
-├── gradlew.bat
-└── src/
-    └── main/
-        └── kotlin/
-            └── com/
-                └── example/
-                    └── Main.kt
+├── Cargo.toml                 # Rust plugin
+├── src/
+│   └── lib.rs
+└── consumers/
+    └── kotlin/
+        ├── build.gradle.kts
+        ├── settings.gradle.kts
+        ├── gradle/
+        ├── gradlew
+        ├── gradlew.bat
+        └── src/
+            └── main/
+                └── kotlin/
+                    └── com/
+                        └── example/
+                            └── Main.kt
 ```
 
-> **Tip**: If you're a git user, at this point, you may want to run `git init`, `git add .` and `git commit` at this
-> time.
-> At the end of each tutorial section, you can commit your progress.
+> **Tip**: If you're a git user, at this point, you may want to run `git init`, `git add .` and `git commit` from
+> `regex-kotlin-app/` (the root). At the end of each tutorial section, you can commit your progress.
 
 
 > **Tip**: Now would also be a good time to load the project in your IDE or editor of choice.
@@ -41,6 +47,7 @@ regex-kotlin-app/
 Copy the bundle you created in Chapter 1:
 
 ```bash
+# From consumers/kotlin/
 cp ~/rustbridge-workspace/regex-plugin/regex-plugin-1.0.0.rbp .
 ```
 
@@ -51,7 +58,7 @@ If you haven't already, install the Java libraries to Maven local:
 ```bash
 cd ~/rustbridge-workspace/rustbridge/rustbridge-java
 ./gradlew publishToMavenLocal
-cd ~/rustbridge-workspace/regex-kotlin-app
+cd ~/rustbridge-workspace/regex-kotlin-app/consumers/kotlin
 ```
 
 ## Examine build.gradle.kts
