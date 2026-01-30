@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed ambiguous `HashAlgorithm` reference in C# verifier
 - Bundle CLI now correctly extracts public key from .pub file (line 2 only)
 - Tutorial code examples: added missing imports, `throws` declarations, and `#[allow(non_snake_case)]`
+- Tutorial documentation fixes for Chapters 5-6:
+  - Fixed non-existent CLI commands (`bundle info` → `bundle list --show-build`)
+  - Fixed non-existent CLI flags (`--schema-only`, `--sbom-only`)
+  - Fixed `cargo sbom` format argument (`cdx` → `cyclone_dx_json_1_6`)
+  - Removed `cargo-spdx` references (use `cargo sbom --output-format spdx_json_2_3`)
+  - Removed musl target references (musl doesn't support cdylib/shared libraries)
+  - Fixed Java FFM commands: added `--enable-preview` and `--enable-native-access=ALL-UNNAMED`
+  - Fixed Shadow JAR filename in cross-compilation tutorial
 
 ### Added
 - Oracle-based minisign verification tests across all languages

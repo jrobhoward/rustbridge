@@ -40,7 +40,9 @@ A Rust target triple has three or four parts: `{arch}-{vendor}-{os}[-{env}]`
 | `arch`   | `x86_64`, `aarch64`          | CPU architecture           |
 | `vendor` | `unknown`, `apple`, `pc`     | Vendor/manufacturer        |
 | `os`     | `linux`, `darwin`, `windows` | Operating system           |
-| `env`    | `gnu`, `msvc`, `musl`        | ABI/environment (optional) |
+| `env`    | `gnu`, `msvc`                | ABI/environment (optional) |
+
+> **Note**: `musl` targets (`x86_64-unknown-linux-musl`) do not support shared libraries (`cdylib`), so they cannot be used for rustbridge plugins.
 
 ### Common Targets
 
@@ -160,17 +162,6 @@ my-plugin-1.0.0.rbp
 | Linux    | glibc 2.17+     | CentOS 7, Ubuntu 14.04+ |
 | macOS    | 10.12+          | Sierra or later         |
 | Windows  | Windows 10+     | MSVC runtime required   |
-
-### Linux MUSL Alternative
-
-For maximum compatibility, consider `musl` targets:
-
-```bash
-rustup target add x86_64-unknown-linux-musl
-cargo build --release --target x86_64-unknown-linux-musl
-```
-
-MUSL builds are statically linked and work on any Linux distribution.
 
 ## Summary
 

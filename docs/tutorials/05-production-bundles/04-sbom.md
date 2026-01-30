@@ -41,22 +41,20 @@ Generate SBOM:
 
 ```bash
 cd ~/rustbridge-workspace/json-plugin
-cargo sbom --output-format cdx > sbom.cdx.json
+cargo sbom --output-format cyclone_dx_json_1_6 > sbom.cdx.json
 ```
 
-### Using cargo-spdx (SPDX)
+> **Note**: Use `cargo sbom --help` to see all available formats. CycloneDX 1.6 is recommended.
 
-Install the tool:
+### Using cargo-sbom (SPDX)
+
+`cargo-sbom` can also generate SPDX format (it's actually the default):
 
 ```bash
-cargo install cargo-spdx
+cargo sbom --output-format spdx_json_2_3 > sbom.spdx.json
 ```
 
-Generate SBOM:
-
-```bash
-cargo spdx --output sbom.spdx.json
-```
+> **Note**: You only need `cargo-sbom` installed—it supports both CycloneDX and SPDX formats.
 
 ## Include SBOM in Bundle
 
@@ -121,30 +119,39 @@ The manifest references the SBOM files:
 ### Command Line
 
 ```bash
-rustbridge bundle extract json-plugin-1.0.0.rbp --sbom-only --output ./
+unzip -j json-plugin-1.0.0.rbp "sbom/*" -d ./
 ```
 
 ### Java
 
 ```java
-var bundleLoader = BundleLoader.builder()
-    .bundlePath("json-plugin-1.0.0.rbp")
-    .build();
+import java.util.zip.ZipFile;
+import java.util.zip.ZipEntry;
 
-// Get SBOM as string
-String sbom = bundleLoader.getSbom("cyclonedx");
-
-// Or extract to file
-bundleLoader.extractSbom("cyclonedx", Paths.get("./sbom.cdx.json"));
+try (var zipFile = new ZipFile("json-plugin-1.0.0.rbp")) {
+    // Check manifest for SBOM path
+    ZipEntry sbomEntry = zipFile.getEntry("sbom/sbom.cdx.json");
+    if (sbomEntry != null) {
+        try (var stream = zipFile.getInputStream(sbomEntry)) {
+            String sbom = new String(stream.readAllBytes());
+            System.out.println(sbom);
+        }
+    }
+}
 ```
 
 ### Python
 
 ```python
-from rustbridge import BundleLoader
+import zipfile
 
-bundle = BundleLoader("json-plugin-1.0.0.rbp")
-sbom = bundle.get_sbom("cyclonedx")
+with zipfile.ZipFile("json-plugin-1.0.0.rbp", "r") as zf:
+    # List SBOM files
+    sbom_files = [f for f in zf.namelist() if f.startswith("sbom/")]
+
+    for sbom_file in sbom_files:
+        sbom_content = zf.read(sbom_file).decode("utf-8")
+        print(f"{sbom_file}:\n{sbom_content}")
 ```
 
 ## CycloneDX Format Example
@@ -196,47 +203,6 @@ sbom = bundle.get_sbom("cyclonedx")
     }
   ]
 }
-```
-
-## Vulnerability Scanning
-
-Use SBOM tools to scan for known vulnerabilities:
-
-### Using grype
-
-```bash
-# Extract SBOM
-rustbridge bundle extract json-plugin-1.0.0.rbp --sbom-only --output ./
-
-# Scan with grype
-grype sbom:sbom.cdx.json
-```
-
-### Using trivy
-
-```bash
-trivy sbom sbom.cdx.json
-```
-
-## License Compliance
-
-Use SBOM to audit licenses:
-
-```bash
-# Extract SBOM
-rustbridge bundle extract json-plugin-1.0.0.rbp --sbom-only --output ./
-
-# List all licenses (using jq)
-jq -r '.components[].licenses[]?.license.id // "Unknown"' sbom.cdx.json | sort | uniq -c
-```
-
-Example output:
-
-```
-  12 Apache-2.0
-   8 MIT
-   3 MIT OR Apache-2.0
-   1 BSD-3-Clause
 ```
 
 ## Notices File

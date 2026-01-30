@@ -74,6 +74,11 @@ pub struct PrettifyResponse {
     pub result: String,
 }
 
+/// Default indentation for prettify (2 spaces)
+fn default_indent() -> usize {
+    2
+}
+
 // ... rest of implementation unchanged
 ```
 
@@ -196,10 +201,14 @@ The generated `messages.json` will look like:
 
 ## Extract Schema from Bundle
 
-Consumers can extract schemas for tooling:
+Consumers can extract schemas for tooling. Since `.rbp` bundles are ZIP archives, you can use standard tools:
 
 ```bash
-rustbridge bundle extract json-plugin-1.0.0.rbp --schema-only --output ./schemas/
+# Extract just the schema file
+unzip -j json-plugin-1.0.0.rbp "schema/*" -d ./schemas/
+
+# Or extract everything
+unzip json-plugin-1.0.0.rbp -d ./extracted/
 ```
 
 Or programmatically:
@@ -207,15 +216,17 @@ Or programmatically:
 ### Java
 
 ```java
-var bundleLoader = BundleLoader.builder()
-    .bundlePath("json-plugin-1.0.0.rbp")
-    .build();
+try (var loader = BundleLoader.builder()
+        .bundlePath("json-plugin-1.0.0.rbp")
+        .verifySignatures(false)  // Set true in production with public key
+        .build()) {
 
-// Get schema as string
-String schema = bundleLoader.getSchema("messages.json");
+    // Get schema as string
+    String schema = loader.readSchema("messages.json");
 
-// Or extract to file
-bundleLoader.extractSchema("messages.json", Paths.get("./messages.json"));
+    // Or extract to file
+    Path schemaPath = loader.extractSchema("messages.json", Paths.get("./schemas/"));
+}
 ```
 
 ### Python
@@ -223,8 +234,11 @@ bundleLoader.extractSchema("messages.json", Paths.get("./messages.json"));
 ```python
 from rustbridge import BundleLoader
 
-bundle = BundleLoader("json-plugin-1.0.0.rbp")
-schema = bundle.get_schema("messages.json")
+loader = BundleLoader(verify_signatures=False)  # Set True in production
+schema = loader.read_schema("json-plugin-1.0.0.rbp", "messages.json")
+
+# Or extract to file
+schema_path = loader.extract_schema("json-plugin-1.0.0.rbp", "messages.json", "./schemas/")
 ```
 
 ## Using Schemas for Validation

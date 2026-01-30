@@ -1,246 +1,217 @@
 # Section 3: Cross-Compilation
 
-In this section, you'll cross-compile your plugin from a single machine to multiple target platforms.
+In this section, you'll cross-compile your plugin for ARM64 and create a portable bundle that runs on both x86_64 and
+ARM64 Linux systems.
 
-## When to Cross-Compile
+## Goal
 
-Cross-compilation is useful when:
+Build a single `.rbp` bundle and Java JAR that work on:
 
-- You don't have access to target hardware
-- You want to build everything locally
-- Your CI doesn't support all targets
+- Your development machine (x86_64)
+- A Raspberry Pi or other ARM64 device
 
-**Caveat**: Cross-compilation can be tricky with system dependencies. For most projects, native CI builds are simpler.
+## Prerequisites
 
-## Using `cross`
+This tutorial assumes you're on **Ubuntu 22.04 x86_64**. The concepts apply to other distributions with minor
+adjustments.
 
-[cross](https://github.com/cross-rs/cross) may be the easiest way to cross-compile Rust projects (I haven't tried it).
-It uses Docker containers with pre-configured toolchains.
+You should have completed the json-plugin from earlier tutorials:
 
-### Install cross
-
-```bash
-cargo install cross --git https://github.com/cross-rs/cross
+```
+~/rustbridge-workspace/json-plugin/
 ```
 
-Requires Docker or Podman to be installed and running.
+## Step 1: Build for Native x86_64
 
-### Cross-Compile for Linux ARM64
-
-From your development machine (any platform):
+First, build the plugin for your local architecture:
 
 ```bash
 cd ~/rustbridge-workspace/json-plugin
-
-# Build for Linux ARM64
-cross build --release --target aarch64-unknown-linux-gnu
+cargo build --release
 ```
 
-The output is at `target/aarch64-unknown-linux-gnu/release/libjson_plugin.so`.
+The library is at `target/release/libjson_plugin.so`.
 
-### Cross-Compile for Multiple Targets
+## Step 2: Set Up ARM64 Cross-Compilation
 
-```bash
-# Linux x86_64
-cross build --release --target x86_64-unknown-linux-gnu
-
-# Linux ARM64
-cross build --release --target aarch64-unknown-linux-gnu
-
-# Linux MUSL (statically linked)
-cross build --release --target x86_64-unknown-linux-musl
-```
-
-### Create Bundle from Cross-Compiled Libraries
+Install the ARM64 cross-compiler and add the Rust target:
 
 ```bash
-rustbridge bundle create \
-  --name json-plugin \
-  --version 1.0.0 \
-  --lib linux-x86_64:target/x86_64-unknown-linux-gnu/release/libjson_plugin.so \
-  --lib linux-aarch64:target/aarch64-unknown-linux-gnu/release/libjson_plugin.so \
-  --output json-plugin-linux.rbp
-```
-
-## Cross-Compiling Without cross
-
-For targets not supported by `cross`, or to avoid Docker:
-
-### Linux to Linux ARM64
-
-Install the cross-compilation toolchain:
-
-```bash
-# Ubuntu/Debian
+# Install cross-compiler
 sudo apt install gcc-aarch64-linux-gnu
 
 # Add Rust target
 rustup target add aarch64-unknown-linux-gnu
 ```
 
-Configure cargo to use the linker (create or edit `.cargo/config.toml`):
+Configure Cargo to use the cross-linker. Create or edit `.cargo/config.toml` in your project:
 
-```toml
+```bash
+mkdir -p .cargo
+cat > .cargo/config.toml << 'EOF'
 [target.aarch64-unknown-linux-gnu]
 linker = "aarch64-linux-gnu-gcc"
+EOF
 ```
 
-Build:
+## Step 3: Build for ARM64
 
 ```bash
 cargo build --release --target aarch64-unknown-linux-gnu
 ```
 
-### macOS Cross-Architecture
+The ARM64 library is at `target/aarch64-unknown-linux-gnu/release/libjson_plugin.so`.
 
-On Apple Silicon, build for Intel:
-
-```bash
-rustup target add x86_64-apple-darwin
-cargo build --release --target x86_64-apple-darwin
-```
-
-On Intel Mac, build for Apple Silicon:
+Verify the architectures:
 
 ```bash
-rustup target add aarch64-apple-darwin
-cargo build --release --target aarch64-apple-darwin
-```
+file target/release/libjson_plugin.so
+# ELF 64-bit LSB shared object, x86-64, ...
 
-No additional toolchain needed - Xcode handles it.
-
-### Linux to Windows (mingw)
-
-```bash
-# Ubuntu/Debian
-sudo apt install mingw-w64
-
-# Add target
-rustup target add x86_64-pc-windows-gnu
-```
-
-Configure linker:
-
-```toml
-# .cargo/config.toml
-[target.x86_64-pc-windows-gnu]
-linker = "x86_64-w64-mingw32-gcc"
-```
-
-Build:
-
-```bash
-cargo build --release --target x86_64-pc-windows-gnu
-```
-
-**Note**: This produces GNU ABI binaries. For MSVC ABI (recommended for Windows), build natively or use CI.
-
-## Cross-Compilation Challenges
-
-### C Dependencies
-
-If your plugin depends on C libraries (via `-sys` crates), cross-compilation becomes harder:
-
-| Dependency  | Challenge                                    |
-|-------------|----------------------------------------------|
-| OpenSSL     | Need cross-compiled OpenSSL or use `rustls`  |
-| SQLite      | Need cross-compiled SQLite or static linking |
-| System libs | May not be available for target              |
-
-**Solutions**:
-
-1. Use pure-Rust alternatives (e.g. `rustls` instead of `openssl`)
-2. Vendor and statically link dependencies
-3. Use `cross` containers (pre-configured)
-4. Build natively on CI
-
-### Pure Rust Projects
-
-rustbridge plugins that only use Rust crates (no C dependencies) cross-compile easily:
-
-```toml
-# Cargo.toml - these are all pure Rust
-[dependencies]
-rustbridge = "0.6"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-```
-
-## Build Script for Cross-Compilation
-
-```bash
-#!/bin/bash
-# cross-build.sh - Build for all Linux targets using cross
-set -e
-
-VERSION=${1:-"1.0.0"}
-TARGETS=(
-    "x86_64-unknown-linux-gnu:linux-x86_64"
-    "aarch64-unknown-linux-gnu:linux-aarch64"
-)
-
-for TARGET_PAIR in "${TARGETS[@]}"; do
-    RUST_TARGET="${TARGET_PAIR%%:*}"
-    PLATFORM_ID="${TARGET_PAIR##*:}"
-
-    echo "Building for $RUST_TARGET..."
-    cross build --release --target "$RUST_TARGET"
-done
-
-# Create combined bundle
-LIBS=""
-for TARGET_PAIR in "${TARGETS[@]}"; do
-    RUST_TARGET="${TARGET_PAIR%%:*}"
-    PLATFORM_ID="${TARGET_PAIR##*:}"
-    LIBS="$LIBS --lib ${PLATFORM_ID}:target/${RUST_TARGET}/release/libjson_plugin.so"
-done
-
-rustbridge bundle create \
-    --name json-plugin \
-    --version "$VERSION" \
-    $LIBS \
-    --output json-plugin-linux-$VERSION.rbp
-
-echo "Created json-plugin-linux-$VERSION.rbp"
-```
-
-## Verifying Cross-Compiled Binaries
-
-Check the binary format:
-
-```bash
-# Check architecture
 file target/aarch64-unknown-linux-gnu/release/libjson_plugin.so
-# Output: ELF 64-bit LSB shared object, ARM aarch64, ...
-
-file target/x86_64-unknown-linux-gnu/release/libjson_plugin.so
-# Output: ELF 64-bit LSB shared object, x86-64, ...
+# ELF 64-bit LSB shared object, ARM aarch64, ...
 ```
 
-Check dependencies:
+## Step 4: Create Multi-Platform Bundle
+
+Bundle both libraries into a single signed `.rbp` file:
 
 ```bash
-# For Linux binaries
-readelf -d target/x86_64-unknown-linux-gnu/release/libjson_plugin.so | grep NEEDED
+rustbridge bundle create \
+  --name json-plugin \
+  --version 1.0.0 \
+  --lib linux-x86_64:target/release/libjson_plugin.so \
+  --lib linux-aarch64:target/aarch64-unknown-linux-gnu/release/libjson_plugin.so \
+  --sign-key ~/.rustbridge/signing.key \
+  --output json-plugin-1.0.0.rbp
 ```
+
+> **Note**: If you don't have a signing key, create one with `rustbridge keygen`.
+
+Verify the bundle contains both platforms:
+
+```bash
+rustbridge bundle list json-plugin-1.0.0.rbp
+```
+
+```
+json-plugin-1.0.0.rbp
+├── manifest.json
+└── lib/
+    ├── linux-x86_64/
+    │   └── release/
+    │       └── libjson_plugin.so
+    └── linux-aarch64/
+        └── release/
+            └── libjson_plugin.so
+```
+
+## Step 5: Build the Java Consumer JAR
+
+Navigate to your Java consumer project and build a fat JAR with all dependencies:
+
+```bash
+cd ~/rustbridge-workspace/json-plugin/consumers/java-ffm
+```
+
+Add the Shadow plugin to `build.gradle.kts` if not already present:
+
+```kotlin
+plugins {
+    java
+    application
+    id("com.gradleup.shadow") version "8.3.6"
+}
+
+application {
+    mainClass.set("com.example.Main")
+}
+```
+
+Build the fat JAR:
+
+```bash
+./gradlew shadowJar
+```
+
+The JAR is at `build/libs/json-plugin-java-ffm-1.0.0-all.jar` (the name includes the project name and version).
+
+## Step 6: Run Locally (x86_64)
+
+Test on your development machine:
+
+```bash
+cd ~/rustbridge-workspace/json-plugin
+
+# Run with the bundle
+java --enable-preview --enable-native-access=ALL-UNNAMED \
+  -jar consumers/java-ffm/build/libs/json-plugin-java-ffm-1.0.0-all.jar \
+  json-plugin-1.0.0.rbp
+```
+
+> **Note**: In Java 21, `--enable-preview` is required (FFM is preview), and `--enable-native-access=ALL-UNNAMED`
+> suppresses native access warnings. In Java 22+, FFM is stable so only `--enable-native-access` is needed.
+
+The `BundleLoader` automatically extracts the correct library for your platform.
+
+## Step 7: Deploy to Raspberry Pi (ARM64)
+
+Copy the two files to your Raspberry Pi:
+
+```bash
+scp json-plugin-1.0.0.rbp pi@raspberrypi:~/
+scp consumers/java-ffm/build/libs/json-plugin-java-ffm-1.0.0-all.jar pi@raspberrypi:~/
+```
+
+SSH into the Pi and run:
+
+```bash
+ssh pi@raspberrypi
+cd ~
+java --enable-preview --enable-native-access=ALL-UNNAMED \
+  -jar json-plugin-java-ffm-1.0.0-all.jar json-plugin-1.0.0.rbp
+```
+
+The same JAR and `.rbp` file work on both platforms—the bundle loader extracts the ARM64 library automatically.
+
+> **Tip**: On Java 22+, FFM is stable, so you only need `--enable-native-access=ALL-UNNAMED`.
+
+## Alternative: Using `cross`
+
+If you prefer Docker-based cross-compilation, the [cross](https://github.com/cross-rs/cross) tool provides
+pre-configured containers:
+
+```bash
+cargo install cross --git https://github.com/cross-rs/cross
+cross build --release --target aarch64-unknown-linux-gnu
+```
+
+This avoids manual toolchain setup but requires Docker or Podman.
+
+## Cross-Compilation Limitations
+
+Cross-compilation works well for **pure Rust** plugins. If your plugin uses C libraries (via `-sys` crates), you'll
+need:
+
+- Cross-compiled versions of those libraries, or
+- Pure Rust alternatives (e.g., `rustls` instead of `openssl`), or
+- Native builds on each target platform
+
+The json-plugin uses only pure Rust dependencies, so it cross-compiles without issues.
 
 ## Summary
 
-Cross-compilation options:
+You've learned to:
 
-| Method               | Best For         | Complexity |
-|----------------------|------------------|------------|
-| `cross`              | Linux targets    | Low        |
-| Native cross-compile | macOS both archs | Low        |
-| Manual toolchain     | Specific needs   | High       |
+1. Cross-compile a Rust plugin for ARM64 from x86_64
+2. Bundle multiple architectures into a single `.rbp` file
+3. Build a portable Java JAR
+4. Deploy and run on different platforms with the same files
 
-For production releases, building natively on each target platform (whether locally or in CI) is often simpler and more reliable than cross-compilation.
+The combination of multi-platform bundles and Java's "write once, run anywhere" makes deployment simple—copy two files
+and run.
 
 ## What's Next?
 
-You've completed the cross-compilation tutorial. You now have the tools to build multi-platform bundles using:
-- Native toolchains on each platform
-- Cross-compilation with `cross` or manual toolchains
-- Bundle combining with `rustbridge bundle combine`
-
-See the [Appendix: Java JNI](../appendix-java-jni/README.md) for Java 17-20 support without FFM.
+You've completed the cross-compilation tutorial! See the [Appendix: Java JNI](../appendix-java-jni/README.md) for Java
+17-20 support without FFM.

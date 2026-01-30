@@ -216,6 +216,55 @@ class BundleLoaderTest {
     }
 
     @Test
+    void readSchema___valid_schema___returns_content() throws IOException {
+        Path bundlePath = createBundleWithSchema();
+
+        try (BundleLoader loader = BundleLoader.builder()
+                .bundlePath(bundlePath)
+                .verifySignatures(false)
+                .build()) {
+
+            String content = loader.readSchema("messages.h");
+
+            assertTrue(content.contains("typedef struct"));
+        }
+    }
+
+    @Test
+    void readSchema___missing_schema___throws_exception() throws IOException {
+        Path bundlePath = createMinimalBundle();
+
+        try (BundleLoader loader = BundleLoader.builder()
+                .bundlePath(bundlePath)
+                .verifySignatures(false)
+                .build()) {
+
+            IOException exception = assertThrows(IOException.class, () -> {
+                loader.readSchema("nonexistent.h");
+            });
+
+            assertTrue(exception.getMessage().contains("not found"));
+        }
+    }
+
+    @Test
+    void extractSchema___valid_schema___extracts_to_file() throws IOException {
+        Path bundlePath = createBundleWithSchema();
+
+        try (BundleLoader loader = BundleLoader.builder()
+                .bundlePath(bundlePath)
+                .verifySignatures(false)
+                .build()) {
+
+            Path schemaPath = loader.extractSchema("messages.h", tempDir);
+
+            assertTrue(Files.exists(schemaPath));
+            String content = Files.readString(schemaPath);
+            assertTrue(content.contains("typedef struct"));
+        }
+    }
+
+    @Test
     void close___can_be_called_multiple_times() throws IOException {
         Path bundlePath = createMinimalBundle();
 
@@ -293,6 +342,52 @@ class BundleLoaderTest {
             ZipEntry entry = new ZipEntry("manifest.json");
             zos.putNextEntry(entry);
             zos.write(manifest.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+        }
+
+        return bundlePath;
+    }
+
+    private Path createBundleWithSchema() throws IOException {
+        Path bundlePath = tempDir.resolve("test-schema.rbp");
+
+        byte[] schemaContent = """
+                // Auto-generated header
+                typedef struct {
+                    uint32_t version;
+                    uint8_t key[64];
+                } SmallRequest;
+                """.getBytes(StandardCharsets.UTF_8);
+        String schemaChecksum = sha256Hex(schemaContent);
+
+        String manifest = """
+                {
+                    "bundle_version": "1.0",
+                    "plugin": {
+                        "name": "test-plugin",
+                        "version": "1.0.0"
+                    },
+                    "platforms": {},
+                    "schemas": {
+                        "messages.h": {
+                            "path": "schemas/messages.h",
+                            "format": "c-header",
+                            "checksum": "sha256:%s",
+                            "description": "C struct definitions"
+                        }
+                    }
+                }
+                """.formatted(schemaChecksum);
+
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(bundlePath.toFile()))) {
+            ZipEntry manifestEntry = new ZipEntry("manifest.json");
+            zos.putNextEntry(manifestEntry);
+            zos.write(manifest.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            ZipEntry schemaEntry = new ZipEntry("schemas/messages.h");
+            zos.putNextEntry(schemaEntry);
+            zos.write(schemaContent);
             zos.closeEntry();
         }
 

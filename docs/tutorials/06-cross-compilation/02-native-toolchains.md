@@ -18,9 +18,6 @@ The trade-off is needing access to each platform (physical, VM, or CI).
 ### Linux x86_64
 
 ```bash
-# Install Rust (if not installed)
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-
 # Build
 cd ~/rustbridge-workspace/json-plugin
 cargo build --release

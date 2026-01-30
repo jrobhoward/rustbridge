@@ -32,25 +32,13 @@ rustbridge bundle create \
 ## View Build Metadata
 
 ```bash
-rustbridge bundle info --show-build json-plugin-1.0.0.rbp
+rustbridge bundle list --show-build json-plugin-1.0.0.rbp
 ```
 
-```
-json-plugin 1.0.0
-─────────────────
+Or extract and inspect the manifest directly:
 
-Build Information:
-  Built at:    2025-01-30T14:32:00Z
-  Built by:    jhoward
-  Host:        x86_64-unknown-linux-gnu
-  Compiler:    rustc 1.90.0
-  rustbridge:  0.6.1
-
-Git Information:
-  Commit:      a1b2c3d4e5f6789012345678901234567890abcd
-  Branch:      main
-  Tag:         v1.0.0
-  Dirty:       false
+```bash
+unzip -p json-plugin-1.0.0.rbp manifest.json | jq '.build_info'
 ```
 
 ## Manifest Structure
@@ -245,22 +233,21 @@ Each library variant can have its own build metadata:
 ### Java
 
 ```java
-var bundleLoader = BundleLoader.builder()
-    .bundlePath("json-plugin-1.0.0.rbp")
-    .build();
+try (var loader = BundleLoader.builder()
+        .bundlePath("json-plugin-1.0.0.rbp")
+        .verifySignatures(false)
+        .build()) {
 
-var buildInfo = bundleLoader.getBuildInfo();
-System.out.println("Built at: " + buildInfo.getBuiltAt());
-System.out.println("Git commit: " + buildInfo.getGitCommit());
+    var buildInfo = loader.getBuildInfo();
+    if (buildInfo != null) {
+        System.out.println("Built at: " + buildInfo.builtAt());
+        System.out.println("Compiler: " + buildInfo.compiler());
 
-// Access custom metadata by key
-Map<String, String> custom = buildInfo.getCustomMetadata();
-String repository = custom.get("repository");
-System.out.println("Repository: " + repository);
-
-// Iterate over all custom metadata
-for (var entry : custom.entrySet()) {
-    System.out.println(entry.getKey() + ": " + entry.getValue());
+        if (buildInfo.git() != null) {
+            System.out.println("Git commit: " + buildInfo.git().commit());
+            System.out.println("Git branch: " + buildInfo.git().branch());
+        }
+    }
 }
 ```
 
@@ -269,26 +256,24 @@ for (var entry : custom.entrySet()) {
 ```python
 from rustbridge import BundleLoader
 
-bundle = BundleLoader("json-plugin-1.0.0.rbp")
-build_info = bundle.get_build_info()
+loader = BundleLoader(verify_signatures=False)
+build_info = loader.get_build_info("json-plugin-1.0.0.rbp")
 
-print(f"Built at: {build_info['built_at']}")
-print(f"Git commit: {build_info['git']['commit']}")
+if build_info:
+    print(f"Built at: {build_info.built_at}")
+    print(f"Compiler: {build_info.compiler}")
 
-# Access custom metadata by key
-custom = build_info.get('custom', {})
-repository = custom.get('repository')
-print(f"Repository: {repository}")
-
-# Iterate over all custom metadata
-for key, value in custom.items():
-    print(f"{key}: {value}")
+    if build_info.git:
+        print(f"Git commit: {build_info.git.commit}")
+        print(f"Git branch: {build_info.git.branch}")
 ```
 
 ## JSON Output for Scripting
 
+Since bundles are ZIP archives, you can extract the manifest directly:
+
 ```bash
-rustbridge bundle info --json json-plugin-1.0.0.rbp | jq '.build_info'
+unzip -p json-plugin-1.0.0.rbp manifest.json | jq '.build_info'
 ```
 
 ```json
@@ -362,35 +347,45 @@ The license file path is recorded in the manifest:
 
 ### Accessing the License Programmatically
 
+Since bundles are ZIP archives, you can extract the license file directly:
+
+```bash
+# Extract the license file
+unzip -p json-plugin-1.0.0.rbp legal/LICENSE
+
+# Or check if it exists and extract
+unzip -l json-plugin-1.0.0.rbp | grep -q "legal/LICENSE" && \
+  unzip -p json-plugin-1.0.0.rbp legal/LICENSE
+```
+
 #### Java
 
 ```java
-var bundleLoader = BundleLoader.builder()
-    .bundlePath("json-plugin-1.0.0.rbp")
-    .build();
+import java.util.zip.ZipFile;
+import java.util.zip.ZipEntry;
 
-// Get license file path from manifest
-String licensePath = bundleLoader.getManifest().getLicenseFile();
-
-// Read the license content
-String licenseText = bundleLoader.readFileAsString(licensePath);
-System.out.println(licenseText);
+try (var zipFile = new ZipFile("json-plugin-1.0.0.rbp")) {
+    ZipEntry licenseEntry = zipFile.getEntry("legal/LICENSE");
+    if (licenseEntry != null) {
+        try (var stream = zipFile.getInputStream(licenseEntry)) {
+            String licenseText = new String(stream.readAllBytes());
+            System.out.println(licenseText);
+        }
+    }
+}
 ```
 
 #### Python
 
 ```python
-from rustbridge import BundleLoader
+import zipfile
 
-bundle = BundleLoader("json-plugin-1.0.0.rbp")
-
-# Get license file path from manifest
-license_path = bundle.manifest.get('license_file')
-
-# Read the license content
-if license_path:
-    license_text = bundle.read_file(license_path).decode('utf-8')
-    print(license_text)
+with zipfile.ZipFile("json-plugin-1.0.0.rbp", "r") as zf:
+    try:
+        license_text = zf.read("legal/LICENSE").decode("utf-8")
+        print(license_text)
+    except KeyError:
+        print("No license file in bundle")
 ```
 
 ### When to Use
