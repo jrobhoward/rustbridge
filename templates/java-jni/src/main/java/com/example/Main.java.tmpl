@@ -20,8 +20,8 @@ public class Main {
     private static final Gson gson = new Gson();
 
     public static void main(String[] args) throws Exception {
-        // TODO: Update this path to your .rbp bundle file
-        String bundlePath = "my-plugin-1.0.0.rbp";
+        // Update this path to your .rbp bundle file
+        String bundlePath = "{{bundle-path}}";
 
         BundleLoader bundleLoader = BundleLoader.builder()
             .bundlePath(bundlePath)

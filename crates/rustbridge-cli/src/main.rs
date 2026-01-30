@@ -57,6 +57,30 @@ enum Commands {
         /// Project directory (default: ./<name>)
         #[arg(short, long)]
         path: Option<String>,
+
+        /// Also generate Kotlin consumer project (requires Java 21+)
+        #[arg(long)]
+        kotlin: bool,
+
+        /// Also generate Java FFM consumer project (requires Java 21+)
+        #[arg(long)]
+        java_ffm: bool,
+
+        /// Also generate Java JNI consumer project (requires Java 17+)
+        #[arg(long)]
+        java_jni: bool,
+
+        /// Also generate C# consumer project (requires .NET 8+)
+        #[arg(long)]
+        csharp: bool,
+
+        /// Also generate Python consumer project
+        #[arg(long)]
+        python: bool,
+
+        /// Generate all consumer projects
+        #[arg(long)]
+        all: bool,
     },
 
     /// Validate a rustbridge.toml manifest
@@ -282,8 +306,24 @@ fn main() -> anyhow::Result<()> {
                 println!("  JSON Schema written to {output}");
             }
         },
-        Commands::New { name, path } => {
-            new::run(&name, path)?;
+        Commands::New {
+            name,
+            path,
+            kotlin,
+            java_ffm,
+            java_jni,
+            csharp,
+            python,
+            all,
+        } => {
+            let options = new::NewOptions {
+                kotlin: kotlin || all,
+                java_ffm: java_ffm || all,
+                java_jni: java_jni || all,
+                csharp: csharp || all,
+                python: python || all,
+            };
+            new::run(&name, path, options)?;
         }
         Commands::Check { manifest } => {
             manifest::check(manifest)?;

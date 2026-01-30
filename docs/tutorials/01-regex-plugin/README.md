@@ -26,7 +26,7 @@ In this chapter, you'll build a Rust plugin that matches text against regex patt
 ## Sections
 
 ### [01: Scaffold the Project](./01-scaffold.md)
-Generate a new plugin project using cargo-generate and verify it builds.
+Generate a new plugin project using `rustbridge new` and verify it builds.
 
 ### [02: Basic Regex Matching](./02-basic-matching.md)
 Define the message types and implement pattern matching.
@@ -40,7 +40,7 @@ Allow the host to configure cache size at initialization.
 ## Prerequisites
 
 - Rust 1.90+ installed
-- `cargo-generate` installed (`cargo install cargo-generate`)
+- rustbridge CLI installed (`cargo install --path crates/rustbridge-cli`)
 - Basic familiarity with Rust
 
 ## Time Estimate

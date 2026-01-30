@@ -17,8 +17,8 @@ guide walks you through creating a plugin, packaging it, and running it from you
 
 ## Prerequisites & Directory Structure
 
-> **Important**: The current version of this guide assumes all work is done in `~/rustbridge-workspace/`. The templates
-> and commands use this path structure. If you use a different location, adjust the paths accordingly.
+> **Important**: The current version of this guide assumes all work is done in `~/rustbridge-workspace/`. The commands
+> in this tutorial assume this path structure. If you use a different location, adjust the paths accordingly.
 
 ```
 ~/rustbridge-workspace/
@@ -33,7 +33,6 @@ guide walks you through creating a plugin, packaging it, and running it from you
 ### Prerequisites
 
 - Rust 1.90+ installed
-- `cargo-generate` installed (`cargo install cargo-generate`)
 - Basic familiarity with Rust
 
 ---
@@ -64,7 +63,7 @@ rustbridge --help
 
 > **Package Availability**: The host language libraries are currently built from source. Once the APIs and `.rbp` file
 > format are stable (i.e. 1.0 release), packages may be published to Maven Central (Java/Kotlin), NuGet (C#), and PyPI (
-> Python) for easier installation.
+> Python) for easier consumption.
 
 
 Choose your target language:
@@ -90,25 +89,32 @@ cd ~/rustbridge-workspace/rustbridge/rustbridge-python
 pip install -e .
 ```
 
-> Note: You may want to use a virtual environment (e.g. if you see an error about `externally-managed-environment`).
-> This is fine, see Step 4 (Python) for details.
+> Note: If you see an error about `externally-managed-environment`, you may want to use a virtual environment.
+> See Step 4 (Python) for details.
 
 ---
 
 ## Step 2: Build a Plugin
 
-Generate a plugin from the template:
+Generate a plugin with consumer projects for all supported languages:
 
 ```bash
 cd ~/rustbridge-workspace
 
-cargo generate --git https://github.com/jrobhoward/rustbridge \
-  templates/tutorial-plugin --name my-plugin -d completed=false
+rustbridge new my-plugin --all
 
 cd my-plugin
 ```
 
-> **Tip**: If you're a git user, at this point, you may want to run `git add .` and `git commit`.
+This creates a Rust plugin at the root with a `consumers/` directory containing ready-to-run projects for Kotlin, Java,
+C#, and Python.
+
+> **Tip**: You can generate only the languages you need by replacing `--all` with one or more of: `--kotlin`,
+`--java-ffm`, `--java-jni`, `--csharp`, `--python`.
+> Or omit all flags for a Rust-only plugin.
+
+> **Tip**: If you're a git user, at this point, you may want to run
+`git init && git add . && git commit -m "Initial plugin scaffold"`.
 
 Build it:
 
@@ -173,15 +179,14 @@ unzip -p my-plugin-1.0.0.rbp manifest.json
 
 ## Step 4: Run from Your Language
 
-Copy the consumer template for your language, add your `.rbp` file, and run.
-You don't need to do this for each language, only the one(s) you're interested in.
+If you ran `rustbridge new my-plugin --all` in Step 2, you already have consumer projects in `consumers/`.
+Pick your language below and run it.
 
 ### Kotlin
 
 ```bash
-cp -r ~/rustbridge-workspace/rustbridge/templates/kotlin ~/rustbridge-workspace/my-kotlin-app
-cd ~/rustbridge-workspace/my-kotlin-app
-cp ~/rustbridge-workspace/my-plugin/my-plugin-1.0.0.rbp .
+cd ~/rustbridge-workspace/my-plugin/consumers/kotlin
+cp ../../my-plugin-1.0.0.rbp .
 ./gradlew run
 ```
 
@@ -190,27 +195,24 @@ cp ~/rustbridge-workspace/my-plugin/my-plugin-1.0.0.rbp .
 > Uses the Foreign Function & Memory (FFM) API. For Java 17-20, see [Java JNI](#java-jni---java-17-20) below.
 
 ```bash
-cp -r ~/rustbridge-workspace/rustbridge/templates/java-ffm ~/rustbridge-workspace/my-java-app
-cd ~/rustbridge-workspace/my-java-app
-cp ~/rustbridge-workspace/my-plugin/my-plugin-1.0.0.rbp .
+cd ~/rustbridge-workspace/my-plugin/consumers/java-ffm
+cp ../../my-plugin-1.0.0.rbp .
 ./gradlew run
 ```
 
 ### C#
 
 ```bash
-cp -r ~/rustbridge-workspace/rustbridge/templates/csharp ~/rustbridge-workspace/my-csharp-app
-cd ~/rustbridge-workspace/my-csharp-app
-cp ~/rustbridge-workspace/my-plugin/my-plugin-1.0.0.rbp .
+cd ~/rustbridge-workspace/my-plugin/consumers/csharp
+cp ../../my-plugin-1.0.0.rbp .
 dotnet run
 ```
 
 ### Python
 
 ```bash
-cp -r ~/rustbridge-workspace/rustbridge/templates/python ~/rustbridge-workspace/my-python-app
-cd ~/rustbridge-workspace/my-python-app
-cp ~/rustbridge-workspace/my-plugin/my-plugin-1.0.0.rbp .
+cd ~/rustbridge-workspace/my-plugin/consumers/python
+cp ../../my-plugin-1.0.0.rbp .
 
 # Create and activate virtual environment
 python3 -m venv .venv
@@ -226,22 +228,18 @@ python main.py
 ### Java (JNI) - Java 17-20
 
 > **Note**: JNI is provided for legacy Java compatibility (8-17). If you're using Java 21+, prefer
-> the [FFM approach](#java---java-21-recommended) above—it's simpler and doesn't require building a separate bridge
+> the [FFM approach](#java-ffm---recommended-for-java-21) above—it's simpler and doesn't require building a separate
+> bridge
 > library.
 
 ```bash
-cp -r ~/rustbridge-workspace/rustbridge/templates/java-jni ~/rustbridge-workspace/my-java-app
-cd ~/rustbridge-workspace/my-java-app
-cp ~/rustbridge-workspace/my-plugin/my-plugin-1.0.0.rbp .
-
-# Build the JNI bridge
+# Build the JNI bridge first
 cd ~/rustbridge-workspace/rustbridge
 cargo build --release -p rustbridge-jni
 
-# Update java.library.path in build.gradle.kts to point to:
-# ~/rustbridge-workspace/rustbridge/target/release
-
-cd ~/rustbridge-workspace/my-java-app
+cd ~/rustbridge-workspace/my-plugin/consumers/java-jni
+cp ../../my-plugin-1.0.0.rbp .
+# Update java.library.path in build.gradle.kts if needed
 ./gradlew run
 ```
 
@@ -297,17 +295,26 @@ calculator with multiple message types:
 
 ## Templates Reference
 
-All templates are in the `templates/` directory:
+The `rustbridge new` command generates projects from templates in the `templates/` directory:
 
-| Template                    | Description                                    | Requirements               |
-|-----------------------------|------------------------------------------------|----------------------------|
-| `templates/tutorial-plugin` | Rust plugin (basic or completed regex example) | Rust 1.90+, cargo-generate |
-| `templates/plugin`          | Rust plugin starter (for manual copy)          | Rust 1.90+                 |
-| `templates/kotlin`          | Kotlin consumer                                | Java 21+                   |
-| `templates/java-ffm`        | Java FFM consumer (recommended)                | Java 21+                   |
-| `templates/java-jni`        | Java JNI consumer (legacy)                     | Java 17+                   |
-| `templates/csharp`          | C# consumer                                    | .NET 6.0+                  |
-| `templates/python`          | Python consumer                                | Python 3.9+                |
+```bash
+rustbridge new my-plugin                    # Rust plugin only
+rustbridge new my-plugin --kotlin           # Rust + Kotlin consumer
+rustbridge new my-plugin --java-ffm         # Rust + Java FFM consumer
+rustbridge new my-plugin --java-jni         # Rust + Java JNI consumer
+rustbridge new my-plugin --csharp           # Rust + C# consumer
+rustbridge new my-plugin --python           # Rust + Python consumer
+rustbridge new my-plugin --all              # Rust + all consumers
+```
+
+| Template             | Description                     | Requirements |
+|----------------------|---------------------------------|--------------|
+| `templates/rust`     | Rust plugin                     | Rust 1.90+   |
+| `templates/kotlin`   | Kotlin consumer                 | Java 21+     |
+| `templates/java-ffm` | Java FFM consumer (recommended) | Java 21+     |
+| `templates/java-jni` | Java JNI consumer (legacy)      | Java 17+     |
+| `templates/csharp`   | C# consumer                     | .NET 8.0+    |
+| `templates/python`   | Python consumer                 | Python 3.9+  |
 
 ---
 

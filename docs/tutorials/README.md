@@ -25,14 +25,9 @@ These tutorials guide you through building a **regex matching plugin** with LRU 
 
 Before starting, ensure you have:
 
-- **Rust 1.90+** with `cargo-generate` installed
+- **Rust 1.90+** installed
 - **Java 21+** (for FFM-based Kotlin consumer)
 - **rustbridge CLI** installed ([Getting Started](../GETTING_STARTED.md))
-
-```bash
-# Install cargo-generate if you haven't already
-cargo install cargo-generate
-```
 
 ## Tutorial Chapters
 
@@ -42,7 +37,7 @@ Build a production-quality Rust plugin from scratch.
 
 | Section | What You'll Learn |
 |---------|-------------------|
-| [01-scaffold.md](./01-regex-plugin/01-scaffold.md) | Generate project with cargo-generate |
+| [01-scaffold.md](./01-regex-plugin/01-scaffold.md) | Generate project with `rustbridge new` |
 | [02-basic-matching.md](./01-regex-plugin/02-basic-matching.md) | Define messages, implement matching |
 | [03-lru-cache.md](./01-regex-plugin/03-lru-cache.md) | Add LRU cache, measure performance |
 | [04-configuration.md](./01-regex-plugin/04-configuration.md) | Make cache size configurable |
@@ -67,11 +62,11 @@ The completed plugin is available at [`examples/regex-plugin/`](../../examples/r
 
 **New to rustbridge?** Start with the [Getting Started Guide](../GETTING_STARTED.md), then return here for the deeper dive.
 
-**Want to skip the tutorial?** Use the completed [regex-plugin example](../../examples/regex-plugin/) or generate a plugin with all features:
+**Want to skip the tutorial?** Use the completed [regex-plugin example](../../examples/regex-plugin/) as a reference:
 
 ```bash
-cargo generate --git https://github.com/jrobhoward/rustbridge \
-  templates/tutorial-plugin --name my-plugin -d completed=true
+# Copy the completed example
+cp -r ~/rustbridge-workspace/rustbridge/examples/regex-plugin ~/rustbridge-workspace/my-plugin
 ```
 
 ## Getting Help

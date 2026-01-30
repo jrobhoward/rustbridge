@@ -14,14 +14,6 @@ rustbridge = "0.6"
 # Serde is needed as a direct dependency because derive macros expand to
 # code that references ::serde:: directly
 serde = { version = "1.0", features = ["derive"] }
-{% if completed %}
-
-# Regex pattern matching
-regex = "1.10"
-
-# LRU cache for compiled patterns
-lru = "0.12"
-{% endif %}
 
 [dev-dependencies]
 tokio = { version = "1.35", features = ["rt", "macros"] }

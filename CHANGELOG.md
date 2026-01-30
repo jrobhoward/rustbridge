@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `rustbridge new` now supports multi-language consumer generation with flags:
+  - `--kotlin`, `--java-ffm`, `--java-jni`, `--csharp`, `--python`, `--all`
+  - Generated consumers placed in `consumers/` subdirectory
+- `templates/rust/` - New canonical Rust plugin template with placeholder substitution
+
+### Changed
+- `rustbridge new` now uses embedded templates via `include_str!` instead of `cargo-generate`
+  - No external dependency on `cargo-generate` required
+  - Templates are versioned with the CLI binary
+- Tutorials and documentation updated to use `rustbridge new` instead of `cargo generate`
+- Generated projects use Option B structure: Rust plugin at root, consumers in `consumers/`
+
+### Removed
+- `templates/plugin/` - Replaced by `templates/rust/`
+- `templates/tutorial-plugin/` - No longer needed; tutorials use `rustbridge new` + `examples/regex-plugin` as reference
+
 ## [0.6.1] - 2025-01-29
 
 ### Added

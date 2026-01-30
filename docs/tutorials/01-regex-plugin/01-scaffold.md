@@ -1,28 +1,22 @@
 # Section 1: Scaffold the Project
 
-In this section, you'll create a new plugin project from the basic template and verify it builds correctly.
+In this section, you'll create a new plugin project and verify it builds correctly.
 
 ## Create the Project
 
-We'll start with the basic plugin template and build up features incrementally:
+We'll start with the basic plugin template and build up features incrementally.
+
+We include `--kotlin` since Chapter 2 covers calling the plugin from Kotlin:
 
 ```bash
 cd ~/rustbridge-workspace
 
-cargo generate --git https://github.com/jrobhoward/rustbridge \
-  templates/tutorial-plugin --name regex-plugin -d completed=false
+rustbridge new regex-plugin --kotlin
 
 cd regex-plugin
 ```
 
-> **Tip**: If you want to skip ahead and see the completed plugin, run with `-d completed=true` instead:
-> ```bash
-> cargo generate --git https://github.com/jrobhoward/rustbridge \
->   templates/tutorial-plugin --name regex-plugin -d completed=true
-> ```
-
-
-> **Tip**: If you're a git user, at this point, you may want to run `git add .` and `git commit` at this time.
+> **Tip**: If you're a git user, at this point, you may want to run `git init && git add . && git commit -m "Initial scaffold"`.
 > At the end of each tutorial section, you can commit your progress.
 
 
@@ -35,12 +29,15 @@ The project structure:
 
 ```
 regex-plugin/
-├── Cargo.toml       # Dependencies and crate config
+├── Cargo.toml           # Dependencies and crate config
+├── rustbridge.toml      # Plugin metadata
 ├── src/
-│   └── lib.rs       # Plugin implementation
-├── .gitignore
-├── LICENSE
-└── README.md
+│   └── lib.rs           # Plugin implementation
+├── consumers/
+│   └── kotlin/          # Kotlin consumer (from --kotlin flag)
+│       ├── build.gradle.kts
+│       └── src/main/kotlin/...
+└── .gitignore
 ```
 
 ## Understand the Plugin Structure

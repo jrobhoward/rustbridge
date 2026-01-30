@@ -22,8 +22,8 @@ inline fun <reified T> com.rustbridge.Plugin.callTyped(
 }
 
 fun main(args: Array<String>) {
-    // TODO: Update this path to your .rbp bundle file
-    val bundlePath = "my-plugin-1.0.0.rbp"
+    // Update this path to your .rbp bundle file
+    val bundlePath = "{{bundle-path}}"
 
     val bundleLoader = BundleLoader.builder()
         .bundlePath(bundlePath)

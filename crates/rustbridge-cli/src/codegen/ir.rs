@@ -73,6 +73,7 @@ pub struct MessageType {
 
 /// A field in a message type.
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // docs field reserved for future documentation generation
 pub struct Field {
     /// Field name.
     pub name: String,

@@ -1,4 +1,4 @@
-//! my-plugin - A rustbridge plugin template
+//! {{project-name}} - A rustbridge plugin
 //!
 //! This template implements a simple "echo" message type.
 //! Modify it to add your own message types and business logic.
@@ -30,12 +30,12 @@ pub struct EchoResponse {
 
 /// Plugin implementation
 #[derive(Default)]
-pub struct MyPlugin;
+pub struct {{class-name}};
 
 #[async_trait]
-impl Plugin for MyPlugin {
+impl Plugin for {{class-name}} {
     async fn on_start(&self, _ctx: &PluginContext) -> PluginResult<()> {
-        tracing::info!("my-plugin started");
+        tracing::info!("{{project-name}} started");
         Ok(())
     }
 
@@ -59,7 +59,7 @@ impl Plugin for MyPlugin {
     }
 
     async fn on_stop(&self, _ctx: &PluginContext) -> PluginResult<()> {
-        tracing::info!("my-plugin stopped");
+        tracing::info!("{{project-name}} stopped");
         Ok(())
     }
 
@@ -73,7 +73,7 @@ impl Plugin for MyPlugin {
 // ============================================================================
 
 // Generate FFI entry point
-rustbridge_entry!(MyPlugin::default);
+rustbridge_entry!({{class-name}}::default);
 
 // Re-export FFI functions for the shared library
 pub use rustbridge::ffi_exports::*;
@@ -88,7 +88,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_echo() {
-        let plugin = MyPlugin;
+        let plugin = {{class-name}};
         let ctx = PluginContext::new(PluginConfig::default());
 
         let request = serde_json::to_vec(&EchoRequest {

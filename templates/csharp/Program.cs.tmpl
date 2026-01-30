@@ -8,8 +8,8 @@ var jsonOptions = new JsonSerializerOptions
     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
 };
 
-// TODO: Update this path to your .rbp bundle file
-var bundlePath = "my-plugin-1.0.0.rbp";
+// Update this path to your .rbp bundle file
+var bundlePath = "{{bundle-path}}";
 
 using var bundleLoader = BundleLoader.Create()
     .WithBundlePath(bundlePath)

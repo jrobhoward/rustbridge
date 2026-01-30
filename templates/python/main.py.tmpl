@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""rustbridge Python consumer template."""
+"""{{project-name}} Python consumer."""
 
 import json
 from dataclasses import dataclass
@@ -19,8 +19,8 @@ class EchoResponse:
 
 
 def main():
-    # TODO: Update this path to your .rbp bundle file
-    bundle_path = "my-plugin-1.0.0.rbp"
+    # Update this path to your .rbp bundle file
+    bundle_path = "{{bundle-path}}"
 
     # BundleLoader.load() extracts the library and returns the plugin directly
     loader = BundleLoader(verify_signatures=False)
