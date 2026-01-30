@@ -45,6 +45,8 @@ my-plugin-1.0.0.rbp
 ├── schema/                          # Optional
 │   ├── messages.json
 │   └── messages.h
+├── legal/                           # Optional
+│   └── LICENSE                      # Plugin's own license file
 ├── docs/                            # Optional
 │   ├── README.md
 │   └── NOTICES.txt
@@ -110,6 +112,10 @@ The `manifest.json` file describes the bundle contents:
       "branch": "main",
       "tag": "v1.0.0",
       "dirty": false
+    },
+    "custom": {
+      "repository": "https://github.com/example/my-plugin",
+      "ci_job_id": "12345"
     }
   },
   "sbom": {
@@ -118,6 +124,7 @@ The `manifest.json` file describes the bundle contents:
   },
   "schema_checksum": "sha256:combined_hash_of_all_schemas",
   "notices": "docs/NOTICES.txt",
+  "license_file": "legal/LICENSE",
   "public_key": "RWTxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   "api": {
     "min_rustbridge_version": "0.5.0",
@@ -229,6 +236,39 @@ The optional `build_info` section provides traceability for the bundle:
 | `compiler` | No | Compiler version |
 | `rustbridge_version` | No | rustbridge CLI version used |
 | `git` | No | Git repository information |
+| `custom` | No | Arbitrary key/value metadata (see below) |
+
+### Custom Metadata
+
+The `custom` field accepts arbitrary key/value pairs for informational purposes:
+
+```json
+{
+  "build_info": {
+    "custom": {
+      "repository": "https://github.com/example/my-plugin",
+      "ci_job_id": "12345",
+      "pipeline": "release"
+    }
+  }
+}
+```
+
+Use this for data that rustbridge can't automatically detect, such as:
+- Source repository URL (git remotes aren't captured automatically)
+- CI/CD job identifiers
+- Custom build tags or labels
+
+Add custom metadata with the `--metadata` flag:
+
+```bash
+rustbridge bundle create \
+  --name my-plugin --version 1.0.0 \
+  --lib linux-x86_64:target/release/libmyplugin.so \
+  --metadata repository=https://github.com/example/my-plugin \
+  --metadata ci_job_id=12345 \
+  --output my-plugin-1.0.0.rbp
+```
 
 ### Git Information
 
@@ -257,6 +297,47 @@ Bundles can include SBOM files for dependency transparency:
 Both formats can be included simultaneously. Supported formats:
 - **CycloneDX** 1.5 (JSON) - `sbom/sbom.cdx.json`
 - **SPDX** 2.3 (JSON) - `sbom/sbom.spdx.json`
+
+## License Files
+
+Bundles support two types of license files:
+
+| Field | Path | Purpose |
+|-------|------|---------|
+| `notices` | `docs/NOTICES.txt` | Third-party attribution (Apache NOTICE-style) |
+| `license_file` | `legal/LICENSE` | Plugin's own license text |
+
+### Plugin License
+
+Include your plugin's license file with `--license`:
+
+```bash
+rustbridge bundle create \
+  --name my-plugin --version 1.0.0 \
+  --lib linux-x86_64:target/release/libmyplugin.so \
+  --license LICENSE \
+  --output my-plugin-1.0.0.rbp
+```
+
+The manifest records the path:
+
+```json
+{
+  "license_file": "legal/LICENSE"
+}
+```
+
+### Third-Party Notices
+
+Include attribution notices with `--notices`:
+
+```bash
+rustbridge bundle create \
+  --name my-plugin --version 1.0.0 \
+  --lib linux-x86_64:target/release/libmyplugin.so \
+  --notices NOTICES.txt \
+  --output my-plugin-1.0.0.rbp
+```
 
 ## Schema Checksum
 
@@ -291,7 +372,8 @@ This checksum is computed by hashing the concatenation of all schema file checks
 | `build_info` | object | Build metadata and provenance |
 | `sbom` | object | Paths to SBOM files |
 | `schema_checksum` | string | Combined hash of schema files |
-| `notices` | string | Path to license notices file |
+| `notices` | string | Path to third-party license notices file |
+| `license_file` | string | Path to the plugin's own license file |
 | `public_key` | string | Minisign public key for signature verification |
 | `api` | object | API metadata including message definitions |
 | `schemas` | object | Schema file references |
