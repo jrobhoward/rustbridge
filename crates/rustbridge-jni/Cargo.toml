@@ -18,7 +18,7 @@ crate-type = ["cdylib"]
 jni = "0.21"
 
 # Dynamic library loading
-libloading = "0.8"
+libloading = "0.9"
 
 # Internal crates
 # NOTE: We do NOT link against rustbridge-ffi to avoid symbol resolution conflicts

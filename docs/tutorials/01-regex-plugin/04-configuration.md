@@ -2,33 +2,9 @@
 
 In this section, you'll allow the host application to configure the cache size at plugin initialization time.
 
-## The PluginFactory Pattern
-
-rustbridge uses the `PluginFactory` trait to separate plugin creation from configuration. The framework provides two creation paths:
-
-1. **`create(config)`**: Called by the framework, dispatches based on config
-2. **`create_configured(config)`**: Called when `config.data` is not null
-
-```
-Host provides config.data JSON
-         │
-         ▼
-┌─────────────────────────────────┐
-│ PluginFactory::create(config)   │
-│ (provided by trait default)     │
-└─────────────────────────────────┘
-         │
-         ├─── config.data is null ──▶ Default::default()
-         │
-         └─── config.data has JSON ──▶ create_configured(config)
-                                              │
-                                              ▼
-                                       Parse JSON & build
-```
-
 ## Define Configuration Data
 
-Add a struct to represent the JSON configuration:
+Between `// Message Types` and `// Plugin Implementation`, add a new struct to represent the plugin's JSON configuration:
 
 ```rust
 // ============================================================================
@@ -49,7 +25,7 @@ impl Default for PluginConfigData {
 }
 ```
 
-When the host initializes the plugin, they can pass:
+When the host initializes the plugin, they can now pass:
 
 ```json
 {
@@ -110,17 +86,9 @@ impl PluginFactory for RegexPlugin {
 ```
 
 The trait provides a default `create()` implementation that:
+
 - Returns `Self::default()` if `config.data` is null
 - Calls `create_configured()` if `config.data` has a value
-
-## Update the FFI Entry Point
-
-Change from `default` to `create`:
-
-```rust
-// Generate FFI entry point - uses PluginFactory::create()
-rustbridge_entry!(RegexPlugin::create);
-```
 
 ## Update Logging
 
@@ -134,6 +102,15 @@ async fn on_start(&self, _ctx: &PluginContext) -> PluginResult<()> {
     );
     Ok(())
 }
+```
+
+## Update the FFI Entry Point
+
+Change from `default` to `create`:
+
+```rust
+rustbridge_entry!(RegexPlugin::create);
+pub use rustbridge::ffi_exports::*;
 ```
 
 ## Add Configuration Tests
@@ -355,14 +332,18 @@ rustbridge bundle create \
   --version 1.0.0 \
   --lib linux-x86_64:target/release/libregex_plugin.so \
   --output regex-plugin-1.0.0.rbp
+```
 
+```bash
 # macOS
 rustbridge bundle create \
   --name regex-plugin \
   --version 1.0.0 \
   --lib darwin-aarch64:target/release/libregex_plugin.dylib \
   --output regex-plugin-1.0.0.rbp
+```
 
+```bash
 # Windows
 rustbridge bundle create \
   --name regex-plugin \

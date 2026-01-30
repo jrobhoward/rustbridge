@@ -12,6 +12,13 @@ val request = """{"patern": "\\d+", "text": "test123"}"""  // Oops: "patern"
 
 // No compile-time checking
 val request = """{"pattern": 123, "text": "test123"}"""  // Wrong type for pattern
+
+// Regex requires double-escaping for JSON
+val pattern = """^\d{4}-\d{2}-\d{2}$"""
+val request = """{"pattern": "$pattern", "text": "2024-01-15"}"""
+// ❌ ERROR: JSON sees \d as invalid escape sequence
+// ✅ CORRECT: val request = """{"pattern": "^\\d{4}-\\d{2}-\\d{2}$", "text": "2024-01-15"}"""
+//            Must manually escape each backslash for JSON
 ```
 
 ## Define Data Classes
@@ -68,6 +75,10 @@ inline fun <reified T> com.rustbridge.Plugin.callTyped(
 Now you can write:
 
 ```kotlin
+import com.rustbridge.LogCallback
+import com.rustbridge.PluginConfig as RbPluginConfig
+import java.nio.file.Path
+
 fun main(args: Array<String>) {
     val bundlePath = "regex-plugin-1.0.0.rbp"
 
@@ -78,16 +89,19 @@ fun main(args: Array<String>) {
 
     val libraryPath = bundleLoader.extractLibrary()
 
-    FfmPluginLoader.load(libraryPath.toString()).use { plugin ->
-        plugin.setLogCallback { level, message ->
-            println("[${level.name}] $message")
-        }
-        plugin.setLogLevel(LogLevel.INFO)
+    // Create log callback
+    val logCallback = LogCallback { level, target, message ->
+        println("[$level] $target: $message")
+    }
 
-        // Type-safe configuration
-        val config = PluginConfig(cacheSize = 50)
-        plugin.initWithConfig(mapper.writeValueAsString(config))
+    // Create config with custom cache size and log level
+    val pluginConfigData = PluginConfig(cacheSize = 50)
+    val config = RbPluginConfig.defaults()
+        .logLevel(LogLevel.INFO)
+        .set("cache_size", pluginConfigData.cacheSize)
 
+    // Load plugin with config and callback
+    FfmPluginLoader.load(Path.of(libraryPath.toString()), config, logCallback).use { plugin ->
         // Type-safe request/response
         val request = MatchRequest(
             pattern = """\d{4}-\d{2}-\d{2}""",
@@ -127,8 +141,11 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.rustbridge.BundleLoader
+import com.rustbridge.LogCallback
 import com.rustbridge.LogLevel
+import com.rustbridge.PluginConfig as RbPluginConfig
 import com.rustbridge.ffm.FfmPluginLoader
+import java.nio.file.Path
 
 // Data classes matching plugin message types
 data class MatchRequest(
@@ -169,17 +186,19 @@ fun main(args: Array<String>) {
 
     val libraryPath = bundleLoader.extractLibrary()
 
-    FfmPluginLoader.load(libraryPath.toString()).use { plugin ->
-        // Logging
-        plugin.setLogCallback { level, message ->
-            println("[${level.name}] $message")
-        }
-        plugin.setLogLevel(LogLevel.INFO)
+    // Create log callback
+    val logCallback = LogCallback { level, target, message ->
+        println("[$level] $target: $message")
+    }
 
-        // Configure with smaller cache
-        val config = PluginConfig(cacheSize = 50)
-        plugin.initWithConfig(mapper.writeValueAsString(config))
+    // Configure with smaller cache
+    val pluginConfigData = PluginConfig(cacheSize = 50)
+    val config = RbPluginConfig.defaults()
+        .logLevel(LogLevel.INFO)
+        .set("cache_size", pluginConfigData.cacheSize)
 
+    // Load plugin with config and callback
+    FfmPluginLoader.load(Path.of(libraryPath.toString()), config, logCallback).use { plugin ->
         // Test some patterns
         val patterns = listOf(
             """\d+""" to "test123",           // Digits
@@ -219,8 +238,8 @@ fun main(args: Array<String>) {
 Output:
 
 ```
-[INFO] Creating regex plugin with custom configuration cache_size=50
-[INFO] regex-plugin started cache_size=50
+[INFO] regex_plugin: regex-plugin started cache_size=100
+[INFO] rustbridge_ffi::handle: Plugin started successfully
 
 === Pattern Matching ===
 'test123' matches '\d+': true
@@ -231,7 +250,10 @@ Output:
 2024-01-15: matches=true, cached=false
 2024-06-01: matches=true, cached=true
 2024-12-25: matches=true, cached=true
-[INFO] regex-plugin stopped cached_patterns=4
+[INFO] regex_plugin: regex-plugin stopped cached_patterns=4
+[INFO] rustbridge_runtime::runtime: Initiating runtime shutdown
+[INFO] rustbridge_runtime::runtime: Runtime shutdown complete
+[INFO] rustbridge_ffi::handle: Plugin shutdown complete
 ```
 
 ## Error Handling

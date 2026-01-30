@@ -48,28 +48,27 @@ fun main(args: Array<String>) {
 Output:
 
 ```
-Extracted library: /tmp/rustbridge-bundles/regex-plugin/1.0.0/linux-x86_64/libregex_plugin.so
+Extracted library: /tmp/rustbridge-7070899839138620082/libregex_plugin.so
+
 Request: {"pattern": "\\d+", "text": "test123"}
-Response: {"matches":true,"cached":false}
+Response: {"cached":false,"matches":true}
 ```
 
 ## Make Multiple Calls
 
-Let's see the cache in action:
+Let's see the cache in action. Replace the `FfmPluginLoader.load()` call:
 
 ```kotlin
 FfmPluginLoader.load(libraryPath.toString()).use { plugin ->
     // First call - compiles the pattern
-    val pattern = """^\d{4}-\d{2}-\d{2}$"""
-
     println("\nFirst call:")
-    var request = """{"pattern": "$pattern", "text": "2024-01-15"}"""
+    var request = """{"pattern": "^\\d{4}-\\d{2}-\\d{2}$", "text": "2024-01-15"}"""
     var response = plugin.call("match", request)
     println("Response: $response")
 
     // Second call - uses cached pattern
     println("\nSecond call (same pattern):")
-    request = """{"pattern": "$pattern", "text": "2024-12-25"}"""
+    request = """{"pattern": "^\\d{4}-\\d{2}-\\d{2}$", "text": "2024-12-25"}"""
     response = plugin.call("match", request)
     println("Response: $response")
 
@@ -94,59 +93,55 @@ Third call (different pattern):
 Response: {"matches":true,"cached":false}
 ```
 
-Notice how `"cached": true` appears on the second call!
+Notice how `"cached": true` appears on the second call.
+
+If you run into problems, check that you didn't run into JSON backslash escaping problems. Verify the number of
+backslashes in `var request`'s value matches what's on this page.
 
 ## Handle Errors
 
 What happens with an invalid regex?
+Try commenting out the original `var request` and replace it with this line
 
 ```kotlin
 // Invalid regex pattern
-println("\nInvalid pattern:")
-val request = """{"pattern": "[invalid", "text": "test"}"""
-try {
-    val response = plugin.call("match", request)
-    println("Response: $response")
-} catch (e: Exception) {
-    println("Error: ${e.message}")
-}
+var request = """{"pattern": "[invalid", "text": "test"}"""
 ```
 
 Output:
 
 ```
-Invalid pattern:
-Error: Handler error: Invalid regex pattern: regex parse error: ...
+Exception in thread "main" com.rustbridge.PluginException: {"status":"error","error_code":7,"error_message":"handler error: Invalid regex pattern: regex parse error:\n    [invalid\n    ^\nerror: unclosed character class"}
+        at com.rustbridge.ffm.FfmPlugin.parseResultBuffer(FfmPlugin.java:512)
+        at com.rustbridge.ffm.FfmPlugin.call(FfmPlugin.java:111)
+        at com.example.MainKt.main(Main.kt:25)
 ```
+
+Remove the invalid `var request` line and uncomment the original.
 
 ## Pass Configuration
 
-To configure the cache size, use `initWithConfig`:
+To configure the cache size, pass a `PluginConfig` when loading:
 
 ```kotlin
-FfmPluginLoader.load(libraryPath.toString()).use { plugin ->
-    // Configure with a smaller cache
-    val config = """{"cache_size": 10}"""
-    plugin.initWithConfig(config)
+import com.rustbridge.PluginConfig
 
+// Create config with custom cache size
+val config = PluginConfig.defaults()
+    .set("cache_size", 10)
+
+// Load plugin with config
+FfmPluginLoader.load(libraryPath.toString(), config).use { plugin ->
     // Now make calls...
-}
-```
-
-Or using the Kotlin DSL:
-
-```kotlin
-FfmPluginLoader.load(libraryPath.toString()).use { plugin ->
-    plugin.initWithConfig {
-        put("cache_size", 10)
-    }
-
-    // Now make calls...
+    val request = """{"pattern": "\\d+", "text": "test123"}"""
+    val response = plugin.call("match", request)
+    println("Response: $response")
 }
 ```
 
 ## What's Next?
 
-The raw JSON calls work, but they're error-prone. In the next section, you'll add logging callbacks to see what's happening inside the plugin.
+The raw JSON calls work, but they're error-prone when you try to escape regex patterns into JSON. We'll address that in
+section 4 of this tutorial. In the next section, you'll add logging callbacks to see what's happening inside the plugin.
 
 [Continue to Section 3: Logging Callbacks →](./03-logging-callbacks.md)

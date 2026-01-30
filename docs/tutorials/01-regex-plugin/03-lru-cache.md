@@ -1,10 +1,12 @@
 # Section 3: Add LRU Caching
 
-In this section, you'll add an LRU (Least Recently Used) cache to store compiled regex patterns, dramatically improving performance for repeated patterns.
+In this section, you'll add an LRU (Least Recently Used) cache to store compiled regex patterns, dramatically improving
+performance for repeated patterns.
 
 ## Why LRU?
 
-An LRU cache automatically evicts the least-recently-used entries when it reaches capacity. This is ideal for regex patterns because:
+An LRU cache automatically evicts the least-recently-used entries when it reaches capacity. This is ideal for regex
+patterns because:
 
 1. **Bounded memory**: The cache won't grow unbounded
 2. **Temporal locality**: Recently used patterns are likely to be used again
@@ -24,9 +26,24 @@ regex = "1.10"
 lru = "0.12"
 ```
 
+## Update the Response Type
+
+Add a `cached` field so callers know whether they got a cache hit:
+
+```rust
+/// Regex match response message
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MatchResponse {
+    /// Whether the pattern matched the text
+    pub matches: bool,
+    /// Whether the pattern was retrieved from cache
+    pub cached: bool,
+}
+```
+
 ## Update the Plugin Struct
 
-The plugin now needs to hold the cache. We use `Mutex` for thread safety:
+The plugin now needs state to hold the cache. We'll wrap it in a `Mutex` for thread safety:
 
 ```rust
 use lru::LruCache;
@@ -36,7 +53,7 @@ use rustbridge::{serde_json, tracing};
 use std::num::NonZeroUsize;
 use std::sync::Mutex;
 
-// ... message types unchanged ...
+// ... message types already changed ...
 
 // ============================================================================
 // Plugin Implementation
@@ -57,21 +74,6 @@ impl Default for RegexPlugin {
             cache: Mutex::new(LruCache::new(cache_size)),
         }
     }
-}
-```
-
-## Update the Response Type
-
-Add a `cached` field so callers know whether they got a cache hit:
-
-```rust
-/// Regex match response message
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MatchResponse {
-    /// Whether the pattern matched the text
-    pub matches: bool,
-    /// Whether the pattern was retrieved from cache
-    pub cached: bool,
 }
 ```
 
@@ -135,7 +137,7 @@ async fn on_stop(&self, _ctx: &PluginContext) -> PluginResult<()> {
 }
 ```
 
-And in `handle_request`, after matching:
+And in `handle_request`, after `regex.is_match()` is called:
 
 ```rust
 tracing::debug!(
@@ -148,7 +150,7 @@ tracing::debug!(
 
 ## Update Tests
 
-Update the tests to check the `cached` field:
+Add tests to check the `cached` field:
 
 ```rust
 #[cfg(test)]
@@ -165,7 +167,7 @@ mod tests {
             pattern: r"\d+".to_string(),
             text: "test123".to_string(),
         })
-        .unwrap();
+            .unwrap();
 
         let response = plugin.handle_request(&ctx, "match", &request).await.unwrap();
         let match_response: MatchResponse = serde_json::from_slice(&response).unwrap();
@@ -184,7 +186,7 @@ mod tests {
             pattern: r"\d+".to_string(),
             text: "test123".to_string(),
         })
-        .unwrap();
+            .unwrap();
 
         let _ = plugin.handle_request(&ctx, "match", &request).await.unwrap();
 
@@ -193,7 +195,7 @@ mod tests {
             pattern: r"\d+".to_string(),
             text: "456".to_string(),
         })
-        .unwrap();
+            .unwrap();
 
         let response = plugin.handle_request(&ctx, "match", &request).await.unwrap();
         let match_response: MatchResponse = serde_json::from_slice(&response).unwrap();
@@ -232,7 +234,7 @@ async fn bench___cache_effectiveness() {
             pattern: pattern.to_string(),
             text: sample.to_string(),
         })
-        .unwrap();
+            .unwrap();
         let _ = plugin.handle_request(&ctx, "match", &request).await;
     }
 
@@ -244,7 +246,7 @@ async fn bench___cache_effectiveness() {
                 pattern: pattern.to_string(),
                 text: sample.to_string(),
             })
-            .unwrap();
+                .unwrap();
             let _ = plugin.handle_request(&ctx, "match", &request).await;
         }
     }
@@ -266,7 +268,8 @@ Run with:
 cargo test bench___cache_effectiveness -- --nocapture
 ```
 
-You should see significant improvement over the uncached version - typically 10-50x faster per request.
+You should see significant improvement over the uncached version.
+On my dev machine the per-request duration dropped from ~1ms per request to ~12µs.
 
 ## Build and Test
 
@@ -278,6 +281,7 @@ All tests should pass.
 
 ## What's Next?
 
-The cache size is hardcoded to 100. In the next section, we'll make it configurable so hosts can tune it for their workload.
+The cache size is hardcoded to 100. In the next section, we'll make it configurable so hosts can tune it for their
+workload.
 
 [Continue to Section 4: Make It Configurable →](./04-configuration.md)

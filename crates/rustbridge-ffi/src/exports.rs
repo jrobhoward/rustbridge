@@ -68,16 +68,7 @@ unsafe fn plugin_init_impl(
         return ptr::null_mut();
     }
 
-    // Register plugin with callback manager (increments ref count)
-    LogCallbackManager::global().register_plugin(log_callback);
-
-    // Initialize logging
-    rustbridge_logging::init_logging();
-
-    // Install panic hook to log panics via FFI callback
-    crate::panic_guard::install_panic_hook();
-
-    // Parse configuration
+    // Parse configuration FIRST (before initializing logging)
     let config = if config_json.is_null() || config_len == 0 {
         PluginConfig::default()
     } else {
@@ -86,11 +77,33 @@ unsafe fn plugin_init_impl(
         match PluginConfig::from_json(config_slice) {
             Ok(c) => c,
             Err(e) => {
-                tracing::error!("Failed to parse config: {}", e);
+                // Can't use tracing yet since logging isn't initialized
+                eprintln!("Failed to parse config: {}", e);
                 return ptr::null_mut();
             }
         }
     };
+
+    // Register plugin with callback manager (increments ref count)
+    LogCallbackManager::global().register_plugin(log_callback);
+
+    // Set the log level from config BEFORE initializing logging
+    let log_level = match config.log_level.to_lowercase().as_str() {
+        "trace" => LogLevel::Trace,
+        "debug" => LogLevel::Debug,
+        "info" => LogLevel::Info,
+        "warn" => LogLevel::Warn,
+        "error" => LogLevel::Error,
+        "off" => LogLevel::Off,
+        _ => LogLevel::Info, // Default to Info for unknown values
+    };
+    LogCallbackManager::global().set_level(log_level);
+
+    // Initialize logging with the configured level
+    rustbridge_logging::init_logging();
+
+    // Install panic hook to log panics via FFI callback
+    crate::panic_guard::install_panic_hook();
 
     // Take ownership of the plugin
     // SAFETY: caller guarantees plugin_ptr is from plugin_create

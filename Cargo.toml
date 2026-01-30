@@ -15,7 +15,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.6.0"
+version = "0.6.1"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/jrobhoward/rustbridge"
@@ -23,56 +23,56 @@ rust-version = "1.90"
 
 [workspace.dependencies]
 # Internal crates
-rustbridge = { path = "crates/rustbridge", version = "0.6.0" }
-rustbridge-core = { path = "crates/rustbridge-core", version = "0.6.0" }
-rustbridge-transport = { path = "crates/rustbridge-transport", version = "0.6.0" }
-rustbridge-ffi = { path = "crates/rustbridge-ffi", version = "0.6.0" }
-rustbridge-runtime = { path = "crates/rustbridge-runtime", version = "0.6.0" }
-rustbridge-logging = { path = "crates/rustbridge-logging", version = "0.6.0" }
-rustbridge-macros = { path = "crates/rustbridge-macros", version = "0.6.0" }
-rustbridge-bundle = { path = "crates/rustbridge-bundle", version = "0.6.0" }
+rustbridge = { path = "crates/rustbridge", version = "0.6.1" }
+rustbridge-core = { path = "crates/rustbridge-core", version = "0.6.1" }
+rustbridge-transport = { path = "crates/rustbridge-transport", version = "0.6.1" }
+rustbridge-ffi = { path = "crates/rustbridge-ffi", version = "0.6.1" }
+rustbridge-runtime = { path = "crates/rustbridge-runtime", version = "0.6.1" }
+rustbridge-logging = { path = "crates/rustbridge-logging", version = "0.6.1" }
+rustbridge-macros = { path = "crates/rustbridge-macros", version = "0.6.1" }
+rustbridge-bundle = { path = "crates/rustbridge-bundle", version = "0.6.1" }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
 # Async runtime
-tokio = { version = "1.43", features = ["full"] }
+tokio = { version = "1.49", features = ["full"] }
 
 # Logging/tracing
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Error handling
-thiserror = "1.0"
+thiserror = "2.0"
 anyhow = "1.0"
 
 # Proc macros
 syn = { version = "2.0", features = ["full", "parsing", "extra-traits"] }
 quote = "1.0"
 proc-macro2 = "1.0"
-darling = "0.20"
+darling = "0.23"
 
 # CLI
 clap = { version = "4.5", features = ["derive"] }
-toml = "0.8"
+toml = "0.9"
 
 # Utilities
-uuid = { version = "1.11", features = ["v4"] }
+uuid = { version = "1.20", features = ["v4"] }
 parking_lot = "0.12"
-once_cell = "1.19"
-dashmap = "5.5"
+once_cell = "1.21"
+dashmap = "6.1"
 
 # Archive handling
-zip = "2.2"
+zip = "7.2"
 sha2 = "0.10"
 hex = "0.4"
 
 # Benchmarking
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.8", features = ["html_reports"] }
 
 # Testing
-proptest = "1.4"
+proptest = "1.9"
 test-case = "3.3"
 
 # ============================================================================

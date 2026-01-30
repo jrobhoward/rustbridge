@@ -25,10 +25,10 @@ thiserror = { workspace = true }
 anyhow = { workspace = true }
 syn = { workspace = true }
 quote = { workspace = true }
-cc = "1.0"
-minisign = "0.7"
-rpassword = "7.3"
-tempfile = "3.9"
+cc = "1.2"
+minisign = "0.8"
+rpassword = "7.4"
+tempfile = "3.24"
 
 [dev-dependencies]
 

@@ -17,7 +17,7 @@ regex = "1.10"
 
 ## Define the Message Types
 
-Replace the echo types in `src/lib.rs` with regex match types:
+Add `use regex::Regex;` to the top of your `src/lib.rs` file and replace the echo types with these regex match types:
 
 ```rust
 use regex::Regex;
@@ -46,7 +46,7 @@ pub struct MatchResponse {
 }
 ```
 
-## Update the Plugin Struct
+## Leave the Plugin Struct
 
 For now, we'll keep the plugin stateless. Later we'll add a cache.
 
@@ -108,7 +108,7 @@ impl Plugin for RegexPlugin {
 }
 ```
 
-## Update the FFI Entry Point
+## Leave the FFI Entry Point
 
 ```rust
 // ============================================================================
@@ -140,7 +140,7 @@ mod tests {
             pattern: r"\d+".to_string(),
             text: "test123".to_string(),
         })
-        .unwrap();
+            .unwrap();
 
         let response = plugin.handle_request(&ctx, "match", &request).await.unwrap();
         let match_response: MatchResponse = serde_json::from_slice(&response).unwrap();
@@ -157,7 +157,7 @@ mod tests {
             pattern: r"^\d+$".to_string(),  // Must be ALL digits
             text: "test123".to_string(),     // Has letters
         })
-        .unwrap();
+            .unwrap();
 
         let response = plugin.handle_request(&ctx, "match", &request).await.unwrap();
         let match_response: MatchResponse = serde_json::from_slice(&response).unwrap();
@@ -174,7 +174,7 @@ mod tests {
             pattern: r"[invalid".to_string(),  // Unclosed bracket
             text: "test".to_string(),
         })
-        .unwrap();
+            .unwrap();
 
         let result = plugin.handle_request(&ctx, "match", &request).await;
 
@@ -202,9 +202,10 @@ test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 
 ## The Problem: Recompilation
 
-Every request compiles the regex pattern fresh. For repeated patterns, this is wasteful. Regex compilation is expensive - often the slowest part of matching.
+Every request compiles the regex pattern fresh. For repeated patterns, this wastes CPU cycles. Regex compilation is
+expensive.
 
-Let's measure it:
+Let's measure it by adding another test:
 
 ```rust
 #[tokio::test]
@@ -222,7 +223,7 @@ async fn bench___compilation_overhead() {
         pattern: pattern.to_string(),
         text: text.to_string(),
     })
-    .unwrap();
+        .unwrap();
 
     let start = Instant::now();
     for _ in 0..iterations {
@@ -243,7 +244,7 @@ Run with `--nocapture` to see output:
 cargo test bench___compilation_overhead -- --nocapture
 ```
 
-You'll see each request takes ~10-50 microseconds, mostly spent compiling.
+You'll see each request takes ~1 millisecond, mostly spent compiling.
 
 ## What's Next?
 

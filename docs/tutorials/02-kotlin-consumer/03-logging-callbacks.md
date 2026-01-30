@@ -4,27 +4,31 @@ In this section, you'll capture plugin logs in your Kotlin application.
 
 ## The Logging Flow
 
-When the plugin calls `tracing::info!()` or `tracing::debug!()`, those messages can be forwarded to your application:
+When the plugin calls `tracing::info!()` or `tracing::debug!()`, those messages can be returned back to your
+application through a function callback:
 
 ```
 Plugin (Rust)                    Host (Kotlin)
 ─────────────────                ─────────────────
-tracing::info!("started")  ───▶  logCallback(INFO, "started")
+tracing::info!("started")  ───▶  logCallback(INFO, "regex_plugin", "started")
                                        │
                                        ▼
-                                 println("[INFO] started")
+                                 println("[INFO] regex_plugin: started")
 ```
 
 ## Set Up a Log Callback
 
-Update your Main.kt:
+Update your Main.kt to pass a log callback when loading the plugin:
 
 ```kotlin
 package com.example
 
 import com.rustbridge.BundleLoader
+import com.rustbridge.LogCallback
 import com.rustbridge.LogLevel
+import com.rustbridge.PluginConfig
 import com.rustbridge.ffm.FfmPluginLoader
+import java.nio.file.Path
 
 fun main(args: Array<String>) {
     val bundlePath = "regex-plugin-1.0.0.rbp"
@@ -36,34 +40,25 @@ fun main(args: Array<String>) {
 
     val libraryPath = bundleLoader.extractLibrary()
 
-    FfmPluginLoader.load(libraryPath.toString()).use { plugin ->
-        // Set up logging callback BEFORE init
-        plugin.setLogCallback { level, message ->
-            val levelStr = when (level) {
-                LogLevel.TRACE -> "TRACE"
-                LogLevel.DEBUG -> "DEBUG"
-                LogLevel.INFO -> "INFO"
-                LogLevel.WARN -> "WARN"
-                LogLevel.ERROR -> "ERROR"
-            }
-            println("[PLUGIN $levelStr] $message")
-        }
+    // Create a log callback
+    val logCallback = LogCallback { level, target, message ->
+        println("[$level] $target: $message")
+    }
 
-        // Set the minimum log level
-        plugin.setLogLevel(LogLevel.DEBUG)
+    // Create config with DEBUG level
+    val config = PluginConfig.defaults()
+        .logLevel(LogLevel.DEBUG)
 
-        // Now init - you'll see the startup message
-        plugin.init()
-
-        // Make some calls
+    // Load plugin with config and callback
+    FfmPluginLoader.load(Path.of(libraryPath.toString()), config, logCallback).use { plugin ->
+        // Make some calls - you'll see debug logs
         val request1 = """{"pattern": "\\d+", "text": "test123"}"""
-        plugin.call("match", request1)
+        val response1 = plugin.call("match", request1)
+        println("Response: $response1\n")
 
         val request2 = """{"pattern": "\\d+", "text": "456"}"""
-        plugin.call("match", request2)
-
-        // Shutdown logs the cache size
-        plugin.shutdown()
+        val response2 = plugin.call("match", request2)
+        println("Response: $response2\n")
     }
 
     bundleLoader.close()
@@ -79,36 +74,53 @@ fun main(args: Array<String>) {
 Output:
 
 ```
-[PLUGIN INFO] regex-plugin started cache_size=100
-[PLUGIN DEBUG] Processing match request pattern=\d+ text_len=7
-[PLUGIN DEBUG] Match completed pattern=\d+ matches=true cached=false
-[PLUGIN DEBUG] Processing match request pattern=\d+ text_len=3
-[PLUGIN DEBUG] Match completed pattern=\d+ matches=true cached=true
-[PLUGIN INFO] regex-plugin stopped cached_patterns=1
+[INFO] regex_plugin: regex-plugin started cache_size=100
+[INFO] rustbridge_ffi::handle: Plugin started successfully
+[DEBUG] regex_plugin: Match completed pattern=\d+ matches=true cached=false
+Response: {"cached":false,"matches":true}
+
+[DEBUG] regex_plugin: Match completed pattern=\d+ matches=true cached=true
+Response: {"cached":true,"matches":true}
+
+[INFO] regex_plugin: regex-plugin stopped cached_patterns=1
+[INFO] rustbridge_runtime::runtime: Initiating runtime shutdown
+[INFO] rustbridge_runtime::runtime: Runtime shutdown complete
+[INFO] rustbridge_ffi::handle: Plugin shutdown complete
 ```
+
+Notice how the second call shows `cached=true`!
 
 ## Log Levels
 
 rustbridge uses standard log levels:
 
-| Level | Use Case |
-|-------|----------|
-| TRACE | Very detailed debugging |
-| DEBUG | Development debugging |
-| INFO | Normal operational messages |
-| WARN | Potential issues |
-| ERROR | Errors that need attention |
+| Level | Use Case                    |
+|-------|-----------------------------|
+| TRACE | Very detailed debugging     |
+| DEBUG | Development debugging       |
+| INFO  | Normal operational messages |
+| WARN  | Potential issues            |
+| ERROR | Errors that need attention  |
 
-Set the minimum level based on your needs:
+Set the minimum level in the config:
 
 ```kotlin
 // Production - only warnings and errors
-plugin.setLogLevel(LogLevel.WARN)
+val config = PluginConfig.defaults()
+    .logLevel(LogLevel.WARN)
 
 // Development - include debug messages
-plugin.setLogLevel(LogLevel.DEBUG)
+val config = PluginConfig.defaults()
+    .logLevel(LogLevel.DEBUG)
 
 // Troubleshooting - everything
+val config = PluginConfig.defaults()
+    .logLevel(LogLevel.TRACE)
+```
+
+You can also change the log level at runtime:
+
+```kotlin
 plugin.setLogLevel(LogLevel.TRACE)
 ```
 
@@ -119,16 +131,19 @@ For production applications, integrate with your logging framework:
 ```kotlin
 import org.slf4j.LoggerFactory
 
-val pluginLogger = LoggerFactory.getLogger("regex-plugin")
-
-plugin.setLogCallback { level, message ->
+val logCallback = LogCallback { level, target, message ->
+    val logger = LoggerFactory.getLogger(target)
     when (level) {
-        LogLevel.TRACE -> pluginLogger.trace(message)
-        LogLevel.DEBUG -> pluginLogger.debug(message)
-        LogLevel.INFO -> pluginLogger.info(message)
-        LogLevel.WARN -> pluginLogger.warn(message)
-        LogLevel.ERROR -> pluginLogger.error(message)
+        LogLevel.TRACE -> logger.trace(message)
+        LogLevel.DEBUG -> logger.debug(message)
+        LogLevel.INFO -> logger.info(message)
+        LogLevel.WARN -> logger.warn(message)
+        LogLevel.ERROR -> logger.error(message)
     }
+}
+
+FfmPluginLoader.load(Path.of(libraryPath.toString()), config, logCallback).use { plugin ->
+    // Now plugin logs go through SLF4J
 }
 ```
 
@@ -144,10 +159,13 @@ dependencies {
 
 ## Structured Logging
 
-The plugin uses structured logging with key=value pairs. You can parse these:
+The plugin uses structured logging with key=value pairs. The `target` parameter contains the rust module's path (package
+level):
 
 ```kotlin
-plugin.setLogCallback { level, message ->
+val logCallback = LogCallback { level, target, message ->
+    println("[$level] $target")
+
     // Parse "Processing match request pattern=\d+ text_len=7"
     val parts = message.split(" ")
     val baseMessage = parts.takeWhile { !it.contains("=") }.joinToString(" ")
@@ -157,19 +175,11 @@ plugin.setLogCallback { level, message ->
             k to v
         }
 
-    println("Message: $baseMessage")
-    println("Fields: $fields")
+    println("  Message: $baseMessage")
+    if (fields.isNotEmpty()) {
+        println("  Fields: $fields")
+    }
 }
-```
-
-## Disable Logging
-
-To disable logging entirely:
-
-```kotlin
-plugin.setLogCallback(null)
-// or
-plugin.setLogLevel(LogLevel.ERROR)  // Only critical errors
 ```
 
 ## What's Next?

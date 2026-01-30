@@ -28,6 +28,14 @@ regex-kotlin-app/
                     └── Main.kt
 ```
 
+> **Tip**: If you're a git user, at this point, you may want to run `git init`, `git add .` and `git commit` at this
+> time.
+> At the end of each tutorial section, you can commit your progress.
+
+
+> **Tip**: Now would also be a good time to load the project in your IDE or editor of choice.
+> I recommend IntelliJ IDEA.
+
 ## Copy Your Plugin Bundle
 
 Copy the bundle you created in Chapter 1:
@@ -100,18 +108,22 @@ You might see warnings about the echo plugin not being found - that's expected s
 You can inspect the bundle contents:
 
 ```bash
-cd ~/rustbridge-workspace/rustbridge
-cargo run -p rustbridge-cli -- bundle list ../regex-kotlin-app/regex-plugin-1.0.0.rbp
+rustbridge bundle list regex-plugin-1.0.0.rbp
 ```
 
 Output:
 
 ```
-Bundle: regex-plugin-1.0.0.rbp
-  Name: regex-plugin
-  Version: 1.0.0
-  Libraries:
-    - linux-x86_64: libs/linux-x86_64/libregex_plugin.so
+Bundle: regex-plugin v1.0.0
+Bundle format: v1.0
+
+Platforms:
+  linux-x86_64:
+    Variants: release
+
+Files:
+  manifest.json
+  lib/linux-x86_64/release/libregex_plugin.so
 ```
 
 ## What's Next?

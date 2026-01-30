@@ -1,6 +1,6 @@
 # rustbridge Tutorials
 
-Learn to build production-quality plugins with rustbridge through hands-on tutorials.
+Learn to build custom plugins with rustbridge through hands-on tutorials.
 
 ## Overview
 

@@ -10,18 +10,24 @@ We'll start with the basic plugin template and build up features incrementally:
 cd ~/rustbridge-workspace
 
 cargo generate --git https://github.com/jrobhoward/rustbridge \
-  templates/tutorial-plugin --name regex-plugin
+  templates/tutorial-plugin --name regex-plugin -d completed=false
 
 cd regex-plugin
 ```
 
-When prompted for "Include completed regex implementation?", press Enter to accept the default (`false`). This gives you the basic echo template to start from.
-
-> **Tip**: If you want to skip ahead and see the completed plugin, run with `-d completed=true`:
+> **Tip**: If you want to skip ahead and see the completed plugin, run with `-d completed=true` instead:
 > ```bash
 > cargo generate --git https://github.com/jrobhoward/rustbridge \
 >   templates/tutorial-plugin --name regex-plugin -d completed=true
 > ```
+
+
+> **Tip**: If you're a git user, at this point, you may want to run `git add .` and `git commit` at this time.
+> At the end of each tutorial section, you can commit your progress.
+
+
+> **Tip**: Now would also be a good time to load the project in your IDE or editor of choice.
+> I recommend RustRover or Visual Studio Code.
 
 ## Explore the Project
 
@@ -118,7 +124,6 @@ Format the generated code:
 ```bash
 cargo fmt
 ```
-
 Build the project:
 
 ```bash

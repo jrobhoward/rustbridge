@@ -25,6 +25,10 @@ allow = [
     "Apache-2.0 WITH LLVM-exception",
     "BSD-3-Clause",  # Permissive, commonly used by crypto crates
     "Unlicense",  # Permissive, essentially public domain
+    "Zlib",  # Permissive, OSI approved, used by compression libraries
+    "bzip2-1.0.6",  # Permissive, bzip2 license, used by compression libraries
+    "CC0-1.0",  # Public domain dedication, FSF Free/Libre
+    "MIT-0",  # MIT No Attribution, OSI approved
 ]
 # List of explicitly disallowed licenses
 # Copyleft licenses that could affect distribution

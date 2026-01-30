@@ -57,11 +57,11 @@ where
             return;
         }
 
-        // Extract the message from the event
+        // Extract the message and fields from the event
         let mut visitor = MessageVisitor::default();
         event.record(&mut visitor);
 
-        let message = visitor.message.unwrap_or_default();
+        let message = visitor.into_message();
         let target = metadata.target();
 
         // Forward to the callback
@@ -74,27 +74,75 @@ where
     }
 }
 
-/// Visitor to extract the message field from tracing events
+/// Visitor to extract and format all fields from tracing events
 #[derive(Default)]
 struct MessageVisitor {
     message: Option<String>,
+    fields: Vec<(String, String)>,
 }
 
 impl Visit for MessageVisitor {
     fn record_debug(&mut self, field: &Field, value: &dyn std::fmt::Debug) {
-        if field.name() == "message" {
+        let name = field.name();
+        if name == "message" {
             self.message = Some(format!("{:?}", value));
-        } else if self.message.is_none() {
-            // If no "message" field, use the first field
-            self.message = Some(format!("{:?}", value));
+        } else {
+            // Collect all other fields as key=value pairs
+            self.fields.push((name.to_string(), format!("{:?}", value)));
         }
     }
 
     fn record_str(&mut self, field: &Field, value: &str) {
-        // Use "message" field if present, otherwise use first field encountered
-        if field.name() == "message" || self.message.is_none() {
+        let name = field.name();
+        if name == "message" {
             self.message = Some(value.to_string());
+        } else {
+            // Collect all other fields as key=value pairs
+            self.fields.push((name.to_string(), value.to_string()));
         }
+    }
+
+    fn record_i64(&mut self, field: &Field, value: i64) {
+        let name = field.name();
+        if name != "message" {
+            self.fields.push((name.to_string(), value.to_string()));
+        }
+    }
+
+    fn record_u64(&mut self, field: &Field, value: u64) {
+        let name = field.name();
+        if name != "message" {
+            self.fields.push((name.to_string(), value.to_string()));
+        }
+    }
+
+    fn record_bool(&mut self, field: &Field, value: bool) {
+        let name = field.name();
+        if name != "message" {
+            self.fields.push((name.to_string(), value.to_string()));
+        }
+    }
+}
+
+impl MessageVisitor {
+    /// Build the final formatted message with all fields
+    fn into_message(self) -> String {
+        let mut result = self.message.unwrap_or_default();
+
+        // Append structured fields as key=value pairs
+        if !self.fields.is_empty() {
+            if !result.is_empty() {
+                result.push(' ');
+            }
+            for (i, (key, value)) in self.fields.iter().enumerate() {
+                if i > 0 {
+                    result.push(' ');
+                }
+                result.push_str(&format!("{}={}", key, value));
+            }
+        }
+
+        result
     }
 }
 
