@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 
 from nacl.signing import VerifyKey
 from nacl.exceptions import BadSignatureError
@@ -14,8 +15,11 @@ _ED25519_SIGNATURE_BYTES = 64
 _KEY_ID_BYTES = 8
 _ALGORITHM_ID_BYTES = 2
 
-# Expected algorithm ID for Ed25519 (0x45 0x64 = "Ed")
-_ED25519_ALGORITHM_ID = bytes([0x45, 0x64])
+# Algorithm ID for Ed25519 public key ("Ed" = 0x45, 0x64)
+_ED25519_PUBKEY_ALGORITHM_ID = bytes([0x45, 0x64])
+
+# Algorithm ID for Ed25519 signature ("ED" = 0x45, 0x44)
+_ED25519_SIG_ALGORITHM_ID = bytes([0x45, 0x44])
 
 
 class MinisignVerifier:
@@ -26,8 +30,8 @@ class MinisignVerifier:
     Minisign uses Ed25519 signatures with a specific file format.
 
     Minisign Format:
-    - Public key: Base64-encoded 42 bytes (2-byte algorithm ID + 32-byte key + 8-byte key ID)
-    - Signature: Base64-encoded 74 bytes (2-byte algorithm ID + 8-byte key ID + 64-byte signature)
+    - Public key: Base64-encoded 42 bytes (2-byte algorithm ID "Ed" + 8-byte key ID + 32-byte key)
+    - Signature: Base64-encoded 74 bytes (2-byte algorithm ID "ED" + 8-byte key ID + 64-byte signature)
 
     Example:
         verifier = MinisignVerifier("RWS...")
@@ -54,7 +58,7 @@ class MinisignVerifier:
         """
         Parse a minisign public key from base64 format.
 
-        Format: 2 bytes algorithm ID + 32 bytes public key + 8 bytes key ID
+        Format: 2 bytes algorithm ID + 8 bytes key ID + 32 bytes public key
 
         Returns:
             Tuple of (public_key_bytes, key_id).
@@ -67,7 +71,7 @@ class MinisignVerifier:
         except Exception as e:
             raise ValueError(f"Invalid base64 encoding in public key: {e}") from e
 
-        expected_length = _ALGORITHM_ID_BYTES + _ED25519_PUBLIC_KEY_BYTES + _KEY_ID_BYTES
+        expected_length = _ALGORITHM_ID_BYTES + _KEY_ID_BYTES + _ED25519_PUBLIC_KEY_BYTES
         if len(decoded) != expected_length:
             raise ValueError(
                 f"Invalid public key length: expected {expected_length}, got {len(decoded)}"
@@ -75,21 +79,21 @@ class MinisignVerifier:
 
         # Verify algorithm ID
         algorithm_id = decoded[:_ALGORITHM_ID_BYTES]
-        if algorithm_id != _ED25519_ALGORITHM_ID:
+        if algorithm_id != _ED25519_PUBKEY_ALGORITHM_ID:
             raise ValueError(
                 f"Invalid algorithm ID: expected Ed25519, got {algorithm_id.hex()}"
             )
 
-        # Extract the 32-byte Ed25519 public key
-        public_key = decoded[_ALGORITHM_ID_BYTES : _ALGORITHM_ID_BYTES + _ED25519_PUBLIC_KEY_BYTES]
+        # Extract the 8-byte key ID (right after algorithm ID)
+        key_id = decoded[_ALGORITHM_ID_BYTES : _ALGORITHM_ID_BYTES + _KEY_ID_BYTES]
 
-        # Extract the 8-byte key ID
-        key_id = decoded[_ALGORITHM_ID_BYTES + _ED25519_PUBLIC_KEY_BYTES :]
+        # Extract the 32-byte Ed25519 public key (after key ID)
+        public_key = decoded[_ALGORITHM_ID_BYTES + _KEY_ID_BYTES :]
 
         return public_key, key_id
 
     @staticmethod
-    def _parse_signature(signature_string: str) -> tuple[bytes, bytes]:
+    def _parse_signature(signature_string: str) -> tuple[bytes, bytes, bool]:
         """
         Parse a minisign signature from the multi-line format.
 
@@ -102,7 +106,7 @@ class MinisignVerifier:
         We only use the second line (the signature itself).
 
         Returns:
-            Tuple of (key_id, signature).
+            Tuple of (key_id, signature, is_prehashed).
 
         Raises:
             ValueError: If signature parsing fails.
@@ -125,9 +129,13 @@ class MinisignVerifier:
                 f"Invalid signature length: expected {expected_length}, got {len(decoded)}"
             )
 
-        # Verify algorithm ID
+        # Check algorithm ID - "ED" = prehashed, "Ed" = legacy non-prehashed
         algorithm_id = decoded[:_ALGORITHM_ID_BYTES]
-        if algorithm_id != _ED25519_ALGORITHM_ID:
+        if algorithm_id == _ED25519_SIG_ALGORITHM_ID:
+            is_prehashed = True  # "ED" - prehashed with BLAKE2b
+        elif algorithm_id == _ED25519_PUBKEY_ALGORITHM_ID:
+            is_prehashed = False  # "Ed" - legacy non-prehashed
+        else:
             raise ValueError(
                 f"Invalid algorithm ID in signature: expected Ed25519, got {algorithm_id.hex()}"
             )
@@ -138,7 +146,7 @@ class MinisignVerifier:
         # Extract signature
         signature = decoded[_ALGORITHM_ID_BYTES + _KEY_ID_BYTES :]
 
-        return key_id, signature
+        return key_id, signature, is_prehashed
 
     def verify(self, data: bytes, signature_string: str) -> bool:
         """
@@ -154,15 +162,22 @@ class MinisignVerifier:
         Raises:
             ValueError: If signature parsing fails.
         """
-        sig_key_id, signature = self._parse_signature(signature_string)
+        sig_key_id, signature, is_prehashed = self._parse_signature(signature_string)
 
         # Verify key ID matches
         if sig_key_id != self._key_id:
             return False
 
+        # Minisign "ED" signatures are prehashed - compute BLAKE2b-512 hash first
+        # This matches SIGALG_PREHASHED in the minisign crate
+        if is_prehashed:
+            data_to_verify = hashlib.blake2b(data, digest_size=64).digest()
+        else:
+            data_to_verify = data
+
         # Verify the signature using Ed25519
         try:
-            self._verify_key.verify(data, signature)
+            self._verify_key.verify(data_to_verify, signature)
             return True
         except BadSignatureError:
             return False

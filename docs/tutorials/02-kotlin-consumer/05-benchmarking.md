@@ -50,6 +50,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.rustbridge.BundleLoader
 import com.rustbridge.LogLevel
+import com.rustbridge.Plugin
 import com.rustbridge.PluginConfig
 import com.rustbridge.ffm.FfmPluginLoader
 import java.nio.file.Path
@@ -59,7 +60,7 @@ data class MatchResponse(val matches: Boolean, val cached: Boolean)
 
 val mapper = jacksonObjectMapper()
 
-inline fun <reified T> com.rustbridge.Plugin.callTyped(
+inline fun <reified T> Plugin.callTyped(
     messageType: String,
     request: Any
 ): T {
@@ -104,7 +105,7 @@ fun runBenchmark(bundlePath: String, variant: String) {
     tempDir.toFile().deleteRecursively()
 }
 
-fun benchmark(plugin: com.rustbridge.Plugin) {
+fun benchmark(plugin: Plugin) {
     val patterns = listOf(
         """\d{4}-\d{2}-\d{2}""",
         """^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$""",

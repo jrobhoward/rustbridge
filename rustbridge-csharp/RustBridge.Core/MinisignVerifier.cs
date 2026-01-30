@@ -12,8 +12,8 @@ namespace RustBridge;
 /// <para>
 /// <b>Minisign Format:</b>
 /// <list type="bullet">
-/// <item>Public key: Base64-encoded 42 bytes (2-byte algorithm ID + 32-byte key + 8-byte key ID)</item>
-/// <item>Signature: Base64-encoded 74 bytes (2-byte algorithm ID + 8-byte key ID + 64-byte signature)</item>
+/// <item>Public key: Base64-encoded 42 bytes (2-byte algorithm ID "Ed" + 8-byte key ID + 32-byte key)</item>
+/// <item>Signature: Base64-encoded 74 bytes (2-byte algorithm ID "ED" + 8-byte key ID + 64-byte signature)</item>
 /// </list>
 /// </para>
 /// </summary>
@@ -25,8 +25,11 @@ public class MinisignVerifier
     private const int KeyIdBytes = 8;
     private const int AlgorithmIdBytes = 2;
 
-    // Expected algorithm ID for Ed25519 (0x45 0x44 = "ED")
-    private static readonly byte[] Ed25519AlgorithmId = { 0x45, 0x44 };
+    // Algorithm ID for Ed25519 public key ("Ed" = 0x45, 0x64)
+    private static readonly byte[] Ed25519PubkeyAlgorithmId = { 0x45, 0x64 };
+
+    // Algorithm ID for Ed25519 signature ("ED" = 0x45, 0x44)
+    private static readonly byte[] Ed25519SigAlgorithmId = { 0x45, 0x44 };
 
     private readonly PublicKey _publicKey;
     private readonly byte[] _keyId;
@@ -51,7 +54,7 @@ public class MinisignVerifier
 
     /// <summary>
     /// Parse a minisign public key from base64 format.
-    /// Format: 2 bytes algorithm ID + 32 bytes public key + 8 bytes key ID
+    /// Format: 2 bytes algorithm ID + 8 bytes key ID + 32 bytes public key
     /// </summary>
     private static (byte[] publicKey, byte[] keyId) ParsePublicKey(string publicKeyBase64)
     {
@@ -65,7 +68,7 @@ public class MinisignVerifier
             throw new ArgumentException("Invalid base64 encoding in public key", ex);
         }
 
-        var expectedLength = AlgorithmIdBytes + Ed25519PublicKeyBytes + KeyIdBytes;
+        var expectedLength = AlgorithmIdBytes + KeyIdBytes + Ed25519PublicKeyBytes;
         if (decoded.Length != expectedLength)
         {
             throw new ArgumentException(
@@ -74,17 +77,17 @@ public class MinisignVerifier
 
         // Verify algorithm ID
         var algorithmId = decoded.AsSpan(0, AlgorithmIdBytes);
-        if (!algorithmId.SequenceEqual(Ed25519AlgorithmId))
+        if (!algorithmId.SequenceEqual(Ed25519PubkeyAlgorithmId))
         {
             throw new ArgumentException(
                 $"Invalid algorithm ID: expected Ed25519, got {Convert.ToHexString(algorithmId)}");
         }
 
-        // Extract the 32-byte Ed25519 public key
-        var publicKey = decoded.AsSpan(AlgorithmIdBytes, Ed25519PublicKeyBytes).ToArray();
+        // Extract the 8-byte key ID (right after algorithm ID)
+        var keyId = decoded.AsSpan(AlgorithmIdBytes, KeyIdBytes).ToArray();
 
-        // Extract the 8-byte key ID
-        var keyId = decoded.AsSpan(AlgorithmIdBytes + Ed25519PublicKeyBytes, KeyIdBytes).ToArray();
+        // Extract the 32-byte Ed25519 public key (after key ID)
+        var publicKey = decoded.AsSpan(AlgorithmIdBytes + KeyIdBytes, Ed25519PublicKeyBytes).ToArray();
 
         return (publicKey, keyId);
     }
@@ -102,7 +105,7 @@ public class MinisignVerifier
     /// </para>
     /// We only use the second line (the signature itself).
     /// </summary>
-    private static (byte[] keyId, byte[] signature) ParseSignature(string signatureString)
+    private static (byte[] keyId, byte[] signature, bool isPrehashed) ParseSignature(string signatureString)
     {
         var lines = signatureString.Split('\n');
         if (lines.Length < 2)
@@ -130,9 +133,18 @@ public class MinisignVerifier
                 $"Invalid signature length: expected {expectedLength}, got {decoded.Length}");
         }
 
-        // Verify algorithm ID
+        // Check algorithm ID - "ED" = prehashed, "Ed" = legacy non-prehashed
         var algorithmId = decoded.AsSpan(0, AlgorithmIdBytes);
-        if (!algorithmId.SequenceEqual(Ed25519AlgorithmId))
+        bool isPrehashed;
+        if (algorithmId.SequenceEqual(Ed25519SigAlgorithmId))
+        {
+            isPrehashed = true;  // "ED" - prehashed with BLAKE2b
+        }
+        else if (algorithmId.SequenceEqual(Ed25519PubkeyAlgorithmId))
+        {
+            isPrehashed = false; // "Ed" - legacy non-prehashed
+        }
+        else
         {
             throw new CryptographicException(
                 $"Invalid algorithm ID in signature: expected Ed25519, got {Convert.ToHexString(algorithmId)}");
@@ -144,7 +156,7 @@ public class MinisignVerifier
         // Extract signature
         var signature = decoded.AsSpan(AlgorithmIdBytes + KeyIdBytes, Ed25519SignatureBytes).ToArray();
 
-        return (keyId, signature);
+        return (keyId, signature, isPrehashed);
     }
 
     /// <summary>
@@ -156,7 +168,7 @@ public class MinisignVerifier
     /// <exception cref="CryptographicException">If signature parsing fails.</exception>
     public bool Verify(byte[] data, string signatureString)
     {
-        var (sigKeyId, signature) = ParseSignature(signatureString);
+        var (sigKeyId, signature, isPrehashed) = ParseSignature(signatureString);
 
         // Verify key ID matches
         if (!sigKeyId.AsSpan().SequenceEqual(_keyId))
@@ -164,8 +176,20 @@ public class MinisignVerifier
             return false;
         }
 
+        // Minisign "ED" signatures are prehashed - compute BLAKE2b-512 hash first
+        // This matches SIGALG_PREHASHED in the minisign crate
+        byte[] dataToVerify;
+        if (isPrehashed)
+        {
+            dataToVerify = NSec.Cryptography.HashAlgorithm.Blake2b_512.Hash(data);
+        }
+        else
+        {
+            dataToVerify = data;
+        }
+
         // Verify the signature using Ed25519
-        return SignatureAlgorithm.Ed25519.Verify(_publicKey, data, signature);
+        return SignatureAlgorithm.Ed25519.Verify(_publicKey, dataToVerify, signature);
     }
 
     /// <summary>

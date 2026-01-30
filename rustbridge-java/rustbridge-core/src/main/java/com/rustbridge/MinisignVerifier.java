@@ -5,6 +5,7 @@ import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import net.i2p.crypto.eddsa.spec.EdDSAParameterSpec;
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
+import org.bouncycastle.crypto.digests.Blake2bDigest;
 
 import java.security.*;
 import java.util.Arrays;
@@ -18,7 +19,7 @@ import java.util.Base64;
  *
  * <h2>Minisign Format</h2>
  * <ul>
- *   <li>Public key: Base64-encoded 42 bytes (2-byte algorithm ID + 32-byte key + 8-byte key ID)</li>
+ *   <li>Public key: Base64-encoded 42 bytes (2-byte algorithm ID + 8-byte key ID + 32-byte key)</li>
  *   <li>Signature: Base64-encoded 74 bytes (2-byte algorithm ID + 8-byte key ID + 64-byte signature)</li>
  * </ul>
  *
@@ -30,8 +31,11 @@ public class MinisignVerifier {
     private static final int KEY_ID_BYTES = 8;
     private static final int ALGORITHM_ID_BYTES = 2;
 
-    // Expected algorithm ID for Ed25519 (0x4445 = "Ed" in ASCII)
-    private static final byte[] ED25519_ALGORITHM_ID = {0x45, 0x44};
+    // Algorithm ID for Ed25519 public key ("Ed" = 0x45, 0x64 in ASCII)
+    private static final byte[] ED25519_PUBKEY_ALGORITHM_ID = {0x45, 0x64};
+
+    // Algorithm ID for Ed25519 signature ("ED" = 0x45, 0x44 in ASCII)
+    private static final byte[] ED25519_SIG_ALGORITHM_ID = {0x45, 0x44};
 
     private final PublicKey publicKey;
     private final byte[] keyId;
@@ -50,7 +54,7 @@ public class MinisignVerifier {
     /**
      * Parse a minisign public key from base64 format.
      *
-     * <p>Format: 2 bytes algorithm ID + 32 bytes public key + 8 bytes key ID
+     * <p>Format: 2 bytes algorithm ID + 8 bytes key ID + 32 bytes public key
      *
      * @param publicKeyBase64 base64-encoded public key
      * @return EdDSA public key
@@ -60,28 +64,28 @@ public class MinisignVerifier {
         try {
             byte[] decoded = Base64.getDecoder().decode(publicKeyBase64.trim());
 
-            if (decoded.length != ALGORITHM_ID_BYTES + ED25519_PUBLIC_KEY_BYTES + KEY_ID_BYTES) {
+            if (decoded.length != ALGORITHM_ID_BYTES + KEY_ID_BYTES + ED25519_PUBLIC_KEY_BYTES) {
                 throw new InvalidKeyException(
                         "Invalid public key length: expected " +
-                                (ALGORITHM_ID_BYTES + ED25519_PUBLIC_KEY_BYTES + KEY_ID_BYTES) +
+                                (ALGORITHM_ID_BYTES + KEY_ID_BYTES + ED25519_PUBLIC_KEY_BYTES) +
                                 ", got " + decoded.length
                 );
             }
 
             // Verify algorithm ID
             byte[] algorithmId = Arrays.copyOfRange(decoded, 0, ALGORITHM_ID_BYTES);
-            if (!Arrays.equals(algorithmId, ED25519_ALGORITHM_ID)) {
+            if (!Arrays.equals(algorithmId, ED25519_PUBKEY_ALGORITHM_ID)) {
                 throw new InvalidKeyException(
                         "Invalid algorithm ID: expected Ed25519, got " +
                                 bytesToHex(algorithmId)
                 );
             }
 
-            // Extract the 32-byte Ed25519 public key
+            // Extract the 32-byte Ed25519 public key (after algo ID and key ID)
             byte[] keyBytes = Arrays.copyOfRange(
                     decoded,
-                    ALGORITHM_ID_BYTES,
-                    ALGORITHM_ID_BYTES + ED25519_PUBLIC_KEY_BYTES
+                    ALGORITHM_ID_BYTES + KEY_ID_BYTES,
+                    ALGORITHM_ID_BYTES + KEY_ID_BYTES + ED25519_PUBLIC_KEY_BYTES
             );
 
             // Create EdDSA public key using i2p library
@@ -102,13 +106,14 @@ public class MinisignVerifier {
      */
     private static byte[] extractKeyId(String publicKeyBase64) throws InvalidKeyException {
         byte[] decoded = Base64.getDecoder().decode(publicKeyBase64.trim());
-        if (decoded.length != ALGORITHM_ID_BYTES + ED25519_PUBLIC_KEY_BYTES + KEY_ID_BYTES) {
+        if (decoded.length != ALGORITHM_ID_BYTES + KEY_ID_BYTES + ED25519_PUBLIC_KEY_BYTES) {
             throw new InvalidKeyException("Invalid public key length");
         }
+        // Key ID is right after the algorithm ID
         return Arrays.copyOfRange(
                 decoded,
-                ALGORITHM_ID_BYTES + ED25519_PUBLIC_KEY_BYTES,
-                decoded.length
+                ALGORITHM_ID_BYTES,
+                ALGORITHM_ID_BYTES + KEY_ID_BYTES
         );
     }
 
@@ -150,9 +155,14 @@ public class MinisignVerifier {
                 );
             }
 
-            // Verify algorithm ID
+            // Check algorithm ID - "ED" = prehashed, "Ed" = legacy non-prehashed
             byte[] algorithmId = Arrays.copyOfRange(decoded, 0, ALGORITHM_ID_BYTES);
-            if (!Arrays.equals(algorithmId, ED25519_ALGORITHM_ID)) {
+            boolean isPrehashed;
+            if (Arrays.equals(algorithmId, ED25519_SIG_ALGORITHM_ID)) {
+                isPrehashed = true;  // "ED" - prehashed with BLAKE2b
+            } else if (Arrays.equals(algorithmId, ED25519_PUBKEY_ALGORITHM_ID)) {
+                isPrehashed = false; // "Ed" - legacy non-prehashed
+            } else {
                 throw new SignatureException(
                         "Invalid algorithm ID in signature: expected Ed25519, got " +
                                 bytesToHex(algorithmId)
@@ -173,7 +183,7 @@ public class MinisignVerifier {
                     decoded.length
             );
 
-            return new ParsedSignature(keyId, signature);
+            return new ParsedSignature(keyId, signature, isPrehashed);
         } catch (IllegalArgumentException e) {
             throw new SignatureException("Invalid base64 encoding in signature", e);
         }
@@ -208,10 +218,22 @@ public class MinisignVerifier {
                 return false;
             }
 
+            // Minisign "ED" signatures are prehashed - compute BLAKE2b-512 hash first
+            // This matches SIGALG_PREHASHED in the minisign crate
+            byte[] dataToVerify;
+            if (sig.isPrehashed) {
+                Blake2bDigest blake2b = new Blake2bDigest(512); // 512 bits = 64 bytes
+                blake2b.update(data, 0, data.length);
+                dataToVerify = new byte[64];
+                blake2b.doFinal(dataToVerify, 0);
+            } else {
+                dataToVerify = data;
+            }
+
             // Verify the signature using Ed25519
             Signature verifier = new EdDSAEngine(MessageDigest.getInstance("SHA-512"));
             verifier.initVerify(publicKey);
-            verifier.update(data);
+            verifier.update(dataToVerify);
             return verifier.verify(sig.signature);
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             throw new SignatureException("Ed25519 verification failed", e);
@@ -224,10 +246,12 @@ public class MinisignVerifier {
     private static class ParsedSignature {
         final byte[] keyId;
         final byte[] signature;
+        final boolean isPrehashed;
 
-        ParsedSignature(byte[] keyId, byte[] signature) {
+        ParsedSignature(byte[] keyId, byte[] signature, boolean isPrehashed) {
             this.keyId = keyId;
             this.signature = signature;
+            this.isPrehashed = isPrehashed;
         }
     }
 }

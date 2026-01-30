@@ -745,6 +745,122 @@ mod tests {
         assert_eq!(detect_schema_format("types.hpp"), "c-header");
     }
 
+    // ========================================================================
+    // Minisign Signature Tests
+    // ========================================================================
+    // These tests verify that minisign signature generation and verification
+    // work correctly. The test vectors are used as reference for consumer
+    // language implementations (Java, C#, Python).
+
+    #[test]
+    fn sign_data___generates_verifiable_signature() {
+        use minisign::{KeyPair, PublicKey};
+        use std::io::Cursor;
+
+        // Generate a test keypair
+        let keypair = KeyPair::generate_unencrypted_keypair().unwrap();
+
+        // Test data
+        let test_data = b"Hello, rustbridge!";
+
+        // Sign the data
+        let mut reader = Cursor::new(test_data.as_slice());
+        let signature_box = minisign::sign(
+            Some(&keypair.pk),
+            &keypair.sk,
+            &mut reader,
+            Some("trusted comment"),
+            Some("untrusted comment"),
+        )
+        .unwrap();
+
+        // Verify the signature
+        let pk = PublicKey::from_base64(&keypair.pk.to_base64()).unwrap();
+        let mut verify_reader = Cursor::new(test_data.as_slice());
+        let result = minisign::verify(&pk, &signature_box, &mut verify_reader, true, false, false);
+
+        assert!(result.is_ok(), "Signature verification should succeed");
+    }
+
+    #[test]
+    fn sign_data___wrong_data___verification_fails() {
+        use minisign::{KeyPair, PublicKey};
+        use std::io::Cursor;
+
+        let keypair = KeyPair::generate_unencrypted_keypair().unwrap();
+        let test_data = b"Hello, rustbridge!";
+        let wrong_data = b"Hello, rustbridge?"; // Changed ! to ?
+
+        // Sign the original data
+        let mut reader = Cursor::new(test_data.as_slice());
+        let signature_box =
+            minisign::sign(Some(&keypair.pk), &keypair.sk, &mut reader, None, None).unwrap();
+
+        // Try to verify with wrong data
+        let pk = PublicKey::from_base64(&keypair.pk.to_base64()).unwrap();
+        let mut verify_reader = Cursor::new(wrong_data.as_slice());
+        let result = minisign::verify(&pk, &signature_box, &mut verify_reader, true, false, false);
+
+        assert!(result.is_err(), "Verification should fail with wrong data");
+    }
+
+    #[test]
+    fn sign_data___signature_format___has_prehash_algorithm_id() {
+        use base64::Engine;
+        use minisign::KeyPair;
+        use std::io::Cursor;
+
+        let keypair = KeyPair::generate_unencrypted_keypair().unwrap();
+        let test_data = b"test";
+
+        let mut reader = Cursor::new(test_data.as_slice());
+        let signature_box = minisign::sign(
+            Some(&keypair.pk),
+            &keypair.sk,
+            &mut reader,
+            Some("trusted"),
+            Some("untrusted"),
+        )
+        .unwrap();
+
+        let sig_string = signature_box.into_string();
+        let lines: Vec<&str> = sig_string.lines().collect();
+
+        // The signature line is the second line
+        let sig_base64 = lines[1];
+        let sig_bytes = base64::engine::general_purpose::STANDARD
+            .decode(sig_base64)
+            .unwrap();
+
+        // First two bytes should be "ED" (0x45, 0x44) for prehashed signatures
+        assert_eq!(sig_bytes[0], 0x45, "First byte should be 'E'");
+        assert_eq!(
+            sig_bytes[1], 0x44,
+            "Second byte should be 'D' for prehashed"
+        );
+        assert_eq!(sig_bytes.len(), 74, "Signature should be 74 bytes");
+    }
+
+    #[test]
+    fn sign_data___public_key_format___has_ed_algorithm_id() {
+        use base64::Engine;
+        use minisign::KeyPair;
+
+        let keypair = KeyPair::generate_unencrypted_keypair().unwrap();
+        let pk_base64 = keypair.pk.to_base64();
+        let pk_bytes = base64::engine::general_purpose::STANDARD
+            .decode(&pk_base64)
+            .unwrap();
+
+        // First two bytes should be "Ed" (0x45, 0x64) for public keys
+        assert_eq!(pk_bytes[0], 0x45, "First byte should be 'E'");
+        assert_eq!(
+            pk_bytes[1], 0x64,
+            "Second byte should be 'd' for public key"
+        );
+        assert_eq!(pk_bytes.len(), 42, "Public key should be 42 bytes");
+    }
+
     #[test]
     fn BundleBuilder___add_license_file___adds_file_to_legal_dir() {
         let temp_dir = TempDir::new().unwrap();

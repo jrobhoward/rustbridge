@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Minisign signature verification in Java, C#, and Python consumers
+  - Fixed BLAKE2b-512 prehashing for "ED" algorithm signatures
+  - Fixed public key format parsing (algorithm ID "Ed" + key ID + public key)
+  - Fixed ambiguous `HashAlgorithm` reference in C# verifier
+- Bundle CLI now correctly extracts public key from .pub file (line 2 only)
+- Tutorial code examples: added missing imports, `throws` declarations, and `#[allow(non_snake_case)]`
+
+### Added
+- Oracle-based minisign verification tests across all languages
+  - Rust tests verify signature generation and format
+  - Java, C#, Python tests verify against reference vectors from Rust minisign crate
+
+## [0.6.2] - 2025-01-29
+
 ### Added
 - `rustbridge new` now supports multi-language consumer generation with flags:
   - `--kotlin`, `--java-ffm`, `--java-jni`, `--csharp`, `--python`, `--all`

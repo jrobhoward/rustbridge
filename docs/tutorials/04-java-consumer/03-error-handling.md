@@ -14,6 +14,7 @@ Update the `call` helper to handle errors:
 package com.example;
 
 import com.rustbridge.BundleLoader;
+import com.rustbridge.Plugin;
 import com.rustbridge.PluginException;
 import com.rustbridge.ffm.FfmPluginLoader;
 import com.google.gson.Gson;
@@ -58,10 +59,10 @@ public class Main {
     }
 
     private static <Req, Resp> Resp call(
-            com.rustbridge.Plugin plugin,
+            Plugin plugin,
             String messageType,
             Req request,
-            Class<Resp> responseClass) {
+            Class<Resp> responseClass) throws PluginException {
         String requestJson = gson.toJson(request);
         String responseJson = plugin.call(messageType, requestJson);
         return gson.fromJson(responseJson, responseClass);
@@ -106,7 +107,7 @@ For production code, handle errors per-call rather than letting them bubble up:
 
 ```java
 private static <Req, Resp> Resp callSafe(
-        com.rustbridge.Plugin plugin,
+        Plugin plugin,
         String messageType,
         Req request,
         Class<Resp> responseClass) {
@@ -129,6 +130,7 @@ Here's the final `Main.java`:
 package com.example;
 
 import com.rustbridge.BundleLoader;
+import com.rustbridge.Plugin;
 import com.rustbridge.PluginException;
 import com.rustbridge.ffm.FfmPluginLoader;
 import com.google.gson.Gson;
@@ -170,13 +172,14 @@ public class Main {
         bundleLoader.close();
     }
 
-    private static void testValidate(com.rustbridge.Plugin plugin, String json, String label) {
+    private static void testValidate(Plugin plugin, String json, String label)
+            throws PluginException {
         var request = new ValidateRequest(json);
         var response = call(plugin, "validate", request, ValidateResponse.class);
         System.out.println(label + ": " + (response.valid() ? "valid" : "invalid"));
     }
 
-    private static void testPrettify(com.rustbridge.Plugin plugin, String json, int indent, String label) {
+    private static void testPrettify(Plugin plugin, String json, int indent, String label) {
         try {
             var request = new PrettifyRequest(json, indent);
             var response = call(plugin, "prettify", request, PrettifyResponse.class);
@@ -187,10 +190,10 @@ public class Main {
     }
 
     private static <Req, Resp> Resp call(
-            com.rustbridge.Plugin plugin,
+            Plugin plugin,
             String messageType,
             Req request,
-            Class<Resp> responseClass) {
+            Class<Resp> responseClass) throws PluginException {
         String requestJson = gson.toJson(request);
         String responseJson = plugin.call(messageType, requestJson);
         return gson.fromJson(responseJson, responseClass);

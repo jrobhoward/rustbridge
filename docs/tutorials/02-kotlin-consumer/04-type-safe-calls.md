@@ -56,11 +56,12 @@ Add an extension function that handles serialization:
 ```kotlin
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.rustbridge.Plugin
 
 val mapper = jacksonObjectMapper()
 
 // Generic extension for type-safe calls
-inline fun <reified T> com.rustbridge.Plugin.callTyped(
+inline fun <reified T> Plugin.callTyped(
     messageType: String,
     request: Any
 ): T {
@@ -143,6 +144,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.rustbridge.BundleLoader
 import com.rustbridge.LogCallback
 import com.rustbridge.LogLevel
+import com.rustbridge.Plugin
 import com.rustbridge.PluginConfig as RbPluginConfig
 import com.rustbridge.ffm.FfmPluginLoader
 import java.nio.file.Path
@@ -167,7 +169,7 @@ data class PluginConfig(
 val mapper = jacksonObjectMapper()
 
 // Type-safe extension
-inline fun <reified T> com.rustbridge.Plugin.callTyped(
+inline fun <reified T> Plugin.callTyped(
     messageType: String,
     request: Any
 ): T {
@@ -261,9 +263,11 @@ Output:
 Type-safe calls also give better error handling:
 
 ```kotlin
+import com.rustbridge.PluginException
+
 try {
     val response = plugin.callTyped<MatchResponse>("match", request)
-} catch (e: com.rustbridge.PluginException) {
+} catch (e: PluginException) {
     // Plugin returned an error (e.g., invalid regex)
     println("Plugin error: ${e.message}")
 } catch (e: com.fasterxml.jackson.core.JsonProcessingException) {

@@ -10,6 +10,8 @@ Replace the contents of `src/main/java/com/example/Main.java`:
 package com.example;
 
 import com.rustbridge.BundleLoader;
+import com.rustbridge.Plugin;
+import com.rustbridge.PluginException;
 import com.rustbridge.ffm.FfmPluginLoader;
 import com.google.gson.Gson;
 
@@ -59,10 +61,10 @@ public class Main {
      * Type-safe plugin call helper.
      */
     private static <Req, Resp> Resp call(
-            com.rustbridge.Plugin plugin,
+            Plugin plugin,
             String messageType,
             Req request,
-            Class<Resp> responseClass) {
+            Class<Resp> responseClass) throws PluginException {
         String requestJson = gson.toJson(request);
         String responseJson = plugin.call(messageType, requestJson);
         return gson.fromJson(responseJson, responseClass);
@@ -139,10 +141,10 @@ Records provide:
 
 ```java
 private static <Req, Resp> Resp call(
-        com.rustbridge.Plugin plugin,
+        Plugin plugin,
         String messageType,
         Req request,
-        Class<Resp> responseClass) {
+        Class<Resp> responseClass) throws PluginException {
     String requestJson = gson.toJson(request);
     String responseJson = plugin.call(messageType, requestJson);
     return gson.fromJson(responseJson, responseClass);
