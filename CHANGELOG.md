@@ -7,23 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2025-01-29
+
 ### Added
 - Tutorial system with step-by-step guides for building plugins
   - Chapter 1: Building a Regex Plugin (scaffold, matching, LRU cache, configuration)
   - Chapter 2: Calling from Kotlin (setup, JSON calls, logging, type-safe wrappers, benchmarking)
 - `templates/tutorial-plugin/` - cargo-generate template with configurable features (regex, cache, config, logging)
 - `examples/regex-plugin/` - Complete reference implementation with LRU caching and configuration
+- Comprehensive tests for structured logging with key=value fields
 
 ### Changed
+- Updated dependencies to latest versions:
+  - `tokio` 1.43 → 1.49
+  - `thiserror` 1.0 → 2.0
+  - `darling` 0.20 → 0.23
+  - `toml` 0.8 → 0.9
+  - `uuid` 1.11 → 1.20
+  - `once_cell` 1.19 → 1.21
+  - `dashmap` 5.5 → 6.1
+  - `zip` 2.2 → 7.2
+  - `criterion` 0.5 → 0.8
 - `templates/tutorial-plugin/` - Unified basic and completed templates with `completed` boolean option
   - Default (`false`) generates basic echo plugin (replaces manual `cp` of `templates/plugin`)
   - With `-d completed=true` generates full regex plugin with LRU caching
 - Templates and examples now use proper `use` imports instead of fully qualified paths
 - Templates generate clippy-clean code (fixed `field_reassign_with_default` warnings)
 - `templates/plugin/` - Fixed tokio test dependency for standalone template usage
+- Kotlin tutorials updated with correct API usage (FfmPluginLoader, LogCallback, PluginConfig)
+- Tutorial Section 5 now demonstrates bundle variants (single .rbp with both debug and release builds)
+- Added permissive licenses to `deny.toml`: Zlib, bzip2-1.0.6, CC0-1.0, MIT-0
 
 ### Fixed
+- **CRITICAL**: Structured logging fields (e.g., `cache_size = 100`) now appear in log messages
+  - `rustbridge-logging` MessageVisitor was discarding all fields except "message"
+  - Now properly collects and formats all fields as `key=value` pairs
+- **CRITICAL**: Log level from PluginConfig is now correctly applied during initialization
+  - `rustbridge-ffi` was initializing logging before parsing config
+  - Reordered initialization to parse config first, then apply log level
 - Clarified in README that `rustbridge.toml` is a development-time config file, not the bundle manifest (`manifest.json`)
+- Fixed JSON escaping examples in Kotlin tutorials (regex backslashes in JSON strings)
 
 ## [0.6.0] - 2025-01-28
 
@@ -129,7 +152,8 @@ Initial public release.
 - No `.unwrap()` or `.expect()` in production code
 - Minisign signature verification for bundle integrity
 
-[Unreleased]: https://github.com/jrobhoward/rustbridge/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/jrobhoward/rustbridge/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/jrobhoward/rustbridge/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/jrobhoward/rustbridge/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/jrobhoward/rustbridge/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/jrobhoward/rustbridge/releases/tag/v0.5.0
