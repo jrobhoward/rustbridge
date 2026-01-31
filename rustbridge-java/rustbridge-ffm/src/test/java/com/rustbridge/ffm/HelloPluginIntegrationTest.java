@@ -52,7 +52,7 @@ class HelloPluginIntegrationTest {
     @Test
     @Order(1)
     @DisplayName("Plugin loads and initializes successfully")
-    void testPluginLoads() {
+    void plugin___loaded___is_active() {
         assertNotNull(plugin);
         assertEquals(LifecycleState.ACTIVE, plugin.getState());
     }
@@ -60,14 +60,11 @@ class HelloPluginIntegrationTest {
     @Test
     @Order(2)
     @DisplayName("Echo handler returns message with length")
-    void testEchoHandler() throws PluginException {
-        // Arrange
+    void echo___valid_message___returns_message_with_length() throws PluginException {
         String request = "{\"message\": \"Hello, World!\"}";
 
-        // Act
         String response = plugin.call("echo", request);
 
-        // Assert
         assertNotNull(response);
         assertTrue(response.contains("Hello, World!"));
         assertTrue(response.contains("\"length\":13"));
@@ -76,14 +73,11 @@ class HelloPluginIntegrationTest {
     @Test
     @Order(3)
     @DisplayName("Greet handler returns personalized greeting")
-    void testGreetHandler() throws PluginException {
-        // Arrange
+    void greet___valid_name___returns_personalized_greeting() throws PluginException {
         String request = "{\"name\": \"Alice\"}";
 
-        // Act
         String response = plugin.call("greet", request);
 
-        // Assert
         assertNotNull(response);
         assertTrue(response.contains("Hello, Alice!") || response.contains("greeting"));
     }
@@ -91,17 +85,13 @@ class HelloPluginIntegrationTest {
     @Test
     @Order(4)
     @DisplayName("User create handler creates user with ID")
-    void testUserCreateHandler() throws PluginException {
-        // Arrange
+    void user_create___valid_input___creates_user_with_id() throws PluginException {
         String request = "{\"username\": \"testuser\", \"email\": \"test@example.com\"}";
 
-        // Act
         String response = plugin.call("user.create", request);
 
-        // Assert
         assertNotNull(response);
         System.out.println("User create response: " + response);
-        // Response should contain user_id field
         assertTrue(response.contains("user_id") || response.contains("\"id\":"),
                 "Response should contain user_id or id field, got: " + response);
     }
@@ -109,14 +99,11 @@ class HelloPluginIntegrationTest {
     @Test
     @Order(5)
     @DisplayName("Math add handler computes sum")
-    void testMathAddHandler() throws PluginException {
-        // Arrange
+    void math_add___valid_numbers___computes_sum() throws PluginException {
         String request = "{\"a\": 42, \"b\": 58}";
 
-        // Act
         String response = plugin.call("math.add", request);
 
-        // Assert
         assertNotNull(response);
         assertTrue(response.contains("100") || response.contains("\"result\":100"));
     }
@@ -124,16 +111,13 @@ class HelloPluginIntegrationTest {
     @Test
     @Order(6)
     @DisplayName("Invalid type tag returns error")
-    void testInvalidTypeTag() {
-        // Arrange
+    void call___invalid_type_tag___throws_exception() {
         String request = "{\"test\": true}";
 
-        // Act & Assert
         PluginException exception = assertThrows(PluginException.class, () -> {
             plugin.call("invalid.type.tag", request);
         });
 
-        // Should get UnknownMessageType error (code 6)
         assertEquals(6, exception.getErrorCode(),
                 "Expected UnknownMessageType(6), got: " + exception.getErrorCode());
     }
@@ -141,16 +125,13 @@ class HelloPluginIntegrationTest {
     @Test
     @Order(7)
     @DisplayName("Invalid JSON in request returns error")
-    void testInvalidJson() {
-        // Arrange
+    void call___invalid_json___throws_serialization_error() {
         String invalidJson = "{broken json}";
 
-        // Act & Assert
         PluginException exception = assertThrows(PluginException.class, () -> {
             plugin.call("echo", invalidJson);
         });
 
-        // Should get SerializationError (code 5) for JSON parsing errors
         assertEquals(5, exception.getErrorCode(),
                 "Expected SerializationError(5), got: " + exception.getErrorCode());
         assertTrue(exception.getMessage().contains("serialization") ||
@@ -161,13 +142,11 @@ class HelloPluginIntegrationTest {
     @Test
     @Order(8)
     @DisplayName("Empty message field in echo returns error")
-    void testEmptyRequest() {
-        // Act & Assert - echo handler requires a message field
+    void echo___empty_object___throws_missing_field_error() {
         PluginException exception = assertThrows(PluginException.class, () -> {
             plugin.call("echo", "{}");
         });
 
-        // Should get deserialization error for missing field
         assertTrue(exception.getMessage().contains("missing field") ||
                         exception.getMessage().contains("message"),
                 "Expected missing field error, got: " + exception.getMessage());
@@ -176,13 +155,11 @@ class HelloPluginIntegrationTest {
     @Test
     @Order(9)
     @DisplayName("Multiple sequential calls work correctly")
-    void testMultipleCalls() throws PluginException {
-        // Arrange & Act
+    void call___sequential_calls___all_succeed() throws PluginException {
         String response1 = plugin.call("echo", "{\"message\": \"First\"}");
         String response2 = plugin.call("echo", "{\"message\": \"Second\"}");
         String response3 = plugin.call("greet", "{\"name\": \"Bob\"}");
 
-        // Assert
         assertNotNull(response1);
         assertNotNull(response2);
         assertNotNull(response3);
@@ -194,20 +171,18 @@ class HelloPluginIntegrationTest {
     @Test
     @Order(10)
     @DisplayName("Plugin state remains ACTIVE after successful calls")
-    void testStateRemainsActive() throws PluginException {
-        // Arrange & Act
+    void state___after_successful_calls___remains_active() throws PluginException {
         plugin.call("echo", "{\"message\": \"test\"}");
+
         LifecycleState state = plugin.getState();
 
-        // Assert
         assertEquals(LifecycleState.ACTIVE, state);
     }
 
     @Test
     @Order(11)
     @DisplayName("Log level can be changed")
-    void testSetLogLevel() {
-        // Act & Assert - should not throw
+    void log_level___set_different_levels___no_exceptions() {
         assertDoesNotThrow(() -> {
             plugin.setLogLevel(LogLevel.DEBUG);
             plugin.setLogLevel(LogLevel.INFO);
@@ -218,64 +193,51 @@ class HelloPluginIntegrationTest {
     @Test
     @Order(12)
     @DisplayName("Plugin can be closed and reopened")
-    void testPluginCloseAndReopen() throws PluginException {
-        // Arrange
+    void plugin___close_and_reopen___works_correctly() throws PluginException {
         String request = "{\"message\": \"test\"}";
 
-        // Act - first call
         String response1 = plugin.call("echo", request);
         assertNotNull(response1);
 
-        // Close
         plugin.close();
 
-        // Assert - calls after close should fail with PluginException
         assertThrows(PluginException.class, () -> {
             plugin.call("echo", request);
         });
 
-        // Reopen
         plugin = FfmPluginLoader.load(PLUGIN_PATH, PluginConfig.defaults(), null);
 
-        // Act - second call on new instance
         String response2 = plugin.call("echo", request);
 
-        // Assert
         assertNotNull(response2);
     }
 
     @Test
     @Order(13)
     @DisplayName("Large request payload is handled")
-    void testLargePayload() throws PluginException {
-        // Arrange - create a large message
+    void echo___large_payload___handled_correctly() throws PluginException {
         StringBuilder largeMessage = new StringBuilder();
         for (int i = 0; i < 10000; i++) {
             largeMessage.append("This is a test message. ");
         }
         String request = "{\"message\": \"" + largeMessage.toString() + "\"}";
 
-        // Act
         String response = plugin.call("echo", request);
 
-        // Assert
         assertNotNull(response);
-        assertTrue(response.length() > 100000); // Should be large
+        assertTrue(response.length() > 100000);
     }
 
     @Test
     @Order(14)
     @DisplayName("Concurrent calls are handled safely")
-    void testConcurrentCalls() throws InterruptedException {
-        // Arrange
+    void call___concurrent_calls___all_succeed() throws InterruptedException {
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger errorCount = new AtomicInteger(0);
         int numThreads = 10;
         int callsPerThread = 10;
-
         Thread[] threads = new Thread[numThreads];
 
-        // Act - spawn multiple threads making concurrent calls
         for (int i = 0; i < numThreads; i++) {
             final int threadId = i;
             threads[i] = new Thread(() -> {
@@ -295,12 +257,10 @@ class HelloPluginIntegrationTest {
             threads[i].start();
         }
 
-        // Wait for all threads
         for (Thread thread : threads) {
             thread.join();
         }
 
-        // Assert - all calls should succeed
         System.out.println("Concurrent test: " + successCount.get() + " successes, " + errorCount.get() + " errors");
         assertEquals(numThreads * callsPerThread, successCount.get(),
                 "Expected all calls to succeed, but " + errorCount.get() + " failed");
@@ -310,8 +270,7 @@ class HelloPluginIntegrationTest {
     @Test
     @Order(15)
     @DisplayName("Plugin with log callback receives log messages")
-    void testLogCallback() throws PluginException, InterruptedException {
-        // Arrange
+    void plugin___with_log_callback___receives_messages() throws PluginException, InterruptedException {
         AtomicInteger logCount = new AtomicInteger(0);
 
         LogCallback callback = (level, target, message) -> {
@@ -319,11 +278,9 @@ class HelloPluginIntegrationTest {
             logCount.incrementAndGet();
         };
 
-        // Close current plugin and reopen with log callback
         plugin.close();
         plugin = null;
 
-        // Act - load plugin with callback
         plugin = FfmPluginLoader.load(PLUGIN_PATH, PluginConfig.defaults(), callback);
 
         // Give time for async initialization

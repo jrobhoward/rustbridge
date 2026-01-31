@@ -29,19 +29,14 @@ class MultiplePluginTest {
     @Test
     @DisplayName("Two plugins can be loaded simultaneously")
     void testTwoPluginsSimultaneously() throws PluginException {
-        // Arrange - load two instances of the same plugin
         try (Plugin plugin1 = FfmPluginLoader.load(PLUGIN_PATH.toString());
              Plugin plugin2 = FfmPluginLoader.load(PLUGIN_PATH.toString())) {
 
-            // Act - both should work independently
             String response1 = plugin1.call("echo", "{\"message\": \"from plugin 1\"}");
             String response2 = plugin2.call("echo", "{\"message\": \"from plugin 2\"}");
 
-            // Assert
             assertTrue(response1.contains("from plugin 1"), "Plugin 1 should echo its message");
             assertTrue(response2.contains("from plugin 2"), "Plugin 2 should echo its message");
-
-            // Both should be in Active state
             assertEquals(LifecycleState.ACTIVE, plugin1.getState());
             assertEquals(LifecycleState.ACTIVE, plugin2.getState());
         }
@@ -50,7 +45,6 @@ class MultiplePluginTest {
     @Test
     @DisplayName("Multiple plugins have independent log callbacks")
     void testMultiplePluginsIndependentLogCallbacks() throws PluginException {
-        // Arrange - separate log collectors for each plugin
         List<String> plugin1Logs = new ArrayList<>();
         List<String> plugin2Logs = new ArrayList<>();
 
@@ -62,22 +56,19 @@ class MultiplePluginTest {
             plugin2Logs.add("[P2] " + level + ": " + message);
         };
 
-        // Act - load two plugins with different callbacks
         try (Plugin plugin1 = FfmPluginLoader.load(PLUGIN_PATH, PluginConfig.defaults(), callback1);
              Plugin plugin2 = FfmPluginLoader.load(PLUGIN_PATH, PluginConfig.defaults(), callback2)) {
 
-            Thread.sleep(100); // Let initialization logs settle
+            Thread.sleep(100);
 
             plugin1Logs.clear();
             plugin2Logs.clear();
 
-            // Make calls to each plugin
             plugin1.call("user.create", "{\"username\": \"alice\", \"email\": \"alice@example.com\"}");
             plugin2.call("user.create", "{\"username\": \"bob\", \"email\": \"bob@example.com\"}");
 
             Thread.sleep(100);
 
-            // Assert
             System.out.println("\nPlugin 1 logs (" + plugin1Logs.size() + " total):");
             for (String log : plugin1Logs) {
                 System.out.println("  " + log);
@@ -126,7 +117,6 @@ class MultiplePluginTest {
     @Test
     @DisplayName("Multiple plugins have independent log levels")
     void testMultiplePluginsIndependentLogLevels() throws PluginException {
-        // Arrange
         AtomicInteger plugin1DebugCount = new AtomicInteger(0);
         AtomicInteger plugin2DebugCount = new AtomicInteger(0);
 

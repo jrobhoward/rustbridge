@@ -66,47 +66,38 @@ class BinaryTransportTest {
     @Order(2)
     @DisplayName("callRaw___SmallBenchmark___ReturnsValidResponse")
     void callRaw___SmallBenchmark___ReturnsValidResponse() throws PluginException {
-        // Arrange
         byte[] request = SmallRequestRaw.create("test_key", 0x01);
 
-        // Act
         byte[] responseBytes = plugin.callRaw(MSG_BENCH_SMALL, request);
         SmallResponseRaw response = SmallResponseRaw.parse(responseBytes);
 
-        // Assert
         assertEquals(SmallResponseRaw.CURRENT_VERSION, response.version);
         assertTrue(response.valueLen > 0);
         assertEquals(3600, response.ttlSeconds);
-        assertEquals(1, response.cacheHit); // flags & 1 != 0
+        assertEquals(1, response.cacheHit);
     }
 
     @Test
     @Order(3)
     @DisplayName("callRaw___SmallBenchmarkWithCacheMiss___ReturnsCacheMiss")
     void callRaw___SmallBenchmarkWithCacheMiss___ReturnsCacheMiss() throws PluginException {
-        // Arrange
-        byte[] request = SmallRequestRaw.create("another_key", 0x00); // flags = 0, cache miss
+        byte[] request = SmallRequestRaw.create("another_key", 0x00);
 
-        // Act
         byte[] responseBytes = plugin.callRaw(MSG_BENCH_SMALL, request);
         SmallResponseRaw response = SmallResponseRaw.parse(responseBytes);
 
-        // Assert
-        assertEquals(0, response.cacheHit); // flags & 1 == 0
+        assertEquals(0, response.cacheHit);
     }
 
     @Test
     @Order(4)
     @DisplayName("callRaw___ConcurrentCalls___AllSucceed")
     void callRaw___ConcurrentCalls___AllSucceed() throws InterruptedException {
-        // Arrange
         int concurrentCalls = 100;
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger errorCount = new AtomicInteger(0);
-
         Thread[] threads = new Thread[concurrentCalls];
 
-        // Act
         for (int i = 0; i < concurrentCalls; i++) {
             final int index = i;
             threads[i] = new Thread(() -> {
@@ -129,12 +120,10 @@ class BinaryTransportTest {
             threads[i].start();
         }
 
-        // Wait for all threads
         for (Thread thread : threads) {
             thread.join();
         }
 
-        // Assert
         System.out.println("Concurrent test: " + successCount.get() + " successes, " + errorCount.get() + " errors");
         assertEquals(concurrentCalls, successCount.get(),
                 "Expected all calls to succeed, but " + errorCount.get() + " failed");
@@ -145,14 +134,11 @@ class BinaryTransportTest {
     @Order(5)
     @DisplayName("callRaw___ResponseValueContainsKey___ValueMatchesExpected")
     void callRaw___ResponseValueContainsKey___ValueMatchesExpected() throws PluginException {
-        // Arrange
         byte[] request = SmallRequestRaw.create("my_key", 0x01);
 
-        // Act
         byte[] responseBytes = plugin.callRaw(MSG_BENCH_SMALL, request);
         SmallResponseRaw response = SmallResponseRaw.parse(responseBytes);
 
-        // Assert - the handler returns "value_for_{key}"
         assertTrue(response.value.contains("my_key"), "Value should contain the key, got: " + response.value);
     }
 

@@ -31,14 +31,12 @@ class DynamicLogLevelTest {
     @Order(1)
     @DisplayName("Log level can be changed dynamically at runtime")
     void testDynamicLogLevelChanges() throws PluginException {
-        // Arrange - capture all log messages
         List<LogMessage> capturedLogs = new ArrayList<>();
 
         LogCallback callback = (level, target, message) -> {
             capturedLogs.add(new LogMessage(level, target, message));
         };
 
-        // Act - start with INFO level
         try (Plugin plugin = FfmPluginLoader.load(PLUGIN_PATH, PluginConfig.defaults(), callback)) {
             plugin.setLogLevel(LogLevel.INFO);
             Thread.sleep(100); // Let log level change propagate
@@ -52,9 +50,8 @@ class DynamicLogLevelTest {
             // user.create handler uses tracing::info!
             plugin.call("user.create", "{\"username\": \"alice\", \"email\": \"alice@example.com\"}");
 
-            Thread.sleep(100); // Let logs be captured
+            Thread.sleep(100);
 
-            // Assert - should see INFO logs but NOT DEBUG logs
             long debugCount = capturedLogs.stream()
                     .filter(log -> log.level == LogLevel.DEBUG)
                     .count();
@@ -77,7 +74,6 @@ class DynamicLogLevelTest {
 
             Thread.sleep(100);
 
-            // Assert - should now see both DEBUG and INFO logs
             debugCount = capturedLogs.stream()
                     .filter(log -> log.level == LogLevel.DEBUG)
                     .count();
@@ -104,7 +100,6 @@ class DynamicLogLevelTest {
 
             Thread.sleep(100);
 
-            // Assert - should see neither DEBUG nor INFO logs
             debugCount = capturedLogs.stream()
                     .filter(log -> log.level == LogLevel.DEBUG)
                     .count();
@@ -129,7 +124,6 @@ class DynamicLogLevelTest {
     @Order(2)
     @DisplayName("Log level changes affect subsequent calls immediately")
     void testLogLevelChangesAreImmediate() throws PluginException {
-        // Arrange
         AtomicInteger debugLogCount = new AtomicInteger(0);
         List<LogMessage> allLogs = new ArrayList<>();
 

@@ -301,17 +301,14 @@ use rustbridge_ffi::prelude::*;
 
 #[tokio::test]
 async fn Plugin___full_lifecycle___start_call_stop_succeeds() {
-    // Arrange - create plugin
     let plugin = TestPlugin::default();
     let config = PluginConfig::default();
 
-    // Act - run lifecycle
     let handle = PluginHandle::new(Box::new(plugin), config).unwrap();
     handle.start().unwrap();
     let response = handle.call("echo", b"hello").unwrap();
     handle.shutdown(1000).unwrap();
 
-    // Assert
     assert_eq!(response, b"hello");
     assert_eq!(handle.state(), LifecycleState::Stopped);
 }
