@@ -486,8 +486,14 @@ public sealed class BundleLoader : IDisposable
         if (_disposed) return;
         _disposed = true;
 
-        _zipArchive.Dispose();
-        _fileStream.Dispose();
+        try
+        {
+            _zipArchive.Dispose();
+        }
+        finally
+        {
+            _fileStream.Dispose();
+        }
     }
 
     private BundleManifest LoadManifest()

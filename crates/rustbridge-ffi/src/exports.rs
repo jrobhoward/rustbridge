@@ -518,9 +518,24 @@ pub unsafe extern "C" fn rb_response_free(response: *mut RbResponse) {
 // Async API (future implementation)
 // ============================================================================
 
-// Type definitions for async API (for future implementation)
+// =============================================================================
+// Async API (Reserved for Future Implementation)
+// =============================================================================
+//
+// These functions are reserved for a future async API that will allow
+// non-blocking plugin calls with completion callbacks. They are exported
+// to maintain ABI stability but currently return stub values.
+//
+// Planned features:
+// - Non-blocking request submission with callback-based completion
+// - Request cancellation support
+// - Integration with host language async runtimes (tokio, async-std, etc.)
 
-/// Completion callback for async requests
+/// Completion callback for async requests.
+///
+/// When implemented, this callback will be invoked when an async request completes.
+/// The callback receives the original context pointer, request ID, response data,
+/// and an error code (0 for success).
 pub type CompletionCallbackFn = extern "C" fn(
     context: *mut c_void,
     request_id: u64,
@@ -529,17 +544,33 @@ pub type CompletionCallbackFn = extern "C" fn(
     error_code: u32,
 );
 
-/// Make an async call to the plugin (placeholder for future implementation)
+/// Initiate an asynchronous plugin call.
+///
+/// # Status
+///
+/// **Not yet implemented.** This function is reserved for future async API support.
+/// Currently returns 0 to indicate the operation is not available.
+///
+/// # Planned Behavior
+///
+/// When implemented, this function will:
+/// 1. Accept a request and completion callback
+/// 2. Submit the request for async processing
+/// 3. Return a non-zero request ID for tracking/cancellation
+/// 4. Invoke the callback with the response when complete
 ///
 /// # Safety
+///
+/// When implemented, the following invariants must hold:
 /// - `handle` must be a valid handle from `plugin_init`, or null
 /// - `type_tag` must be a valid null-terminated C string, or null
 /// - `request` must be valid for `request_len` bytes, or null if `request_len` is 0
-/// - `callback` will be invoked when the request completes
-/// - `context` is passed through to the callback
+/// - `callback` must remain valid until invoked or the request is cancelled
+/// - `context` is passed through to the callback unchanged
 ///
 /// # Returns
-/// Request ID that can be used with plugin_cancel_async, or 0 if not implemented
+///
+/// Request ID that can be used with `plugin_cancel_async`, or 0 if not implemented.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn plugin_call_async(
     _handle: FfiPluginHandle,
@@ -549,21 +580,37 @@ pub unsafe extern "C" fn plugin_call_async(
     _callback: CompletionCallbackFn,
     _context: *mut c_void,
 ) -> u64 {
-    // TODO: Implement async call support
-    0 // Return 0 to indicate not implemented
+    // Reserved for future implementation
+    0
 }
 
-/// Cancel an async request (placeholder for future implementation)
+/// Cancel a pending async request.
+///
+/// # Status
+///
+/// **Not yet implemented.** This function is reserved for future async API support.
+/// Currently returns `false` to indicate the operation is not available.
+///
+/// # Planned Behavior
+///
+/// When implemented, this function will:
+/// 1. Attempt to cancel the pending request identified by `request_id`
+/// 2. Return `true` if cancellation succeeded, `false` if the request
+///    already completed or was not found
+/// 3. The completion callback will NOT be invoked for cancelled requests
 ///
 /// # Safety
+///
+/// When implemented, the following invariants must hold:
 /// - `handle` must be a valid handle from `plugin_init`, or null
 /// - `request_id` must be a valid request ID from `plugin_call_async`
 ///
 /// # Returns
-/// `true` if cancellation was successful, `false` otherwise
+///
+/// `true` if cancellation was successful, `false` otherwise.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn plugin_cancel_async(_handle: FfiPluginHandle, _request_id: u64) -> bool {
-    // TODO: Implement async cancellation
+    // Reserved for future implementation
     false
 }
 

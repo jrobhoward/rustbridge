@@ -2,7 +2,6 @@ package com.rustbridge;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -567,10 +566,8 @@ public class BundleLoader implements AutoCloseable {
         }
 
         byte[] manifestData = readZipEntry(manifestEntry);
-        ObjectMapper mapper = new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         try {
-            return mapper.readValue(manifestData, BundleManifest.class);
+            return JsonMapper.getInstance().readValue(manifestData, BundleManifest.class);
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse bundle manifest", e);
         }

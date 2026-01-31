@@ -5,6 +5,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
@@ -39,6 +41,7 @@ import java.nio.charset.StandardCharsets;
  * @see Arena
  */
 public class FfmPlugin implements Plugin {
+    private static final Logger log = LoggerFactory.getLogger(FfmPlugin.class);
     private static final ObjectMapper OBJECT_MAPPER = JsonMapper.getInstance();
 
     private final Arena pluginArena;
@@ -209,7 +212,7 @@ public class FfmPlugin implements Plugin {
         try {
             bindings.rbResponseFree().invokeExact(responseStruct);
         } catch (Throwable t) {
-            System.err.println("Warning: Failed to free raw response: " + t.getMessage());
+            log.warn("Failed to free raw response: {}", t.getMessage());
         }
     }
 
@@ -256,10 +259,10 @@ public class FfmPlugin implements Plugin {
         try {
             boolean success = (boolean) bindings.pluginShutdown().invokeExact(handle);
             if (!success) {
-                System.err.println("Warning: Plugin shutdown returned false");
+                log.warn("Plugin shutdown returned false");
             }
         } catch (Throwable t) {
-            System.err.println("Warning: Exception during plugin shutdown: " + t.getMessage());
+            log.warn("Exception during plugin shutdown: {}", t.getMessage());
         }
 
         // Close the plugin-lifetime arena (releases all allocated memory)
@@ -316,7 +319,7 @@ public class FfmPlugin implements Plugin {
         try {
             bindings.pluginFreeBuffer().invokeExact(bufferStruct);
         } catch (Throwable t) {
-            System.err.println("Warning: Failed to free buffer: " + t.getMessage());
+            log.warn("Failed to free buffer: {}", t.getMessage());
         }
     }
 

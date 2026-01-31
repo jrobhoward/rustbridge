@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Java: Replaced `System.err.println` with slf4j logging in FFM plugin loader
+- Java: Consolidated `ObjectMapper` instances to use shared `JsonMapper.getInstance()`
+- Java: Extracted platform detection logic to `PlatformUtil` utility class
+- C#: Optimized `MinisignVerifier.Verify(ReadOnlySpan<byte>)` to avoid array allocation
+- Rust: Optimized `RequestEnvelope.payload_as()` and `ResponseEnvelope.payload_as()` to deserialize without cloning JSON
 - Java FFM: Simplified binary transport to single `callRawBytes(int, BinaryStruct)` method
   - Removed complex `callRaw` variants and `callRawZeroCopy`
   - `callRawBytes` returns `byte[]` for simplicity while remaining high-performance
@@ -35,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Java FFM and C# now handle optional binary transport symbols gracefully
 
 ### Fixed
+- C#: `BundleLoader.Dispose()` now uses try-finally to ensure both streams are disposed
+- C#: `MinisignVerifier` constructor now validates null/empty public key with proper exceptions
+- Java: JNI static initializer no longer throws harsh `RuntimeException` on missing library
+- Rust: Documented async API placeholders (`plugin_call_async`, `plugin_cancel_async`) with status and planned behavior
 - Minisign signature verification in Java, C#, and Python consumers
   - Fixed BLAKE2b-512 prehashing for "ED" algorithm signatures
   - Fixed public key format parsing (algorithm ID "Ed" + key ID + public key)

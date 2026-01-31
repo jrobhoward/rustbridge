@@ -38,9 +38,16 @@ public class MinisignVerifier
     /// Create a verifier from a minisign public key string.
     /// </summary>
     /// <param name="publicKeyBase64">Minisign public key in base64 format (e.g., "RWS...").</param>
+    /// <exception cref="ArgumentNullException">If publicKeyBase64 is null.</exception>
     /// <exception cref="ArgumentException">If the key format is invalid.</exception>
     public MinisignVerifier(string publicKeyBase64)
     {
+        ArgumentNullException.ThrowIfNull(publicKeyBase64);
+        if (string.IsNullOrWhiteSpace(publicKeyBase64))
+        {
+            throw new ArgumentException("Public key cannot be empty or whitespace", nameof(publicKeyBase64));
+        }
+
         var (publicKeyBytes, keyId) = ParsePublicKey(publicKeyBase64);
         _keyId = keyId;
 
@@ -168,6 +175,18 @@ public class MinisignVerifier
     /// <exception cref="CryptographicException">If signature parsing fails.</exception>
     public bool Verify(byte[] data, string signatureString)
     {
+        return Verify((ReadOnlySpan<byte>)data, signatureString);
+    }
+
+    /// <summary>
+    /// Verify a minisign signature against data.
+    /// </summary>
+    /// <param name="data">The data that was signed.</param>
+    /// <param name="signatureString">The minisign signature (multi-line format).</param>
+    /// <returns>True if the signature is valid, false otherwise.</returns>
+    /// <exception cref="CryptographicException">If signature parsing fails.</exception>
+    public bool Verify(ReadOnlySpan<byte> data, string signatureString)
+    {
         var (sigKeyId, signature, isPrehashed) = ParseSignature(signatureString);
 
         // Verify key ID matches
@@ -178,28 +197,13 @@ public class MinisignVerifier
 
         // Minisign "ED" signatures are prehashed - compute BLAKE2b-512 hash first
         // This matches SIGALG_PREHASHED in the minisign crate
-        byte[] dataToVerify;
         if (isPrehashed)
         {
-            dataToVerify = NSec.Cryptography.HashAlgorithm.Blake2b_512.Hash(data);
-        }
-        else
-        {
-            dataToVerify = data;
+            var hash = NSec.Cryptography.HashAlgorithm.Blake2b_512.Hash(data);
+            return SignatureAlgorithm.Ed25519.Verify(_publicKey, hash, signature);
         }
 
-        // Verify the signature using Ed25519
-        return SignatureAlgorithm.Ed25519.Verify(_publicKey, dataToVerify, signature);
-    }
-
-    /// <summary>
-    /// Verify a minisign signature against data.
-    /// </summary>
-    /// <param name="data">The data that was signed.</param>
-    /// <param name="signatureString">The minisign signature (multi-line format).</param>
-    /// <returns>True if the signature is valid, false otherwise.</returns>
-    public bool Verify(ReadOnlySpan<byte> data, string signatureString)
-    {
-        return Verify(data.ToArray(), signatureString);
+        // Non-prehashed: verify directly without allocation
+        return SignatureAlgorithm.Ed25519.Verify(_publicKey, data, signature);
     }
 }

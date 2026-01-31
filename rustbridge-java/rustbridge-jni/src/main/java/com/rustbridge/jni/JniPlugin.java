@@ -2,7 +2,6 @@ package com.rustbridge.jni;
 
 import com.rustbridge.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -14,17 +13,11 @@ import org.jetbrains.annotations.Nullable;
  * Use this when FFM (Java 21+) is not available.
  */
 public class JniPlugin implements Plugin {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private static final ObjectMapper OBJECT_MAPPER = JsonMapper.getInstance();
 
-    static {
-        // Load the JNI bridge library
-        try {
-            System.loadLibrary("rustbridge_jni");
-        } catch (UnsatisfiedLinkError e) {
-            throw new RuntimeException("Failed to load rustbridge_jni native library", e);
-        }
-    }
+    // Note: Library loading is handled by JniPluginLoader.ensureJniBridgeLoaded()
+    // before any JniPlugin instance is created. JniPlugin has package-private
+    // constructor and can only be instantiated by JniPluginLoader.
 
     private final long handle;
     private final LogCallback logCallback;

@@ -1,6 +1,6 @@
 //! Request and response envelope types for FFI transport
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 /// Request envelope wrapping a message for FFI transport
 ///
@@ -60,8 +60,10 @@ impl RequestEnvelope {
     }
 
     /// Deserialize the payload to a typed value
-    pub fn payload_as<T: for<'de> Deserialize<'de>>(&self) -> Result<T, serde_json::Error> {
-        serde_json::from_value(self.payload.clone())
+    ///
+    /// This method deserializes directly from the JSON value without cloning.
+    pub fn payload_as<T: DeserializeOwned>(&self) -> Result<T, serde_json::Error> {
+        T::deserialize(&self.payload)
     }
 
     /// Serialize to bytes for FFI transport
@@ -159,9 +161,11 @@ impl ResponseEnvelope {
     }
 
     /// Get the payload if success
-    pub fn payload_as<T: for<'de> Deserialize<'de>>(&self) -> Result<Option<T>, serde_json::Error> {
+    ///
+    /// This method deserializes directly from the JSON value without cloning.
+    pub fn payload_as<T: DeserializeOwned>(&self) -> Result<Option<T>, serde_json::Error> {
         match &self.payload {
-            Some(v) => Ok(Some(serde_json::from_value(v.clone())?)),
+            Some(v) => Ok(Some(T::deserialize(v)?)),
             None => Ok(None),
         }
     }

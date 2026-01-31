@@ -214,28 +214,9 @@ public class JniPluginLoader {
      * @throws PluginException if loading fails
      */
     public static @NotNull Plugin loadByName(@NotNull String libraryName, @NotNull PluginConfig config) throws PluginException {
-        String osName = System.getProperty("os.name").toLowerCase();
-        String libraryFileName;
+        String libraryFileName = PlatformUtil.getLibraryFileName(libraryName);
 
-        if (osName.contains("linux")) {
-            libraryFileName = "lib" + libraryName + ".so";
-        } else if (osName.contains("mac") || osName.contains("darwin")) {
-            libraryFileName = "lib" + libraryName + ".dylib";
-        } else if (osName.contains("windows")) {
-            libraryFileName = libraryName + ".dll";
-        } else {
-            throw new PluginException("Unsupported operating system: " + osName);
-        }
-
-        // Search in common locations
-        String[] searchPaths = {
-                ".",
-                "./target/release",
-                "./target/debug",
-                System.getProperty("java.library.path", "")
-        };
-
-        for (String basePath : searchPaths) {
+        for (String basePath : PlatformUtil.getDefaultSearchPaths()) {
             if (basePath == null || basePath.isEmpty()) continue;
 
             File fullPath = new File(basePath, libraryFileName);

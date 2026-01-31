@@ -3,6 +3,8 @@ package com.rustbridge.ffm;
 import com.rustbridge.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
@@ -26,6 +28,7 @@ import java.nio.file.Path;
  * }</pre>
  */
 public class FfmPluginLoader {
+    private static final Logger log = LoggerFactory.getLogger(FfmPluginLoader.class);
 
     private FfmPluginLoader() {
         // Utility class
@@ -152,28 +155,9 @@ public class FfmPluginLoader {
      * @throws PluginException if loading fails
      */
     public static @NotNull Plugin loadByName(@NotNull String libraryName, @NotNull PluginConfig config) throws PluginException {
-        String osName = System.getProperty("os.name").toLowerCase();
-        String libraryFileName;
+        String libraryFileName = PlatformUtil.getLibraryFileName(libraryName);
 
-        if (osName.contains("linux")) {
-            libraryFileName = "lib" + libraryName + ".so";
-        } else if (osName.contains("mac") || osName.contains("darwin")) {
-            libraryFileName = "lib" + libraryName + ".dylib";
-        } else if (osName.contains("windows")) {
-            libraryFileName = libraryName + ".dll";
-        } else {
-            throw new PluginException("Unsupported operating system: " + osName);
-        }
-
-        // Search in common locations
-        String[] searchPaths = {
-                ".",
-                "./target/release",
-                "./target/debug",
-                System.getProperty("java.library.path", "")
-        };
-
-        for (String basePath : searchPaths) {
+        for (String basePath : PlatformUtil.getDefaultSearchPaths()) {
             if (basePath.isEmpty()) continue;
 
             Path fullPath = Path.of(basePath, libraryFileName);
@@ -244,6 +228,12 @@ public class FfmPluginLoader {
      * Wrapper method that bridges the native callback to the Java LogCallback.
      * <p>
      * This method is called from native code via the upcall stub.
+     * <p>
+     * <b>Exception Handling:</b> Any exceptions thrown by the LogCallback are caught
+     * and logged to stderr rather than propagated back to native code. This is necessary
+     * because allowing Java exceptions to propagate across the FFI boundary would corrupt
+     * the native call stack and potentially crash the JVM. If you need to handle callback
+     * errors, implement error handling within your LogCallback implementation.
      *
      * @param callback   the Java log callback
      * @param level      the log level (0=Trace, 1=Debug, 2=Info, 3=Warn, 4=Error)
@@ -288,8 +278,7 @@ public class FfmPluginLoader {
 
         } catch (Exception e) {
             // Don't let exceptions propagate back to native code
-            System.err.println("Error in log callback: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error in log callback: {}", e.getMessage(), e);
         }
     }
 }
