@@ -344,3 +344,131 @@ class TestBundleLoaderSchemas:
                 loader.read_schema(bundle_path, "test.txt")
         finally:
             bundle_path.unlink()
+
+
+class TestBundleLoaderEdgeCases:
+    """Tests for BundleLoader error handling with corrupted or malformed bundles."""
+
+    def test_load___corrupted_zip___raises_exception(self) -> None:
+        """Test that a corrupted ZIP file raises an appropriate exception."""
+        # Create a file with invalid ZIP content
+        with tempfile.NamedTemporaryFile(suffix=".rbp", delete=False) as f:
+            f.write(b"This is not a valid ZIP file")
+            bundle_path = Path(f.name)
+
+        try:
+            loader = BundleLoader(verify_signatures=False)
+
+            with pytest.raises(Exception):  # zipfile.BadZipFile or similar
+                loader.load(bundle_path)
+        finally:
+            bundle_path.unlink()
+
+    def test_load___truncated_zip___raises_exception(self) -> None:
+        """Test that a truncated ZIP file raises an appropriate exception."""
+        # Create a valid bundle then truncate it
+        bundle_bytes, _ = _create_test_bundle_with_schemas({"test.txt": "content"})
+
+        # Truncate to half the size
+        truncated = bundle_bytes[: len(bundle_bytes) // 2]
+
+        with tempfile.NamedTemporaryFile(suffix=".rbp", delete=False) as f:
+            f.write(truncated)
+            bundle_path = Path(f.name)
+
+        try:
+            loader = BundleLoader(verify_signatures=False)
+
+            with pytest.raises(Exception):  # zipfile.BadZipFile or similar
+                loader.load(bundle_path)
+        finally:
+            bundle_path.unlink()
+
+    def test_load___empty_file___raises_exception(self) -> None:
+        """Test that an empty file raises an appropriate exception."""
+        with tempfile.NamedTemporaryFile(suffix=".rbp", delete=False) as f:
+            # Write nothing - empty file
+            bundle_path = Path(f.name)
+
+        try:
+            loader = BundleLoader(verify_signatures=False)
+
+            with pytest.raises(Exception):  # zipfile.BadZipFile or similar
+                loader.load(bundle_path)
+        finally:
+            bundle_path.unlink()
+
+    def test_load___zip_without_manifest___raises_exception(self) -> None:
+        """Test that a ZIP without manifest.json raises an appropriate exception."""
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            # Add some content but no manifest
+            zf.writestr("some_file.txt", "content")
+
+        with tempfile.NamedTemporaryFile(suffix=".rbp", delete=False) as f:
+            f.write(buffer.getvalue())
+            bundle_path = Path(f.name)
+
+        try:
+            loader = BundleLoader(verify_signatures=False)
+
+            with pytest.raises(PluginException, match="manifest"):
+                loader.load(bundle_path)
+        finally:
+            bundle_path.unlink()
+
+    def test_load___zip_with_empty_manifest___raises_exception(self) -> None:
+        """Test that a ZIP with empty manifest.json raises an appropriate exception."""
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("manifest.json", "")
+
+        with tempfile.NamedTemporaryFile(suffix=".rbp", delete=False) as f:
+            f.write(buffer.getvalue())
+            bundle_path = Path(f.name)
+
+        try:
+            loader = BundleLoader(verify_signatures=False)
+
+            with pytest.raises(PluginException):
+                loader.load(bundle_path)
+        finally:
+            bundle_path.unlink()
+
+    def test_load___zip_with_invalid_json_manifest___raises_exception(self) -> None:
+        """Test that a ZIP with malformed JSON manifest raises an appropriate exception."""
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("manifest.json", "{ not valid json }")
+
+        with tempfile.NamedTemporaryFile(suffix=".rbp", delete=False) as f:
+            f.write(buffer.getvalue())
+            bundle_path = Path(f.name)
+
+        try:
+            loader = BundleLoader(verify_signatures=False)
+
+            with pytest.raises(PluginException, match="Failed to parse"):
+                loader.load(bundle_path)
+        finally:
+            bundle_path.unlink()
+
+    def test_load___zip_with_incomplete_manifest___raises_exception(self) -> None:
+        """Test that a ZIP with incomplete manifest raises an appropriate exception."""
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            # Missing required fields
+            manifest = {"bundle_version": "1.0"}
+            zf.writestr("manifest.json", json.dumps(manifest))
+
+        with tempfile.NamedTemporaryFile(suffix=".rbp", delete=False) as f:
+            f.write(buffer.getvalue())
+            bundle_path = Path(f.name)
+
+        try:
+            loader = BundleLoader(verify_signatures=False)
+
+            with pytest.raises(PluginException):
+                loader.load(bundle_path)
+        finally:
+            bundle_path.unlink()

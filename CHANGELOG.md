@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Java FFM: Removed `callRaw`, `callRawZeroCopy`, and `RawResponse` inner class
 
 ### Added
+- Test coverage improved for FFI, bundle, and edge cases
+  - Rust FFI integration tests (23 tests): plugin lifecycle, concurrent calls, unicode handling
+  - CLI bundle integration tests (43 tests): platform parsing, manifest validation, transport codec
+  - C# edge case tests (10 tests): dispose handling, concurrent access, missing DLL handling
+  - Python bundle loader tests (7 new tests): corrupted/truncated bundles, invalid manifests
 - JNI bridge bundling support for self-contained Java 17+ distribution
   - New `bridges` field in bundle manifest for including bridge libraries
   - CLI: `--jni-lib PLATFORM[:VARIANT]:PATH` flag for `rustbridge bundle create`
