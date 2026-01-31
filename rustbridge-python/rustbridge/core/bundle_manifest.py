@@ -143,6 +143,18 @@ class Sbom:
 
 
 @dataclass
+class BridgeInfo:
+    """Bridge libraries bundled with the plugin.
+
+    Allows bundling bridge libraries (like the JNI bridge) alongside
+    the plugin for self-contained distribution.
+    """
+
+    jni: dict[str, PlatformInfo] = field(default_factory=dict)
+    """JNI bridge libraries by platform."""
+
+
+@dataclass
 class BundleManifest:
     """
     Bundle manifest structure.
@@ -182,6 +194,9 @@ class BundleManifest:
 
     notices: str | None = None
     """Path to license notices file in bundle (v2.0+)."""
+
+    bridges: BridgeInfo | None = None
+    """Bridge libraries bundled with the plugin (e.g., JNI bridge)."""
 
     @classmethod
     def from_json(cls, json_str: str) -> BundleManifest:
@@ -306,6 +321,31 @@ class BundleManifest:
                 spdx=sbom_data.get("spdx"),
             )
 
+        # Parse bridges
+        bridges: BridgeInfo | None = None
+        bridges_data = data.get("bridges")
+        if bridges_data:
+            jni_platforms: dict[str, PlatformInfo] = {}
+            jni_data = bridges_data.get("jni", {})
+            for platform_key, platform_value in jni_data.items():
+                # Parse variants if present
+                variants: dict[str, VariantInfo] = {}
+                variants_data = platform_value.get("variants", {})
+                for variant_name, variant_value in variants_data.items():
+                    variants[variant_name] = VariantInfo(
+                        library=variant_value.get("library", ""),
+                        checksum=variant_value.get("checksum", ""),
+                        build=variant_value.get("build"),
+                    )
+
+                jni_platforms[platform_key] = PlatformInfo(
+                    library=platform_value.get("library", ""),
+                    checksum=platform_value.get("checksum", ""),
+                    default_variant=platform_value.get("default_variant"),
+                    variants=variants,
+                )
+            bridges = BridgeInfo(jni=jni_platforms)
+
         return cls(
             bundle_version=bundle_version,
             plugin_name=plugin_name,
@@ -318,6 +358,7 @@ class BundleManifest:
             sbom=sbom,
             schema_checksum=data.get("schema_checksum"),
             notices=data.get("notices"),
+            bridges=bridges,
         )
 
     def get_platform(self, platform: str) -> PlatformInfo | None:

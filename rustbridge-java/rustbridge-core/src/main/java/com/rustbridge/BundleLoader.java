@@ -219,6 +219,167 @@ public class BundleLoader implements AutoCloseable {
     }
 
     /**
+     * Check if the bundle includes a JNI bridge library.
+     *
+     * @return true if the bundle contains at least one JNI bridge library
+     */
+    public boolean hasJniBridge() {
+        return manifest.bridges != null
+                && manifest.bridges.jni() != null
+                && !manifest.bridges.jni().isEmpty();
+    }
+
+    /**
+     * Extract the JNI bridge library for the current platform to a unique temporary directory.
+     *
+     * <p>The library is extracted to a unique subdirectory under the system temp directory,
+     * ensuring no conflicts with other extractions. The caller is responsible for cleaning
+     * up the temporary directory when done.
+     *
+     * <p>Uses the default variant (typically "release").
+     *
+     * @return path to the extracted library
+     * @throws IOException        if extraction fails or no JNI bridge is available
+     * @throws SignatureException if signature verification fails (when enabled)
+     */
+    public @NotNull Path extractJniBridge() throws IOException, SignatureException {
+        Path tempBase = Paths.get(System.getProperty("java.io.tmpdir"));
+        Path tempDir = Files.createTempDirectory(tempBase, "rustbridge-");
+        String platform = detectPlatform();
+        String variant = getJniBridgeDefaultVariant(platform);
+        return extractJniBridgeInternal(platform, variant, tempDir, false);
+    }
+
+    /**
+     * Extract the JNI bridge library for the current platform to the specified directory.
+     *
+     * <p>This method will fail if the library file already exists at the target path.
+     *
+     * <p>Uses the default variant (typically "release").
+     *
+     * @param outputDir directory to extract the library to
+     * @return path to the extracted library
+     * @throws IOException        if extraction fails, file already exists, or no JNI bridge available
+     * @throws SignatureException if signature verification fails (when enabled)
+     */
+    public @NotNull Path extractJniBridge(@NotNull Path outputDir) throws IOException, SignatureException {
+        String platform = detectPlatform();
+        String variant = getJniBridgeDefaultVariant(platform);
+        return extractJniBridgeInternal(platform, variant, outputDir, true);
+    }
+
+    /**
+     * Extract a specific variant of the JNI bridge library to the specified directory.
+     *
+     * <p>This method will fail if the library file already exists at the target path.
+     *
+     * @param platform  platform string (e.g., "linux-x86_64")
+     * @param variant   variant name (e.g., "release", "debug")
+     * @param outputDir directory to extract the library to
+     * @return path to the extracted library
+     * @throws IOException        if extraction fails, file already exists, or variant not found
+     * @throws SignatureException if signature verification fails (when enabled)
+     */
+    public @NotNull Path extractJniBridge(
+            @NotNull String platform,
+            @NotNull String variant,
+            @NotNull Path outputDir
+    ) throws IOException, SignatureException {
+        return extractJniBridgeInternal(platform, variant, outputDir, true);
+    }
+
+    /**
+     * Get the default variant for the JNI bridge on a platform.
+     *
+     * @param platform platform string (e.g., "linux-x86_64")
+     * @return default variant name (typically "release")
+     */
+    private @NotNull String getJniBridgeDefaultVariant(@NotNull String platform) {
+        if (manifest.bridges == null || manifest.bridges.jni() == null) {
+            return "release";
+        }
+        BundleManifest.PlatformInfo platformInfo = manifest.bridges.jni().get(platform);
+        if (platformInfo == null) {
+            return "release";
+        }
+        return platformInfo.getDefaultVariant();
+    }
+
+    /**
+     * Internal method to extract the JNI bridge library.
+     */
+    private @NotNull Path extractJniBridgeInternal(
+            @NotNull String platform,
+            @NotNull String variant,
+            @NotNull Path outputDir,
+            boolean failIfExists
+    ) throws IOException, SignatureException {
+        if (!hasJniBridge()) {
+            throw new IOException("Bundle does not contain a JNI bridge library");
+        }
+
+        BundleManifest.PlatformInfo platformInfo = manifest.bridges.jni().get(platform);
+        if (platformInfo == null) {
+            throw new IOException("JNI bridge not available for platform: " + platform);
+        }
+
+        // Get library path and checksum for the requested variant
+        String libraryPath = platformInfo.getLibrary(variant);
+        String checksum = platformInfo.getChecksum(variant);
+
+        if (libraryPath == null || libraryPath.isEmpty()) {
+            throw new IOException(
+                    "JNI bridge variant '" + variant + "' not found for platform '" + platform + "'"
+            );
+        }
+
+        // Extract the library
+        ZipEntry libEntry = zipFile.getEntry(libraryPath);
+        if (libEntry == null) {
+            throw new IOException("JNI bridge library not found in bundle: " + libraryPath);
+        }
+
+        byte[] libData = readZipEntry(libEntry);
+
+        // Verify checksum
+        if (!verifyChecksum(libData, checksum)) {
+            throw new IOException(
+                    "Checksum verification failed for JNI bridge: " + libraryPath
+            );
+        }
+
+        // Verify signature if enabled
+        if (verifySignatures) {
+            verifyLibrarySignature(libraryPath, libData);
+        }
+
+        // Determine output path
+        String fileName = Paths.get(libraryPath).getFileName().toString();
+        Path outputPath = outputDir.resolve(fileName);
+
+        // Check if file already exists when user specifies path
+        if (failIfExists && Files.exists(outputPath)) {
+            throw new IOException(
+                    "JNI bridge already exists at target path: " + outputPath + ". " +
+                    "Remove the existing file or use extractJniBridge() for automatic temp directory."
+            );
+        }
+
+        // Ensure output directory exists
+        Files.createDirectories(outputDir);
+
+        // Write the library
+        Files.write(outputPath, libData);
+
+        // Make executable on Unix
+        if (!System.getProperty("os.name").toLowerCase().contains("win")) {
+            outputPath.toFile().setExecutable(true);
+        }
+
+        return outputPath;
+    }
+
+    /**
      * Internal method to extract the library with configurable overwrite behavior.
      *
      * @param platform           platform string (e.g., "linux-x86_64")
@@ -642,6 +803,9 @@ public class BundleLoader implements AutoCloseable {
 
         public String notices; // Path to license notices file in bundle (v2.0+)
 
+        @JsonProperty("bridges")
+        public BridgeInfo bridges; // Bridge libraries (JNI, etc.)
+
         /**
          * Plugin metadata information.
          *
@@ -798,6 +962,18 @@ public class BundleLoader implements AutoCloseable {
         public record Sbom(
                 String cyclonedx,
                 String spdx
+        ) {}
+
+        /**
+         * Bridge libraries bundled with the plugin.
+         *
+         * <p>Allows bundling bridge libraries (like the JNI bridge) alongside
+         * the plugin for self-contained distribution.
+         *
+         * @param jni JNI bridge libraries by platform
+         */
+        public record BridgeInfo(
+                Map<String, PlatformInfo> jni
         ) {}
     }
 }

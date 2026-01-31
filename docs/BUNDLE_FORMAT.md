@@ -11,6 +11,7 @@ A `.rbp` file is a ZIP archive containing:
 - Optional documentation and license notices
 - Optional code signatures (minisign)
 - Optional Software Bill of Materials (SBOM)
+- Optional bridge libraries (e.g., JNI bridge for Java 17+ users)
 
 **Bundle Version**: 1.0
 
@@ -50,9 +51,14 @@ my-plugin-1.0.0.rbp
 ├── docs/                            # Optional
 │   ├── README.md
 │   └── NOTICES.txt
-└── sbom/                            # Optional
-    ├── sbom.cdx.json                # CycloneDX format
-    └── sbom.spdx.json               # SPDX format
+├── sbom/                            # Optional
+│   ├── sbom.cdx.json                # CycloneDX format
+│   └── sbom.spdx.json               # SPDX format
+└── bridge/                          # Optional: bridge libraries
+    └── jni/                         # JNI bridge for Java 17+
+        └── linux-x86_64/
+            └── release/
+                └── librustbridge_jni.so
 ```
 
 ## Manifest Schema
@@ -136,6 +142,18 @@ The `manifest.json` file describes the bundle contents:
       "path": "schema/messages.json",
       "format": "json-schema-draft-07",
       "checksum": "sha256:..."
+    }
+  },
+  "bridges": {
+    "jni": {
+      "linux-x86_64": {
+        "variants": {
+          "release": {
+            "library": "bridge/jni/linux-x86_64/release/librustbridge_jni.so",
+            "checksum": "sha256:..."
+          }
+        }
+      }
     }
   }
 }
@@ -298,6 +316,95 @@ Both formats can be included simultaneously. Supported formats:
 - **CycloneDX** 1.5 (JSON) - `sbom/sbom.cdx.json`
 - **SPDX** 2.3 (JSON) - `sbom/sbom.spdx.json`
 
+## Bridge Libraries
+
+Bundles can include bridge libraries for self-contained distribution. This is particularly useful for the JNI bridge, allowing Java 17+ users to load plugins without separately installing the bridge library.
+
+### JNI Bridge
+
+The `bridges.jni` section follows the same structure as `platforms`:
+
+```json
+{
+  "bridges": {
+    "jni": {
+      "linux-x86_64": {
+        "variants": {
+          "release": {
+            "library": "bridge/jni/linux-x86_64/release/librustbridge_jni.so",
+            "checksum": "sha256:abc123..."
+          }
+        }
+      },
+      "darwin-aarch64": {
+        "variants": {
+          "release": {
+            "library": "bridge/jni/darwin-aarch64/release/librustbridge_jni.dylib",
+            "checksum": "sha256:def456..."
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+### Creating Bundles with JNI Bridge
+
+Include the JNI bridge library using `--jni-lib`:
+
+```bash
+rustbridge bundle create \
+  --name my-plugin \
+  --version 1.0.0 \
+  --lib linux-x86_64:target/release/libmyplugin.so \
+  --jni-lib linux-x86_64:target/release/librustbridge_jni.so \
+  --output my-plugin-1.0.0.rbp
+```
+
+The format is the same as `--lib`: `PLATFORM[:VARIANT]:PATH`
+
+```bash
+# With debug variant
+rustbridge bundle create \
+  --name my-plugin \
+  --version 1.0.0 \
+  --lib linux-x86_64:target/release/libmyplugin.so \
+  --jni-lib linux-x86_64:release:target/release/librustbridge_jni.so \
+  --jni-lib linux-x86_64:debug:target/debug/librustbridge_jni.so \
+  --output my-plugin-1.0.0.rbp
+```
+
+### Loading Bundles with JNI Bridge (Java)
+
+When using `JniPluginLoader.loadFromBundle()`, the JNI bridge is automatically extracted and loaded before the plugin:
+
+```java
+// JNI bridge from bundle is loaded automatically
+Plugin plugin = JniPluginLoader.loadFromBundle("my-plugin-1.0.0.rbp");
+String response = plugin.call("echo", "{\"message\": \"hello\"}");
+```
+
+If the bundle doesn't contain a JNI bridge, `loadFromBundle()` will fall back to the system-installed bridge (loaded via `System.loadLibrary("rustbridge_jni")`).
+
+### Bridge Library Signing
+
+Bridge libraries are signed just like plugin libraries when using `--sign-key`:
+
+```bash
+rustbridge bundle create \
+  --name my-plugin \
+  --version 1.0.0 \
+  --lib linux-x86_64:target/release/libmyplugin.so \
+  --jni-lib linux-x86_64:target/release/librustbridge_jni.so \
+  --sign-key signing.key \
+  --output my-plugin-1.0.0.rbp
+```
+
+This creates signature files for both:
+- `lib/linux-x86_64/release/libmyplugin.so.minisig`
+- `bridge/jni/linux-x86_64/release/librustbridge_jni.so.minisig`
+
 ## License Files
 
 Bundles support two types of license files:
@@ -377,6 +484,7 @@ This checksum is computed by hashing the concatenation of all schema file checks
 | `public_key` | string | Minisign public key for signature verification |
 | `api` | object | API metadata including message definitions |
 | `schemas` | object | Schema file references |
+| `bridges` | object | Bridge libraries (e.g., JNI bridge) |
 
 ## Platform Support
 

@@ -183,6 +183,71 @@ impl BundleBuilder {
         Ok(self)
     }
 
+    /// Add a JNI bridge library to the bundle as the release variant.
+    ///
+    /// This reads the library file, computes its SHA256 checksum,
+    /// and updates the manifest with the JNI bridge information.
+    ///
+    /// This is a convenience method that adds the library as the `release` variant.
+    /// For other variants, use `add_jni_library_variant` instead.
+    pub fn add_jni_library<P: AsRef<Path>>(
+        self,
+        platform: Platform,
+        library_path: P,
+    ) -> BundleResult<Self> {
+        self.add_jni_library_variant(platform, "release", library_path)
+    }
+
+    /// Add a variant-specific JNI bridge library to the bundle.
+    ///
+    /// This reads the library file, computes its SHA256 checksum,
+    /// and updates the manifest with the JNI bridge information.
+    ///
+    /// # Arguments
+    /// * `platform` - Target platform
+    /// * `variant` - Variant name (e.g., "release", "debug")
+    /// * `library_path` - Path to the library file
+    pub fn add_jni_library_variant<P: AsRef<Path>>(
+        mut self,
+        platform: Platform,
+        variant: &str,
+        library_path: P,
+    ) -> BundleResult<Self> {
+        let library_path = library_path.as_ref();
+
+        // Read the library file
+        let contents = fs::read(library_path).map_err(|e| {
+            BundleError::LibraryNotFound(format!("{}: {}", library_path.display(), e))
+        })?;
+
+        // Compute SHA256 checksum
+        let checksum = compute_sha256(&contents);
+
+        // Determine the archive path (bridge/jni/{platform}/{variant}/{filename})
+        let file_name = library_path
+            .file_name()
+            .ok_or_else(|| {
+                BundleError::InvalidManifest(format!(
+                    "Invalid library path: {}",
+                    library_path.display()
+                ))
+            })?
+            .to_string_lossy();
+        let archive_path = format!("bridge/jni/{}/{}/{}", platform.as_str(), variant, file_name);
+
+        // Update manifest
+        self.manifest
+            .add_jni_bridge(platform, variant, &archive_path, &checksum);
+
+        // Add to files list
+        self.files.push(BundleFile {
+            archive_path,
+            contents,
+        });
+
+        Ok(self)
+    }
+
     /// Add a schema file to the bundle.
     ///
     /// Schema files are stored in the `schema/` directory within the bundle.
@@ -398,8 +463,10 @@ impl BundleBuilder {
 
             // Sign library files if signing is enabled
             if let Some((ref _public_key, ref secret_key)) = self.signing_key {
-                // Only sign library files (in lib/ directory)
-                if bundle_file.archive_path.starts_with("lib/") {
+                // Sign library files (in lib/ or bridge/ directory)
+                if bundle_file.archive_path.starts_with("lib/")
+                    || bundle_file.archive_path.starts_with("bridge/")
+                {
                     let signature = sign_data(secret_key, &bundle_file.contents)?;
                     let sig_path = format!("{}.minisig", bundle_file.archive_path);
                     zip.start_file(&sig_path, options)?;
@@ -886,5 +953,105 @@ mod tests {
         let result = BundleBuilder::new(manifest).add_license_file("/nonexistent/LICENSE");
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn BundleBuilder___add_jni_library___adds_file_to_bridge_dir() {
+        let temp_dir = TempDir::new().unwrap();
+        let jni_lib = temp_dir.path().join("librustbridge_jni.so");
+        fs::write(&jni_lib, b"fake jni library").unwrap();
+
+        let manifest = Manifest::new("test", "1.0.0");
+        let builder = BundleBuilder::new(manifest)
+            .add_jni_library(Platform::LinuxX86_64, &jni_lib)
+            .unwrap();
+
+        // Check file was added
+        assert_eq!(builder.files.len(), 1);
+        assert_eq!(
+            builder.files[0].archive_path,
+            "bridge/jni/linux-x86_64/release/librustbridge_jni.so"
+        );
+
+        // Check manifest was updated
+        assert!(builder.manifest.has_jni_bridge());
+        let bridge = builder
+            .manifest
+            .get_jni_bridge(Platform::LinuxX86_64)
+            .unwrap();
+        let release = bridge.release().unwrap();
+        assert_eq!(
+            release.library,
+            "bridge/jni/linux-x86_64/release/librustbridge_jni.so"
+        );
+        assert!(release.checksum.starts_with("sha256:"));
+    }
+
+    #[test]
+    fn BundleBuilder___add_jni_library_variant___adds_multiple_variants() {
+        let temp_dir = TempDir::new().unwrap();
+        let release_lib = temp_dir.path().join("librustbridge_jni_release.so");
+        let debug_lib = temp_dir.path().join("librustbridge_jni_debug.so");
+        fs::write(&release_lib, b"release jni library").unwrap();
+        fs::write(&debug_lib, b"debug jni library").unwrap();
+
+        let manifest = Manifest::new("test", "1.0.0");
+        let builder = BundleBuilder::new(manifest)
+            .add_jni_library_variant(Platform::LinuxX86_64, "release", &release_lib)
+            .unwrap()
+            .add_jni_library_variant(Platform::LinuxX86_64, "debug", &debug_lib)
+            .unwrap();
+
+        assert_eq!(builder.files.len(), 2);
+
+        let bridge = builder
+            .manifest
+            .get_jni_bridge(Platform::LinuxX86_64)
+            .unwrap();
+        assert!(bridge.has_variant("release"));
+        assert!(bridge.has_variant("debug"));
+    }
+
+    #[test]
+    fn BundleBuilder___add_jni_library___nonexistent___returns_error() {
+        let manifest = Manifest::new("test", "1.0.0");
+        let result = BundleBuilder::new(manifest)
+            .add_jni_library(Platform::LinuxX86_64, "/nonexistent/librustbridge_jni.so");
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(matches!(err, BundleError::LibraryNotFound(_)));
+    }
+
+    #[test]
+    fn BundleBuilder___write___with_jni_library___creates_valid_bundle() {
+        let temp_dir = TempDir::new().unwrap();
+
+        // Create fake libraries
+        let plugin_lib = temp_dir.path().join("libtest.so");
+        let jni_lib = temp_dir.path().join("librustbridge_jni.so");
+        let output_path = temp_dir.path().join("test.rbp");
+        fs::write(&plugin_lib, b"fake plugin library").unwrap();
+        fs::write(&jni_lib, b"fake jni library").unwrap();
+
+        let manifest = Manifest::new("test", "1.0.0");
+        BundleBuilder::new(manifest)
+            .add_library(Platform::LinuxX86_64, &plugin_lib)
+            .unwrap()
+            .add_jni_library(Platform::LinuxX86_64, &jni_lib)
+            .unwrap()
+            .write(&output_path)
+            .unwrap();
+
+        assert!(output_path.exists());
+
+        // Verify it's a valid ZIP with expected files
+        let file = File::open(&output_path).unwrap();
+        let archive = zip::ZipArchive::new(file).unwrap();
+
+        let names: Vec<&str> = archive.file_names().collect();
+        assert!(names.contains(&"manifest.json"));
+        assert!(names.contains(&"lib/linux-x86_64/release/libtest.so"));
+        assert!(names.contains(&"bridge/jni/linux-x86_64/release/librustbridge_jni.so"));
     }
 }

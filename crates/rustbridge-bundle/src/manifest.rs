@@ -53,6 +53,10 @@ pub struct Manifest {
     /// Schema files embedded in the bundle.
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     pub schemas: HashMap<String, SchemaInfo>,
+
+    /// Bridge libraries bundled with the plugin (e.g., JNI bridge).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bridges: Option<BridgeInfo>,
 }
 
 /// Plugin metadata.
@@ -281,6 +285,18 @@ pub struct SchemaInfo {
     pub description: Option<String>,
 }
 
+/// Bridge libraries bundled with the plugin.
+///
+/// This allows bundling bridge libraries (like the JNI bridge) alongside
+/// the plugin for self-contained distribution.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct BridgeInfo {
+    /// JNI bridge libraries by platform.
+    /// Key is the platform string (e.g., "linux-x86_64").
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub jni: HashMap<String, PlatformInfo>,
+}
+
 impl Manifest {
     /// Create a new manifest with minimal required fields.
     #[must_use]
@@ -303,6 +319,7 @@ impl Manifest {
             license_file: None,
             public_key: None,
             schemas: HashMap::new(),
+            bridges: None,
         }
     }
 
@@ -440,6 +457,51 @@ impl Manifest {
     #[must_use]
     pub fn get_license_file(&self) -> Option<&str> {
         self.license_file.as_deref()
+    }
+
+    /// Add a JNI bridge library variant to the manifest.
+    ///
+    /// This is used for bundling the JNI bridge alongside the plugin
+    /// for self-contained distribution to Java 17+ users.
+    pub fn add_jni_bridge(
+        &mut self,
+        platform: Platform,
+        variant: &str,
+        library_path: &str,
+        checksum: &str,
+    ) {
+        let bridges = self.bridges.get_or_insert_with(BridgeInfo::default);
+        let platform_key = platform.as_str().to_string();
+
+        let platform_info = bridges
+            .jni
+            .entry(platform_key)
+            .or_insert_with(|| PlatformInfo {
+                variants: HashMap::new(),
+            });
+
+        platform_info.variants.insert(
+            variant.to_string(),
+            VariantInfo {
+                library: library_path.to_string(),
+                checksum: format!("sha256:{checksum}"),
+                build: None,
+            },
+        );
+    }
+
+    /// Check if the bundle includes a JNI bridge library.
+    #[must_use]
+    pub fn has_jni_bridge(&self) -> bool {
+        self.bridges.as_ref().is_some_and(|b| !b.jni.is_empty())
+    }
+
+    /// Get JNI bridge info for a specific platform.
+    #[must_use]
+    pub fn get_jni_bridge(&self, platform: Platform) -> Option<&PlatformInfo> {
+        self.bridges
+            .as_ref()
+            .and_then(|b| b.jni.get(platform.as_str()))
     }
 
     /// Get a specific variant for a platform.
@@ -1146,5 +1208,84 @@ mod tests {
         assert_eq!(names.len(), 2);
         assert!(names.contains(&"release"));
         assert!(names.contains(&"debug"));
+    }
+
+    #[test]
+    fn Manifest___has_jni_bridge___returns_false_when_no_bridges() {
+        let manifest = Manifest::new("test", "1.0.0");
+
+        assert!(!manifest.has_jni_bridge());
+    }
+
+    #[test]
+    fn Manifest___add_jni_bridge___adds_bridge_info() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.add_jni_bridge(
+            Platform::LinuxX86_64,
+            "release",
+            "bridge/jni/linux-x86_64/release/librustbridge_jni.so",
+            "abc123",
+        );
+
+        assert!(manifest.has_jni_bridge());
+
+        let bridge = manifest.get_jni_bridge(Platform::LinuxX86_64).unwrap();
+        let release = bridge.release().unwrap();
+        assert_eq!(
+            release.library,
+            "bridge/jni/linux-x86_64/release/librustbridge_jni.so"
+        );
+        assert_eq!(release.checksum, "sha256:abc123");
+    }
+
+    #[test]
+    fn Manifest___add_jni_bridge___multiple_platforms() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.add_jni_bridge(
+            Platform::LinuxX86_64,
+            "release",
+            "bridge/jni/linux-x86_64/release/librustbridge_jni.so",
+            "abc123",
+        );
+        manifest.add_jni_bridge(
+            Platform::DarwinAarch64,
+            "release",
+            "bridge/jni/darwin-aarch64/release/librustbridge_jni.dylib",
+            "def456",
+        );
+
+        assert!(manifest.get_jni_bridge(Platform::LinuxX86_64).is_some());
+        assert!(manifest.get_jni_bridge(Platform::DarwinAarch64).is_some());
+        assert!(manifest.get_jni_bridge(Platform::WindowsX86_64).is_none());
+    }
+
+    #[test]
+    fn Manifest___jni_bridge___json_roundtrip() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+        manifest.add_jni_bridge(
+            Platform::LinuxX86_64,
+            "release",
+            "bridge/jni/linux-x86_64/release/librustbridge_jni.so",
+            "abc123",
+        );
+
+        let json = manifest.to_json().unwrap();
+        let parsed = Manifest::from_json(&json).unwrap();
+
+        assert!(parsed.has_jni_bridge());
+        let bridge = parsed.get_jni_bridge(Platform::LinuxX86_64).unwrap();
+        let release = bridge.release().unwrap();
+        assert_eq!(
+            release.library,
+            "bridge/jni/linux-x86_64/release/librustbridge_jni.so"
+        );
+    }
+
+    #[test]
+    fn BridgeInfo___default___empty_jni_map() {
+        let bridge_info = BridgeInfo::default();
+
+        assert!(bridge_info.jni.is_empty());
     }
 }

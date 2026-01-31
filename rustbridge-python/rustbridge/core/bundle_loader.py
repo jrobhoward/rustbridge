@@ -11,7 +11,7 @@ import zipfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
-from rustbridge.core.bundle_manifest import BundleManifest, BuildInfo, SchemaInfo
+from rustbridge.core.bundle_manifest import BundleManifest, BridgeInfo, BuildInfo, SchemaInfo
 from rustbridge.core.minisign_verifier import MinisignVerifier
 from rustbridge.core.plugin_exception import PluginException
 
@@ -344,6 +344,165 @@ class BundleLoader:
         """
         manifest = self.get_manifest(bundle_path)
         return manifest.build_info
+
+    def has_jni_bridge(self, bundle_path: str | Path) -> bool:
+        """
+        Check if the bundle includes a JNI bridge library.
+
+        Args:
+            bundle_path: Path to the .rbp bundle file.
+
+        Returns:
+            True if the bundle contains at least one JNI bridge library.
+        """
+        manifest = self.get_manifest(bundle_path)
+        return (
+            manifest.bridges is not None
+            and manifest.bridges.jni is not None
+            and len(manifest.bridges.jni) > 0
+        )
+
+    def extract_jni_bridge_to_temp(self, bundle_path: str | Path) -> Path:
+        """
+        Extract and verify JNI bridge library from bundle to a unique temp directory.
+
+        The library is extracted to a unique subdirectory under the system temp
+        directory, ensuring no conflicts with other extractions. The caller is
+        responsible for cleaning up the temporary directory when done.
+
+        Args:
+            bundle_path: Path to the .rbp bundle file.
+
+        Returns:
+            Path to the extracted library file.
+
+        Raises:
+            PluginException: If extraction or verification fails.
+        """
+        bundle_path = Path(bundle_path)
+        if not bundle_path.exists():
+            raise FileNotFoundError(f"Bundle not found: {bundle_path}")
+
+        # Create unique temp directory under system temp path
+        temp_dir = tempfile.mkdtemp(prefix="rustbridge-", dir=tempfile.gettempdir())
+        return self._extract_jni_bridge_internal(
+            bundle_path, Path(temp_dir), fail_if_exists=False
+        )
+
+    def extract_jni_bridge(self, bundle_path: str | Path, dest_dir: str | Path) -> Path:
+        """
+        Extract and verify JNI bridge library from bundle to the specified directory.
+
+        This method will fail if the library file already exists at the target path.
+
+        Args:
+            bundle_path: Path to the .rbp bundle file.
+            dest_dir: Directory to extract the library to.
+
+        Returns:
+            Path to the extracted library file.
+
+        Raises:
+            PluginException: If extraction or verification fails.
+            FileExistsError: If the library file already exists at the target path.
+        """
+        bundle_path = Path(bundle_path)
+        dest_dir = Path(dest_dir)
+
+        if not bundle_path.exists():
+            raise FileNotFoundError(f"Bundle not found: {bundle_path}")
+
+        return self._extract_jni_bridge_internal(bundle_path, dest_dir, fail_if_exists=True)
+
+    def _extract_jni_bridge_internal(
+        self,
+        bundle_path: Path,
+        dest_dir: Path,
+        *,
+        fail_if_exists: bool,
+        variant: str | None = None,
+    ) -> Path:
+        """
+        Internal method to extract the JNI bridge library.
+
+        Args:
+            bundle_path: Path to the .rbp bundle file.
+            dest_dir: Directory to extract the library to.
+            fail_if_exists: If True, raise FileExistsError if file already exists.
+            variant: Variant to extract (defaults to platform's default variant).
+
+        Returns:
+            Path to the extracted library file.
+        """
+        with zipfile.ZipFile(bundle_path, "r") as zip_file:
+            # Load manifest
+            manifest = self._load_manifest(zip_file)
+
+            # Check if JNI bridge is available
+            if manifest.bridges is None or not manifest.bridges.jni:
+                raise PluginException("Bundle does not contain a JNI bridge library")
+
+            # Verify manifest signature if enabled
+            if self._verify_signatures:
+                self._verify_manifest_signature(zip_file, manifest)
+
+            # Detect platform
+            current_platform = self.get_current_platform()
+            platform_info = manifest.bridges.jni.get(current_platform)
+            if not platform_info:
+                raise PluginException(
+                    f"JNI bridge not available for platform: {current_platform}"
+                )
+
+            # Get effective variant
+            effective_variant = variant or platform_info.get_default_variant()
+
+            # Get library path and checksum for the variant
+            library_path = platform_info.get_library(effective_variant)
+            checksum = platform_info.get_checksum(effective_variant)
+
+            if not library_path:
+                raise PluginException(
+                    f"JNI bridge variant '{effective_variant}' not found for platform '{current_platform}'"
+                )
+
+            # Read library data
+            lib_data = self._read_zip_entry(zip_file, library_path)
+
+            # Verify checksum
+            if not self._verify_checksum(lib_data, checksum):
+                raise PluginException(f"Checksum verification failed for JNI bridge: {library_path}")
+
+            # Verify library signature if enabled
+            if self._verify_signatures:
+                self._verify_library_signature(zip_file, manifest, library_path, lib_data)
+
+            # Determine output path
+            lib_filename = Path(library_path).name
+            output_path = dest_dir / lib_filename
+
+            # Check if file already exists when user specifies path
+            if fail_if_exists and output_path.exists():
+                raise FileExistsError(
+                    f"JNI bridge already exists at target path: {output_path}. "
+                    "Remove the existing file or use extract_jni_bridge_to_temp() "
+                    "for automatic temp directory."
+                )
+
+            # Ensure output directory exists
+            dest_dir.mkdir(parents=True, exist_ok=True)
+
+            # Write the library
+            output_path.write_bytes(lib_data)
+
+            # Make executable on Unix
+            if os.name != "nt":
+                current_mode = output_path.stat().st_mode
+                output_path.chmod(
+                    current_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+                )
+
+            return output_path
 
     def get_manifest(self, bundle_path: str | Path) -> BundleManifest:
         """

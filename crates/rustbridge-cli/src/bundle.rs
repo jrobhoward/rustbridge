@@ -15,6 +15,7 @@ pub fn create(
     name: &str,
     version: &str,
     libraries: &[(String, String, String)], // (platform, variant, path)
+    jni_libraries: &[(String, String, String)], // (platform, variant, path)
     output: Option<String>,
     schema_files: &[(String, String)],
     sign_key_path: Option<String>,
@@ -52,6 +53,17 @@ pub fn create(
         builder = builder
             .add_library_variant(platform, variant, lib_path)
             .with_context(|| format!("Failed to add library: {lib_path}"))?;
+    }
+
+    // Add JNI bridge libraries
+    for (platform_str, variant, lib_path) in jni_libraries {
+        let platform = Platform::parse(platform_str)
+            .with_context(|| format!("Unknown platform: {platform_str}"))?;
+
+        println!("  Adding JNI bridge: {lib_path} ({platform_str}:{variant})");
+        builder = builder
+            .add_jni_library_variant(platform, variant, lib_path)
+            .with_context(|| format!("Failed to add JNI library: {lib_path}"))?;
     }
 
     // Generate and add C header if requested
@@ -254,11 +266,6 @@ pub fn combine(
     manifest.plugin.license = first_manifest.plugin.license.clone();
     manifest.plugin.repository = first_manifest.plugin.repository.clone();
 
-    // Copy API info from first bundle
-    if let Some(api) = &first_manifest.api {
-        manifest.api = Some(api.clone());
-    }
-
     // Copy schema checksum from first bundle
     if let Some(checksum) = first_manifest.get_schema_checksum() {
         manifest.set_schema_checksum(checksum.to_string());
@@ -423,7 +430,6 @@ pub fn slim(
     manifest.plugin.authors = source_manifest.plugin.authors.clone();
     manifest.plugin.license = source_manifest.plugin.license.clone();
     manifest.plugin.repository = source_manifest.plugin.repository.clone();
-    manifest.api = source_manifest.api.clone();
 
     // Copy schema checksum if present
     if let Some(checksum) = source_manifest.get_schema_checksum() {
@@ -866,6 +872,7 @@ mod tests {
             "test-plugin",
             "1.0.0",
             &libs,
+            &[], // No JNI libraries
             Some(output.to_string_lossy().to_string()),
             &[],
             None,
@@ -911,6 +918,7 @@ mod tests {
             "test-plugin",
             "1.0.0",
             &libs,
+            &[], // No JNI libraries
             Some(output.to_string_lossy().to_string()),
             &[],
             None,
@@ -951,6 +959,7 @@ mod tests {
             "test-plugin",
             "1.0.0",
             &libs,
+            &[], // No JNI libraries
             Some(output.to_string_lossy().to_string()),
             &[],
             None,
@@ -997,6 +1006,7 @@ mod tests {
             "test-plugin",
             "1.0.0",
             &libs,
+            &[], // No JNI libraries
             Some(full_bundle.to_string_lossy().to_string()),
             &[],
             None,

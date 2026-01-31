@@ -12,7 +12,6 @@ This document tracks incomplete tasks for the rustbridge project.
 |------|------|--------|-------|
 | C# CI/CD pipeline | C# | 1 day | Add .NET build/test to GitHub Actions (ubuntu/windows/macos) |
 | C# NuGet packaging | C# | 1-2 days | Publish .nupkg to NuGet.org (metadata already in .csproj) |
-| Include JNI bridge in .rbp bundle | JNI | 1 day | Bundle `librustbridge_jni.so` so Java 17-20 users don't need to build it separately |
 
 ---
 
@@ -50,3 +49,11 @@ These tasks are explicitly deferred pending user requirements:
 | Latency distribution analysis | Mean values sufficient |
 | RbArray, RbOptional types | Not needed yet for binary transport |
 | CStructCodec implementation | Direct handler approach used instead |
+
+---
+
+## Recently Completed
+
+| Task | Area | Date | Notes |
+|------|------|------|-------|
+| Include JNI bridge in .rbp bundle | JNI | 2026-01-30 | `--jni-lib` CLI flag, `BundleLoader.extractJniBridge()`, `JniPluginLoader.loadFromBundle()` |

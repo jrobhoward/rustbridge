@@ -23,6 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Java FFM: Removed `callRaw`, `callRawZeroCopy`, and `RawResponse` inner class
 
 ### Added
+- JNI bridge bundling support for self-contained Java 17+ distribution
+  - New `bridges` field in bundle manifest for including bridge libraries
+  - CLI: `--jni-lib PLATFORM[:VARIANT]:PATH` flag for `rustbridge bundle create`
+  - Rust: `BundleBuilder::add_jni_library()` and `add_jni_library_variant()` methods
+  - Java: `BundleLoader.hasJniBridge()` and `extractJniBridge()` methods
+  - Java: `JniPluginLoader.loadFromBundle()` for automatic bridge loading
+  - Python/C#: Manifest parsing and extraction methods for API parity
 - `hasBinaryTransport()` method to Java FFM `FfmPlugin` and C# `IPlugin`/`NativePlugin`
   - Checks if binary transport symbols are available in the loaded library
   - Java FFM and C# now handle optional binary transport symbols gracefully

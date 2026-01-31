@@ -9,6 +9,7 @@
 use clap::{Parser, Subcommand};
 
 mod bundle;
+mod codegen;
 mod header_gen;
 mod keygen;
 mod new;
@@ -110,6 +111,15 @@ enum BundleAction {
         ///   --lib linux-x86_64:debug:target/debug/libplugin.so (debug variant)
         #[arg(short, long = "lib", value_name = "PLATFORM[:VARIANT]:PATH")]
         libraries: Vec<String>,
+
+        /// JNI bridge library to include (can be repeated)
+        /// Format: PLATFORM:PATH or PLATFORM:VARIANT:PATH
+        /// Bundles the JNI bridge library for Java 17+ users.
+        /// Examples:
+        ///   --jni-lib linux-x86_64:target/release/librustbridge_jni.so
+        ///   --jni-lib linux-x86_64:debug:target/debug/librustbridge_jni.so
+        #[arg(long = "jni-lib", value_name = "PLATFORM[:VARIANT]:PATH")]
+        jni_libraries: Vec<String>,
 
         /// Output bundle path (default: <name>-<version>.rbp)
         #[arg(short, long)]
@@ -280,6 +290,7 @@ fn main() -> anyhow::Result<()> {
                 name,
                 version,
                 libraries,
+                jni_libraries,
                 output,
                 schema,
                 sign_key,
@@ -315,6 +326,35 @@ fn main() -> anyhow::Result<()> {
                             }
                             _ => anyhow::bail!(
                                 "Invalid library format: {s}. Expected PLATFORM:PATH or PLATFORM:VARIANT:PATH"
+                            ),
+                        }
+                    })
+                    .collect::<anyhow::Result<_>>()?;
+
+                // Parse JNI library arguments (PLATFORM:PATH or PLATFORM:VARIANT:PATH)
+                let jni_libs: Vec<(String, String, String)> = jni_libraries
+                    .iter()
+                    .map(|s| {
+                        let parts: Vec<&str> = s.splitn(3, ':').collect();
+                        match parts.len() {
+                            2 => {
+                                // PLATFORM:PATH -> (platform, "release", path)
+                                Ok((
+                                    parts[0].to_string(),
+                                    "release".to_string(),
+                                    parts[1].to_string(),
+                                ))
+                            }
+                            3 => {
+                                // PLATFORM:VARIANT:PATH -> (platform, variant, path)
+                                Ok((
+                                    parts[0].to_string(),
+                                    parts[1].to_string(),
+                                    parts[2].to_string(),
+                                ))
+                            }
+                            _ => anyhow::bail!(
+                                "Invalid JNI library format: {s}. Expected PLATFORM:PATH or PLATFORM:VARIANT:PATH"
                             ),
                         }
                     })
@@ -362,6 +402,7 @@ fn main() -> anyhow::Result<()> {
                     &name,
                     &version,
                     &libs,
+                    &jni_libs,
                     output,
                     &schemas,
                     sign_key,

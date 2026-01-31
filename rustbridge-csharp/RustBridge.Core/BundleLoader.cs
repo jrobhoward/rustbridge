@@ -193,6 +193,154 @@ public sealed class BundleLoader : IDisposable
     public BundleManifest.BuildInfo? BuildInfo => Manifest.BuildInfoData;
 
     /// <summary>
+    /// Check if the bundle includes a JNI bridge library.
+    /// </summary>
+    /// <returns>True if the bundle contains at least one JNI bridge library.</returns>
+    public bool HasJniBridge()
+    {
+        return Manifest.Bridges?.Jni != null && Manifest.Bridges.Jni.Count > 0;
+    }
+
+    /// <summary>
+    /// Extract the JNI bridge library for the current platform to a unique temporary directory.
+    /// <para>
+    /// The library is extracted to a unique subdirectory under the system temp directory,
+    /// ensuring no conflicts with other extractions. The caller is responsible for cleaning
+    /// up the temporary directory when done.
+    /// </para>
+    /// <para>Uses the default variant (typically "release").</para>
+    /// </summary>
+    /// <returns>Path to the extracted library.</returns>
+    /// <exception cref="IOException">If extraction fails or no JNI bridge is available.</exception>
+    /// <exception cref="CryptographicException">If signature verification fails (when enabled).</exception>
+    public string ExtractJniBridge()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), "rustbridge-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(tempDir);
+        var platform = DetectPlatform();
+        var variant = GetJniBridgeDefaultVariant(platform);
+        return ExtractJniBridgeInternal(platform, variant, tempDir, failIfExists: false);
+    }
+
+    /// <summary>
+    /// Extract the JNI bridge library for the current platform to the specified directory.
+    /// <para>
+    /// This method will fail if the library file already exists at the target path.
+    /// </para>
+    /// <para>Uses the default variant (typically "release").</para>
+    /// </summary>
+    /// <param name="outputDir">Directory to extract the library to.</param>
+    /// <returns>Path to the extracted library.</returns>
+    /// <exception cref="IOException">If extraction fails, file already exists, or no JNI bridge available.</exception>
+    /// <exception cref="CryptographicException">If signature verification fails (when enabled).</exception>
+    public string ExtractJniBridge(string outputDir)
+    {
+        var platform = DetectPlatform();
+        var variant = GetJniBridgeDefaultVariant(platform);
+        return ExtractJniBridgeInternal(platform, variant, outputDir, failIfExists: true);
+    }
+
+    /// <summary>
+    /// Extract a specific variant of the JNI bridge library to the specified directory.
+    /// <para>
+    /// This method will fail if the library file already exists at the target path.
+    /// </para>
+    /// </summary>
+    /// <param name="platform">Platform string (e.g., "linux-x86_64").</param>
+    /// <param name="variant">Variant name (e.g., "release", "debug").</param>
+    /// <param name="outputDir">Directory to extract the library to.</param>
+    /// <returns>Path to the extracted library.</returns>
+    /// <exception cref="IOException">If extraction fails, file already exists, or variant not found.</exception>
+    /// <exception cref="CryptographicException">If signature verification fails (when enabled).</exception>
+    public string ExtractJniBridge(string platform, string variant, string outputDir)
+    {
+        return ExtractJniBridgeInternal(platform, variant, outputDir, failIfExists: true);
+    }
+
+    /// <summary>
+    /// Get the default variant for the JNI bridge on a platform.
+    /// </summary>
+    private string GetJniBridgeDefaultVariant(string platform)
+    {
+        if (Manifest.Bridges?.Jni == null || !Manifest.Bridges.Jni.TryGetValue(platform, out var platformInfo))
+        {
+            return "release";
+        }
+        return platformInfo.GetDefaultVariant();
+    }
+
+    /// <summary>
+    /// Internal method to extract the JNI bridge library.
+    /// </summary>
+    private string ExtractJniBridgeInternal(string platform, string variant, string outputDir, bool failIfExists)
+    {
+        if (!HasJniBridge())
+        {
+            throw new IOException("Bundle does not contain a JNI bridge library");
+        }
+
+        if (!Manifest.Bridges!.Jni!.TryGetValue(platform, out var platformInfo))
+        {
+            throw new IOException($"JNI bridge not available for platform: {platform}");
+        }
+
+        // Get library path and checksum for the requested variant
+        var libraryPath = platformInfo.GetLibrary(variant);
+        var checksum = platformInfo.GetChecksum(variant);
+
+        if (string.IsNullOrEmpty(libraryPath))
+        {
+            throw new IOException($"JNI bridge variant '{variant}' not found for platform '{platform}'");
+        }
+
+        var libEntry = _zipArchive.GetEntry(libraryPath)
+            ?? throw new IOException($"JNI bridge library not found in bundle: {libraryPath}");
+
+        var libData = ReadZipEntry(libEntry);
+
+        // Verify checksum
+        if (!VerifyChecksum(libData, checksum))
+        {
+            throw new IOException($"Checksum verification failed for JNI bridge: {libraryPath}");
+        }
+
+        // Verify signature if enabled
+        if (_verifySignatures)
+        {
+            VerifyLibrarySignature(libraryPath, libData);
+        }
+
+        // Determine output path
+        var fileName = Path.GetFileName(libraryPath);
+        var outputPath = Path.Combine(outputDir, fileName);
+
+        // Check if file already exists when user specifies path
+        if (failIfExists && File.Exists(outputPath))
+        {
+            throw new IOException(
+                $"JNI bridge already exists at target path: {outputPath}. " +
+                "Remove the existing file or use ExtractJniBridge() for automatic temp directory.");
+        }
+
+        // Ensure output directory exists
+        Directory.CreateDirectory(outputDir);
+
+        // Write the library
+        File.WriteAllBytes(outputPath, libData);
+
+        // Make executable on Unix
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            File.SetUnixFileMode(outputPath,
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+        }
+
+        return outputPath;
+    }
+
+    /// <summary>
     /// Internal method to extract the library with configurable overwrite behavior.
     /// </summary>
     private string ExtractLibraryInternal(string platform, string variant, string outputDir, bool failIfExists)

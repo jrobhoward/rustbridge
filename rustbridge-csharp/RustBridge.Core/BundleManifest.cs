@@ -62,6 +62,12 @@ public class BundleManifest
     public string? Notices { get; set; }
 
     /// <summary>
+    /// Bridge libraries bundled with the plugin (e.g., JNI bridge).
+    /// </summary>
+    [JsonPropertyName("bridges")]
+    public BridgeInfo? Bridges { get; set; }
+
+    /// <summary>
     /// Plugin metadata information.
     /// </summary>
     public class PluginInfo
@@ -298,5 +304,21 @@ public class BundleManifest
         /// </summary>
         [JsonPropertyName("spdx")]
         public string? Spdx { get; set; }
+    }
+
+    /// <summary>
+    /// Bridge libraries bundled with the plugin.
+    /// <para>
+    /// Allows bundling bridge libraries (like the JNI bridge) alongside
+    /// the plugin for self-contained distribution.
+    /// </para>
+    /// </summary>
+    public class BridgeInfo
+    {
+        /// <summary>
+        /// JNI bridge libraries by platform.
+        /// </summary>
+        [JsonPropertyName("jni")]
+        public Dictionary<string, PlatformInfo>? Jni { get; set; }
     }
 }
