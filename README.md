@@ -7,428 +7,259 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0%2B-purple.svg)](https://dotnet.microsoft.com)
 [![Python](https://img.shields.io/badge/python-3.10%2B-green.svg)](https://www.python.org)
 
-> [!NOTE]
-> This project is in beta. The core API is stable, but some features may change before 1.0.
+> [!CAUTION]
+> **Beta Software** — This project is under active development and not yet recommended for production use.
+> - Bundle format (`.rbp`) should be stable, but may require additional extensions before the 1.0 release
+> - JSON transport is also approaching stability
+> - Binary transport is experimental
+> - Installed locally from source: Not yet published to package registries (Maven Central, NuGet, PyPI)
+> - API documentation is incomplete
 
-A framework for developing Rust shared libraries callable from other languages. Uses C ABI under the hood but abstracts the complexity, providing OSGI-like lifecycle, mandatory async (Tokio), logging callbacks, and JSON-based data transport with optional binary transport for performance-critical paths.
+**rustbridge** lets you write plugins in Rust that can be called from Java, Kotlin, C#, or Python—without dealing with
+the C ABI directly.
+
+## The Problem
+
+```mermaid
+flowchart LR
+    subgraph chasm["🕳️ The C ABI Chasm"]
+        direction TB
+        ub["Undefined Behavior"]
+        seg["Segfaults"]
+        ptr["Raw Pointers"]
+        align["Memory Alignment"]
+        leak["Memory Leaks"]
+        types["Primitive C Types"]
+        style chasm fill: #1a1a1a, stroke: #ff4444, color: #ff6666
+    end
+```
+
+Calling Rust from other languages typically means writing C bindings. That means dealing with:
+
+- **Undefined behavior** from incorrect memory handling
+- **Segfaults** from null pointers or use-after-free
+- **Memory leaks** from forgotten deallocations
+- **Type mismatches** between languages
+- **No error handling** (C has no exceptions or Result types)
+- **Manual serialization** of complex data structures
+
+## A Solution
+
+With **rustbridge**, you can write a plugin once, and call it from various languages without needing to _cross the C ABI
+chasm_ yourself:
+
+```mermaid
+flowchart LR
+    subgraph safe_rust["🦀 Rust"]
+        plugin["Your Plugin<br/><code>impl Plugin</code>"]
+    end
+
+subgraph crossing[" "]
+direction TB
+bridge["🌉 rustbridge"]
+chasm["🕳️ C ABI"]
+end
+
+subgraph safe_host["☕ Host Language"]
+java["Java / Kotlin"]
+csharp["C#"]
+python["Python"]
+end
+
+plugin -- " .rbp bundle " --> bridge
+bridge --> java
+bridge --> csharp
+bridge --> python
+
+style chasm fill: #1a1a1a, stroke:#ff4444, color: #ff6666
+style bridge fill:#22aa22, stroke: #44ff44, color: #ffffff
+style crossing fill: none, stroke: none
+style safe_rust fill: #f5a623, stroke: #ff8c00,color: #000000
+style safe_host fill: #4a90d9,stroke: #2e6cb5, color: #ffffff
+```
+
+rustbridge handles the messy bits for you. You write a simple Rust trait implementation, and rustbridge provides:
+
+- **Safe memory management** across the FFI boundary
+- **JSON serialization** for request/response data
+- **Structured error handling** with typed error codes
+- **Plugin lifecycle management** (startup, shutdown, health checks)
+- **Logging callbacks** that integrate with your host language
+- **Portable bundles** (`.rbp` files) that work on multiple platforms
+
+## Get Started
+
+The fastest way to understand rustbridge is to build something:
+
+📖 **[Getting Started Guide](https://github.com/jrobhoward/rustbridge/blob/main/docs/GETTING_STARTED.md)** — Create your
+first plugin and call it from Java
+
+Or dive into the tutorials (more to come):
+
+| Tutorial                                                                                                       | What You'll Learn                                  |
+|----------------------------------------------------------------------------------------------------------------|----------------------------------------------------|
+| [Build a Regex Plugin](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/01-regex-plugin/)     | Rust plugin development, message handling, caching |
+| [Call from Kotlin](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/02-kotlin-consumer/)      | Type-safe calls, logging integration, benchmarking |
+| [Build a JSON Plugin](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/03-json-plugin/)       | Validation, error handling patterns                |
+| [Call from Java](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/04-java-consumer/)          | FFM/JNI setup, Gradle configuration                |
+| [Production Bundles](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/05-production-bundles/) | Code signing, schemas, SBOMs                       |
+| [Cross-Compilation](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/06-cross-compilation/)   | Building for multiple platforms                    |
+
+## Quick Example
+
+**Rust plugin:**
+
+```rust
+use rustbridge::prelude::*;
+
+#[derive(Default)]
+pub struct EchoPlugin;
+
+#[async_trait]
+impl Plugin for EchoPlugin {
+    async fn handle_request(&self, _ctx: &PluginContext, type_tag: &str, payload: &[u8]) -> PluginResult<Vec<u8>> {
+        match type_tag {
+            "echo" => Ok(payload.to_vec()),  // Echo back the input
+            _ => Err(PluginError::UnknownMessageType(type_tag.to_string())),
+        }
+    }
+}
+
+rustbridge_entry!(EchoPlugin::default);
+```
+
+**Java consumer:**
+
+```java
+try (Plugin plugin = FfmPluginLoader.load("libecho.so")) {
+    String response = plugin.call("echo", "{\"message\": \"Hello!\"}");
+    System.out.println(response);  // {"message": "Hello!"}
+}
+```
+
+**Kotlin, C#, and Python** are just as simple. See the [language guides](#language-guides) below.
 
 ## The .rbp Bundle
 
-rustbridge plugins are distributed as `.rbp` (rustbridge plugin) bundles - portable ZIP archives containing:
-
-- **Multi-platform libraries** - Native libraries for all target platforms in one file
-- **Manifest** - Plugin metadata, version info, and SHA256 checksums
-- **Optional signatures** - Minisign code signing for production security
-- **Optional schemas** - JSON Schema and C headers for API documentation
+Plugins are distributed as `.rbp` bundles—portable ZIP files containing libraries for multiple platforms:
 
 ```bash
-# Create a bundle
+# Create a multi-platform bundle
 rustbridge bundle create \
   --name my-plugin --version 1.0.0 \
   --lib linux-x86_64:target/release/libmyplugin.so \
   --lib darwin-aarch64:target/release/libmyplugin.dylib \
+  --lib windows-x86_64:target/release/myplugin.dll \
   --output my-plugin-1.0.0.rbp
-
-# Load from any language - auto-detects platform
-plugin = BundleLoader.load("my-plugin-1.0.0.rbp")
 ```
 
-See [docs/BUNDLE_FORMAT.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/BUNDLE_FORMAT.md) for the complete specification.
-
-## Overview
-
-rustbridge lowers the barrier for creating Rust plugins that can be loaded and called from Java, C#, Python, and other languages. Instead of manually managing FFI complexity, you implement a simple `Plugin` trait and rustbridge handles:
-
-- **Memory management**: Safe buffer allocation and deallocation across FFI boundary
-- **Async runtime**: Tokio runtime included in every plugin
-- **Lifecycle management**: OSGI-inspired state machine (Installed → Starting → Active → Stopping → Stopped)
-- **Logging**: Tracing integration with callbacks to host language
-- **Serialization**: JSON-based message transport with typed envelopes
-
-## Features
-
-- **Cross-language interoperability**: Call Rust code from Java, Kotlin, C#, Python, and more
-- **Multiple JVM implementations**: FFM for Java 21+ (modern, fast) and JNI for Java 17+ (compatibility)
-- **Kotlin-friendly**: Idiomatic Kotlin usage with data classes, extension functions, and type-safe DSL
-- **JSON-based transport**: Simple, universal data serialization
-- **OSGI-inspired lifecycle**: Structured plugin startup and shutdown
-- **Async-first**: Built on Tokio with mandatory async runtime
-- **FFI logging**: Tracing integration with host language callbacks
-- **Type-safe macros**: Procedural macros for reduced boilerplate
-- **CLI tooling**: Project scaffolding and code generation
-
-## Project Structure
-
-```
-rustbridge/
-├── Cargo.toml                    # Workspace root
-├── crates/
-│   ├── rustbridge-core/          # Core traits, types, lifecycle
-│   ├── rustbridge-transport/     # JSON codec, message envelopes
-│   ├── rustbridge-ffi/           # C ABI exports, buffer management
-│   ├── rustbridge-jni/           # JNI bindings for Java 17+
-│   ├── rustbridge-runtime/       # Tokio integration
-│   ├── rustbridge-logging/       # Tracing → FFI callback bridge
-│   ├── rustbridge-macros/        # Procedural macros
-│   ├── rustbridge-bundle/        # .rbp bundle creation and parsing
-│   └── rustbridge-cli/           # Build tool and CLI
-├── rustbridge-java/              # Java/Kotlin bindings
-│   ├── rustbridge-core/          # Core interfaces
-│   ├── rustbridge-ffm/           # FFM implementation (Java 21+)
-│   └── rustbridge-kotlin/        # Kotlin extensions
-├── rustbridge-csharp/            # C# bindings (.NET 8.0+)
-├── rustbridge-python/            # Python bindings (3.10+)
-├── examples/
-│   ├── hello-plugin/             # Example Rust plugin
-│   └── kotlin-examples/          # Kotlin usage examples
-├── docs/
-│   ├── ARCHITECTURE.md           # System architecture
-│   ├── SKILLS.md                 # Development best practices
-│   ├── TESTING.md                # Testing conventions
-│   └── TASKS.md                  # Project roadmap
-└── CLAUDE.md                     # Project instructions for Claude Code
-```
-
-## Quick Start
-
-> 📖 **New to rustbridge?** See the [complete Getting Started guide](https://github.com/jrobhoward/rustbridge/blob/main/docs/GETTING_STARTED.md) for a step-by-step tutorial.
-
-### Creating a Plugin (Rust)
-
-```rust
-use async_trait::async_trait;
-use rustbridge_core::{Plugin, PluginContext, PluginError, PluginResult};
-use rustbridge_macros::{rustbridge_entry, Message};
-use serde::{Deserialize, Serialize};
-
-// Define message types
-#[derive(Debug, Serialize, Deserialize, Message)]
-#[message(tag = "echo")]
-pub struct EchoRequest {
-    pub message: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct EchoResponse {
-    pub message: String,
-}
-
-// Implement the plugin
-#[derive(Default)]
-pub struct MyPlugin;
-
-#[async_trait]
-impl Plugin for MyPlugin {
-    async fn on_start(&self, _ctx: &PluginContext) -> PluginResult<()> {
-        tracing::info!("Plugin started");
-        Ok(())
-    }
-
-    async fn handle_request(
-        &self,
-        _ctx: &PluginContext,
-        type_tag: &str,
-        payload: &[u8],
-    ) -> PluginResult<Vec<u8>> {
-        match type_tag {
-            "echo" => {
-                let req: EchoRequest = serde_json::from_slice(payload)?;
-                let resp = EchoResponse { message: req.message };
-                Ok(serde_json::to_vec(&resp)?)
-            }
-            _ => Err(PluginError::UnknownMessageType(type_tag.to_string())),
-        }
-    }
-
-    async fn on_stop(&self, _ctx: &PluginContext) -> PluginResult<()> {
-        tracing::info!("Plugin stopped");
-        Ok(())
-    }
-}
-
-// Generate FFI entry point
-rustbridge_entry!(MyPlugin::default);
-
-// Re-export FFI functions
-pub use rustbridge_ffi::{
-    plugin_init, plugin_call, plugin_free_buffer, plugin_shutdown,
-    plugin_set_log_level, plugin_get_state,
-};
-```
-
-### Using from Java (FFM, Java 21+)
+Load from any language—rustbridge auto-detects the platform:
 
 ```java
-import com.rustbridge.ffm.FfmPluginLoader;
-import com.rustbridge.Plugin;
-import com.rustbridge.PluginConfig;
-
-try (Plugin plugin = FfmPluginLoader.load("libmyplugin.so")) {
-    String response = plugin.call("echo", "{\"message\": \"Hello, World!\"}");
-    System.out.println(response);  // {"message": "Hello, World!"}
-}
+Plugin plugin = BundleLoader.load("my-plugin-1.0.0.rbp");
 ```
 
-### Using from Java (JNI, Java 17+)
+## Language Guides
 
-```java
-import com.rustbridge.jni.JniPluginLoader;
-import com.rustbridge.Plugin;
+| Language   | Version   | Guide                                                                                                               |
+|------------|-----------|---------------------------------------------------------------------------------------------------------------------|
+| Java (FFM) | 21+       | [docs/using-plugins/JAVA_FFM.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_FFM.md) |
+| Java (JNI) | 17+       | [docs/using-plugins/JAVA_JNI.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_JNI.md) |
+| Kotlin     | 21+       | [docs/using-plugins/KOTLIN.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/KOTLIN.md)     |
+| C#         | .NET 8.0+ | [docs/using-plugins/CSHARP.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/CSHARP.md)     |
+| Python     | 3.10+     | [docs/using-plugins/PYTHON.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/PYTHON.md)     |
 
-try (Plugin plugin = JniPluginLoader.load("libmyplugin.so")) {
-    String response = plugin.call("echo", "{\"message\": \"Hello!\"}");
-    System.out.println(response);
-}
+## Building from Source
+
+rustbridge is not yet published to package registries. Build from source:
+
+**Rust CLI** (for creating plugins and bundles):
+
+```bash
+git clone https://github.com/jrobhoward/rustbridge.git
+cd rustbridge
+cargo install --path crates/rustbridge-cli
 ```
 
-### Using from Kotlin
+**Java/Kotlin** (build and publish to local Maven):
+
+```bash
+cd rustbridge-java
+./gradlew publishToMavenLocal
+```
+
+Then in your project's `build.gradle.kts`:
 
 ```kotlin
-import com.rustbridge.ffm.FfmPluginLoader
-
-// Data classes for type-safe requests
-data class EchoRequest(val message: String)
-data class EchoResponse(val message: String, val length: Int)
-
-// Extension function for typed calls
-inline fun <reified T> Plugin.callTyped(messageType: String, request: Any): T {
-    val mapper = ObjectMapper()
-    val responseJson = call(messageType, mapper.writeValueAsString(request))
-    return mapper.readValue(responseJson, T::class.java)
+repositories {
+    mavenLocal()
 }
-
-// Use block for automatic cleanup
-FfmPluginLoader.load("libmyplugin.so").use { plugin ->
-    val response = plugin.callTyped<EchoResponse>("echo", EchoRequest("Hello!"))
-    println(response.message)
+dependencies {
+    implementation("com.rustbridge:rustbridge-ffm:0.6.2")  // Java 21+
+    // or
+    implementation("com.rustbridge:rustbridge-jni:0.6.2")  // Java 17+
 }
 ```
 
-See [examples/kotlin-examples](https://github.com/jrobhoward/rustbridge/blob/main/examples/kotlin-examples) for complete examples.
-
-## FFI API
-
-The following C functions are exported by plugins:
-
-```c
-// Create plugin instance (called by plugin_init internally)
-void* plugin_create();
-
-// Initialize plugin with config and optional log callback
-void* plugin_init(
-    void* plugin_ptr,
-    const uint8_t* config_json,
-    size_t config_len,
-    void (*log_callback)(uint8_t level, const char* target, const uint8_t* msg, size_t len)
-);
-
-// Make a synchronous request
-FfiBuffer plugin_call(
-    void* handle,
-    const char* type_tag,      // null-terminated
-    const uint8_t* request,
-    size_t request_len
-);
-
-// Free a buffer returned by plugin_call
-void plugin_free_buffer(FfiBuffer* buffer);
-
-// Shutdown the plugin
-bool plugin_shutdown(void* handle);
-
-// Set log level (0=Trace, 1=Debug, 2=Info, 3=Warn, 4=Error, 5=Off)
-void plugin_set_log_level(void* handle, uint8_t level);
-
-// Get current lifecycle state
-uint8_t plugin_get_state(void* handle);
-
-// Get count of rejected requests (due to concurrency limit)
-uint64_t plugin_get_rejected_count(void* handle);
-
-// Async API (placeholder for future - returns 0/false)
-uint64_t plugin_call_async(...);
-bool plugin_cancel_async(void* handle, uint64_t request_id);
-```
-
-### FfiBuffer Structure
-
-```c
-typedef struct {
-    uint8_t* data;      // Pointer to data
-    size_t len;         // Data length
-    size_t capacity;    // Allocation capacity
-    uint32_t error_code; // 0 = success, non-zero = error
-} FfiBuffer;
-```
-
-## Lifecycle States
-
-```
-Installed → Starting → Active → Stopping → Stopped
-               ↑                    │
-               └────────────────────┘ (restart)
-           Any state → Failed (on error)
-```
-
-| State | Description |
-|-------|-------------|
-| `Installed` | Plugin created but not initialized |
-| `Starting` | Initializing runtime, resources |
-| `Active` | Ready to handle requests |
-| `Stopping` | Graceful shutdown in progress |
-| `Stopped` | Shutdown complete |
-| `Failed` | Error occurred |
-
-## Building
+**C#** (build and reference locally):
 
 ```bash
-# Build all crates
-cargo build
-
-# Build in release mode
-cargo build --release
-
-# Build a specific plugin
-cargo build -p hello-plugin
-
-# Run tests
-cargo test
-
-# Build CLI tool
-cargo build -p rustbridge-cli
+cd rustbridge-csharp
+dotnet build
 ```
 
-## CLI Usage
+Reference the built DLLs in your project, or use a local NuGet source.
+
+**Python** (install in development mode):
 
 ```bash
-# Create a new plugin project
-rustbridge new my-plugin
-
-# Build a plugin
-rustbridge build --release
-
-# Create a bundle for distribution
-rustbridge bundle create \
-  --name my-plugin --version 1.0.0 \
-  --lib linux-x86_64:target/release/libmyplugin.so \
-  --output my-plugin.rbp
-
-# Generate signing keys
-rustbridge keygen --output signing.key
-
-# Generate C header for binary transport (optional)
-rustbridge generate-header -s src/binary_messages.rs -o messages.h
+cd rustbridge-python
+pip install -e .
 ```
 
-## Configuration
+## Project Status
 
-### Plugin Configuration (PluginConfig)
+Here are the components planned for a 1.0 release:
 
-```json
-{
-  "worker_threads": 4,
-  "log_level": "info",
-  "max_concurrent_ops": 1000,
-  "shutdown_timeout_ms": 5000,
-  "data": {
-    "custom_key": "custom_value"
-  }
-}
-```
-
-**Configuration Options:**
-
-- **`worker_threads`** (optional): Number of async worker threads (default: number of CPU cores)
-- **`log_level`**: Initial log level - "trace", "debug", "info", "warn", "error", "off" (default: "info")
-- **`max_concurrent_ops`**: Maximum concurrent requests (default: 1000)
-  - Set to `0` for unlimited (use with caution - can cause memory exhaustion)
-  - Requests exceeding this limit are immediately rejected with error code 13 (TooManyRequests)
-  - Monitor rejected requests using `plugin.getRejectedRequestCount()` (Java) or `handle.rejected_request_count()` (Rust)
-- **`shutdown_timeout_ms`**: Maximum milliseconds to wait during shutdown (default: 5000)
-- **`data`** (optional): Plugin-specific configuration data (JSON object)
-
-**Example: Configuring concurrency limits in Java:**
-
-```java
-PluginConfig config = PluginConfig.defaults()
-    .maxConcurrentOps(100)  // Limit to 100 concurrent requests
-    .workerThreads(4)
-    .logLevel(LogLevel.INFO);
-
-try (Plugin plugin = FfmPluginLoader.load(pluginPath, config)) {
-    // Make calls...
-
-    // Monitor rejected requests
-    long rejectedCount = plugin.getRejectedRequestCount();
-    if (rejectedCount > 0) {
-        System.out.println("Rejected " + rejectedCount + " requests due to concurrency limit");
-    }
-}
-```
-
-## Error Handling
-
-Errors are represented with stable numeric codes:
-
-| Code | Error Type |
-|------|-----------|
-| 0 | Success |
-| 1 | Invalid State |
-| 2 | Initialization Failed |
-| 3 | Shutdown Failed |
-| 4 | Config Error |
-| 5 | Serialization Error |
-| 6 | Unknown Message Type |
-| 7 | Handler Error |
-| 8 | Runtime Error |
-| 9 | Cancelled |
-| 10 | Timeout |
-| 11 | Internal Error |
-| 12 | FFI Error |
-| 13 | Too Many Requests (concurrency limit exceeded) |
-
-## Target Languages
-
-| Language | Status | Implementation |
-|----------|--------|---------------|
-| Java/Kotlin | Tier 1 | FFM (Java 21+, recommended) + JNI (Java 17+) |
-| C# | Tier 2 | P/Invoke (.NET 8.0+) |
-| Python | Tier 2 | ctypes (Python 3.10+) |
-
-## Documentation
-
-### Getting Started
-- [docs/GETTING_STARTED.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/GETTING_STARTED.md) - Tutorial for creating your first plugin
-- [docs/using-plugins/JAVA_FFM.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_FFM.md) - Java 21+ FFM guide
-- [docs/using-plugins/JAVA_JNI.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_JNI.md) - Java 17+ JNI guide
-- [docs/using-plugins/KOTLIN.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/KOTLIN.md) - Kotlin guide
-- [docs/using-plugins/CSHARP.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/CSHARP.md) - C# guide
-- [docs/using-plugins/PYTHON.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/PYTHON.md) - Python guide
-
-### Architecture & Design
-- [docs/ARCHITECTURE.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/ARCHITECTURE.md) - System architecture and design decisions
-- [docs/BUNDLE_FORMAT.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/BUNDLE_FORMAT.md) - .rbp bundle specification
-- [docs/TRANSPORT.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/TRANSPORT.md) - JSON and binary transport layer
-- [docs/MEMORY_MODEL.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/MEMORY_MODEL.md) - Memory ownership patterns
-
-### Development
-- [docs/SKILLS.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/SKILLS.md) - Development best practices and coding conventions
-- [docs/TESTING.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/TESTING.md) - Testing conventions and guidelines
-- [docs/ERROR_HANDLING.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/ERROR_HANDLING.md) - Error handling patterns
-- [docs/DEBUGGING.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/DEBUGGING.md) - Debugging techniques
+| Component         | Status                |
+|-------------------|-----------------------|
+| JSON Transport    | Approaching stability |
+| Plugin Lifecycle  | Stable                |
+| Bundle Format     | Stable                |
+| Java FFM Bindings | Stable                |
+| Java JNI Bindings | Stable                |
+| C# Bindings       | Stable                |
+| Python Bindings   | Stable                |
+| Binary Transport  | In development        |
 
 ## Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](https://github.com/jrobhoward/rustbridge/blob/main/CONTRIBUTING.md) for guidelines.
+We welcome contributions! See [CONTRIBUTING.md](https://github.com/jrobhoward/rustbridge/blob/main/CONTRIBUTING.md) for
+guidelines.
 
 **Quick start:**
-1. Read [docs/SKILLS.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/SKILLS.md) for coding conventions
-2. Read [docs/TESTING.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/TESTING.md) for testing guidelines
-3. Check [docs/TASKS.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/TASKS.md) for open tasks
+
+1. Check [docs/TASKS.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/TASKS.md) for open tasks
+2. Read [docs/SKILLS.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/SKILLS.md) for coding conventions
+3. Read [docs/TESTING.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/TESTING.md) for testing guidelines
+
+## Technical Documentation
+
+For those who want to understand the internals:
+
+- [Architecture](https://github.com/jrobhoward/rustbridge/blob/main/docs/ARCHITECTURE.md) — System design and component
+  overview
+- [Bundle Format](https://github.com/jrobhoward/rustbridge/blob/main/docs/BUNDLE_FORMAT.md) — .rbp specification
+- [Transport Layer](https://github.com/jrobhoward/rustbridge/blob/main/docs/TRANSPORT.md) — JSON and binary protocols
+- [Memory Model](https://github.com/jrobhoward/rustbridge/blob/main/docs/MEMORY_MODEL.md) — Ownership patterns across
+  FFI
+- [Error Handling](https://github.com/jrobhoward/rustbridge/blob/main/docs/ERROR_HANDLING.md) — Error codes and patterns
+- [Plugin Lifecycle](https://github.com/jrobhoward/rustbridge/blob/main/docs/PLUGIN_LIFECYCLE.md) — State machine
+  details
 
 ## Changelog
 
-See [CHANGELOG.md](https://github.com/jrobhoward/rustbridge/blob/main/CHANGELOG.md) for version history and release notes.
+See [CHANGELOG.md](https://github.com/jrobhoward/rustbridge/blob/main/CHANGELOG.md) for version history.
 
 ## License
 
@@ -436,4 +267,5 @@ MIT OR Apache-2.0
 
 ### Attribution
 
-This project includes software licensed under the Unicode License (Unicode-3.0). See [NOTICES](https://github.com/jrobhoward/rustbridge/blob/main/NOTICES) for details.
+This project includes software licensed under the Unicode License.
+See [NOTICES](https://github.com/jrobhoward/rustbridge/blob/main/NOTICES) for details.
