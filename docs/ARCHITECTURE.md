@@ -4,101 +4,125 @@ This document describes the architecture of rustbridge, the design decisions mad
 
 ## Overview
 
-rustbridge is a framework for building Rust shared libraries that can be called from other programming languages. It provides a high-level abstraction over the C ABI, handling memory management, async runtime integration, lifecycle management, and logging.
+rustbridge is a framework for building Rust shared libraries callable from other programming languages (Java, Kotlin, C#, Python). It provides a high-level abstraction over the C ABI, handling:
+
+- OSGI-like plugin lifecycle management
+- Mandatory async runtime (Tokio) for all plugin code
+- FFI logging callbacks that route Rust `tracing` to host loggers
+- JSON-based data transport with optional binary transport for performance-critical paths
+- Multi-platform bundle format (`.rbp`) with optional cryptographic signing
 
 ```mermaid
 flowchart TB
-    subgraph Host["Host Language (Java/C#/Python)"]
+    subgraph Host["Host Language (Java/Kotlin/C#/Python)"]
         HL[Host Application]
-        HB[Language Bindings]
+        LB[Language Bindings]
+        BL[BundleLoader]
     end
 
     subgraph FFI["FFI Boundary (C ABI)"]
-        PI[plugin_init]
-        PC[plugin_call]
-        PF[plugin_free_buffer]
-        PS[plugin_shutdown]
+        EXP[C Exports<br/>plugin_init, plugin_call,<br/>plugin_shutdown, etc.]
+        BUF[FfiBuffer<br/>Memory Transport]
+        PG[Panic Guard<br/>catch_unwind]
     end
 
-    subgraph Rust["Rust Plugin"]
-        FH[FFI Handler]
+    subgraph Rust["Rust Runtime"]
+        HM[PluginHandleManager]
+        PH[PluginHandle]
+        AB[AsyncBridge]
         RT[Tokio Runtime]
-        PL[Plugin Implementation]
-        LC[Lifecycle Manager]
         LG[Logging Layer]
     end
 
-    HL --> HB
-    HB --> PI & PC & PF & PS
-    PI & PC & PF & PS --> FH
-    FH --> RT
+    subgraph Plugin["Plugin Implementation"]
+        PL[Plugin Trait]
+        LC[PluginContext]
+    end
+
+    HL --> LB
+    LB --> BL
+    BL -->|dlopen| EXP
+    LB --> EXP
+    EXP --> PG
+    PG --> HM
+    HM --> PH
+    PH --> AB
+    AB -->|block_on| RT
     RT --> PL
-    FH --> LC
-    FH --> LG
-    LG -.->|callback| HB
+    PL --> LC
+    LG -.->|callback| LB
 ```
+
+## Version Requirements
+
+| Component | Minimum Version |
+|-----------|----------------|
+| Rust | 1.90.0 (Edition 2024) |
+| Java (FFM) | 21+ |
+| Java (JNI) | 17+ |
+| .NET | 8.0+ |
+| Python | 3.10+ |
 
 ## Crate Architecture
 
-The framework is organized into focused crates with clear responsibilities:
+The framework is organized as a Rust workspace with layered crates:
 
 ```mermaid
-flowchart TD
+flowchart BT
     subgraph Core["Core Layer"]
-        RC[rustbridge-core]
-        RT[rustbridge-transport]
+        RC[rustbridge-core<br/>Traits, Types, Errors]
+        RT[rustbridge-transport<br/>JSON/Binary Codec]
     end
 
     subgraph Runtime["Runtime Layer"]
-        RR[rustbridge-runtime]
-        RL[rustbridge-logging]
+        RR[rustbridge-runtime<br/>Tokio Integration]
+        RL[rustbridge-logging<br/>FFI Log Callbacks]
     end
 
     subgraph FFI["FFI Layer"]
-        RF[rustbridge-ffi]
-        RJ[rustbridge-jni]
+        RF[rustbridge-ffi<br/>C ABI Exports]
+        RJ[rustbridge-jni<br/>JNI Bridge]
     end
 
-    subgraph Tools["Tooling"]
-        RM[rustbridge-macros]
-        CLI[rustbridge-cli]
-        RB[rustbridge-bundle]
+    subgraph Tooling["Tooling Layer"]
+        RM[rustbridge-macros<br/>Proc Macros]
+        RB[rustbridge-bundle<br/>.rbp Format]
+        CLI[rustbridge-cli<br/>Build Tool]
     end
 
-    subgraph Plugin["User Plugin"]
-        UP[hello-plugin]
+    subgraph Facade["Facade"]
+        RST[rustbridge<br/>Re-exports]
     end
 
-    RC --> RT
     RC --> RR
-    RC --> RL
+    RC --> RT
     RT --> RF
-    RR --> RF
     RL --> RF
-    RF --> RJ
+    RR --> RF
+    RC --> RJ
     RC --> RM
-    RC --> CLI
-    RT --> CLI
     RC --> RB
+    RB --> CLI
 
-    RF --> UP
-    RM --> UP
-    RC --> UP
+    RF --> RST
+    RM --> RST
+    RC --> RST
 ```
 
 ### Crate Responsibilities
 
 | Crate | Purpose | Key Types |
 |-------|---------|-----------|
-| **rustbridge-core** | Core abstractions | `Plugin`, `LifecycleState`, `PluginError`, `PluginConfig` |
-| **rustbridge-transport** | Serialization | `JsonCodec`, `RequestEnvelope`, `ResponseEnvelope` |
+| **rustbridge-core** | Core abstractions | `Plugin`, `PluginFactory`, `LifecycleState`, `PluginError`, `PluginConfig` |
+| **rustbridge-transport** | Serialization | `Codec`, `JsonCodec`, `RequestEnvelope`, `ResponseEnvelope` |
 | **rustbridge-runtime** | Async execution | `AsyncRuntime`, `AsyncBridge`, `ShutdownSignal` |
 | **rustbridge-logging** | Log forwarding | `FfiLoggingLayer`, `LogCallbackManager` |
-| **rustbridge-ffi** | C ABI exports | `FfiBuffer`, `PluginHandle`, FFI functions |
+| **rustbridge-ffi** | C ABI exports | `FfiBuffer`, `PluginHandle`, `RbString`, `RbBytes`, FFI functions |
 | **rustbridge-jni** | JNI bindings | JNI bridge for Java 17+ |
-| **rustbridge-macros** | Code generation | `#[rustbridge_plugin]`, `derive(Message)` |
-| **rustbridge-cli** | Build tooling | `new`, `build`, `generate`, `check` commands |
-| **rustbridge-bundle** | Bundle handling | `.rbp` bundle creation, parsing, verification |
+| **rustbridge-macros** | Code generation | `#[rustbridge_plugin]`, `#[derive(Message)]`, `rustbridge_entry!` |
+| **rustbridge-cli** | Build tooling | `new`, `bundle create/inspect/extract`, `keygen`, `generate-header` |
+| **rustbridge-bundle** | Bundle handling | `BundleBuilder`, `BundleLoader`, `Manifest`, minisign verification |
+| **rustbridge** | Facade crate | Re-exports common types for plugin authors |
 
 ## Plugin Lifecycle
 
@@ -144,6 +168,7 @@ sequenceDiagram
 
     H->>F: plugin_call(handle, "user.create", json)
     F->>F: Validate inputs
+    F->>F: Acquire semaphore permit
     F->>R: AsyncBridge::call_sync()
     R->>P: handle_request("user.create", payload)
     P->>P: Deserialize, process, serialize
@@ -206,24 +231,10 @@ When the concurrency limit is exceeded:
 
 1. **Rust**: Returns `PluginError::TooManyRequests` (error code 13)
 2. **FFI**: Returns error envelope with code 13
-3. **Java**: Throws `PluginException` with error code 13
+3. **Host Languages**: Throws `PluginException` with error code 13
 4. **Metrics**: `rejected_requests` counter is incremented
 
 Callers should implement retry with backoff or load shedding strategies.
-
-### Monitoring
-
-Query rejected request count to monitor system health and tune limits:
-
-**Rust:**
-```rust
-let count = handle.rejected_request_count();
-```
-
-**Java:**
-```java
-long count = plugin.getRejectedRequestCount();
-```
 
 ### Trade-offs
 
@@ -294,6 +305,48 @@ pub struct FfiBuffer {
 3. **No use-after-free**: Host must copy data before freeing
 4. **Thread safety**: Buffer operations are not thread-safe; host must synchronize
 
+### C ABI Exports
+
+| Function | Purpose |
+|----------|---------|
+| `plugin_create()` | Create plugin instance (default config) |
+| `plugin_create_with_config(json, len)` | Create with configuration |
+| `plugin_init(handle, config_json, len, log_callback)` | Initialize plugin, start lifecycle |
+| `plugin_call(handle, type_tag, request, len)` | Synchronous request dispatch |
+| `plugin_shutdown(handle)` | Graceful shutdown with timeout |
+| `plugin_get_state(handle)` | Query current lifecycle state |
+| `plugin_set_log_level(handle, level)` | Dynamic log level adjustment |
+| `plugin_get_rejected_count(handle)` | Rate limiting statistics |
+| `plugin_free_buffer(buffer)` | Deallocate response memory |
+
+### Binary Transport Types
+
+For high-performance scenarios, rustbridge provides zero-copy binary types:
+
+| Type | Ownership | Purpose |
+|------|-----------|---------|
+| `RbString` | Borrowed | UTF-8 string reference (caller-owned) |
+| `RbBytes` | Borrowed | Binary data reference (caller-owned) |
+| `RbStringOwned` | Rust-owned | UTF-8 string (must free) |
+| `RbBytesOwned` | Rust-owned | Binary data (must free) |
+| `RbResponse` | Rust-owned | Binary response struct |
+
+### Panic Safety
+
+All FFI entry points are wrapped with `catch_unwind`:
+
+```rust
+pub unsafe extern "C" fn plugin_call(...) -> FfiBuffer {
+    catch_panic(handle_opt, || {
+        // Actual implementation
+    })
+}
+```
+
+- Panics return `FfiBuffer` with error code 11 (Internal)
+- Plugin state transitions to Failed
+- Host application continues running (no crash)
+
 ## Async Runtime Integration
 
 All plugins include a mandatory Tokio runtime:
@@ -324,6 +377,28 @@ flowchart TB
     HR --> AS
     AS -.->|await| HR
     HR -.->|result| AB
+```
+
+### AsyncBridge
+
+The `AsyncBridge` adapts synchronous FFI calls to the async plugin API:
+
+```rust
+impl AsyncBridge {
+    // Execute async code from sync FFI context
+    pub fn call_sync<F, T>(&self, future: F) -> T
+    where
+        F: Future<Output = T>,
+    {
+        self.runtime.block_on(future)
+    }
+
+    // With timeout support
+    pub fn call_sync_timeout<F, T>(&self, future: F, duration: Duration) -> Result<T, Timeout>;
+
+    // Fire-and-forget spawn
+    pub fn spawn<F>(&self, future: F) -> JoinHandle<F::Output>;
+}
 ```
 
 ### Design Decision: Mandatory Async
@@ -389,25 +464,42 @@ flowchart LR
 
 ### JSON-Based Protocol
 
-```mermaid
-flowchart LR
-    subgraph Request
-        RQ[RequestEnvelope]
-        TT[type_tag: string]
-        PL[payload: JSON]
-        ID[request_id: optional]
-    end
+**Request Envelope:**
+```json
+{
+    "type_tag": "user.create",
+    "payload": {"username": "alice", "email": "alice@example.com"},
+    "request_id": 12345,
+    "correlation_id": "trace-abc-123"
+}
+```
 
-    subgraph Response
-        RS[ResponseEnvelope]
-        ST[status: success/error]
-        RP[payload: optional JSON]
-        EC[error_code: optional]
-        EM[error_message: optional]
-    end
+**Success Response:**
+```json
+{
+    "status": "success",
+    "payload": {"user_id": "uuid-123", "created_at": "2025-01-30T12:00:00Z"}
+}
+```
 
-    RQ --> TT & PL & ID
-    RS --> ST & RP & EC & EM
+**Error Response:**
+```json
+{
+    "status": "error",
+    "error_code": 7,
+    "error_message": "Invalid email format"
+}
+```
+
+### Binary Transport (High-Performance)
+
+For performance-critical paths, plugins can register binary handlers using `#[repr(C)]` structs:
+
+```rust
+// Register handler with numeric message ID
+register_binary_handler(MSG_ECHO, |request: &EchoRequest| -> EchoResponse {
+    // Direct struct marshaling, no JSON overhead
+});
 ```
 
 ### Design Decision: JSON vs Binary
@@ -420,11 +512,19 @@ flowchart LR
 | **MessagePack** | Compact, fast, schema-optional | Less debuggable |
 | **Protobuf** | Very compact, typed | Requires schema, complex |
 
-**Decision**: JSON as primary format. Debuggability and universal support are critical for a framework targeting multiple languages. Binary formats can be added as optional features later.
+**Decision**: JSON as primary format with optional binary. Debuggability and universal support are critical for a framework targeting multiple languages. Binary transport available for hot paths.
 
 ## Host Language Integration
 
-### Java Integration Strategy
+All language bindings share a common pattern:
+
+1. **Bundle loading** - Extract platform-appropriate native library from `.rbp`
+2. **Symbol resolution** - Load C ABI function pointers
+3. **Memory management** - Copy FFI buffers to managed memory, call free
+4. **Type mapping** - Convert language types to/from JSON or binary
+5. **Lifecycle wrapping** - Implement `Closeable`/context manager patterns
+
+### Java/Kotlin Integration
 
 ```mermaid
 flowchart TB
@@ -452,9 +552,21 @@ flowchart TB
     JL --> JP --> NC
 ```
 
-### Design Decision: FFM Primary, JNI Fallback
+| Module | Java Version | Technology |
+|--------|--------------|------------|
+| `rustbridge-ffm` | 21+ | Foreign Function & Memory API (recommended) |
+| `rustbridge-jni` | 17+ | JNI via `rustbridge-jni` crate (fallback) |
+| `rustbridge-kotlin` | - | Kotlin DSL extensions |
 
-**Tradeoff considered**: FFM-only vs JNI-only vs both
+**Usage (FFM):**
+```java
+try (var plugin = FfmPluginLoader.load("libmyplugin.so")) {
+    var response = plugin.call("echo", "{\"message\": \"hello\"}");
+    // plugin automatically closed
+}
+```
+
+**Design Decision: FFM Primary, JNI Fallback**
 
 | Approach | Pros | Cons |
 |----------|------|------|
@@ -464,29 +576,178 @@ flowchart TB
 
 **Decision**: Support both with FFM as primary. FFM is the future, but JNI provides backward compatibility for enterprise environments on older JVMs.
 
+### C# Integration (.NET 8.0+)
+
+Uses P/Invoke for native interop:
+
+| Project | Purpose |
+|---------|---------|
+| `RustBridge.Core` | Interfaces (`IPlugin`), types, enums |
+| `RustBridge.Native` | P/Invoke wrapper, `NativePluginLoader` |
+
+**Usage:**
+```csharp
+using var plugin = NativePluginLoader.Load("myplugin.dll");
+var response = plugin.Call("echo", "{\"message\": \"hello\"}");
+```
+
+### Python Integration (3.10+)
+
+Uses `ctypes` for FFI:
+
+| Module | Purpose |
+|--------|---------|
+| `rustbridge.core` | Types: `LogLevel`, `LifecycleState`, `PluginConfig` |
+| `rustbridge.native` | `NativePluginLoader`, `NativePlugin` |
+
+**Usage:**
+```python
+with NativePluginLoader.load("libmyplugin.so") as plugin:
+    response = plugin.call("echo", '{"message": "hello"}')
+```
+
+## Bundle Format (.rbp)
+
+### Structure
+
+```
+my-plugin-1.0.0.rbp (ZIP archive)
+├── manifest.json                    # Plugin metadata & checksums
+├── lib/
+│   ├── linux-x86_64/
+│   │   ├── release/libmyplugin.so
+│   │   └── debug/libmyplugin.so    # Optional debug variant
+│   ├── linux-aarch64/
+│   │   └── release/libmyplugin.so
+│   ├── darwin-x86_64/
+│   │   └── release/libmyplugin.dylib
+│   ├── darwin-aarch64/
+│   │   └── release/libmyplugin.dylib
+│   └── windows-x86_64/
+│       └── release/myplugin.dll
+├── bridges/                         # Optional JNI bridge libraries
+│   └── linux-x86_64/
+│       └── libjnibridge.so
+├── schema/                          # Optional schemas
+│   ├── messages.json                # JSON Schema
+│   └── messages.h                   # C headers
+└── manifest.json.minisig            # Optional signature
+```
+
+### Manifest Schema
+
+```json
+{
+    "bundle_version": "1.0",
+    "plugin": {
+        "name": "my-plugin",
+        "version": "1.0.0",
+        "description": "Example plugin",
+        "authors": ["Author Name"],
+        "license": "MIT"
+    },
+    "platforms": {
+        "linux-x86_64": {
+            "variants": {
+                "release": {
+                    "library": "lib/linux-x86_64/release/libmyplugin.so",
+                    "checksum": "sha256:abc123..."
+                }
+            }
+        }
+    },
+    "public_key": "RWQ...",
+    "build_info": {
+        "timestamp": "2025-01-30T12:00:00Z",
+        "commit": "abc123",
+        "builder": "rustbridge-cli 0.7.0"
+    }
+}
+```
+
+### Supported Platforms
+
+| Platform | Library Extension | Library Prefix |
+|----------|------------------|----------------|
+| `linux-x86_64` | `.so` | `lib` |
+| `linux-aarch64` | `.so` | `lib` |
+| `darwin-x86_64` | `.dylib` | `lib` |
+| `darwin-aarch64` | `.dylib` | `lib` |
+| `windows-x86_64` | `.dll` | (none) |
+| `windows-aarch64` | `.dll` | (none) |
+
 ## Error Handling Strategy
 
 ### Error Code Design
 
-```mermaid
-flowchart TD
-    PE[PluginError] --> IC[InvalidState: 1]
-    PE --> IF[InitFailed: 2]
-    PE --> SF[ShutdownFailed: 3]
-    PE --> CE[ConfigError: 4]
-    PE --> SE[SerializationError: 5]
-    PE --> UM[UnknownMessageType: 6]
-    PE --> HE[HandlerError: 7]
-    PE --> RE[RuntimeError: 8]
-    PE --> CA[Cancelled: 9]
-    PE --> TO[Timeout: 10]
-    PE --> IE[InternalError: 11]
-    PE --> FE[FfiError: 12]
-```
+All errors map to stable numeric codes for FFI compatibility:
 
-### Design Decision: Stable Error Codes
+| Code | Variant | Description |
+|------|---------|-------------|
+| 0 | (Success) | Operation completed successfully |
+| 1 | InvalidState | Invalid lifecycle state transition |
+| 2 | InitializationFailed | Plugin failed to start |
+| 3 | ShutdownFailed | Shutdown did not complete cleanly |
+| 4 | ConfigError | Invalid configuration |
+| 5 | SerializationError | JSON/binary encoding failed |
+| 6 | UnknownMessageType | Unrecognized type_tag |
+| 7 | HandlerError | Handler returned an error |
+| 8 | RuntimeError | Async runtime error |
+| 9 | Cancelled | Operation was cancelled |
+| 10 | Timeout | Operation timed out |
+| 11 | Internal | Panic or internal error |
+| 12 | FfiError | FFI layer error |
+| 13 | TooManyRequests | Concurrency limit exceeded |
 
 **Rationale**: Error codes must be stable across versions for host language error handling. Using an enum with explicit numeric mapping ensures backward compatibility.
+
+## Memory Safety Patterns
+
+### Lock Safety
+
+**Rule:** Never call external code while holding a lock.
+
+This includes logging, callbacks, and async operations. The workspace enforces `await_holding_lock = "deny"` at compile time.
+
+```rust
+// WRONG
+{
+    let guard = self.state.lock();
+    tracing::info!("State: {:?}", *guard);  // May deadlock!
+}
+
+// CORRECT
+let state = {
+    let guard = self.state.lock();
+    *guard  // Copy value
+};
+tracing::info!("State: {:?}", state);  // Lock released
+```
+
+### Thread-Safe Singletons
+
+| Pattern | Type | Usage |
+|---------|------|-------|
+| `OnceCell<T>` | Single-init | Global managers (PluginHandleManager, LogCallbackManager) |
+| `Arc<T>` | Reference counting | Shared plugin instances, runtime handles |
+| `DashMap<K, V>` | Concurrent map | Lock-free handle storage |
+| `AtomicU8` | Lock-free state | PluginContext lifecycle state |
+
+### Callback Safety
+
+Log callbacks are cleared on plugin unregister to prevent use-after-free:
+
+```rust
+impl LogCallbackManager {
+    pub fn unregister_plugin(&self) {
+        let mut guard = self.inner.lock();
+        guard.ref_count -= 1;
+        if guard.ref_count == 0 {
+            guard.callback = None;  // Prevent dangling pointer
+        }
+    }
+}
+```
 
 ## Security Considerations
 
@@ -503,13 +764,117 @@ flowchart TD
 2. **Clear ownership**: "Rust allocates, host frees" pattern
 3. **ASAN/MSAN testing**: Regular sanitizer runs in CI
 
+## Plugin Development
+
+### Basic Plugin Structure
+
+```rust
+use rustbridge::prelude::*;
+
+#[derive(Default)]
+pub struct MyPlugin;
+
+#[async_trait]
+impl Plugin for MyPlugin {
+    async fn on_start(&self, ctx: &PluginContext) -> PluginResult<()> {
+        tracing::info!("Plugin starting");
+        Ok(())
+    }
+
+    async fn handle_request(
+        &self,
+        ctx: &PluginContext,
+        type_tag: &str,
+        payload: &[u8],
+    ) -> PluginResult<Vec<u8>> {
+        match type_tag {
+            "echo" => {
+                let req: EchoRequest = serde_json::from_slice(payload)?;
+                let resp = EchoResponse { message: req.message };
+                Ok(serde_json::to_vec(&resp)?)
+            }
+            _ => Err(PluginError::UnknownMessageType(type_tag.into())),
+        }
+    }
+
+    async fn on_stop(&self, ctx: &PluginContext) -> PluginResult<()> {
+        tracing::info!("Plugin stopping");
+        Ok(())
+    }
+}
+
+// Generate FFI entry points
+rustbridge_entry!(MyPlugin::default);
+pub use rustbridge::ffi_exports::*;
+```
+
+### Message Types with Derive Macro
+
+```rust
+#[derive(Serialize, Deserialize, Message)]
+#[message(tag = "user.create")]
+pub struct CreateUserRequest {
+    pub username: String,
+    pub email: String,
+}
+
+// Generates: CreateUserRequest::type_tag() -> "user.create"
+```
+
+### Configuration with PluginFactory
+
+```rust
+#[derive(Serialize, Deserialize)]
+pub struct MyPluginConfig {
+    pub database_url: String,
+    pub pool_size: usize,
+}
+
+impl PluginFactory for MyPlugin {
+    fn create(config: &PluginConfig) -> PluginResult<Self> {
+        let my_config: MyPluginConfig = config.get("settings")?;
+        Ok(MyPlugin::new(my_config))
+    }
+}
+
+rustbridge_entry!(MyPlugin::create);
+```
+
+## CLI Tool
+
+```bash
+# Create new plugin project
+rustbridge new my-plugin
+
+# Generate C headers from Rust types
+rustbridge generate-header --input src/messages.rs --output include/messages.h
+
+# Generate minisign key pair
+rustbridge keygen --output keys/
+
+# Create bundle
+rustbridge bundle create \
+    --name my-plugin \
+    --version 1.0.0 \
+    --lib linux-x86_64:target/release/libmyplugin.so \
+    --lib darwin-aarch64:target/release/libmyplugin.dylib \
+    --signing-key keys/minisign.key \
+    --output dist/my-plugin-1.0.0.rbp
+
+# Inspect bundle
+rustbridge bundle inspect my-plugin-1.0.0.rbp
+
+# Extract library for current platform
+rustbridge bundle extract my-plugin-1.0.0.rbp --output ./lib/
+```
+
 ## Performance Considerations
 
 ### Overhead Sources
 
 | Operation | Overhead | Mitigation |
 |-----------|----------|------------|
-| JSON serialization | ~1-10μs | Optional binary formats |
+| JSON serialization | ~1-10μs | Optional binary transport |
 | FFI call | ~10-100ns | Batch operations if needed |
 | Tokio runtime | ~2MB memory | Shared across requests |
 | Log callbacks | ~1μs | Level filtering |
@@ -517,7 +882,7 @@ flowchart TD
 ### Optimization Opportunities
 
 1. **Batch requests**: Combine multiple operations in one call
-2. **Binary transport**: Optional MessagePack for hot paths
+2. **Binary transport**: Use `#[repr(C)]` structs for hot paths
 3. **Arena allocation**: Reuse buffers for repeated calls
 4. **Log level filtering**: Filter in Rust before callback
 
@@ -525,12 +890,12 @@ flowchart TD
 
 ### Plugin Reload and Multiple Instances
 
-**Plugin Reload**: ✅ **Fully Supported**
+**Plugin Reload**: Fully Supported
 - Plugins can be loaded, shut down, and reloaded in the same process
 - All functionality works correctly after reload
 - Clean shutdown with proper resource cleanup
 
-**Multiple Plugin Instances**: ⚠️ **Single Plugin Per Process Recommended**
+**Multiple Plugin Instances**: Single Plugin Per Process Recommended
 
 While the framework can technically load multiple plugin instances, they share global logging infrastructure:
 
@@ -546,37 +911,35 @@ While the framework can technically load multiple plugin instances, they share g
 
 **Recommended Usage:**
 ```java
-// ✅ RECOMMENDED: One plugin per process
+// RECOMMENDED: One plugin per process
 try (Plugin plugin = FfmPluginLoader.load("libmyplugin.so")) {
     plugin.call("operation", request);
     plugin.setLogLevel(LogLevel.DEBUG);  // Works great!
 }
 
-// ✅ SUPPORTED: Reload in same process
+// SUPPORTED: Reload in same process
 plugin.close();
 Plugin reloaded = FfmPluginLoader.load("libmyplugin.so");  // Works!
 
-// ⚠️ WORKS BUT SHARES LOGGING: Multiple plugins
+// WORKS BUT SHARES LOGGING: Multiple plugins
 try (Plugin p1 = FfmPluginLoader.load("lib1.so");
      Plugin p2 = FfmPluginLoader.load("lib2.so")) {
     // Both work, but share log callback and level
 }
 
-// ✅ ALTERNATIVE: One plugin per process
+// ALTERNATIVE: One plugin per process
 // Use separate processes or containers for full isolation
 ```
 
 **Why This Design?**
 
 The shared logging state is an intentional trade-off:
-- ✅ Simpler implementation for the common case (single plugin)
-- ✅ Better performance (no per-call overhead for scoped logging)
-- ✅ Reliable reload support (global state doesn't prevent reinitialization)
-- ⚠️ Multi-plugin scenarios require awareness of shared state
+- Simpler implementation for the common case (single plugin)
+- Better performance (no per-call overhead for scoped logging)
+- Reliable reload support (global state doesn't prevent reinitialization)
+- Multi-plugin scenarios require awareness of shared state
 
 **Future Enhancement**: If multi-plugin with isolated logging becomes a requirement, we can implement per-handle logging state.
-
----
 
 ## Future Considerations
 
@@ -592,6 +955,15 @@ The shared logging state is an intentional trade-off:
 1. **Shared memory transport**: Complexity outweighs benefits
 2. **Custom allocators**: Standard allocator is sufficient
 3. **Multiple runtime support**: Tokio-only simplifies API
+
+## Design Principles
+
+1. **Safety First**: Panic guard at FFI boundary, no `unwrap()` in production code
+2. **Async by Default**: All plugin code runs on Tokio for scalability
+3. **Clear Ownership**: "Rust allocates, host frees" pattern eliminates ambiguity
+4. **Language Agnostic**: Unified C ABI with idiomatic wrappers per language
+5. **Self-Contained Distribution**: Bundles include all platforms and metadata
+6. **Observable**: Logging callbacks, state queries, rejection counters
 
 ---
 
