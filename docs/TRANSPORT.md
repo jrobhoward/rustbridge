@@ -487,3 +487,4 @@ When migrating a JSON endpoint to binary:
 - [MEMORY_MODEL.md](./MEMORY_MODEL.md) - Memory ownership patterns
 - [BUNDLE_FORMAT.md](./BUNDLE_FORMAT.md) - Schema embedding in bundles
 - [BENCHMARK_RESULTS.md](./BENCHMARK_RESULTS.md) - Performance comparisons
+- [Tutorial: Binary Transport](./tutorials/08-binary-transport/README.md) - Hands-on tutorial building an image thumbnail generator

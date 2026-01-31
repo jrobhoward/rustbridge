@@ -105,6 +105,7 @@ Or dive into the tutorials (more to come):
 | [Production Bundles](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/05-production-bundles/) | Code signing, schemas, SBOMs                       |
 | [Cross-Compilation](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/06-cross-compilation/)   | Building for multiple platforms                    |
 | [Backpressure Queues](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/07-backpressure-queues/) | Bounded queues, blocking callers, flow control     |
+| [Binary Transport](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/08-binary-transport/)       | High-performance binary FFI, image processing      |
 
 ## Quick Example
 

@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.rustbridge.examples"
-version = "0.5.0"
+version = "0.7.0"
 
 repositories {
     mavenCentral()
@@ -14,8 +14,8 @@ repositories {
 dependencies {
     // rustbridge dependencies from Maven Local
     // (Run: cd ../../rustbridge-java && ./gradlew publishToMavenLocal)
-    implementation("com.rustbridge:rustbridge-core:0.5.0")
-    implementation("com.rustbridge:rustbridge-ffm:0.5.0")
+    implementation("com.rustbridge:rustbridge-core:0.7.0")
+    implementation("com.rustbridge:rustbridge-ffm:0.7.0")
 
     // JSON serialization
     implementation("com.fasterxml.jackson.core:jackson-databind:2.16.1")

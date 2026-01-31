@@ -29,8 +29,8 @@ When rustbridge is published to NuGet, replace the `<ProjectReference>` entries 
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="RustBridge.Core" Version="0.5.0" />
-  <PackageReference Include="RustBridge.Native" Version="0.5.0" />
+  <PackageReference Include="RustBridge.Core" Version="0.7.0" />
+  <PackageReference Include="RustBridge.Native" Version="0.7.0" />
 </ItemGroup>
 ```
 

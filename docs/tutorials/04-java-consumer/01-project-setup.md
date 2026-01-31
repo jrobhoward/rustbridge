@@ -80,8 +80,8 @@ repositories {
 
 dependencies {
     // rustbridge dependencies
-    implementation("com.rustbridge:rustbridge-core:0.5.0")
-    implementation("com.rustbridge:rustbridge-ffm:0.5.0")
+    implementation("com.rustbridge:rustbridge-core:0.7.0")
+    implementation("com.rustbridge:rustbridge-ffm:0.7.0")
 
     // JSON serialization
     implementation("com.google.code.gson:gson:2.10.1")

@@ -303,3 +303,7 @@ By completing this chapter, you'll understand:
 
 After completing this chapter, you'll have production-ready patterns for serialized plugin access in three languages.
 These patterns can be adapted for other use cases like connection pooling or rate limiting.
+
+Continue to Chapter 8 to learn about binary transport for high-performance scenarios with large payloads.
+
+[Continue to Chapter 8: Binary Transport](../08-binary-transport/README.md)

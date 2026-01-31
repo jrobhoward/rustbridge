@@ -25,11 +25,11 @@ These tutorials guide you through building Rust plugins and calling them from mu
 │  • Build metadata and provenance      • Bundle combining                   │
 │  • SBOM for compliance                                                     │
 │                                                                             │
-│  Backpressure Queues (Chapter 7)                                           │
-│  ───────────────────────────────                                           │
-│  • C#, Java/JNI, Python consumers                                          │
-│  • Bounded queues for flow control                                         │
-│  • Block producers when queue is full                                      │
+│  Backpressure Queues (Chapter 7)     Binary Transport (Chapter 8)         │
+│  ───────────────────────────────     ────────────────────────────         │
+│  • C#, Java/JNI, Python consumers    • Image thumbnail generator          │
+│  • Bounded queues for flow control   • C-compatible struct layouts        │
+│  • Block producers when queue is full• 7x faster than JSON for binaries  │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -118,6 +118,18 @@ Implement bounded queues with backpressure for flow control in C#, Java/JNI, and
 | [01-csharp-consumer.md](./07-backpressure-queues/01-csharp-consumer.md) | C# with BlockingCollection and Task |
 | [02-java-jni-consumer.md](./07-backpressure-queues/02-java-jni-consumer.md) | Java/JNI with BlockingQueue and CompletableFuture |
 | [03-python-consumer.md](./07-backpressure-queues/03-python-consumer.md) | Python with queue.Queue and concurrent.futures |
+
+### [Chapter 8: Binary Transport](./08-binary-transport/README.md)
+
+Build an image thumbnail generator using binary transport for efficient large payload handling.
+
+| Section | What You'll Learn |
+|---------|-------------------|
+| [01-java-ffm-consumer.md](./08-binary-transport/01-java-ffm-consumer.md) | Java 21+ FFM with StructLayout and VarHandle |
+| [02-java-jni-consumer.md](./08-binary-transport/02-java-jni-consumer.md) | Java 17+ JNI with ByteBuffer |
+| [03-kotlin-consumer.md](./08-binary-transport/03-kotlin-consumer.md) | Kotlin FFM with extension functions |
+| [04-csharp-consumer.md](./08-binary-transport/04-csharp-consumer.md) | C# with StructLayout and Marshal |
+| [05-python-consumer.md](./08-binary-transport/05-python-consumer.md) | Python with ctypes.Structure |
 
 ## Reference Implementations
 

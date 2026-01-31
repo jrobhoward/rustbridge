@@ -8,8 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Tutorial: Chapter 8 - Binary Transport with image thumbnail generator plugin
+  - Java FFM, Java JNI, Kotlin, C#, and Python consumers demonstrating binary FFI
+  - Variable-length binary response handling (header + payload pattern)
 - Tutorial: Chapter 7 - Backpressure Queues for bounded queue flow control
   - C#, Java/JNI, and Python implementations demonstrating blocking producers when queues are full
+
+### Changed
+- Updated all version references from 0.5.0/0.6.0 to 0.7.0 across documentation and templates
 
 ## [0.7.0] - 2026-01-30
 
