@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests for binary transport (callRaw).
+ * Tests for binary transport (callRawBytes).
  * <p>
  * These tests verify the binary transport functionality which bypasses JSON
  * serialization for high-performance scenarios using fixed-size C structs.
@@ -54,15 +54,22 @@ class BinaryTransportTest {
 
     @Test
     @Order(1)
-    @DisplayName("callRaw___SmallBenchmark___ReturnsValidResponse")
-    void callRaw___SmallBenchmark___ReturnsValidResponse() throws PluginException {
+    @DisplayName("hasBinaryTransport___returns_true")
+    void hasBinaryTransport___returns_true() {
+        assertTrue(plugin.hasBinaryTransport(), "Plugin should support binary transport");
+    }
+
+    @Test
+    @Order(2)
+    @DisplayName("callRawBytes___SmallBenchmark___ReturnsValidResponse")
+    void callRawBytes___SmallBenchmark___ReturnsValidResponse() throws PluginException {
         // Arrange
         try (Arena arena = Arena.ofConfined()) {
             SmallRequestRaw request = new SmallRequestRaw(arena, "test_key", 0x01);
 
             // Act
-            MemorySegment responseData = plugin.callRaw(MSG_BENCH_SMALL, request, SmallResponseRaw.BYTE_SIZE);
-            SmallResponseRaw response = new SmallResponseRaw(responseData);
+            byte[] responseBytes = plugin.callRawBytes(MSG_BENCH_SMALL, request);
+            SmallResponseRaw response = new SmallResponseRaw(MemorySegment.ofArray(responseBytes));
 
             // Assert
             assertEquals(SmallResponseRaw.CURRENT_VERSION, response.getVersion());
@@ -73,16 +80,16 @@ class BinaryTransportTest {
     }
 
     @Test
-    @Order(2)
-    @DisplayName("callRaw___SmallBenchmarkWithCacheMiss___ReturnsCacheMiss")
-    void callRaw___SmallBenchmarkWithCacheMiss___ReturnsCacheMiss() throws PluginException {
+    @Order(3)
+    @DisplayName("callRawBytes___SmallBenchmarkWithCacheMiss___ReturnsCacheMiss")
+    void callRawBytes___SmallBenchmarkWithCacheMiss___ReturnsCacheMiss() throws PluginException {
         // Arrange
         try (Arena arena = Arena.ofConfined()) {
             SmallRequestRaw request = new SmallRequestRaw(arena, "another_key", 0x00); // flags = 0, cache miss
 
             // Act
-            MemorySegment responseData = plugin.callRaw(MSG_BENCH_SMALL, request, SmallResponseRaw.BYTE_SIZE);
-            SmallResponseRaw response = new SmallResponseRaw(responseData);
+            byte[] responseBytes = plugin.callRawBytes(MSG_BENCH_SMALL, request);
+            SmallResponseRaw response = new SmallResponseRaw(MemorySegment.ofArray(responseBytes));
 
             // Assert
             assertEquals(0, response.getCacheHit()); // flags & 1 == 0
@@ -90,9 +97,9 @@ class BinaryTransportTest {
     }
 
     @Test
-    @Order(3)
-    @DisplayName("callRaw___ConcurrentCalls___AllSucceed")
-    void callRaw___ConcurrentCalls___AllSucceed() throws InterruptedException {
+    @Order(4)
+    @DisplayName("callRawBytes___ConcurrentCalls___AllSucceed")
+    void callRawBytes___ConcurrentCalls___AllSucceed() throws InterruptedException {
         // Arrange
         int concurrentCalls = 100;
         AtomicInteger successCount = new AtomicInteger(0);
@@ -109,8 +116,8 @@ class BinaryTransportTest {
                     int flags = index % 2; // Alternate cache hit/miss
                     SmallRequestRaw request = new SmallRequestRaw(arena, key, flags);
 
-                    MemorySegment responseData = plugin.callRaw(MSG_BENCH_SMALL, request, SmallResponseRaw.BYTE_SIZE);
-                    SmallResponseRaw response = new SmallResponseRaw(responseData);
+                    byte[] responseBytes = plugin.callRawBytes(MSG_BENCH_SMALL, request);
+                    SmallResponseRaw response = new SmallResponseRaw(MemorySegment.ofArray(responseBytes));
 
                     if (response.getVersion() == SmallResponseRaw.CURRENT_VERSION) {
                         successCount.incrementAndGet();
@@ -136,16 +143,16 @@ class BinaryTransportTest {
     }
 
     @Test
-    @Order(4)
-    @DisplayName("callRaw___ResponseValueContainsKey___ValueMatchesExpected")
-    void callRaw___ResponseValueContainsKey___ValueMatchesExpected() throws PluginException {
+    @Order(5)
+    @DisplayName("callRawBytes___ResponseValueContainsKey___ValueMatchesExpected")
+    void callRawBytes___ResponseValueContainsKey___ValueMatchesExpected() throws PluginException {
         // Arrange
         try (Arena arena = Arena.ofConfined()) {
             SmallRequestRaw request = new SmallRequestRaw(arena, "my_key", 0x01);
 
             // Act
-            MemorySegment responseData = plugin.callRaw(MSG_BENCH_SMALL, request, SmallResponseRaw.BYTE_SIZE);
-            SmallResponseRaw response = new SmallResponseRaw(responseData);
+            byte[] responseBytes = plugin.callRawBytes(MSG_BENCH_SMALL, request);
+            SmallResponseRaw response = new SmallResponseRaw(MemorySegment.ofArray(responseBytes));
 
             // Assert - the handler returns "value_for_{key}"
             String value = response.getValue();

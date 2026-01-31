@@ -45,10 +45,6 @@ pub struct Manifest {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub license_file: Option<String>,
 
-    /// API information (optional).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub api: Option<ApiInfo>,
-
     /// Minisign public key for signature verification (base64-encoded).
     /// Format: "RWS..." (standard minisign public key format).
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -285,53 +281,6 @@ pub struct SchemaInfo {
     pub description: Option<String>,
 }
 
-/// API information describing available messages.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ApiInfo {
-    /// Minimum rustbridge version required.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub min_rustbridge_version: Option<String>,
-
-    /// Supported transport types (e.g., ["json", "cstruct"]).
-    #[serde(default)]
-    pub transports: Vec<String>,
-
-    /// Available messages.
-    #[serde(default)]
-    pub messages: Vec<MessageInfo>,
-}
-
-/// Information about a single message type.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MessageInfo {
-    /// Message type tag (e.g., "user.create").
-    pub type_tag: String,
-
-    /// Human-readable description.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
-
-    /// JSON Schema reference for the request type.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub request_schema: Option<String>,
-
-    /// JSON Schema reference for the response type.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub response_schema: Option<String>,
-
-    /// Numeric message ID for binary transport.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub message_id: Option<u32>,
-
-    /// C struct name for request (binary transport).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub cstruct_request: Option<String>,
-
-    /// C struct name for response (binary transport).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub cstruct_response: Option<String>,
-}
-
 impl Manifest {
     /// Create a new manifest with minimal required fields.
     #[must_use]
@@ -352,7 +301,6 @@ impl Manifest {
             schema_checksum: None,
             notices: None,
             license_file: None,
-            api: None,
             public_key: None,
             schemas: HashMap::new(),
         }
@@ -633,16 +581,6 @@ impl Manifest {
     /// Deserialize from JSON.
     pub fn from_json(json: &str) -> BundleResult<Self> {
         Ok(serde_json::from_str(json)?)
-    }
-}
-
-impl Default for ApiInfo {
-    fn default() -> Self {
-        Self {
-            min_rustbridge_version: None,
-            transports: vec!["json".to_string()],
-            messages: Vec::new(),
-        }
     }
 }
 
@@ -948,35 +886,6 @@ mod tests {
     }
 
     #[test]
-    fn Manifest___json_roundtrip___preserves_api_info() {
-        let mut manifest = Manifest::new("api-plugin", "1.0.0");
-        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
-        manifest.api = Some(ApiInfo {
-            min_rustbridge_version: Some("0.2.0".to_string()),
-            transports: vec!["json".to_string(), "binary".to_string()],
-            messages: vec![MessageInfo {
-                type_tag: "user.create".to_string(),
-                description: Some("Create a user".to_string()),
-                request_schema: Some("#/schemas/CreateUserRequest".to_string()),
-                response_schema: Some("#/schemas/CreateUserResponse".to_string()),
-                message_id: Some(1),
-                cstruct_request: None,
-                cstruct_response: None,
-            }],
-        });
-
-        let json = manifest.to_json().unwrap();
-        let parsed = Manifest::from_json(&json).unwrap();
-
-        let api = parsed.api.unwrap();
-        assert_eq!(api.min_rustbridge_version, Some("0.2.0".to_string()));
-        assert_eq!(api.transports, vec!["json", "binary"]);
-        assert_eq!(api.messages.len(), 1);
-        assert_eq!(api.messages[0].type_tag, "user.create");
-        assert_eq!(api.messages[0].message_id, Some(1));
-    }
-
-    #[test]
     fn Manifest___json_roundtrip___preserves_schemas() {
         let mut manifest = Manifest::new("schema-plugin", "1.0.0");
         manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
@@ -1047,15 +956,6 @@ mod tests {
 
         assert!(manifest.get_platform(Platform::LinuxX86_64).is_some());
         assert!(manifest.get_platform(Platform::WindowsX86_64).is_none());
-    }
-
-    #[test]
-    fn ApiInfo___default___includes_json_transport() {
-        let api = ApiInfo::default();
-
-        assert_eq!(api.transports, vec!["json"]);
-        assert!(api.messages.is_empty());
-        assert!(api.min_rustbridge_version.is_none());
     }
 
     #[test]

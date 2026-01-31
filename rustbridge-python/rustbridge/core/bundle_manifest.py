@@ -92,28 +92,6 @@ class SchemaInfo:
 
 
 @dataclass
-class MessageInfo:
-    """Message type information."""
-
-    type_tag: str | None = None
-    description: str | None = None
-    request_schema: str | None = None
-    response_schema: str | None = None
-    message_id: int | None = None
-    cstruct_request: str | None = None
-    cstruct_response: str | None = None
-
-
-@dataclass
-class ApiInfo:
-    """API information for the plugin."""
-
-    min_rustbridge_version: str | None = None
-    transports: list[str] = field(default_factory=list)
-    messages: list[MessageInfo] = field(default_factory=list)
-
-
-@dataclass
 class GitInfo:
     """Git repository information."""
 
@@ -189,9 +167,6 @@ class BundleManifest:
 
     plugin_info: PluginInfo | None = None
     """Full plugin metadata."""
-
-    api: ApiInfo | None = None
-    """API information."""
 
     schemas: dict[str, SchemaInfo] = field(default_factory=dict)
     """Schema files in the bundle."""
@@ -289,29 +264,6 @@ class BundleManifest:
                 repository=plugin_data.get("repository"),
             )
 
-        # Parse API info
-        api = None
-        api_data = data.get("api")
-        if api_data:
-            messages = []
-            for msg_data in api_data.get("messages", []):
-                messages.append(
-                    MessageInfo(
-                        type_tag=msg_data.get("type_tag"),
-                        description=msg_data.get("description"),
-                        request_schema=msg_data.get("request_schema"),
-                        response_schema=msg_data.get("response_schema"),
-                        message_id=msg_data.get("message_id"),
-                        cstruct_request=msg_data.get("cstruct_request"),
-                        cstruct_response=msg_data.get("cstruct_response"),
-                    )
-                )
-            api = ApiInfo(
-                min_rustbridge_version=api_data.get("min_rustbridge_version"),
-                transports=api_data.get("transports", []),
-                messages=messages,
-            )
-
         # Parse schemas
         schemas: dict[str, SchemaInfo] = {}
         schemas_data = data.get("schemas", {})
@@ -361,7 +313,6 @@ class BundleManifest:
             platforms=platforms,
             public_key=data.get("public_key"),
             plugin_info=plugin_info,
-            api=api,
             schemas=schemas,
             build_info=build_info,
             sbom=sbom,

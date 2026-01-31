@@ -307,12 +307,6 @@ rustbridge new my-plugin
 # Build a plugin
 rustbridge build --release
 
-# Generate JSON Schema from Rust message types
-rustbridge generate json-schema -i src/messages.rs -o schema.json
-
-# Validate manifest
-rustbridge check
-
 # Create a bundle for distribution
 rustbridge bundle create \
   --name my-plugin --version 1.0.0 \
@@ -321,6 +315,9 @@ rustbridge bundle create \
 
 # Generate signing keys
 rustbridge keygen --output signing.key
+
+# Generate C header for binary transport (optional)
+rustbridge generate-header -s src/binary_messages.rs -o messages.h
 ```
 
 ## Configuration
@@ -367,33 +364,6 @@ try (Plugin plugin = FfmPluginLoader.load(pluginPath, config)) {
         System.out.println("Rejected " + rejectedCount + " requests due to concurrency limit");
     }
 }
-```
-
-### Project Manifest (rustbridge.toml)
-
-The `rustbridge.toml` file is a development-time configuration used by CLI tools for validation, code generation, and bundle creation. It is **not** included in `.rbp` bundles directly - bundles contain a separate `manifest.json` file (see [docs/BUNDLE_FORMAT.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/BUNDLE_FORMAT.md) for the bundle manifest schema).
-
-```toml
-[plugin]
-name = "my-plugin"
-version = "1.0.0"
-description = "My awesome plugin"
-authors = ["Your Name"]
-
-[messages."user.create"]
-description = "Create a new user"
-request_schema = "schemas/CreateUserRequest.json"
-response_schema = "schemas/CreateUserResponse.json"
-
-[messages."user.delete"]
-description = "Delete a user"
-
-[platforms]
-linux-x86_64 = "libmyplugin.so"
-linux-aarch64 = "libmyplugin.so"
-darwin-x86_64 = "libmyplugin.dylib"
-darwin-aarch64 = "libmyplugin.dylib"
-windows-x86_64 = "myplugin.dll"
 ```
 
 ## Error Handling

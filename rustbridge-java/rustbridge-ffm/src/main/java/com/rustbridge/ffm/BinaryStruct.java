@@ -9,6 +9,10 @@ import java.nio.charset.StandardCharsets;
  * Provides utilities for accessing fixed-size strings and common struct operations.
  * Subclasses define specific struct layouts and accessor methods.
  * <p>
+ * This class uses unaligned memory access for multi-byte types to support both
+ * native memory segments and heap-backed segments (from byte arrays). This is safe
+ * because the structs are designed for FFI where alignment isn't always guaranteed.
+ * <p>
  * Example usage:
  * <pre>{@code
  * public class SmallRequestRaw extends BinaryStruct {
@@ -58,6 +62,10 @@ public abstract class BinaryStruct {
      */
     public abstract long byteSize();
 
+    // Unaligned layouts for safe access to heap-backed segments (from byte arrays)
+    private static final ValueLayout.OfInt JAVA_INT_UNALIGNED = ValueLayout.JAVA_INT.withByteAlignment(1);
+    private static final ValueLayout.OfLong JAVA_LONG_UNALIGNED = ValueLayout.JAVA_LONG.withByteAlignment(1);
+
     /**
      * Read a fixed-size string field with a separate length field.
      * <p>
@@ -75,7 +83,7 @@ public abstract class BinaryStruct {
      * @return the string value
      */
     protected String getFixedString(long dataOffset, int maxLen, long lenOffset) {
-        int len = segment.get(ValueLayout.JAVA_INT, lenOffset);
+        int len = segment.get(JAVA_INT_UNALIGNED, lenOffset);
         if (len <= 0) {
             return "";
         }
@@ -106,7 +114,7 @@ public abstract class BinaryStruct {
         MemorySegment.copy(bytes, 0, segment, ValueLayout.JAVA_BYTE, dataOffset, len);
 
         // Set length field
-        segment.set(ValueLayout.JAVA_INT, lenOffset, len);
+        segment.set(JAVA_INT_UNALIGNED, lenOffset, len);
     }
 
     /**
@@ -131,41 +139,49 @@ public abstract class BinaryStruct {
 
     /**
      * Get an int (u32/i32) field.
+     * <p>
+     * Uses unaligned access to support heap-backed segments.
      *
      * @param offset byte offset
      * @return the int value
      */
     protected int getInt(long offset) {
-        return segment.get(ValueLayout.JAVA_INT, offset);
+        return segment.get(JAVA_INT_UNALIGNED, offset);
     }
 
     /**
      * Set an int (u32/i32) field.
+     * <p>
+     * Uses unaligned access to support heap-backed segments.
      *
      * @param offset byte offset
      * @param value  the int value
      */
     protected void setInt(long offset, int value) {
-        segment.set(ValueLayout.JAVA_INT, offset, value);
+        segment.set(JAVA_INT_UNALIGNED, offset, value);
     }
 
     /**
      * Get a long (u64/i64) field.
+     * <p>
+     * Uses unaligned access to support heap-backed segments.
      *
      * @param offset byte offset
      * @return the long value
      */
     protected long getLong(long offset) {
-        return segment.get(ValueLayout.JAVA_LONG, offset);
+        return segment.get(JAVA_LONG_UNALIGNED, offset);
     }
 
     /**
      * Set a long (u64/i64) field.
+     * <p>
+     * Uses unaligned access to support heap-backed segments.
      *
      * @param offset byte offset
      * @param value  the long value
      */
     protected void setLong(long offset, long value) {
-        segment.set(ValueLayout.JAVA_LONG, offset, value);
+        segment.set(JAVA_LONG_UNALIGNED, offset, value);
     }
 }

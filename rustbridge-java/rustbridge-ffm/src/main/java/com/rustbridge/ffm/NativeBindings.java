@@ -31,13 +31,14 @@ public class NativeBindings {
 
     private final MethodHandle pluginInit;
     private final MethodHandle pluginCall;
-    private final MethodHandle pluginCallRaw;
+    private final MethodHandle pluginCallRaw;      // nullable - binary transport optional
     private final MethodHandle pluginFreeBuffer;
-    private final MethodHandle rbResponseFree;
+    private final MethodHandle rbResponseFree;     // nullable - binary transport optional
     private final MethodHandle pluginShutdown;
     private final MethodHandle pluginSetLogLevel;
     private final MethodHandle pluginGetState;
     private final MethodHandle pluginGetRejectedCount;
+    private final boolean hasBinaryTransport;
 
     /**
      * Create bindings from a symbol lookup.
@@ -81,16 +82,22 @@ public class NativeBindings {
         );
 
         // plugin_call_raw(handle, message_id, request, request_size) -> RbResponse
-        this.pluginCallRaw = linker.downcallHandle(
-                lookup.find("plugin_call_raw").orElseThrow(),
-                FunctionDescriptor.of(
-                        RB_RESPONSE_LAYOUT,   // return: RbResponse
-                        ValueLayout.ADDRESS,  // handle
-                        ValueLayout.JAVA_INT, // message_id
-                        ValueLayout.ADDRESS,  // request
-                        ValueLayout.JAVA_LONG // request_size
-                )
-        );
+        // Optional - binary transport may not be available
+        var callRawSymbol = lookup.find("plugin_call_raw");
+        if (callRawSymbol.isPresent()) {
+            this.pluginCallRaw = linker.downcallHandle(
+                    callRawSymbol.get(),
+                    FunctionDescriptor.of(
+                            RB_RESPONSE_LAYOUT,   // return: RbResponse
+                            ValueLayout.ADDRESS,  // handle
+                            ValueLayout.JAVA_INT, // message_id
+                            ValueLayout.ADDRESS,  // request
+                            ValueLayout.JAVA_LONG // request_size
+                    )
+            );
+        } else {
+            this.pluginCallRaw = null;
+        }
 
         // plugin_free_buffer(buffer)
         this.pluginFreeBuffer = linker.downcallHandle(
@@ -101,12 +108,21 @@ public class NativeBindings {
         );
 
         // rb_response_free(response)
-        this.rbResponseFree = linker.downcallHandle(
-                lookup.find("rb_response_free").orElseThrow(),
-                FunctionDescriptor.ofVoid(
-                        ValueLayout.ADDRESS   // response pointer
-                )
-        );
+        // Optional - binary transport may not be available
+        var rbResponseFreeSymbol = lookup.find("rb_response_free");
+        if (rbResponseFreeSymbol.isPresent()) {
+            this.rbResponseFree = linker.downcallHandle(
+                    rbResponseFreeSymbol.get(),
+                    FunctionDescriptor.ofVoid(
+                            ValueLayout.ADDRESS   // response pointer
+                    )
+            );
+        } else {
+            this.rbResponseFree = null;
+        }
+
+        // Binary transport is available if both symbols are present
+        this.hasBinaryTransport = this.pluginCallRaw != null && this.rbResponseFree != null;
 
         // plugin_shutdown(handle) -> bool
         this.pluginShutdown = linker.downcallHandle(
@@ -179,5 +195,14 @@ public class NativeBindings {
 
     public MethodHandle pluginGetRejectedCount() {
         return pluginGetRejectedCount;
+    }
+
+    /**
+     * Check if binary transport is supported by this plugin.
+     *
+     * @return true if binary transport is available
+     */
+    public boolean hasBinaryTransport() {
+        return hasBinaryTransport;
     }
 }

@@ -237,25 +237,6 @@ response = AddResponse(**json.loads(response_json))
 print(response.result)  # 30
 ```
 
-## Code Generation
-
-For larger APIs, generate type-safe clients from Rust types:
-
-```bash
-# Generate Java classes
-rustbridge generate java \
-  --input src/messages.rs \
-  --output generated/java \
-  --package com.myapp.messages
-
-# Generate JSON Schema
-rustbridge generate json-schema \
-  --input src/messages.rs \
-  --output generated/schema.json
-```
-
-See [Code Generation Guide](../CODE_GENERATION.md) for details.
-
 ## Common Issues
 
 ### Platform Not Supported
@@ -295,5 +276,4 @@ See [Code Generation Guide](../CODE_GENERATION.md) for details.
 
 - Choose your language guide above for detailed instructions
 - [Bundle Format](../BUNDLE_FORMAT.md) - Understand the `.rbp` format
-- [Code Generation](../CODE_GENERATION.md) - Generate typed clients
 - [Binary Transport](../TRANSPORT.md) - Faster alternative to JSON

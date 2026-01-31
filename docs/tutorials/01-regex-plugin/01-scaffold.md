@@ -30,7 +30,6 @@ The project structure:
 ```
 regex-plugin/
 ├── Cargo.toml           # Dependencies and crate config
-├── rustbridge.toml      # Plugin metadata
 ├── src/
 │   └── lib.rs           # Plugin implementation
 ├── consumers/

@@ -37,7 +37,6 @@ public class TransportBenchmark {
 
     private FfmPlugin ffmPlugin;
     private JniPlugin jniPlugin;
-    private Arena benchArena;
 
     // Pre-allocated request for binary benchmarks
     private byte[] jniBinaryRequest;
@@ -61,9 +60,6 @@ public class TransportBenchmark {
 
         // Pre-allocate binary request
         jniBinaryRequest = createJniBinaryRequest("bench_key", 0x01);
-
-        // Create arena for FFM binary benchmarks
-        benchArena = Arena.ofShared();
     }
 
     @TearDown(Level.Trial)
@@ -73,9 +69,6 @@ public class TransportBenchmark {
         }
         if (jniPlugin != null) {
             jniPlugin.close();
-        }
-        if (benchArena != null) {
-            benchArena.close();
         }
     }
 
@@ -89,34 +82,12 @@ public class TransportBenchmark {
     }
 
     @Benchmark
-    public MemorySegment ffmBinary(Blackhole bh) throws PluginException {
-        try (Arena arena = Arena.ofConfined()) {
-            SmallRequestRaw request = new SmallRequestRaw(arena, "bench_key", 0x01);
-            MemorySegment response = ffmPlugin.callRaw(MSG_BENCH_SMALL, request, SmallResponseRaw.BYTE_SIZE, arena);
-            bh.consume(response);
-            return response;
-        }
-    }
-
-    @Benchmark
-    public byte[] ffmBinaryBytes(Blackhole bh) throws PluginException {
+    public byte[] ffmBinary(Blackhole bh) throws PluginException {
         try (Arena arena = Arena.ofConfined()) {
             SmallRequestRaw request = new SmallRequestRaw(arena, "bench_key", 0x01);
             byte[] response = ffmPlugin.callRawBytes(MSG_BENCH_SMALL, request);
             bh.consume(response);
             return response;
-        }
-    }
-
-    @Benchmark
-    public MemorySegment ffmBinaryZeroCopy(Blackhole bh) throws PluginException {
-        try (Arena arena = Arena.ofConfined()) {
-            SmallRequestRaw request = new SmallRequestRaw(arena, "bench_key", 0x01);
-            try (FfmPlugin.RawResponse response = ffmPlugin.callRawZeroCopy(MSG_BENCH_SMALL, request, SmallResponseRaw.BYTE_SIZE)) {
-                MemorySegment data = response.segment();
-                bh.consume(data);
-                return data;
-            }
         }
     }
 

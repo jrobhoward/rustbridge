@@ -626,7 +626,6 @@ public class BundleLoader implements AutoCloseable {
 
         public PluginInfo plugin;
         public Map<String, PlatformInfo> platforms;
-        public ApiInfo api;
 
         @JsonProperty("public_key")
         public String publicKey; // Minisign public key (base64)
@@ -740,40 +739,6 @@ public class BundleLoader implements AutoCloseable {
                 return new ArrayList<>(variants.keySet());
             }
         }
-
-        /**
-         * API information for the plugin.
-         *
-         * @param minRustbridgeVersion minimum required rustbridge version
-         * @param transports           supported transport types (e.g., "json", "cstruct")
-         * @param messages             message type definitions
-         */
-        public record ApiInfo(
-                @JsonProperty("min_rustbridge_version") String minRustbridgeVersion,
-                List<String> transports,
-                List<MessageInfo> messages
-        ) {}
-
-        /**
-         * Message type information.
-         *
-         * @param typeTag         message type tag (e.g., "user.create")
-         * @param description     message description
-         * @param requestSchema   JSON Schema reference for the request type
-         * @param responseSchema  JSON Schema reference for the response type
-         * @param messageId       numeric message ID for binary transport
-         * @param cstructRequest  C struct name for request (binary transport)
-         * @param cstructResponse C struct name for response (binary transport)
-         */
-        public record MessageInfo(
-                @JsonProperty("type_tag") String typeTag,
-                String description,
-                @JsonProperty("request_schema") String requestSchema,
-                @JsonProperty("response_schema") String responseSchema,
-                @JsonProperty("message_id") Integer messageId,
-                @JsonProperty("cstruct_request") String cstructRequest,
-                @JsonProperty("cstruct_response") String cstructResponse
-        ) {}
 
         /**
          * Schema file information.

@@ -1,21 +1,16 @@
 //! rustbridge CLI - Build tool and code generator
 //!
 //! Commands:
-//! - `rustbridge build` - Build a plugin
-//! - `rustbridge generate` - Generate host language bindings
-//! - `rustbridge generate-header` - Generate C headers from Rust structs
 //! - `rustbridge new` - Create a new plugin project
-//! - `rustbridge check` - Validate a rustbridge.toml manifest
+//! - `rustbridge generate-header` - Generate C headers from Rust structs
+//! - `rustbridge keygen` - Generate signing keys for bundles
 //! - `rustbridge bundle` - Create, inspect, or extract plugin bundles
 
 use clap::{Parser, Subcommand};
 
-mod build;
 mod bundle;
-mod codegen;
 mod header_gen;
 mod keygen;
-mod manifest;
 mod new;
 
 #[derive(Parser)]
@@ -29,27 +24,6 @@ struct Cli {
 #[derive(Subcommand)]
 #[allow(clippy::large_enum_variant)] // BundleAction has many options; boxing would complicate clap usage
 enum Commands {
-    /// Build a rustbridge plugin
-    Build {
-        /// Path to the plugin project (default: current directory)
-        #[arg(short, long)]
-        path: Option<String>,
-
-        /// Build in release mode
-        #[arg(short, long)]
-        release: bool,
-
-        /// Target platform (e.g., x86_64-unknown-linux-gnu)
-        #[arg(short, long)]
-        target: Option<String>,
-    },
-
-    /// Generate schemas and bindings from Rust message types
-    Generate {
-        #[command(subcommand)]
-        action: GenerateAction,
-    },
-
     /// Create a new rustbridge plugin project
     New {
         /// Project name
@@ -84,13 +58,6 @@ enum Commands {
         all: bool,
     },
 
-    /// Validate a rustbridge.toml manifest
-    Check {
-        /// Path to rustbridge.toml (default: ./rustbridge.toml)
-        #[arg(short, long)]
-        manifest: Option<String>,
-    },
-
     /// Generate C header from Rust #[repr(C)] structs
     GenerateHeader {
         /// Path to Rust source file containing #[repr(C)] structs
@@ -121,20 +88,6 @@ enum Commands {
     Bundle {
         #[command(subcommand)]
         action: BundleAction,
-    },
-}
-
-#[derive(Subcommand)]
-enum GenerateAction {
-    /// Generate JSON Schema from Rust message types
-    JsonSchema {
-        /// Path to Rust source file(s) containing message types
-        #[arg(short, long)]
-        input: String,
-
-        /// Output path for generated JSON schema
-        #[arg(short, long)]
-        output: String,
     },
 }
 
@@ -293,32 +246,6 @@ fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Build {
-            path,
-            release,
-            target,
-        } => {
-            build::run(path, release, target)?;
-        }
-        Commands::Generate { action } => match action {
-            GenerateAction::JsonSchema { input, output } => {
-                use codegen::{MessageType, generate_json_schema};
-                use std::path::Path;
-
-                println!("Generating JSON Schema from {input}");
-
-                // Parse message types from Rust source
-                let messages = MessageType::parse_file(Path::new(&input))?;
-                println!("  Found {} message type(s)", messages.len());
-
-                // Generate JSON Schema
-                let schema = generate_json_schema(&messages)?;
-
-                // Write to output file
-                std::fs::write(&output, serde_json::to_string_pretty(&schema)?)?;
-                println!("  JSON Schema written to {output}");
-            }
-        },
         Commands::New {
             name,
             path,
@@ -337,9 +264,6 @@ fn main() -> anyhow::Result<()> {
                 python: python || all,
             };
             new::run(&name, path, options)?;
-        }
-        Commands::Check { manifest } => {
-            manifest::check(manifest)?;
         }
         Commands::GenerateHeader {
             source,

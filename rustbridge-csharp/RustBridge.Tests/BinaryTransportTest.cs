@@ -83,6 +83,14 @@ public class BinaryTransportTest : IDisposable
     // ==================== Binary Transport Tests ====================
 
     [SkippableFact]
+    public void HasBinaryTransport___returns_true()
+    {
+        SkipIfPluginNotAvailable();
+
+        Assert.True(_plugin!.HasBinaryTransport, "Plugin should support binary transport");
+    }
+
+    [SkippableFact]
     public void CallRaw___SmallBenchmark___ReturnsValidResponse()
     {
         SkipIfPluginNotAvailable();

@@ -26,12 +26,6 @@ public class BundleManifest
     public Dictionary<string, PlatformInfo>? Platforms { get; set; }
 
     /// <summary>
-    /// API information.
-    /// </summary>
-    [JsonPropertyName("api")]
-    public ApiInfo? Api { get; set; }
-
-    /// <summary>
     /// Minisign public key (base64).
     /// </summary>
     [JsonPropertyName("public_key")]
@@ -184,48 +178,6 @@ public class BundleManifest
             }
             return Variants.Keys.ToList();
         }
-    }
-
-    /// <summary>
-    /// API information for the plugin.
-    /// </summary>
-    public class ApiInfo
-    {
-        [JsonPropertyName("min_rustbridge_version")]
-        public string? MinRustbridgeVersion { get; set; }
-
-        [JsonPropertyName("transports")]
-        public List<string>? Transports { get; set; }
-
-        [JsonPropertyName("messages")]
-        public List<MessageInfo>? Messages { get; set; }
-    }
-
-    /// <summary>
-    /// Message type information.
-    /// </summary>
-    public class MessageInfo
-    {
-        [JsonPropertyName("type_tag")]
-        public string? TypeTag { get; set; }
-
-        [JsonPropertyName("description")]
-        public string? Description { get; set; }
-
-        [JsonPropertyName("request_schema")]
-        public string? RequestSchema { get; set; }
-
-        [JsonPropertyName("response_schema")]
-        public string? ResponseSchema { get; set; }
-
-        [JsonPropertyName("message_id")]
-        public int? MessageId { get; set; }
-
-        [JsonPropertyName("cstruct_request")]
-        public string? CstructRequest { get; set; }
-
-        [JsonPropertyName("cstruct_response")]
-        public string? CstructResponse { get; set; }
     }
 
     /// <summary>

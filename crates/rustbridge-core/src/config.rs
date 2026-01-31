@@ -168,7 +168,7 @@ impl PluginConfig {
     }
 }
 
-/// Plugin metadata from rustbridge.toml manifest
+/// Plugin metadata from bundle manifest
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginMetadata {
     /// Plugin name

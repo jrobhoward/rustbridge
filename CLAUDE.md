@@ -31,12 +31,29 @@ rustbridge bundle create --name my-plugin --version 1.0.0 \
 # Java/Kotlin (from rustbridge-java/)
 ./gradlew build && ./gradlew test    # Linux/macOS
 gradlew.bat build && gradlew.bat test  # Windows
+
+# Python (from rustbridge-python/)
+source .venv/bin/activate && python -m pytest tests/ -v
 ```
 
-## Rust Version
+## Common Workflows
 
-- **Edition**: Rust 2024 | **MSRV**: 1.90.0
-- Use `cargo msrv verify` when adding dependencies
+1. **Making code changes**: Edit → `cargo fmt --all` → `cargo clippy --workspace --examples --tests -- -D warnings` → `cargo test -p <changed-crate>`
+2. **Before committing**: Run `./scripts/pre-commit.sh --smart` (tests only changed components)
+3. **Full validation**: Run `./scripts/pre-commit.sh` (required before PRs)
+4. **Cross-language changes**: If modifying FFI code in Rust, also run Java/C#/Python tests
+
+## Version Requirements
+
+| Component | Minimum Version |
+|-----------|----------------|
+| Rust | 1.90.0 (Edition 2024) |
+| Java (FFM) | 21+ |
+| Java (JNI) | 17+ |
+| .NET | 8.0+ |
+| Python | 3.10+ |
+
+Use `cargo msrv verify` when adding Rust dependencies.
 
 ## Architecture Overview
 

@@ -14,7 +14,6 @@ use std::path::Path;
 mod templates {
     // Rust plugin templates
     pub const RUST_CARGO_TOML: &str = include_str!("../templates/rust/Cargo.toml.tmpl");
-    pub const RUST_RUSTBRIDGE_TOML: &str = include_str!("../templates/rust/rustbridge.toml.tmpl");
     pub const RUST_LIB_RS: &str = include_str!("../templates/rust/src/lib.rs.tmpl");
     pub const RUST_GITIGNORE: &str = include_str!("../templates/rust/.gitignore");
 
@@ -186,10 +185,6 @@ fn create_rust_plugin(base: &Path, ctx: &TemplateContext) -> Result<()> {
     fs::write(
         base.join("Cargo.toml"),
         ctx.apply(templates::RUST_CARGO_TOML),
-    )?;
-    fs::write(
-        base.join("rustbridge.toml"),
-        ctx.apply(templates::RUST_RUSTBRIDGE_TOML),
     )?;
     fs::write(base.join("src/lib.rs"), ctx.apply(templates::RUST_LIB_RS))?;
     fs::write(base.join(".gitignore"), templates::RUST_GITIGNORE)?;

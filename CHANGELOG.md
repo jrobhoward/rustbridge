@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Java FFM: Simplified binary transport to single `callRawBytes(int, BinaryStruct)` method
+  - Removed complex `callRaw` variants and `callRawZeroCopy`
+  - `callRawBytes` returns `byte[]` for simplicity while remaining high-performance
+- Java FFM `BinaryStruct`: Now uses unaligned memory access to support heap-backed segments
+  - Enables wrapping `byte[]` arrays returned from `callRawBytes` with `MemorySegment.ofArray()`
+
+### Removed
+- `rustbridge build` CLI command (redundant wrapper around `cargo build`)
+- Bundle manifest API fields (reserved for future use):
+  - `api.messages` - message schema definitions
+  - `api.min_rustbridge_version` - version constraint
+  - `api.transports` - transport types
+- Java FFM: Removed `callRaw`, `callRawZeroCopy`, and `RawResponse` inner class
+
+### Added
+- `hasBinaryTransport()` method to Java FFM `FfmPlugin` and C# `IPlugin`/`NativePlugin`
+  - Checks if binary transport symbols are available in the loaded library
+  - Java FFM and C# now handle optional binary transport symbols gracefully
+
 ### Fixed
 - Minisign signature verification in Java, C#, and Python consumers
   - Fixed BLAKE2b-512 prehashing for "ED" algorithm signatures

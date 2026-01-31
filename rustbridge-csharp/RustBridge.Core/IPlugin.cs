@@ -52,6 +52,15 @@ public interface IPlugin : IDisposable
     long RejectedRequestCount { get; }
 
     /// <summary>
+    /// Check if binary transport is supported by this plugin.
+    /// <para>
+    /// Binary transport allows high-performance calls using fixed-size C structs
+    /// instead of JSON serialization.
+    /// </para>
+    /// </summary>
+    bool HasBinaryTransport { get; }
+
+    /// <summary>
     /// Call the plugin with a binary struct request (raw binary transport).
     /// <para>
     /// This method bypasses JSON serialization for high-performance scenarios.

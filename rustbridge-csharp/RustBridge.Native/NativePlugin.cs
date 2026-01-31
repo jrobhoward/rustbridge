@@ -106,18 +106,26 @@ public sealed class NativePlugin : IPlugin
     }
 
     /// <inheritdoc/>
+    public bool HasBinaryTransport => _library.HasBinaryTransport;
+
+    /// <inheritdoc/>
     public TResponse CallRaw<TRequest, TResponse>(int messageId, TRequest request)
         where TRequest : unmanaged, IBinaryStruct
         where TResponse : unmanaged, IBinaryStruct
     {
         ThrowIfDisposed();
 
+        if (!HasBinaryTransport)
+        {
+            throw new PluginException("Binary transport not supported by this plugin");
+        }
+
         unsafe
         {
             // Get pointer to request struct
             var requestPtr = (IntPtr)Unsafe.AsPointer(ref request);
 
-            var response = _library.PluginCallRaw(
+            var response = _library.PluginCallRaw!(
                 _handle,
                 messageId,
                 requestPtr,
@@ -171,8 +179,11 @@ public sealed class NativePlugin : IPlugin
     {
         try
         {
-            var responsePtr = (IntPtr)Unsafe.AsPointer(ref response);
-            _library.RbResponseFree(responsePtr);
+            if (_library.RbResponseFree != null)
+            {
+                var responsePtr = (IntPtr)Unsafe.AsPointer(ref response);
+                _library.RbResponseFree(responsePtr);
+            }
         }
         catch (Exception ex)
         {

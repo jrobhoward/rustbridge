@@ -13,22 +13,27 @@ internal sealed class NativeLibraryHandle : IDisposable
     public NativeBindings.PluginCreateDelegate PluginCreate { get; }
     public NativeBindings.PluginInitDelegate PluginInit { get; }
     public NativeBindings.PluginCallDelegate PluginCall { get; }
-    public NativeBindings.PluginCallRawDelegate PluginCallRaw { get; }
+    public NativeBindings.PluginCallRawDelegate? PluginCallRaw { get; }  // nullable - binary transport optional
     public NativeBindings.PluginFreeBufferDelegate PluginFreeBuffer { get; }
-    public NativeBindings.RbResponseFreeDelegate RbResponseFree { get; }
+    public NativeBindings.RbResponseFreeDelegate? RbResponseFree { get; }  // nullable - binary transport optional
     public NativeBindings.PluginShutdownDelegate PluginShutdown { get; }
     public NativeBindings.PluginSetLogLevelDelegate PluginSetLogLevel { get; }
     public NativeBindings.PluginGetStateDelegate PluginGetState { get; }
     public NativeBindings.PluginGetRejectedCountDelegate PluginGetRejectedCount { get; }
+
+    /// <summary>
+    /// Check if binary transport is supported by this library.
+    /// </summary>
+    public bool HasBinaryTransport => PluginCallRaw != null && RbResponseFree != null;
 
     private NativeLibraryHandle(
         IntPtr libraryHandle,
         NativeBindings.PluginCreateDelegate pluginCreate,
         NativeBindings.PluginInitDelegate pluginInit,
         NativeBindings.PluginCallDelegate pluginCall,
-        NativeBindings.PluginCallRawDelegate pluginCallRaw,
+        NativeBindings.PluginCallRawDelegate? pluginCallRaw,
         NativeBindings.PluginFreeBufferDelegate pluginFreeBuffer,
-        NativeBindings.RbResponseFreeDelegate rbResponseFree,
+        NativeBindings.RbResponseFreeDelegate? rbResponseFree,
         NativeBindings.PluginShutdownDelegate pluginShutdown,
         NativeBindings.PluginSetLogLevelDelegate pluginSetLogLevel,
         NativeBindings.PluginGetStateDelegate pluginGetState,
@@ -67,9 +72,9 @@ internal sealed class NativeLibraryHandle : IDisposable
                 GetDelegate<NativeBindings.PluginCreateDelegate>(handle, "plugin_create"),
                 GetDelegate<NativeBindings.PluginInitDelegate>(handle, "plugin_init"),
                 GetDelegate<NativeBindings.PluginCallDelegate>(handle, "plugin_call"),
-                GetDelegate<NativeBindings.PluginCallRawDelegate>(handle, "plugin_call_raw"),
+                TryGetDelegate<NativeBindings.PluginCallRawDelegate>(handle, "plugin_call_raw"),  // optional
                 GetDelegate<NativeBindings.PluginFreeBufferDelegate>(handle, "plugin_free_buffer"),
-                GetDelegate<NativeBindings.RbResponseFreeDelegate>(handle, "rb_response_free"),
+                TryGetDelegate<NativeBindings.RbResponseFreeDelegate>(handle, "rb_response_free"),  // optional
                 GetDelegate<NativeBindings.PluginShutdownDelegate>(handle, "plugin_shutdown"),
                 GetDelegate<NativeBindings.PluginSetLogLevelDelegate>(handle, "plugin_set_log_level"),
                 GetDelegate<NativeBindings.PluginGetStateDelegate>(handle, "plugin_get_state"),
@@ -89,6 +94,16 @@ internal sealed class NativeLibraryHandle : IDisposable
         if (!NativeLibrary.TryGetExport(libraryHandle, functionName, out var functionPtr))
         {
             throw new PluginException($"Function not found: {functionName}");
+        }
+        return Marshal.GetDelegateForFunctionPointer<TDelegate>(functionPtr);
+    }
+
+    private static TDelegate? TryGetDelegate<TDelegate>(IntPtr libraryHandle, string functionName)
+        where TDelegate : Delegate
+    {
+        if (!NativeLibrary.TryGetExport(libraryHandle, functionName, out var functionPtr))
+        {
+            return null;
         }
         return Marshal.GetDelegateForFunctionPointer<TDelegate>(functionPtr);
     }

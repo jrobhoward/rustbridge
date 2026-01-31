@@ -98,7 +98,7 @@ A lightweight `rustbridge-kotlin` module providing:
 
 ### Option 2: Code Generation for Kotlin
 
-Generate Kotlin code from `rustbridge.toml`:
+Generate Kotlin code from JSON schemas embedded in bundles:
 
 - Data classes from JSON schemas
 - Sealed classes for message types
