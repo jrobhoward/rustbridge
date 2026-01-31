@@ -1,6 +1,6 @@
 [plugin]
 name = "hello-plugin"
-version = "0.6.0"
+version = "0.7.0"
 description = "Example rustbridge plugin demonstrating core functionality"
 authors = ["rustbridge team"]
 

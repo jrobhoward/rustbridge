@@ -195,9 +195,9 @@ repositories {
     mavenLocal()
 }
 dependencies {
-    implementation("com.rustbridge:rustbridge-ffm:0.6.2")  // Java 21+
+    implementation("com.rustbridge:rustbridge-ffm:0.7.0")  // Java 21+
     // or
-    implementation("com.rustbridge:rustbridge-jni:0.6.2")  // Java 17+
+    implementation("com.rustbridge:rustbridge-jni:0.7.0")  // Java 17+
 }
 ```
 

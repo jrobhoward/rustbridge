@@ -64,23 +64,23 @@ The plugin accepts configuration via `config.data`:
 # Linux
 rustbridge bundle create \
   --name regex-plugin \
-  --version 0.6.0 \
+  --version 0.7.0 \
   --lib linux-x86_64:target/release/libregex_plugin.so \
-  --output regex-plugin-0.6.0.rbp
+  --output regex-plugin-0.7.0.rbp
 
 # macOS (Apple Silicon)
 rustbridge bundle create \
   --name regex-plugin \
-  --version 0.6.0 \
+  --version 0.7.0 \
   --lib darwin-aarch64:target/release/libregex_plugin.dylib \
-  --output regex-plugin-0.6.0.rbp
+  --output regex-plugin-0.7.0.rbp
 
 # Windows
 rustbridge bundle create \
   --name regex-plugin \
-  --version 0.6.0 \
+  --version 0.7.0 \
   --lib windows-x86_64:target/release/regex_plugin.dll \
-  --output regex-plugin-0.6.0.rbp
+  --output regex-plugin-0.7.0.rbp
 ```
 
 ## Using from Kotlin
