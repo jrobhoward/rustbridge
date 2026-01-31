@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Tutorial: Chapter 7 - Backpressure Queues for bounded queue flow control
+  - C#, Java/JNI, and Python implementations demonstrating blocking producers when queues are full
+
 ## [0.7.0] - 2026-01-30
 
 ### Changed

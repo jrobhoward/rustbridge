@@ -18,12 +18,18 @@ These tutorials guide you through building Rust plugins and calling them from mu
 │  • JSON validation/prettify           • Error handling patterns            │
 │  • Configurable behavior              • Performance benchmarking           │
 │                                                                             │
-│  Production Bundles (Chapter 5)       Cross-Compilation (Chapter 6)       │
+│  Production Bundles (Chapter 5)       Cross-Compilation (Chapter 6)        │
 │  ──────────────────────────────       ──────────────────────────────       │
 │  • Code signing with minisign         • Multi-platform bundles             │
 │  • JSON schemas for validation        • Native and cross builds            │
 │  • Build metadata and provenance      • Bundle combining                   │
 │  • SBOM for compliance                                                     │
+│                                                                             │
+│  Backpressure Queues (Chapter 7)                                           │
+│  ───────────────────────────────                                           │
+│  • C#, Java/JNI, Python consumers                                          │
+│  • Bounded queues for flow control                                         │
+│  • Block producers when queue is full                                      │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -103,12 +109,23 @@ Build multi-platform bundles for Linux, macOS, and Windows.
 | [02-native-toolchains.md](./06-cross-compilation/02-native-toolchains.md) | Build natively on each platform |
 | [03-cross-compilation.md](./06-cross-compilation/03-cross-compilation.md) | Cross-compile with `cross` or cargo |
 
+### [Chapter 7: Backpressure Queues](./07-backpressure-queues/README.md)
+
+Implement bounded queues with backpressure for flow control in C#, Java/JNI, and Python.
+
+| Section | What You'll Learn |
+|---------|-------------------|
+| [01-csharp-consumer.md](./07-backpressure-queues/01-csharp-consumer.md) | C# with BlockingCollection and Task |
+| [02-java-jni-consumer.md](./07-backpressure-queues/02-java-jni-consumer.md) | Java/JNI with BlockingQueue and CompletableFuture |
+| [03-python-consumer.md](./07-backpressure-queues/03-python-consumer.md) | Python with queue.Queue and concurrent.futures |
+
 ## Reference Implementations
 
 Completed examples are available for reference. If you get stuck, compare your code against these working implementations:
 
 - **Regex plugin** (Chapters 1-2): [`examples/regex-plugin/`](../../examples/regex-plugin/)
 - **JSON plugin** (Chapters 3-4): [`examples/json-plugin/`](../../examples/json-plugin/)
+- **Hello plugin** (Chapter 7): [`examples/hello-plugin/`](../../examples/hello-plugin/)
 
 ## Choosing Your Path
 

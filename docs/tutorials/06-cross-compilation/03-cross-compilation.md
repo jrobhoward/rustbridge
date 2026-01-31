@@ -213,5 +213,6 @@ and run.
 
 ## What's Next?
 
-You've completed the cross-compilation tutorial! See the [Appendix: Java JNI](../appendix-java-jni/README.md) for Java
-17-20 support without FFM.
+Continue to [Chapter 7: Backpressure Queues](../07-backpressure-queues/README.md) to learn how to implement bounded queues with flow control for C#, Java/JNI, and Python consumers.
+
+For Java 17-20 support without FFM, see the [Appendix: Java JNI](../appendix-java-jni/README.md).

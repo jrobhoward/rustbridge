@@ -104,6 +104,7 @@ Or dive into the tutorials (more to come):
 | [Call from Java](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/04-java-consumer/)          | FFM/JNI setup, Gradle configuration                |
 | [Production Bundles](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/05-production-bundles/) | Code signing, schemas, SBOMs                       |
 | [Cross-Compilation](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/06-cross-compilation/)   | Building for multiple platforms                    |
+| [Backpressure Queues](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/07-backpressure-queues/) | Bounded queues, blocking callers, flow control     |
 
 ## Quick Example
 

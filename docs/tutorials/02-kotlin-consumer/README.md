@@ -62,4 +62,4 @@ This chapter takes approximately 20-30 minutes to complete.
 
 ## Next Steps
 
-After completing this chapter, you'll have a working end-to-end example of a Rust plugin called from Kotlin with proper logging and type safety.
+After completing this chapter, continue to [Chapter 3: Building a JSON Plugin](../03-json-plugin/README.md) to learn more message handling patterns.

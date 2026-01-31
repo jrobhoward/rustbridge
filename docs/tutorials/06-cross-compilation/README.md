@@ -66,4 +66,6 @@ This avoids cross-compilation complexity and uses native toolchains for best com
 
 ## Next Steps
 
-After completing this chapter, you'll have production-ready multi-platform bundles. See the [Appendix: Java JNI](../appendix-java-jni/README.md) for Java 17-20 support without FFM.
+After completing this chapter, continue to [Chapter 7: Backpressure Queues](../07-backpressure-queues/README.md) to learn how to implement bounded queues with flow control for C#, Java/JNI, and Python consumers.
+
+For Java 17-20 support without FFM, see the [Appendix: Java JNI](../appendix-java-jni/README.md).

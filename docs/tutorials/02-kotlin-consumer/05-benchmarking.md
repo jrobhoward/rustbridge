@@ -271,8 +271,4 @@ meaningful benefit.
 
 ## Next Steps
 
-- **Sign your bundles** for production deployment
-- **Add more message types** to your plugin
-- **Read the architecture docs** for deeper understanding
-
-See the [rustbridge documentation](../../README.md) for more advanced topics.
+Continue to [Chapter 3: Building a JSON Plugin](../03-json-plugin/README.md) to learn more message handling patterns with a JSON validation plugin.
