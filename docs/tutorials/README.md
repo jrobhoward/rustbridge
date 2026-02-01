@@ -2,8 +2,6 @@
 
 Learn to build custom plugins with rustbridge through hands-on tutorials.
 
-> **Platform Note**: These tutorials use Linux/macOS commands (bash). For Windows users, see [tutorials_windows/](../tutorials_windows/) which uses PowerShell commands and Windows-specific paths.
-
 ## Overview
 
 These tutorials guide you through building Rust plugins and calling them from multiple languages. Start with the regex plugin to learn core concepts, then explore JSON processing and language-specific consumers.
