@@ -4,8 +4,8 @@ This guide walks you through using rustbridge plugins from Kotlin with idiomatic
 
 ## Prerequisites
 
-- **Kotlin 1.9+** - For modern language features
-- **Java 21+** - Required for FFM (Foreign Function & Memory API)
+- **Kotlin 2.0+** - For Java 22 support
+- **Java 22+** - Required for FFM (Foreign Function & Memory API)
 - **Gradle** - For dependency management
 - **A rustbridge plugin** - Either a `.rbp` bundle or native library
 
@@ -41,7 +41,8 @@ dependencies {
 }
 
 kotlin {
-    jvmToolchain(21)
+    // Java 22+ required for FFM
+    jvmToolchain(22)
 }
 
 tasks.test {
@@ -50,12 +51,11 @@ tasks.test {
 
 // Required for FFM native access
 tasks.withType<JavaExec> {
-    jvmArgs("--enable-preview", "--enable-native-access=ALL-UNNAMED")
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 ```
 
-> **Important**: The `--enable-native-access=ALL-UNNAMED` flag is required for FFM to call native code. Without it, you'll get `IllegalCallerException`.
-
+> **Important**: The `--enable-native-access=ALL-UNNAMED` flag is required for FFM to call native code. Without it, you'll get `IllegalCallerException`. 
 ## The rustbridge-kotlin Module
 
 The `rustbridge-kotlin` module provides idiomatic Kotlin extensions:

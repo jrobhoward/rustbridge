@@ -2,11 +2,11 @@
 
 A minimal Java 17+ project template for consuming rustbridge plugins using JNI.
 
-> **Note:** For Java 21+, prefer the FFM template which has better performance for JSON workloads.
+> **Note:** For Java 22+, we recommend the FFM template which has better performance for JSON workloads.
 
 ## Prerequisites
 
-- **Java 17+** - JNI requires Java 17 or later (LTS)
+- **Java 17+** - JNI works on any Java 17+ version (for Java 22+, consider FFM instead)
 - **Gradle 8.0+** - Build tool
 - **A rustbridge plugin** - Your `.rbp` bundle file
 - **JNI bridge library** - Built from rustbridge

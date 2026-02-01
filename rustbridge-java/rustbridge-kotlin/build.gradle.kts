@@ -1,6 +1,6 @@
 plugins {
     `java-library`
-    kotlin("jvm") version "1.9.22"
+    kotlin("jvm") version "2.0.21"
 }
 
 dependencies {
@@ -26,7 +26,8 @@ java {
 }
 
 kotlin {
-    jvmToolchain(21)
+    // Java 22+ required for FFM
+    jvmToolchain(22)
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
@@ -36,6 +37,6 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 }
 
 tasks.withType<Test> {
-    jvmArgs("--enable-preview", "--enable-native-access=ALL-UNNAMED")
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
     systemProperty("junit.jupiter.execution.timeout.default", "60s")
 }

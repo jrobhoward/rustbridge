@@ -30,7 +30,7 @@ repositories {
 }
 
 dependencies {
-    // Rustbridge FFM (requires Java 21+)
+    // Rustbridge FFM (requires Java 22+)
     implementation("com.rustbridge:rustbridge-core:0.7.0")
     implementation("com.rustbridge:rustbridge-ffm:0.7.0")
     implementation("com.rustbridge:rustbridge-kotlin:0.7.0")
@@ -48,7 +48,8 @@ application {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        // Java 22+ required for FFM
+        languageVersion.set(JavaLanguageVersion.of(22))
     }
 }
 
@@ -148,14 +149,14 @@ Done!
 
 ## Understanding the Setup
 
-### Java 21+ Requirement
+### Java 22+ Requirement
 
-The FFM API is stable in Java 21+:
+The FFM API became final (non-preview) in Java 22:
 
 ```kotlin
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(22))
     }
 }
 ```

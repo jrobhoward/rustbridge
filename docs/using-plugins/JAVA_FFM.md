@@ -1,12 +1,12 @@
-# Getting Started: Java 21+ (FFM)
+# Getting Started: Java 22+ (FFM)
 
-This guide walks you through using rustbridge plugins from Java 21+ using the Foreign Function & Memory API (FFM).
+This guide walks you through using rustbridge plugins from Java 22+ using the Foreign Function & Memory API (FFM).
 
 ## Prerequisites
 
-- **Java 21 or later** - FFM requires Java 21+
+- **Java 22 or later** - FFM requires Java 22
   ```bash
-  java --version  # Should be >= 21
+  java --version  # Should be >= 22
   ```
 - **Gradle or Maven** - For dependency management
 - **A rustbridge plugin** - Either a `.rbp` bundle or `.so`/`.dylib`/`.dll` file
@@ -278,16 +278,17 @@ if (rejectedCount > 0) {
 For FFM to work, you need to enable native access:
 
 ```bash
-java --enable-preview --enable-native-access=ALL-UNNAMED -jar myapp.jar
+java --enable-native-access=ALL-UNNAMED -jar myapp.jar
 ```
 
 Or in Gradle:
 
 ```kotlin
 tasks.withType<JavaExec> {
-    jvmArgs("--enable-preview", "--enable-native-access=ALL-UNNAMED")
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 ```
+
 
 ## Complete Example
 
@@ -330,7 +331,7 @@ public class CalculatorExample {
 
 ## Related Documentation
 
-- [JAVA_JNI.md](./JAVA_JNI.md) - Java 17+ JNI guide (legacy support)
+- [JAVA_JNI.md](./JAVA_JNI.md) - Java 17+ JNI guide
 - [KOTLIN.md](./KOTLIN.md) - Kotlin-specific guide
 - [../TRANSPORT.md](../TRANSPORT.md) - Transport layer details
 - [../MEMORY_MODEL.md](../MEMORY_MODEL.md) - Memory ownership

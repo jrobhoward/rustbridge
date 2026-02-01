@@ -429,14 +429,14 @@ fn print_next_steps(project_dir: &str, ctx: &TemplateContext, options: &NewOptio
     }
 
     if options.java_ffm {
-        println!("\nJava FFM consumer (requires Java 21+):");
+        println!("\nJava FFM consumer (requires Java 22+):");
         println!("  cd consumers/java-ffm");
         println!("  cp ../../{} .", ctx.bundle_path);
         println!("  ./gradlew run");
     }
 
     if options.java_jni {
-        println!("\nJava JNI consumer (requires Java 17+):");
+        println!("\nJava JNI consumer (requires Java 17+, use FFM for 22+):");
         println!("  cd consumers/java-jni");
         println!("  cp ../../{} .", ctx.bundle_path);
         println!("  ./gradlew run");

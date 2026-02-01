@@ -16,13 +16,9 @@ dependencies {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        // Java 22+ required for FFM
+        languageVersion.set(JavaLanguageVersion.of(22))
     }
-}
-
-// Enable preview features for compilation (needed for Arena/MemorySegment)
-tasks.withType<JavaCompile> {
-    options.compilerArgs.addAll(listOf("--enable-preview"))
 }
 
 jmh {
@@ -41,15 +37,7 @@ jmh {
 
     // JVM args for benchmark execution
     jvmArgs.set(listOf(
-        "--enable-preview",
         "--enable-native-access=ALL-UNNAMED",
         "-Djava.library.path=${rootProject.projectDir.parentFile}/target/release"
     ))
-}
-
-// Configure bytecode generator task to use preview features when it runs
-afterEvaluate {
-    tasks.named<me.champeau.jmh.JmhBytecodeGeneratorTask>("jmhRunBytecodeGenerator") {
-        jvmArgs.add("--enable-preview")
-    }
 }

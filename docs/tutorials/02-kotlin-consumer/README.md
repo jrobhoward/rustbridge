@@ -52,7 +52,7 @@ Compare debug vs release builds and measure cache effectiveness.
 
 ## Prerequisites
 
-- Java 21+ installed (for FFM support)
+- Java 22+ installed
 - Your regex plugin bundle from Chapter 1
 - Basic familiarity with Kotlin/Gradle
 

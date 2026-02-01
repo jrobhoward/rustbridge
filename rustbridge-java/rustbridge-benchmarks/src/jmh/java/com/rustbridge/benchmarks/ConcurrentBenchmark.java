@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Benchmark)
 @Warmup(iterations = 2, time = 1)
 @Measurement(iterations = 3, time = 2)
-@Fork(value = 1, jvmArgs = {"--enable-preview", "--enable-native-access=ALL-UNNAMED"})
+@Fork(value = 1, jvmArgs = {"--enable-native-access=ALL-UNNAMED"})
 public class ConcurrentBenchmark {
 
     private static final int MSG_BENCH_SMALL = 1;

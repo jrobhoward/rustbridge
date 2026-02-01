@@ -190,9 +190,9 @@ cp ../../my-plugin-1.0.0.rbp .
 ./gradlew run
 ```
 
-### Java (FFM) - Recommended for Java 21+
+### Java (FFM) - Recommended for Java 22+
 
-> Uses the Foreign Function & Memory (FFM) API. For Java 17-20, see [Java JNI](#java-jni---java-17-20) below.
+> Uses the Foreign Function & Memory (FFM) API. JNI is also available for Java 17+ if needed.
 
 ```bash
 cd ~/rustbridge-workspace/my-plugin/consumers/java-ffm
@@ -225,12 +225,11 @@ pip install -e ~/rustbridge-workspace/rustbridge/rustbridge-python
 python main.py
 ```
 
-### Java (JNI) - Java 17-20
+### Java (JNI) - Java 17+
 
-> **Note**: JNI is provided for legacy Java compatibility (8-17). If you're using Java 21+, prefer
-> the [FFM approach](#java-ffm---recommended-for-java-21) above—it's simpler and doesn't require building a separate
-> bridge
-> library.
+> **Note**: JNI works on Java 17+, but if you're using Java 22+, we recommend
+> the [FFM approach](#java-ffm---recommended-for-java-22) above—it's simpler and doesn't require building a separate
+> bridge library.
 
 ```bash
 # Build the JNI bridge first
@@ -310,9 +309,9 @@ rustbridge new my-plugin --all              # Rust + all consumers
 | Template  | Description                     | Requirements |
 |-----------|---------------------------------|--------------|
 | rust      | Rust plugin                     | Rust 1.90+   |
-| kotlin    | Kotlin consumer                 | Java 21+     |
-| java-ffm  | Java FFM consumer (recommended) | Java 21+     |
-| java-jni  | Java JNI consumer (legacy)      | Java 17+     |
+| kotlin    | Kotlin consumer                 | Java 22+     |
+| java-ffm  | Java FFM consumer (recommended) | Java 22+     |
+| java-jni  | Java JNI consumer               | Java 17+     |
 | csharp    | C# consumer                     | .NET 8.0+    |
 | python    | Python consumer                 | Python 3.9+  |
 
@@ -343,13 +342,13 @@ pub use rustbridge_ffi::{
 };
 ```
 
-### Java: "IllegalCallerException" or "Preview features not enabled"
+### Java: "IllegalCallerException"
 
-Add JVM arguments for FFM:
+Add JVM arguments for FFM (Java 22+):
 
 ```kotlin
 tasks.withType<JavaExec> {
-    jvmArgs("--enable-preview", "--enable-native-access=ALL-UNNAMED")
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 ```
 

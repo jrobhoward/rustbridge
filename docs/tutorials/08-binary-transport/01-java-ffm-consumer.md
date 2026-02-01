@@ -71,7 +71,7 @@ public class Main {
 ```
 
 Key points:
-- `FfmPluginLoader.load()` uses Java 21+ FFM for native access
+- `FfmPluginLoader.load()` uses Java 22+ FFM for native access
 - JSON calls work the same as JNI
 - FFM enables direct memory access for binary transport
 
@@ -451,7 +451,8 @@ dependencies {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        // Java 22+ required for FFM
+        languageVersion.set(JavaLanguageVersion.of(22))
     }
 }
 
@@ -460,7 +461,7 @@ application {
 }
 
 tasks.withType<JavaExec> {
-    // Required for Foreign Function & Memory API
+    // Required for FFM native access
     jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 ```

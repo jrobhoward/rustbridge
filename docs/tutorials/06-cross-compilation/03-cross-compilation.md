@@ -144,13 +144,10 @@ Test on your development machine:
 cd ~/rustbridge-workspace/json-plugin
 
 # Run with the bundle
-java --enable-preview --enable-native-access=ALL-UNNAMED \
+java --enable-native-access=ALL-UNNAMED \
   -jar consumers/java-ffm/build/libs/json-plugin-java-ffm-0.1.0-all.jar \
   json-plugin-0.1.0.rbp
 ```
-
-> **Note**: In Java 21, `--enable-preview` is required (FFM is preview), and `--enable-native-access=ALL-UNNAMED`
-> suppresses native access warnings. In Java 22+, FFM is stable so only `--enable-native-access` is needed.
 
 The `BundleLoader` automatically extracts the correct library for your platform.
 
@@ -168,7 +165,7 @@ SSH into the Pi and run:
 ```bash
 ssh pi@raspberrypi
 cd ~
-java --enable-preview --enable-native-access=ALL-UNNAMED \
+java --enable-native-access=ALL-UNNAMED \
   -jar json-plugin-java-ffm-0.1.0-all.jar json-plugin-0.1.0.rbp
 ```
 

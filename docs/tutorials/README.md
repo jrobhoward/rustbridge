@@ -41,7 +41,7 @@ These tutorials guide you through building Rust plugins and calling them from mu
 Before starting, ensure you have:
 
 - **Rust 1.90+** installed
-- **Java 21+** (for FFM-based Kotlin consumer)
+- **Java 22+** (for FFM-based Kotlin consumer)
 - **rustbridge CLI** installed ([Getting Started](../GETTING_STARTED.md))
 
 ## Tutorial Chapters
@@ -127,7 +127,7 @@ Build an image thumbnail generator using binary transport for efficient large pa
 
 | Section | What You'll Learn |
 |---------|-------------------|
-| [01-java-ffm-consumer.md](./08-binary-transport/01-java-ffm-consumer.md) | Java 21+ FFM with StructLayout and VarHandle |
+| [01-java-ffm-consumer.md](./08-binary-transport/01-java-ffm-consumer.md) | Java 22+ FFM with StructLayout and VarHandle |
 | [02-java-jni-consumer.md](./08-binary-transport/02-java-jni-consumer.md) | Java 17+ JNI with ByteBuffer |
 | [03-kotlin-consumer.md](./08-binary-transport/03-kotlin-consumer.md) | Kotlin FFM with extension functions |
 | [04-csharp-consumer.md](./08-binary-transport/04-csharp-consumer.md) | C# with StructLayout and Marshal |

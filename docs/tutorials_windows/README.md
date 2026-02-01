@@ -51,14 +51,14 @@ Build a JSON toolkit plugin with validation and formatting. You'll learn:
 
 #### [Chapter 2: Kotlin Consumer](./02-kotlin-consumer/README.md)
 Call your regex plugin from Kotlin using FFM. You'll learn:
-- Java FFM (Foreign Function & Memory) API
+- Java FFM (Foreign Function & Memory) API (requires Java 22+)
 - Gradle project setup
 - Logging callbacks
 - Type-safe wrapper classes
 
 #### [Chapter 4: Java Consumer](./04-java-consumer/README.md)
 Call the JSON plugin from Java. You'll learn:
-- Both FFM (Java 21+) and JNI (Java 17+) approaches
+- Both FFM (Java 22+, recommended) and JNI (Java 17+) approaches
 - Error handling patterns
 - JSON serialization with Gson
 

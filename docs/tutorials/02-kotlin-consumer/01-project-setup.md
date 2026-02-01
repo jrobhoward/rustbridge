@@ -89,14 +89,14 @@ application {
 
 tasks.withType<JavaExec> {
     // Required for Foreign Function & Memory API
-    jvmArgs("--enable-preview", "--enable-native-access=ALL-UNNAMED")
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 ```
 
 Key points:
 
 - **mavenLocal()**: Finds rustbridge libraries you installed
-- **rustbridge-ffm**: Uses Java 21's Foreign Function API (faster than JNI)
+- **rustbridge-ffm**: Uses Java 22+'s Foreign Function API (faster JSON performance than JNI)
 - **jackson-module-kotlin**: For JSON serialization
 - **jvmArgs**: Required for FFM access
 

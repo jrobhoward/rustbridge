@@ -31,8 +31,8 @@ repositories {
 dependencies {
     // Rustbridge (choose one based on your Java version)
     implementation("com.rustbridge:rustbridge-core:0.7.0")
-    implementation("com.rustbridge:rustbridge-ffm:0.7.0")  // Java 21+
-    // OR: implementation("com.rustbridge:rustbridge-jni:0.7.0")  // Java 17+
+    implementation("com.rustbridge:rustbridge-ffm:0.7.0")  // Java 22+
+    // OR: implementation("com.rustbridge:rustbridge-jni:0.7.0")  // Java 17+ (use FFM for 22+)
 
     // JSON
     implementation("com.google.code.gson:gson:2.11.0")
@@ -44,7 +44,8 @@ application {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))  // or 17 for JNI
+        // Java 22+ for FFM (recommended), or 17+ for JNI
+        languageVersion.set(JavaLanguageVersion.of(22))
     }
 }
 ```

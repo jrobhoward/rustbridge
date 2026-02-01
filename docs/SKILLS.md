@@ -466,18 +466,19 @@ pub unsafe extern "C" fn plugin_init(...) -> FfiPluginHandle { ... }
 
 ## Java Integration
 
-### FFM (Java 21+)
+### FFM (Java 22+)
 
-Prefer Project Panama FFM for Java 21+:
+Prefer Project Panama FFM for Java 22+:
 - Pure Java bindings, no JNI code needed
 - Arena-based memory management
-- Better performance than JNI
+- Better JSON performance than JNI
 
 ### JNI (Java 17+)
 
-JNI fallback for older JVM compatibility:
+JNI works on Java 17+ (for Java 22+, prefer FFM):
 - More complex but widely supported
 - Requires native code generation
+- Better binary transport performance than FFM
 
 ### Memory Management
 

@@ -27,18 +27,14 @@ dependencies {
 }
 
 kotlin {
-    jvmToolchain(21)
+    // Java 22+ required for FFM
+    jvmToolchain(22)
 }
 
 tasks.test {
     useJUnitPlatform()
 }
 
-// Required for FFM preview features
-tasks.withType<JavaCompile> {
-    options.compilerArgs.add("--enable-preview")
-}
-
 tasks.withType<JavaExec> {
-    jvmArgs("--enable-preview", "--enable-native-access=ALL-UNNAMED")
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }

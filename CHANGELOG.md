@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - Tutorial: Consistently use version 0.1.0 for tutorial versions
 
+### Changed
+- Docs: Clarified Java version requirements across all documentation
+  - FFM requires Java 22+ (not Java 21+ as previously documented)
+  - JNI works on Java 17+ (FFM is recommended for Java 22+)
+  - Removed unnecessary "FFM is final" and "--enable-preview" comments
+
 ### Added
 - Tutorial: Chapter 8 - Binary Transport with image thumbnail generator plugin
   - Java FFM, Java JNI, Kotlin, C#, and Python consumers demonstrating binary FFI

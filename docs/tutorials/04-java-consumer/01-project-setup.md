@@ -91,24 +91,20 @@ dependencies {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        // Java 22+ required for FFM
+        languageVersion.set(JavaLanguageVersion.of(22))
     }
 }
 
-// Required for FFM preview features
-tasks.withType<JavaCompile> {
-    options.compilerArgs.add("--enable-preview")
-}
-
 tasks.withType<JavaExec> {
-    jvmArgs("--enable-preview", "--enable-native-access=ALL-UNNAMED")
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 ```
 
 Key points:
 
 - **mavenLocal()**: Finds rustbridge libraries you installed
-- **rustbridge-ffm**: Uses Java 21's Foreign Function & Memory API
+- **rustbridge-ffm**: Uses Java 22+'s Foreign Function & Memory API
 - **gson**: For JSON serialization (simpler than Jackson for Java)
 - **jvmArgs**: Required for FFM native access
 

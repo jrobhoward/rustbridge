@@ -1,6 +1,6 @@
 # Chapter 4: Java Consumer
 
-In this chapter, you'll call the JSON plugin from Java using both FFM (Java 21+) and JNI (Java 17+) approaches.
+In this chapter, you'll call the JSON plugin from Java using both FFM (Java 22+, recommended) and JNI (Java 17+) approaches.
 
 ## What You'll Build
 
@@ -12,7 +12,7 @@ A Java application that:
 ## Prerequisites
 
 - Completed [Chapter 3: JSON Plugin](../03-json-plugin/README.md)
-- JDK 17+ (for JNI) or JDK 21+ (for FFM)
+- JDK 17+ (JNI) or JDK 22+ (FFM, recommended)
 - Gradle 8.5+
 
 ## Sections

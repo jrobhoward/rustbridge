@@ -1,7 +1,7 @@
 # Chapter 4: Calling from Java
 
 In this chapter, you'll load your JSON plugin from Java using the Foreign Function & Memory (FFM) API available in Java
-21+.
+22+ (FFM became a final API in Java 22).
 
 ## What You'll Build
 
@@ -50,7 +50,7 @@ Handle plugin errors gracefully in Java.
 
 ## Prerequisites
 
-- **Java 21+** installed (for FFM support)
+- **Java 22+** installed
 - Your json-plugin bundle from Chapter 3
 - Basic familiarity with Java and Gradle
 
@@ -58,10 +58,10 @@ Handle plugin errors gracefully in Java.
 
 This chapter takes approximately 20-30 minutes to complete.
 
-## Java 17 Alternative
+## JNI Alternative
 
-If you're stuck on Java 17-20, see the [Java JNI appendix](../appendix-java-jni/README.md) for an alternative approach
-using JNI instead of FFM.
+If you prefer JNI (works on Java 17+), see the [Java JNI appendix](../appendix-java-jni/README.md) for an alternative approach.
+For Java 22+, we recommend FFM as shown in this chapter.
 
 ## Next Steps
 

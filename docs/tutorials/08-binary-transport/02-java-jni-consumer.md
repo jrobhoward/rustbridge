@@ -1,6 +1,6 @@
 # Section 2: Java JNI Consumer
 
-In this section, you'll implement binary transport in Java using JNI with ByteBuffer. This approach works with Java 17+ and provides an alternative to FFM for binary data handling.
+In this section, you'll implement binary transport in Java using JNI with ByteBuffer. This approach works with Java 17+ and provides an alternative to FFM for binary data handling. For Java 22+, we recommend FFM instead.
 
 ## Prerequisites
 
@@ -523,9 +523,9 @@ try {
 
 ## Comparison: FFM vs JNI
 
-| Aspect | FFM (Java 21+) | JNI (Java 17+) |
-|--------|----------------|----------------|
-| Java version | 21+ | 17+ |
+| Aspect | FFM (Java 22+) | JNI (Java 17+) |
+|--------|----------------|------------------|
+| Java version | 22+ (recommended) | 17+ |
 | Type safety | High (StructLayout) | Low (manual offsets) |
 | Memory management | Manual (Arena, freeBuffer) | Automatic (JNI copies) |
 | Performance | Better (zero-copy possible) | Good (extra copy) |
@@ -533,8 +533,8 @@ try {
 | Error messages | Better (named fields) | Basic |
 
 **Recommendation:**
-- Use FFM for new projects on Java 21+
-- Use JNI for compatibility with Java 17-20
+- Use FFM for Java 22+ (recommended)
+- Use JNI for Java 17-21, or on Java 22+ if you have specific reasons to prefer JNI
 - JNI is sufficient for most binary transport use cases
 
 ## What's Next?

@@ -2,27 +2,22 @@ plugins {
     `java-library`
 }
 
+// Java 22+ required for FFM
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(22))
+    }
+    withJavadocJar()
+    withSourcesJar()
+}
+
 dependencies {
     api(project(":rustbridge-core"))
     testImplementation(project(":rustbridge-jni"))
 }
 
-java {
-    withJavadocJar()
-    withSourcesJar()
-}
-
-tasks.withType<JavaCompile> {
-    options.compilerArgs.addAll(
-        listOf(
-            "--enable-preview"
-        )
-    )
-}
-
 tasks.withType<Test> {
-    jvmArgs("--enable-preview", "--enable-native-access=ALL-UNNAMED")
-    // Default timeout for all tests - prevents builds from hanging indefinitely
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
     systemProperty("junit.jupiter.execution.timeout.default", "60s")
 
     // Set native library path to find rustbridge_jni and hello_plugin (for benchmark comparison tests)
@@ -44,6 +39,5 @@ tasks.withType<Test> {
 
 tasks.withType<Javadoc> {
     val opts = options as StandardJavadocDocletOptions
-    opts.addBooleanOption("-enable-preview", true)
-    opts.addStringOption("source", "21")
+    opts.addStringOption("source", "22")
 }

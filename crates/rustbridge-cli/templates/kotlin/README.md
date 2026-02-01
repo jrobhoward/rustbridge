@@ -4,7 +4,7 @@ A minimal Kotlin project template for consuming rustbridge plugins.
 
 ## Prerequisites
 
-- **Java 21+** - Required for FFM (Foreign Function & Memory API)
+- **Java 22+** - Required for FFM (Foreign Function & Memory API, final since Java 22)
 - **Gradle 8.0+** - Build tool
 - **A rustbridge plugin** - Your `.rbp` bundle file
 
@@ -52,7 +52,7 @@ The `build.gradle.kts` includes required JVM arguments for FFM:
 
 ```kotlin
 tasks.withType<JavaExec> {
-    jvmArgs("--enable-preview", "--enable-native-access=ALL-UNNAMED")
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 ```
 

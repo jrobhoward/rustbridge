@@ -578,11 +578,11 @@ Implement the binary transport consumer in each language:
 
 ### [01: Java FFM Consumer](./01-java-ffm-consumer.md)
 
-Java 21+ using the Foreign Function & Memory API for direct struct manipulation.
+Java 22+ using the Foreign Function & Memory API for direct struct manipulation.
 
 ### [02: Java JNI Consumer](./02-java-jni-consumer.md)
 
-Java 17+ using JNI with ByteBuffer for binary data handling.
+Java 17+ using JNI with ByteBuffer for binary data handling (for Java 22+, prefer FFM).
 
 ### [03: Kotlin Consumer](./03-kotlin-consumer.md)
 
@@ -603,9 +603,9 @@ Before starting this chapter:
 - **Completed Chapter 1** (understanding plugin structure and message types)
 - **Read docs/TRANSPORT.md** (binary transport concepts)
 - **Language-specific setup**:
-  - Java FFM: JDK 21+
-  - Java JNI: JDK 17+
-  - Kotlin: JDK 21+
+  - Java FFM: JDK 22+ (recommended)
+  - Java JNI: JDK 17+ (use FFM for 22+)
+  - Kotlin: JDK 22+ (uses FFM)
   - C#: .NET 8.0+
   - Python: Python 3.10+
 

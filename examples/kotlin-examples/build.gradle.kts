@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.9.22"
+    kotlin("jvm") version "2.0.21"
     application
 }
 
@@ -26,12 +26,14 @@ dependencies {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        // Java 22+ required for FFM
+        languageVersion.set(JavaLanguageVersion.of(22))
     }
 }
 
 kotlin {
-    jvmToolchain(21)
+    // Java 22+ required for FFM
+    jvmToolchain(22)
 }
 
 // Individual example tasks
@@ -40,7 +42,7 @@ tasks.register<JavaExec>("runBasic") {
     description = "Run basic Kotlin example"
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set("com.rustbridge.examples.BasicExampleKt")
-    jvmArgs("--enable-preview", "--enable-native-access=ALL-UNNAMED")
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 
 tasks.register<JavaExec>("runLogging") {
@@ -48,7 +50,7 @@ tasks.register<JavaExec>("runLogging") {
     description = "Run logging example"
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set("com.rustbridge.examples.LoggingExampleKt")
-    jvmArgs("--enable-preview", "--enable-native-access=ALL-UNNAMED")
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 
 tasks.register<JavaExec>("runErrorHandling") {
@@ -56,5 +58,5 @@ tasks.register<JavaExec>("runErrorHandling") {
     description = "Run error handling example"
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set("com.rustbridge.examples.ErrorHandlingExampleKt")
-    jvmArgs("--enable-preview", "--enable-native-access=ALL-UNNAMED")
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }

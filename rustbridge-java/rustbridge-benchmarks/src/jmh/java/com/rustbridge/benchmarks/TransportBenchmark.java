@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Benchmark)
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 1)
-@Fork(value = 2, jvmArgs = {"--enable-preview", "--enable-native-access=ALL-UNNAMED"})
+@Fork(value = 2, jvmArgs = {"--enable-native-access=ALL-UNNAMED"})
 public class TransportBenchmark {
 
     private static final int MSG_BENCH_SMALL = 1;

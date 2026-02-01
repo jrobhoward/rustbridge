@@ -58,8 +58,8 @@ flowchart TB
 | Component | Minimum Version |
 |-----------|----------------|
 | Rust | 1.90.0 (Edition 2024) |
-| Java (FFM) | 21+ |
-| Java (JNI) | 17+ |
+| Java (FFM) | 22+ (recommended) |
+| Java (JNI) | 17+ (use FFM for 22+) |
 | .NET | 8.0+ |
 | Python | 3.10+ |
 
@@ -554,8 +554,8 @@ flowchart TB
 
 | Module | Java Version | Technology |
 |--------|--------------|------------|
-| `rustbridge-ffm` | 21+ | Foreign Function & Memory API (recommended) |
-| `rustbridge-jni` | 17+ | JNI via `rustbridge-jni` crate (fallback) |
+| `rustbridge-ffm` | 22+ | Foreign Function & Memory API (recommended) |
+| `rustbridge-jni` | 17+ | JNI via `rustbridge-jni` crate (use FFM for 22+) |
 | `rustbridge-kotlin` | - | Kotlin DSL extensions |
 
 **Usage (FFM):**

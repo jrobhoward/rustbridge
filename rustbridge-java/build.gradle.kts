@@ -20,7 +20,8 @@ subprojects {
 
     java {
         toolchain {
-            languageVersion.set(JavaLanguageVersion.of(21))
+            // Java 22+ required for FFM
+            languageVersion.set(JavaLanguageVersion.of(22))
         }
     }
 

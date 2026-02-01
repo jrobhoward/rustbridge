@@ -1,10 +1,10 @@
 # rustbridge Java FFM Consumer Template
 
-A minimal Java 21+ project template for consuming rustbridge plugins using FFM (Foreign Function & Memory API).
+A minimal Java 22+ project template for consuming rustbridge plugins using FFM (Foreign Function & Memory API).
 
 ## Prerequisites
 
-- **Java 21+** - Required for FFM
+- **Java 22+** - Required for FFM (final API since Java 22)
 - **Gradle 8.0+** - Build tool
 - **A rustbridge plugin** - Your `.rbp` bundle file
 
@@ -25,10 +25,10 @@ A minimal Java 21+ project template for consuming rustbridge plugins using FFM (
 
 ## JVM Arguments
 
-FFM requires these JVM flags (already configured in `build.gradle.kts`):
+FFM requires this JVM flag (already configured in `build.gradle.kts`):
 
 ```
---enable-preview --enable-native-access=ALL-UNNAMED
+--enable-native-access=ALL-UNNAMED
 ```
 
 ## Documentation

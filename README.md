@@ -165,9 +165,9 @@ Plugin plugin = BundleLoader.load("my-plugin-1.0.0.rbp");
 
 | Language   | Version   | Guide                                                                                                               |
 |------------|-----------|---------------------------------------------------------------------------------------------------------------------|
-| Java (FFM) | 21+       | [docs/using-plugins/JAVA_FFM.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_FFM.md) |
-| Java (JNI) | 17+       | [docs/using-plugins/JAVA_JNI.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_JNI.md) |
-| Kotlin     | 21+       | [docs/using-plugins/KOTLIN.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/KOTLIN.md)     |
+| Java (FFM) | 22+ (recommended) | [docs/using-plugins/JAVA_FFM.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_FFM.md) |
+| Java (JNI) | 17+ (use FFM for 22+) | [docs/using-plugins/JAVA_JNI.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_JNI.md) |
+| Kotlin     | 22+       | [docs/using-plugins/KOTLIN.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/KOTLIN.md)     |
 | C#         | .NET 8.0+ | [docs/using-plugins/CSHARP.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/CSHARP.md)     |
 | Python     | 3.10+     | [docs/using-plugins/PYTHON.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/PYTHON.md)     |
 
@@ -197,9 +197,9 @@ repositories {
     mavenLocal()
 }
 dependencies {
-    implementation("com.rustbridge:rustbridge-ffm:0.7.0")  // Java 21+
+    implementation("com.rustbridge:rustbridge-ffm:0.7.0")  // Java 22+
     // or
-    implementation("com.rustbridge:rustbridge-jni:0.7.0")  // Java 17+
+    implementation("com.rustbridge:rustbridge-jni:0.7.0")  // Java 17+ (use FFM for 22+)
 }
 ```
 

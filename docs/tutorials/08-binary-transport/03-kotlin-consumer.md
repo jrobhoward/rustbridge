@@ -479,7 +479,8 @@ dependencies {
 }
 
 kotlin {
-    jvmToolchain(21)
+    // Java 22+ required for FFM
+    jvmToolchain(22)
 }
 
 application {

@@ -4,8 +4,8 @@ This directory contains examples showing how to use rustbridge from Kotlin.
 
 ## Prerequisites
 
-- **Java 21+** (for FFM implementation)
-- **Kotlin 1.9+**
+- **Java 22+** (for FFM)
+- **Kotlin 2.0+** (for Java 22 support)
 - Built `hello-plugin` shared library
 
 ## Building hello-plugin
