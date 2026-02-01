@@ -110,7 +110,7 @@ This creates a Rust plugin at the root with a `consumers/` directory containing 
 C#, and Python.
 
 > **Tip**: You can generate only the languages you need by replacing `--all` with one or more of: `--kotlin`,
-`--java-ffm`, `--java-jni`, `--csharp`, `--python`.
+`--java-ffm`, `--csharp`, `--python`.
 > Or omit all flags for a Rust-only plugin.
 
 > **Tip**: If you're a git user, at this point, you may want to run
@@ -144,7 +144,6 @@ rustbridge bundle create \
   --name my-plugin \
   --version 1.0.0 \
   --lib linux-x86_64:target/release/libmy_plugin.so \
-  --jni-lib linux-x86_64:target/release/librustbridge_jni.so \
   --output my-plugin-1.0.0.rbp
 ```
 
@@ -154,7 +153,6 @@ rustbridge bundle create \
   --name my-plugin \
   --version 1.0.0 \
   --lib darwin-aarch64:target/release/libmy_plugin.dylib \
-  --jni-lib darwin-aarch64:target/release/librustbridge_jni.dylib \
   --output my-plugin-1.0.0.rbp
 ```
 
@@ -164,20 +162,8 @@ rustbridge bundle create \
   --name my-plugin \
   --version 1.0.0 \
   --lib windows-x86_64:target/release/my_plugin.dll \
-  --jni-lib windows-x86_64:target/release/rustbridge_jni.dll \
   --output my-plugin-1.0.0.rbp
 ```
-
-> **Note:** The `--jni-lib` flag bundles the JNI bridge library inside the `.rbp` file. This makes your bundle self-contained for Java users - they don't need to build or install the JNI bridge separately.
->
-> **Building the JNI bridge:** The JNI bridge is part of the rustbridge framework (not your plugin). Build it from the rustbridge repository:
-> ```bash
-> cd ~/rustbridge-workspace/rustbridge
-> cargo build --release -p rustbridge-jni
-> # Library is at: target/release/librustbridge_jni.so (Linux)
-> #                target/release/librustbridge_jni.dylib (macOS)
-> #                target/release/rustbridge_jni.dll (Windows)
-> ```
 
 Verify:
 
@@ -204,18 +190,13 @@ cp ../../my-plugin-1.0.0.rbp .
 ./gradlew run
 ```
 
-### Java (JNI) - Recommended for Java 17+
+### Java (FFM) - Java 21+
 
-> JNI is the recommended approach for all Java versions (17+). It provides excellent compatibility across all LTS releases and the best binary transport performance.
+> **Note**: Java 21 requires `--enable-preview` flag. Java 22+ is recommended for stable FFM APIs.
 
 ```bash
-# Build the JNI bridge first
-cd ~/rustbridge-workspace/rustbridge
-cargo build --release -p rustbridge-jni
-
-cd ~/rustbridge-workspace/my-plugin/consumers/java-jni
+cd ~/rustbridge-workspace/my-plugin/consumers/java-ffm
 cp ../../my-plugin-1.0.0.rbp .
-# Update java.library.path in build.gradle.kts if needed
 ./gradlew run
 ```
 
@@ -242,16 +223,6 @@ source .venv/bin/activate  # Linux/macOS
 pip install -e ~/rustbridge-workspace/rustbridge/rustbridge-python
 
 python main.py
-```
-
-### Java (FFM) - Java 21+
-
-> **Note**: Java 21 requires `--enable-preview` flag. Java 22+ is recommended for stable FFM APIs.
-
-```bash
-cd ~/rustbridge-workspace/my-plugin/consumers/java-ffm
-cp ../../my-plugin-1.0.0.rbp .
-./gradlew run
 ```
 
 ---

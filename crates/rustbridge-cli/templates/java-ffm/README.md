@@ -1,13 +1,11 @@
 # rustbridge Java FFM Consumer Template
 
-A minimal Java 22+ project template for consuming rustbridge plugins using FFM (Foreign Function & Memory API).
-
-> **Note:** Both JNI (Java 17+) and FFM (Java 22+) are fully supported. Choose based on your Java version and preference.
+A minimal Java 21+ project template for consuming rustbridge plugins using FFM (Foreign Function & Memory API).
 
 ## Prerequisites
 
-- **Java 22+** - Required for FFM (final API since Java 22)
-- **Gradle 8.0+** - Build tool
+- **Java 21+** - Required for FFM
+- **Gradle 9.0+** - Build tool
 - **A rustbridge plugin** - Your `.rbp` bundle file
 
 ## Quick Start

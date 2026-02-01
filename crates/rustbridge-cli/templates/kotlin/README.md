@@ -4,10 +4,9 @@ A minimal Kotlin project template for consuming rustbridge plugins using JNI.
 
 ## Prerequisites
 
-- **Java 17+** - JNI works with Java 17+ (LTS versions: 17, 21, 25)
-- **Gradle 8.0+** - Build tool
+- **Java 21+** (LTS versions: 21, 25)
+- **Gradle 9.0+** - Build tool
 - **A rustbridge plugin** - Your `.rbp` bundle file
-- **JNI bridge library** - `librustbridge_jni.so` (built from rustbridge)
 
 ## Quick Start
 
@@ -23,19 +22,13 @@ A minimal Kotlin project template for consuming rustbridge plugins using JNI.
    ./gradlew publishToMavenLocal
    ```
 
-3. **Build the JNI bridge** (if not already built):
-   ```bash
-   cd /path/to/rustbridge
-   cargo build --release -p rustbridge-jni
-   ```
+3. **Add your plugin bundle** - Copy your `.rbp` file to the project root
 
-4. **Add your plugin bundle** - Copy your `.rbp` file to the project root
-
-5. **Update Main.kt** - Edit `src/main/kotlin/com/example/Main.kt`:
+4. **Update Main.kt** - Edit `src/main/kotlin/com/example/Main.kt`:
    - Set `bundlePath` to your `.rbp` file
    - Define request/response data classes matching your plugin's API
 
-6. **Run**:
+5. **Run**:
    ```bash
    ./gradlew run
    ```
@@ -53,23 +46,9 @@ A minimal Kotlin project template for consuming rustbridge plugins using JNI.
 
 ## Configuration
 
-### JNI Library Path
-
-The `build.gradle.kts` configures the JNI native library path:
-
-```kotlin
-tasks.withType<JavaExec> {
-    systemProperty("java.library.path", System.getProperty("java.library.path", "") +
-        ":../../target/release")
-}
-```
-
-Update the path to point to where `librustbridge_jni.so` is located.
-
 ### Dependencies
 
 - `rustbridge-core` - Core interfaces and types
-- `rustbridge-jni` - JNI-based native plugin loader (Java 17+)
 - `jackson-module-kotlin` - JSON serialization
 
 ## Type-Safe Calls
