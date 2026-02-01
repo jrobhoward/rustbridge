@@ -38,13 +38,13 @@ enum Commands {
         #[arg(long)]
         kotlin: bool,
 
-        /// Also generate Java FFM consumer project (requires Java 22+)
-        #[arg(long)]
-        java_ffm: bool,
-
-        /// Also generate Java JNI consumer project (requires Java 17+, use FFM for 22+)
+        /// Also generate Java JNI consumer project (requires Java 17+, recommended)
         #[arg(long)]
         java_jni: bool,
+
+        /// Also generate Java FFM consumer project (requires Java 22+, experimental)
+        #[arg(long)]
+        java_ffm: bool,
 
         /// Also generate C# consumer project (requires .NET 8+)
         #[arg(long)]
@@ -114,7 +114,7 @@ enum BundleAction {
 
         /// JNI bridge library to include (can be repeated)
         /// Format: PLATFORM:PATH or PLATFORM:VARIANT:PATH
-        /// Bundles the JNI bridge library for Java 17+ users (use FFM for 22+).
+        /// Bundles the JNI bridge library for Java 17+ users (recommended for all Java versions).
         /// Examples:
         ///   --jni-lib linux-x86_64:target/release/librustbridge_jni.so
         ///   --jni-lib linux-x86_64:debug:target/debug/librustbridge_jni.so

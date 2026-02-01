@@ -5,7 +5,7 @@ import com.rustbridge.LogLevel
 import com.rustbridge.Plugin
 import com.rustbridge.PluginConfig
 import com.rustbridge.PluginException
-import com.rustbridge.ffm.FfmPluginLoader
+import com.rustbridge.jni.JniPluginLoader
 
 /**
  * Example demonstrating error handling with rustbridge.
@@ -63,7 +63,7 @@ fun main() {
     val pluginPath = findPluginPath()
     val config = PluginConfig().logLevel(LogLevel.WARN)
 
-    FfmPluginLoader.load(pluginPath, config).use { plugin ->
+    JniPluginLoader.load(pluginPath, config).use { plugin ->
 
         // Example 1: Handling unknown message types with try-catch
         println("1. Try-Catch Error Handling:")

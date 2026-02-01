@@ -4,9 +4,10 @@ This directory contains examples showing how to use rustbridge from Kotlin.
 
 ## Prerequisites
 
-- **Java 22+** (for FFM)
-- **Kotlin 2.0+** (for Java 22 support)
+- **Java 17+** (JNI is the recommended approach for all Java versions)
+- **Kotlin 2.0+**
 - Built `hello-plugin` shared library
+- Built JNI bridge library (`cargo build --release -p rustbridge-jni`)
 
 ## Building hello-plugin
 
@@ -22,15 +23,19 @@ cargo build --release
 
 ## Running Examples
 
-First, make sure you've built the hello-plugin and published the Java libraries:
+First, make sure you've built the hello-plugin, JNI bridge, and published the Java libraries:
 
 ```bash
 # Build hello-plugin
 cd ../hello-plugin
 cargo build --release
 
+# Build the JNI bridge library
+cd ../..
+cargo build --release -p rustbridge-jni
+
 # Build and publish Java libraries
-cd ../../rustbridge-java
+cd rustbridge-java
 ./gradlew publishToMavenLocal
 
 # Return to kotlin-examples

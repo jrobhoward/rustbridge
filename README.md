@@ -133,7 +133,7 @@ rustbridge_entry!(EchoPlugin::default);
 **Java consumer:**
 
 ```java
-try (Plugin plugin = FfmPluginLoader.load("libecho.so")) {
+try (Plugin plugin = JniPluginLoader.load("libecho.so")) {
     String response = plugin.call("echo", "{\"message\": \"Hello!\"}");
     System.out.println(response);  // {"message": "Hello!"}
 }
@@ -146,12 +146,15 @@ try (Plugin plugin = FfmPluginLoader.load("libecho.so")) {
 Plugins are distributed as `.rbp` bundles—portable ZIP files containing libraries for multiple platforms:
 
 ```bash
-# Create a multi-platform bundle
+# Create a multi-platform bundle with JNI bridge for Java users
 rustbridge bundle create \
   --name my-plugin --version 1.0.0 \
   --lib linux-x86_64:target/release/libmyplugin.so \
   --lib darwin-aarch64:target/release/libmyplugin.dylib \
   --lib windows-x86_64:target/release/myplugin.dll \
+  --jni-lib linux-x86_64:target/release/librustbridge_jni.so \
+  --jni-lib darwin-aarch64:target/release/librustbridge_jni.dylib \
+  --jni-lib windows-x86_64:target/release/rustbridge_jni.dll \
   --output my-plugin-1.0.0.rbp
 ```
 
@@ -165,8 +168,8 @@ Plugin plugin = BundleLoader.load("my-plugin-1.0.0.rbp");
 
 | Language   | Version   | Guide                                                                                                               |
 |------------|-----------|---------------------------------------------------------------------------------------------------------------------|
-| Java (FFM) | 22+ (recommended) | [docs/using-plugins/JAVA_FFM.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_FFM.md) |
-| Java (JNI) | 17+ (use FFM for 22+) | [docs/using-plugins/JAVA_JNI.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_JNI.md) |
+| Java (JNI) | 17+ (recommended)    | [docs/using-plugins/JAVA_JNI.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_JNI.md) |
+| Java (FFM) | 22+ (experimental)   | [docs/using-plugins/JAVA_FFM.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_FFM.md) |
 | Kotlin     | 22+       | [docs/using-plugins/KOTLIN.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/KOTLIN.md)     |
 | C#         | .NET 8.0+ | [docs/using-plugins/CSHARP.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/CSHARP.md)     |
 | Python     | 3.10+     | [docs/using-plugins/PYTHON.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/PYTHON.md)     |
@@ -197,9 +200,9 @@ repositories {
     mavenLocal()
 }
 dependencies {
-    implementation("com.rustbridge:rustbridge-ffm:0.7.0")  // Java 22+
-    // or
-    implementation("com.rustbridge:rustbridge-jni:0.7.0")  // Java 17+ (use FFM for 22+)
+    implementation("com.rustbridge:rustbridge-jni:0.7.0")  // Java 17+ (recommended)
+    // or (experimental)
+    implementation("com.rustbridge:rustbridge-ffm:0.7.0")  // Java 22+ (experimental)
 }
 ```
 

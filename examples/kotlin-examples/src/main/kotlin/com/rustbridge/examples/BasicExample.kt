@@ -2,7 +2,7 @@ package com.rustbridge.examples
 
 import com.rustbridge.LogLevel
 import com.rustbridge.PluginConfig
-import com.rustbridge.ffm.FfmPluginLoader
+import com.rustbridge.jni.JniPluginLoader
 
 /**
  * Basic example demonstrating idiomatic Kotlin usage of rustbridge.
@@ -27,7 +27,7 @@ fun main() {
         .workerThreads(4)
 
     // Use block ensures automatic cleanup
-    FfmPluginLoader.load(pluginPath, config).use { plugin ->
+    JniPluginLoader.load(pluginPath, config).use { plugin ->
 
         // Example 1: Echo message
         println("1. Echo Example:")

@@ -10,7 +10,7 @@ This guide covers loading and using rustbridge plugins from your application. Ch
 | **Java (FFM)** | [JAVA_FFM.md](./JAVA_FFM.md) | Java 21+ | Recommended for new projects |
 | **Java (JNI)** | [JAVA_JNI.md](./JAVA_JNI.md) | Java 17+ | Legacy support for Java 17-20 |
 | **C#** | [CSHARP.md](./CSHARP.md) | .NET 6.0+ | P/Invoke-based loader |
-| **Python** | [PYTHON.md](./PYTHON.md) | Python 3.9+ | ctypes-based loader |
+| **Python** | [PYTHON.md](./PYTHON.md) | Python 3.10+ | ctypes-based loader |
 
 ## Quick Start
 

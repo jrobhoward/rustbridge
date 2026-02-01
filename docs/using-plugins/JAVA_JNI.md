@@ -1,10 +1,10 @@
-# Getting Started: Java (JNI)
+# Getting Started: Java (JNI) - Recommended
 
-This guide walks you through using rustbridge plugins from Java using Java Native Interface (JNI). JNI works on Java 17+, but for Java 22+ we recommend FFM for better JSON performance and simpler setup.
+This guide walks you through using rustbridge plugins from Java using Java Native Interface (JNI). JNI is the **recommended** approach for all Java versions (17+), providing excellent compatibility across all LTS releases (Java 17, 21, 25+) and the best binary transport performance.
 
 ## Prerequisites
 
-- **Java 17+** - JNI works on any Java 17+ version (for Java 22+, consider [FFM](./JAVA_FFM.md) instead)
+- **Java 17+** - JNI works on all Java 17+ versions (LTS: 17, 21, 25)
   ```bash
   java -version  # Should be 17+
   ```
@@ -375,7 +375,7 @@ System.out.println("Absolute: " + pluginFile.getAbsolutePath());
 
 ## Related Documentation
 
-- [JAVA_FFM.md](./JAVA_FFM.md) - Java 22+ FFM guide (recommended for Java 22+)
+- [JAVA_FFM.md](./JAVA_FFM.md) - Java 22+ FFM guide (experimental)
 - [KOTLIN.md](./KOTLIN.md) - Kotlin-specific guide
 - [../TRANSPORT.md](../TRANSPORT.md) - Transport layer details
 - [../MEMORY_MODEL.md](../MEMORY_MODEL.md) - Memory ownership

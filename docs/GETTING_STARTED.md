@@ -144,6 +144,7 @@ rustbridge bundle create \
   --name my-plugin \
   --version 1.0.0 \
   --lib linux-x86_64:target/release/libmy_plugin.so \
+  --jni-lib linux-x86_64:target/release/librustbridge_jni.so \
   --output my-plugin-1.0.0.rbp
 ```
 
@@ -153,6 +154,7 @@ rustbridge bundle create \
   --name my-plugin \
   --version 1.0.0 \
   --lib darwin-aarch64:target/release/libmy_plugin.dylib \
+  --jni-lib darwin-aarch64:target/release/librustbridge_jni.dylib \
   --output my-plugin-1.0.0.rbp
 ```
 
@@ -162,8 +164,20 @@ rustbridge bundle create \
   --name my-plugin \
   --version 1.0.0 \
   --lib windows-x86_64:target/release/my_plugin.dll \
+  --jni-lib windows-x86_64:target/release/rustbridge_jni.dll \
   --output my-plugin-1.0.0.rbp
 ```
+
+> **Note:** The `--jni-lib` flag bundles the JNI bridge library inside the `.rbp` file. This makes your bundle self-contained for Java users - they don't need to build or install the JNI bridge separately.
+>
+> **Building the JNI bridge:** The JNI bridge is part of the rustbridge framework (not your plugin). Build it from the rustbridge repository:
+> ```bash
+> cd ~/rustbridge-workspace/rustbridge
+> cargo build --release -p rustbridge-jni
+> # Library is at: target/release/librustbridge_jni.so (Linux)
+> #                target/release/librustbridge_jni.dylib (macOS)
+> #                target/release/rustbridge_jni.dll (Windows)
+> ```
 
 Verify:
 
@@ -190,13 +204,18 @@ cp ../../my-plugin-1.0.0.rbp .
 ./gradlew run
 ```
 
-### Java (FFM) - Recommended for Java 22+
+### Java (JNI) - Recommended for Java 17+
 
-> Uses the Foreign Function & Memory (FFM) API. JNI is also available for Java 17+ if needed.
+> JNI is the recommended approach for all Java versions (17+). It provides excellent compatibility across all LTS releases and the best binary transport performance.
 
 ```bash
-cd ~/rustbridge-workspace/my-plugin/consumers/java-ffm
+# Build the JNI bridge first
+cd ~/rustbridge-workspace/rustbridge
+cargo build --release -p rustbridge-jni
+
+cd ~/rustbridge-workspace/my-plugin/consumers/java-jni
 cp ../../my-plugin-1.0.0.rbp .
+# Update java.library.path in build.gradle.kts if needed
 ./gradlew run
 ```
 
@@ -225,20 +244,13 @@ pip install -e ~/rustbridge-workspace/rustbridge/rustbridge-python
 python main.py
 ```
 
-### Java (JNI) - Java 17+
+### Java (FFM) - Experimental (Java 22+)
 
-> **Note**: JNI works on Java 17+, but if you're using Java 22+, we recommend
-> the [FFM approach](#java-ffm---recommended-for-java-22) above—it's simpler and doesn't require building a separate
-> bridge library.
+> **Note**: FFM is available as an experimental alternative for Java 22+. For most use cases, we recommend JNI above.
 
 ```bash
-# Build the JNI bridge first
-cd ~/rustbridge-workspace/rustbridge
-cargo build --release -p rustbridge-jni
-
-cd ~/rustbridge-workspace/my-plugin/consumers/java-jni
+cd ~/rustbridge-workspace/my-plugin/consumers/java-ffm
 cp ../../my-plugin-1.0.0.rbp .
-# Update java.library.path in build.gradle.kts if needed
 ./gradlew run
 ```
 
@@ -275,13 +287,13 @@ calculator with multiple message types:
 > changes. For the most current approach, see the                              
 [Tutorials](./tutorials/README.md).
 
-| Language   | Guide                                      |
-|------------|--------------------------------------------|
-| Kotlin     | [KOTLIN.md](./using-plugins/KOTLIN.md)     |
-| Java (FFM) | [JAVA_FFM.md](./using-plugins/JAVA_FFM.md) |
-| Java (JNI) | [JAVA_JNI.md](./using-plugins/JAVA_JNI.md) |
-| C#         | [CSHARP.md](./using-plugins/CSHARP.md)     |
-| Python     | [PYTHON.md](./using-plugins/PYTHON.md)     |
+| Language   | Guide                                                      |
+|------------|------------------------------------------------------------|
+| Kotlin     | [KOTLIN.md](./using-plugins/KOTLIN.md)                     |
+| Java (JNI) | [JAVA_JNI.md](./using-plugins/JAVA_JNI.md) (recommended)   |
+| Java (FFM) | [JAVA_FFM.md](./using-plugins/JAVA_FFM.md) (experimental)  |
+| C#         | [CSHARP.md](./using-plugins/CSHARP.md)                     |
+| Python     | [PYTHON.md](./using-plugins/PYTHON.md)                     |
 
 ### Learn More
 
@@ -306,14 +318,14 @@ rustbridge new my-plugin --python           # Rust + Python consumer
 rustbridge new my-plugin --all              # Rust + all consumers
 ```
 
-| Template  | Description                     | Requirements |
-|-----------|---------------------------------|--------------|
-| rust      | Rust plugin                     | Rust 1.90+   |
-| kotlin    | Kotlin consumer                 | Java 22+     |
-| java-ffm  | Java FFM consumer (recommended) | Java 22+     |
-| java-jni  | Java JNI consumer               | Java 17+     |
-| csharp    | C# consumer                     | .NET 8.0+    |
-| python    | Python consumer                 | Python 3.9+  |
+| Template  | Description                       | Requirements |
+|-----------|-----------------------------------|--------------|
+| rust      | Rust plugin                       | Rust 1.90+   |
+| kotlin    | Kotlin consumer                   | Java 17+     |
+| java-jni  | Java JNI consumer (recommended)   | Java 17+     |
+| java-ffm  | Java FFM consumer (experimental)  | Java 22+     |
+| csharp    | C# consumer                       | .NET 8.0+    |
+| python    | Python consumer                   | Python 3.10+ |
 
 ---
 

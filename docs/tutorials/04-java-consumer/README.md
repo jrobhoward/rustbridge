@@ -58,10 +58,10 @@ Handle plugin errors gracefully in Java.
 
 This chapter takes approximately 20-30 minutes to complete.
 
-## JNI Alternative
+## JNI Alternative (Recommended)
 
-If you prefer JNI (works on Java 17+), see the [Java JNI appendix](../appendix-java-jni/README.md) for an alternative approach.
-For Java 22+, we recommend FFM as shown in this chapter.
+JNI is the recommended approach for all Java versions (17+). See the [Java JNI appendix](../appendix-java-jni/README.md) for the recommended approach.
+This chapter shows FFM as an experimental alternative for Java 22+ users.
 
 ## Next Steps
 

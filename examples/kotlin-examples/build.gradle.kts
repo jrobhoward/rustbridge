@@ -15,7 +15,7 @@ dependencies {
     // rustbridge dependencies from Maven Local
     // (Run: cd ../../rustbridge-java && ./gradlew publishToMavenLocal)
     implementation("com.rustbridge:rustbridge-core:0.7.0")
-    implementation("com.rustbridge:rustbridge-ffm:0.7.0")
+    implementation("com.rustbridge:rustbridge-jni:0.7.0")  // JNI is recommended for all Java versions
 
     // JSON serialization
     implementation("com.fasterxml.jackson.core:jackson-databind:2.16.1")
@@ -26,15 +26,18 @@ dependencies {
 
 java {
     toolchain {
-        // Java 22+ required for FFM
-        languageVersion.set(JavaLanguageVersion.of(22))
+        // Java 17+ for JNI (recommended)
+        languageVersion.set(JavaLanguageVersion.of(17))
     }
 }
 
 kotlin {
-    // Java 22+ required for FFM
-    jvmToolchain(22)
+    // Java 17+ for JNI (recommended)
+    jvmToolchain(17)
 }
+
+// JNI library path - points to where librustbridge_jni.so is built
+val jniLibraryPath = "../../target/release"
 
 // Individual example tasks
 tasks.register<JavaExec>("runBasic") {
@@ -42,7 +45,7 @@ tasks.register<JavaExec>("runBasic") {
     description = "Run basic Kotlin example"
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set("com.rustbridge.examples.BasicExampleKt")
-    jvmArgs("--enable-native-access=ALL-UNNAMED")
+    systemProperty("java.library.path", jniLibraryPath)
 }
 
 tasks.register<JavaExec>("runLogging") {
@@ -50,7 +53,7 @@ tasks.register<JavaExec>("runLogging") {
     description = "Run logging example"
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set("com.rustbridge.examples.LoggingExampleKt")
-    jvmArgs("--enable-native-access=ALL-UNNAMED")
+    systemProperty("java.library.path", jniLibraryPath)
 }
 
 tasks.register<JavaExec>("runErrorHandling") {
@@ -58,5 +61,5 @@ tasks.register<JavaExec>("runErrorHandling") {
     description = "Run error handling example"
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set("com.rustbridge.examples.ErrorHandlingExampleKt")
-    jvmArgs("--enable-native-access=ALL-UNNAMED")
+    systemProperty("java.library.path", jniLibraryPath)
 }

@@ -582,11 +582,11 @@ Java 22+ using the Foreign Function & Memory API for direct struct manipulation.
 
 ### [02: Java JNI Consumer](./02-java-jni-consumer.md)
 
-Java 17+ using JNI with ByteBuffer for binary data handling (for Java 22+, prefer FFM).
+Java 17+ using JNI with ByteBuffer for binary data handling (recommended for all Java versions).
 
 ### [03: Kotlin Consumer](./03-kotlin-consumer.md)
 
-Kotlin with FFM and idiomatic extension functions.
+Kotlin with JNI and idiomatic extension functions.
 
 ### [04: C# Consumer](./04-csharp-consumer.md)
 
@@ -603,9 +603,9 @@ Before starting this chapter:
 - **Completed Chapter 1** (understanding plugin structure and message types)
 - **Read docs/TRANSPORT.md** (binary transport concepts)
 - **Language-specific setup**:
-  - Java FFM: JDK 22+ (recommended)
-  - Java JNI: JDK 17+ (use FFM for 22+)
-  - Kotlin: JDK 22+ (uses FFM)
+  - Java JNI: JDK 17+ (recommended for all Java versions)
+  - Java FFM: JDK 22+ (experimental)
+  - Kotlin: JDK 17+ (uses JNI)
   - C#: .NET 8.0+
   - Python: Python 3.10+
 

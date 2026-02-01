@@ -58,8 +58,8 @@ flowchart TB
 | Component | Minimum Version |
 |-----------|----------------|
 | Rust | 1.90.0 (Edition 2024) |
-| Java (FFM) | 22+ (recommended) |
-| Java (JNI) | 17+ (use FFM for 22+) |
+| Java (JNI) | 17+ (recommended) |
+| Java (FFM) | 22+ (experimental) |
 | .NET | 8.0+ |
 | Python | 3.10+ |
 
@@ -554,8 +554,8 @@ flowchart TB
 
 | Module | Java Version | Technology |
 |--------|--------------|------------|
-| `rustbridge-ffm` | 22+ | Foreign Function & Memory API (recommended) |
-| `rustbridge-jni` | 17+ | JNI via `rustbridge-jni` crate (use FFM for 22+) |
+| `rustbridge-jni` | 17+ | JNI via `rustbridge-jni` crate (recommended) |
+| `rustbridge-ffm` | 22+ | Foreign Function & Memory API (experimental) |
 | `rustbridge-kotlin` | - | Kotlin DSL extensions |
 
 **Usage (FFM):**
@@ -566,15 +566,15 @@ try (var plugin = FfmPluginLoader.load("libmyplugin.so")) {
 }
 ```
 
-**Design Decision: FFM Primary, JNI Fallback**
+**Design Decision: JNI Primary, FFM Experimental**
 
 | Approach | Pros | Cons |
 |----------|------|------|
-| **FFM only** | Modern, pure Java, better perf | Requires Java 21+ |
-| **JNI only** | Wide compatibility | Complex, error-prone |
+| **JNI only** | Wide compatibility (17+), better binary perf | Requires native bridge library |
+| **FFM only** | Modern, pure Java | Requires Java 22+, slower binary transport |
 | **Both** | Best of both worlds | More code to maintain |
 
-**Decision**: Support both with FFM as primary. FFM is the future, but JNI provides backward compatibility for enterprise environments on older JVMs.
+**Decision**: Support both with JNI as primary. JNI provides compatibility with all LTS releases (Java 17, 21, 25+) and has better binary transport performance. FFM is available as an experimental alternative for Java 22+ users who prefer a pure-Java approach.
 
 ### C# Integration (.NET 8.0+)
 

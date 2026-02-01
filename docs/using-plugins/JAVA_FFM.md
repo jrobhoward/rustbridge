@@ -1,6 +1,8 @@
-# Getting Started: Java 22+ (FFM)
+# Getting Started: Java 22+ (FFM) - Experimental
 
 This guide walks you through using rustbridge plugins from Java 22+ using the Foreign Function & Memory API (FFM).
+
+> **Note:** FFM is experimental. For most use cases, we recommend [JNI](./JAVA_JNI.md) which works on Java 17+ and has better binary transport performance.
 
 ## Prerequisites
 

@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tutorial: Consistently use version 0.1.0 for tutorial versions
 
 ### Changed
+- **Java: JNI is now the recommended default, FFM is experimental**
+  - JNI provides compatibility with all LTS releases (Java 17, 21, 25+)
+  - JNI has better binary transport performance (22% faster on Linux)
+  - FFM is now positioned as an experimental alternative for Java 22+ users
+  - Updated all documentation, CLI help text, and tutorials to reflect this
+  - Bundle examples now include `--jni-lib` to create self-contained bundles for Java users
+
+### Changed
 - Java/Kotlin: Updated to Kotlin 2.3.0 and Gradle 9.3.1 for native Java 25 support
   - Templates: kotlin, java-ffm, java-jni now use Gradle 9.3.1
   - rustbridge-kotlin uses Kotlin 2.3.0 (was 2.0.21)
@@ -17,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Docs: Clarified Java version requirements across all documentation
   - FFM requires Java 22+ (not Java 21+ as previously documented)
-  - JNI works on Java 17+ (FFM is recommended for Java 22+)
+  - JNI works on Java 17+ (recommended for all Java versions)
   - Removed unnecessary "FFM is final" and "--enable-preview" comments
 
 ### Added
@@ -221,8 +229,8 @@ Initial public release.
 - SBOM support (CycloneDX and SPDX formats)
 
 #### Java/Kotlin Bindings
-- FFM implementation for Java 21+ (recommended, faster)
-- JNI implementation for Java 17+ (fallback)
+- JNI implementation for Java 17+ (recommended, better binary performance)
+- FFM implementation for Java 22+ (experimental)
 - Kotlin extensions and type-safe DSL
 - Bundle loader with automatic platform detection
 - Signature verification support

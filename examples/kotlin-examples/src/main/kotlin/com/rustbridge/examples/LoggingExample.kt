@@ -4,7 +4,7 @@ import com.rustbridge.LogCallback
 import com.rustbridge.LogLevel
 import com.rustbridge.Plugin
 import com.rustbridge.PluginConfig
-import com.rustbridge.ffm.FfmPluginLoader
+import com.rustbridge.jni.JniPluginLoader
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -78,7 +78,7 @@ fun main() {
         .logLevel(LogLevel.DEBUG)
     // TODO: Add log callback support once FFM upcalls are implemented
 
-    FfmPluginLoader.load(pluginPath, coloredConfig).use { plugin ->
+    JniPluginLoader.load(pluginPath, coloredConfig).use { plugin ->
         plugin.callTyped<GreetResponse>("greet", GreetRequest("Alice"))
     }
 
@@ -93,7 +93,7 @@ fun main() {
         .logLevel(LogLevel.INFO)
     // TODO: Add log callback support once FFM upcalls are implemented
 
-    FfmPluginLoader.load(pluginPath, countingConfig).use { plugin ->
+    JniPluginLoader.load(pluginPath, countingConfig).use { plugin ->
         // Perform multiple operations
         repeat(5) { i ->
             plugin.callTyped<GreetResponse>("greet", GreetRequest("User $i"))
@@ -112,7 +112,7 @@ fun main() {
         .logLevel(LogLevel.INFO)
     // TODO: Add log callback support once FFM upcalls are implemented
 
-    FfmPluginLoader.load(pluginPath, infoConfig).use { plugin ->
+    JniPluginLoader.load(pluginPath, infoConfig).use { plugin ->
         plugin.callTyped<GreetResponse>("greet", GreetRequest("Info Level"))
     }
 
@@ -121,7 +121,7 @@ fun main() {
         .logLevel(LogLevel.DEBUG)
     // TODO: Add log callback support once FFM upcalls are implemented
 
-    FfmPluginLoader.load(pluginPath, debugConfig).use { plugin ->
+    JniPluginLoader.load(pluginPath, debugConfig).use { plugin ->
         plugin.callTyped<GreetResponse>("greet", GreetRequest("Debug Level"))
     }
 

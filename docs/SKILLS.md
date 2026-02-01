@@ -468,17 +468,19 @@ pub unsafe extern "C" fn plugin_init(...) -> FfiPluginHandle { ... }
 
 ### FFM (Java 22+)
 
-Prefer Project Panama FFM for Java 22+:
+### JNI (Java 17+) - Recommended
+
+JNI is the recommended approach for all Java versions (17+):
+- Excellent compatibility across all LTS releases (Java 17, 21, 25+)
+- Better binary transport performance than FFM
+- Requires JNI bridge library (bundle with `--jni-lib`)
+
+### FFM (Java 22+) - Experimental
+
+FFM is available as an experimental alternative for Java 22+:
 - Pure Java bindings, no JNI code needed
 - Arena-based memory management
 - Better JSON performance than JNI
-
-### JNI (Java 17+)
-
-JNI works on Java 17+ (for Java 22+, prefer FFM):
-- More complex but widely supported
-- Requires native code generation
-- Better binary transport performance than FFM
 
 ### Memory Management
 
