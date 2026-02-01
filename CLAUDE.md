@@ -48,8 +48,7 @@ source .venv/bin/activate && python -m pytest tests/ -v
 | Component | Minimum Version |
 |-----------|----------------|
 | Rust | 1.90.0 (Edition 2024) |
-| Java (JNI) | 17+ |
-| Java (FFM) | 22+ |
+| Java | 22+ |
 | .NET | 8.0+ |
 | Python | 3.10+ |
 
@@ -64,7 +63,7 @@ Host Language → FFI Boundary → Async Runtime → Plugin Implementation → R
 **Layered crate structure:**
 - **Core** (`rustbridge-core`, `rustbridge-transport`): Traits, types, serialization
 - **Runtime** (`rustbridge-runtime`, `rustbridge-logging`): Tokio integration, tracing callbacks
-- **FFI** (`rustbridge-ffi`, `rustbridge-jni`): C ABI exports, buffer management, JNI bridge for Java 17+
+- **FFI** (`rustbridge-ffi`): C ABI exports, buffer management
 - **Tooling** (`rustbridge-macros`, `rustbridge-cli`, `rustbridge-bundle`): Code generation, build tools, `.rbp` packaging
 
 Memory follows "Rust allocates, host frees" pattern. See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for details.
@@ -114,7 +113,6 @@ All FFI functions must:
 
 The `rustbridge-java/` directory contains:
 - `rustbridge-core`: Core Java interfaces
-- `rustbridge-jni`: JNI implementation (Java 17+)
 - `rustbridge-ffm`: FFM implementation (Java 22+)
 - `rustbridge-kotlin`: Kotlin extensions and DSL
 

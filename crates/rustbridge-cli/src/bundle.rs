@@ -15,8 +15,6 @@ pub fn create(
     name: &str,
     version: &str,
     libraries: &[(String, String, String)], // (platform, variant, path)
-    jni_libraries: &[(String, String, String)], // (platform, variant, path)
-    include_jni_bridge: bool,
     output: Option<String>,
     schema_files: &[(String, String)],
     sign_key_path: Option<String>,
@@ -54,47 +52,6 @@ pub fn create(
         builder = builder
             .add_library_variant(platform, variant, lib_path)
             .with_context(|| format!("Failed to add library: {lib_path}"))?;
-    }
-
-    // Add JNI bridge libraries
-    for (platform_str, variant, lib_path) in jni_libraries {
-        let platform = Platform::parse(platform_str)
-            .with_context(|| format!("Unknown platform: {platform_str}"))?;
-
-        println!("  Adding JNI bridge: {lib_path} ({platform_str}:{variant})");
-        builder = builder
-            .add_jni_library_variant(platform, variant, lib_path)
-            .with_context(|| format!("Failed to add JNI library: {lib_path}"))?;
-    }
-
-    // Add installed JNI bridge for current platform if requested
-    if include_jni_bridge {
-        let platform = Platform::current()
-            .context("Could not detect current platform for --include-jni-bridge")?;
-
-        let jni_path = crate::install_jni::get_jni_bridge_path(platform)?;
-
-        if !jni_path.exists() {
-            let version = env!("CARGO_PKG_VERSION");
-            anyhow::bail!(
-                "JNI bridge not installed for {} (rustbridge v{}).\n\n\
-                 To install, run from the rustbridge repository:\n\
-                   rustbridge install-jni-bridge\n\n\
-                 Or specify a path directly:\n\
-                   rustbridge install-jni-bridge --from /path/to/librustbridge_jni.so",
-                platform,
-                version
-            );
-        }
-
-        println!(
-            "  Adding installed JNI bridge: {} ({}:release)",
-            jni_path.display(),
-            platform
-        );
-        builder = builder
-            .add_jni_library_variant(platform, "release", &jni_path)
-            .with_context(|| format!("Failed to add JNI library: {}", jni_path.display()))?;
     }
 
     // Generate and add C header if requested
@@ -903,8 +860,6 @@ mod tests {
             "test-plugin",
             "1.0.0",
             &libs,
-            &[],   // No JNI libraries
-            false, // Don't include installed JNI bridge
             Some(output.to_string_lossy().to_string()),
             &[],
             None,
@@ -950,8 +905,6 @@ mod tests {
             "test-plugin",
             "1.0.0",
             &libs,
-            &[],   // No JNI libraries
-            false, // Don't include installed JNI bridge
             Some(output.to_string_lossy().to_string()),
             &[],
             None,
@@ -992,8 +945,6 @@ mod tests {
             "test-plugin",
             "1.0.0",
             &libs,
-            &[],   // No JNI libraries
-            false, // Don't include installed JNI bridge
             Some(output.to_string_lossy().to_string()),
             &[],
             None,
@@ -1040,8 +991,6 @@ mod tests {
             "test-plugin",
             "1.0.0",
             &libs,
-            &[],   // No JNI libraries
-            false, // Don't include installed JNI bridge
             Some(full_bundle.to_string_lossy().to_string()),
             &[],
             None,

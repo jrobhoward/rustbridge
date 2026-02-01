@@ -101,7 +101,7 @@ Or dive into the tutorials (more to come):
 | [Build a Regex Plugin](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/01-regex-plugin/)     | Rust plugin development, message handling, caching |
 | [Call from Kotlin](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/02-kotlin-consumer/)      | Type-safe calls, logging integration, benchmarking |
 | [Build a JSON Plugin](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/03-json-plugin/)       | Validation, error handling patterns                |
-| [Call from Java](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/04-java-consumer/)          | FFM/JNI setup, Gradle configuration                |
+| [Call from Java](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/04-java-consumer/)          | FFM setup, Gradle configuration                    |
 | [Production Bundles](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/05-production-bundles/) | Code signing, schemas, SBOMs                       |
 | [Cross-Compilation](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/06-cross-compilation/)   | Building for multiple platforms                    |
 | [Backpressure Queues](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/07-backpressure-queues/) | Bounded queues, blocking callers, flow control     |
@@ -146,15 +146,12 @@ try (Plugin plugin = JniPluginLoader.load("libecho.so")) {
 Plugins are distributed as `.rbp` bundles—portable ZIP files containing libraries for multiple platforms:
 
 ```bash
-# Create a multi-platform bundle with JNI bridge for Java users
+# Create a multi-platform bundle
 rustbridge bundle create \
   --name my-plugin --version 1.0.0 \
   --lib linux-x86_64:target/release/libmyplugin.so \
   --lib darwin-aarch64:target/release/libmyplugin.dylib \
   --lib windows-x86_64:target/release/myplugin.dll \
-  --jni-lib linux-x86_64:target/release/librustbridge_jni.so \
-  --jni-lib darwin-aarch64:target/release/librustbridge_jni.dylib \
-  --jni-lib windows-x86_64:target/release/rustbridge_jni.dll \
   --output my-plugin-1.0.0.rbp
 ```
 
@@ -166,13 +163,12 @@ Plugin plugin = BundleLoader.load("my-plugin-1.0.0.rbp");
 
 ## Language Guides
 
-| Language   | Version   | Guide                                                                                                               |
-|------------|-----------|---------------------------------------------------------------------------------------------------------------------|
-| Java (JNI) | 17+       | [docs/using-plugins/JAVA_JNI.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_JNI.md) |
-| Java (FFM) | 22+       | [docs/using-plugins/JAVA_FFM.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_FFM.md) |
-| Kotlin     | 22+       | [docs/using-plugins/KOTLIN.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/KOTLIN.md)     |
-| C#         | .NET 8.0+ | [docs/using-plugins/CSHARP.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/CSHARP.md)     |
-| Python     | 3.10+     | [docs/using-plugins/PYTHON.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/PYTHON.md)     |
+| Language | Version   | Guide                                                                                                               |
+|----------|-----------|---------------------------------------------------------------------------------------------------------------------|
+| Java     | 22+       | [docs/using-plugins/JAVA_FFM.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_FFM.md) |
+| Kotlin   | 22+       | [docs/using-plugins/KOTLIN.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/KOTLIN.md)     |
+| C#       | .NET 8.0+ | [docs/using-plugins/CSHARP.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/CSHARP.md)     |
+| Python   | 3.10+     | [docs/using-plugins/PYTHON.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/PYTHON.md)     |
 
 ## Building from Source
 
@@ -200,8 +196,6 @@ repositories {
     mavenLocal()
 }
 dependencies {
-    implementation("com.rustbridge:rustbridge-jni:0.7.0")  // Java 17+
-    // or
     implementation("com.rustbridge:rustbridge-ffm:0.7.0")  // Java 22+
 }
 ```
@@ -232,7 +226,6 @@ Here are the components planned for a 1.0 release:
 | Plugin Lifecycle  | Stable                |
 | Bundle Format     | Stable                |
 | Java FFM Bindings | Stable                |
-| Java JNI Bindings | Stable                |
 | C# Bindings       | Stable                |
 | Python Bindings   | Stable                |
 | Binary Transport  | In development        |

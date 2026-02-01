@@ -1,0 +1,12 @@
+Update docs so java21 is supported.
+  * find places to add extra JVM startup parameter
+
+
+tutorials:
+  * consider prerequisites (e.g. rustbridge version 0.8.0) installed
+    * and gradle
+    * and java
+
+consider updating to dotnet 10
+
+

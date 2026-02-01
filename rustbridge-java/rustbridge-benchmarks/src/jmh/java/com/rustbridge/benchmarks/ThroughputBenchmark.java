@@ -4,8 +4,6 @@ import com.rustbridge.*;
 import com.rustbridge.ffm.BinaryStruct;
 import com.rustbridge.ffm.FfmPlugin;
 import com.rustbridge.ffm.FfmPluginLoader;
-import com.rustbridge.jni.JniPlugin;
-import com.rustbridge.jni.JniPluginLoader;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -34,8 +32,6 @@ public class ThroughputBenchmark {
     private static final String JSON_REQUEST = "{\"message\": \"throughput test\"}";
 
     private FfmPlugin ffmPlugin;
-    private JniPlugin jniPlugin;
-    private byte[] jniBinaryRequest;
 
     @Setup(Level.Trial)
     public void setup() throws Exception {
@@ -43,21 +39,11 @@ public class ThroughputBenchmark {
         PluginConfig config = PluginConfig.defaults().workerThreads(4);
 
         ffmPlugin = (FfmPlugin) FfmPluginLoader.load(pluginPath, config, null);
-
-        try {
-            System.loadLibrary("rustbridge_jni");
-            jniPlugin = (JniPlugin) JniPluginLoader.load(pluginPath.toString(), config);
-        } catch (UnsatisfiedLinkError e) {
-            jniPlugin = null;
-        }
-
-        jniBinaryRequest = createBinaryRequest("bench_key", 0x01);
     }
 
     @TearDown(Level.Trial)
     public void teardown() {
         if (ffmPlugin != null) ffmPlugin.close();
-        if (jniPlugin != null) jniPlugin.close();
     }
 
     // ==================== FFM Throughput ====================
@@ -79,41 +65,7 @@ public class ThroughputBenchmark {
         }
     }
 
-    // ==================== JNI Throughput ====================
-
-    @Benchmark
-    public String jniJsonThroughput(Blackhole bh) throws PluginException {
-        if (jniPlugin == null) return null;
-        String response = jniPlugin.call("echo", JSON_REQUEST);
-        bh.consume(response);
-        return response;
-    }
-
-    @Benchmark
-    public byte[] jniBinaryThroughput(Blackhole bh) throws PluginException {
-        if (jniPlugin == null) return null;
-        byte[] response = jniPlugin.callRaw(MSG_BENCH_SMALL, jniBinaryRequest);
-        bh.consume(response);
-        return response;
-    }
-
     // ==================== Helpers ====================
-
-    private static byte[] createBinaryRequest(String key, int flags) {
-        ByteBuffer buffer = ByteBuffer.allocate(76);
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
-        buffer.put((byte) 1);
-        buffer.put((byte) 0);
-        buffer.put((byte) 0);
-        buffer.put((byte) 0);
-        byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
-        int keyLen = Math.min(keyBytes.length, 64);
-        buffer.put(keyBytes, 0, keyLen);
-        for (int i = keyLen; i < 64; i++) buffer.put((byte) 0);
-        buffer.putInt(keyLen);
-        buffer.putInt(flags);
-        return buffer.array();
-    }
 
     static class SmallRequestRaw extends BinaryStruct {
         static final long BYTE_SIZE = 76;

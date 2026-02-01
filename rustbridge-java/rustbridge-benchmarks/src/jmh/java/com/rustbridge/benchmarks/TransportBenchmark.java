@@ -4,8 +4,6 @@ import com.rustbridge.*;
 import com.rustbridge.ffm.BinaryStruct;
 import com.rustbridge.ffm.FfmPlugin;
 import com.rustbridge.ffm.FfmPluginLoader;
-import com.rustbridge.jni.JniPlugin;
-import com.rustbridge.jni.JniPluginLoader;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -36,10 +34,6 @@ public class TransportBenchmark {
     private static final String JSON_REQUEST = "{\"message\": \"benchmark test\"}";
 
     private FfmPlugin ffmPlugin;
-    private JniPlugin jniPlugin;
-
-    // Pre-allocated request for binary benchmarks
-    private byte[] jniBinaryRequest;
 
     @Setup(Level.Trial)
     public void setup() throws Exception {
@@ -48,27 +42,12 @@ public class TransportBenchmark {
 
         // Load FFM plugin
         ffmPlugin = (FfmPlugin) FfmPluginLoader.load(pluginPath, config, null);
-
-        // Load JNI plugin
-        try {
-            System.loadLibrary("rustbridge_jni");
-            jniPlugin = (JniPlugin) JniPluginLoader.load(pluginPath.toString(), config);
-        } catch (UnsatisfiedLinkError e) {
-            System.err.println("JNI library not available: " + e.getMessage());
-            jniPlugin = null;
-        }
-
-        // Pre-allocate binary request
-        jniBinaryRequest = createJniBinaryRequest("bench_key", 0x01);
     }
 
     @TearDown(Level.Trial)
     public void teardown() {
         if (ffmPlugin != null) {
             ffmPlugin.close();
-        }
-        if (jniPlugin != null) {
-            jniPlugin.close();
         }
     }
 
@@ -89,57 +68,6 @@ public class TransportBenchmark {
             bh.consume(response);
             return response;
         }
-    }
-
-    // ==================== JNI Benchmarks ====================
-
-    @Benchmark
-    public String jniJson(Blackhole bh) throws PluginException {
-        if (jniPlugin == null) {
-            return null;
-        }
-        String response = jniPlugin.call("echo", JSON_REQUEST);
-        bh.consume(response);
-        return response;
-    }
-
-    @Benchmark
-    public byte[] jniBinary(Blackhole bh) throws PluginException {
-        if (jniPlugin == null) {
-            return null;
-        }
-        byte[] response = jniPlugin.callRaw(MSG_BENCH_SMALL, jniBinaryRequest);
-        bh.consume(response);
-        return response;
-    }
-
-    // ==================== Helper Methods ====================
-
-    private static byte[] createJniBinaryRequest(String key, int flags) {
-        ByteBuffer buffer = ByteBuffer.allocate(76);
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
-
-        // version (u8)
-        buffer.put((byte) 1);
-        // _reserved (3 bytes)
-        buffer.put((byte) 0);
-        buffer.put((byte) 0);
-        buffer.put((byte) 0);
-
-        // key (64 bytes)
-        byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
-        int keyLen = Math.min(keyBytes.length, 64);
-        buffer.put(keyBytes, 0, keyLen);
-        for (int i = keyLen; i < 64; i++) {
-            buffer.put((byte) 0);
-        }
-
-        // key_len (u32)
-        buffer.putInt(keyLen);
-        // flags (u32)
-        buffer.putInt(flags);
-
-        return buffer.array();
     }
 
     // ==================== FFM Binary Struct Types ====================

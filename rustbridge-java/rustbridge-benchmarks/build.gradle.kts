@@ -7,7 +7,6 @@ dependencies {
     // Project dependencies
     implementation(project(":rustbridge-core"))
     implementation(project(":rustbridge-ffm"))
-    implementation(project(":rustbridge-jni"))
 
     // JMH
     jmh("org.openjdk.jmh:jmh-core:1.37")

@@ -49,8 +49,7 @@ pub use builder::BundleBuilder;
 pub use error::BundleError;
 pub use loader::BundleLoader;
 pub use manifest::{
-    BridgeInfo, BuildInfo, GitInfo, Manifest, PlatformInfo, PluginInfo, Sbom, SchemaInfo,
-    VariantInfo,
+    BuildInfo, GitInfo, Manifest, PlatformInfo, PluginInfo, Sbom, SchemaInfo, VariantInfo,
 };
 pub use platform::Platform;
 

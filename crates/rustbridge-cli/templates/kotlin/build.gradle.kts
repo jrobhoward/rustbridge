@@ -16,9 +16,9 @@ repositories {
 }
 
 dependencies {
-    // rustbridge dependencies (JNI for Java 17+ compatibility)
+    // rustbridge dependencies (FFM requires Java 22+)
     implementation("com.rustbridge:rustbridge-core:0.7.0")
-    implementation("com.rustbridge:rustbridge-jni:0.7.0")
+    implementation("com.rustbridge:rustbridge-ffm:0.7.0")
 
     // JSON serialization
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
@@ -27,8 +27,8 @@ dependencies {
 }
 
 kotlin {
-    // JNI works with Java 17+ (LTS versions: 17, 21, 25)
-    jvmToolchain(17)
+    // FFM requires Java 22+
+    jvmToolchain(22)
 }
 
 tasks.test {

@@ -11,7 +11,6 @@ use clap::{Parser, Subcommand};
 mod bundle;
 mod codegen;
 mod header_gen;
-mod install_jni;
 mod keygen;
 mod new;
 
@@ -35,13 +34,9 @@ enum Commands {
         #[arg(short, long)]
         path: Option<String>,
 
-        /// Also generate Kotlin consumer project (requires Java 17+)
+        /// Also generate Kotlin consumer project (requires Java 22+)
         #[arg(long)]
         kotlin: bool,
-
-        /// Also generate Java JNI consumer project (requires Java 17+)
-        #[arg(long)]
-        java_jni: bool,
 
         /// Also generate Java FFM consumer project (requires Java 22+)
         #[arg(long)]
@@ -91,24 +86,6 @@ enum Commands {
         #[command(subcommand)]
         action: BundleAction,
     },
-
-    /// Install the JNI bridge library to ~/.rustbridge/lib/
-    ///
-    /// The JNI bridge is required for Java 17+ users to load rustbridge plugins.
-    /// Once installed, use `--include-jni-bridge` with `bundle create` to include
-    /// it in your plugin bundles.
-    InstallJniBridge {
-        /// Path to a pre-built JNI bridge library (optional)
-        ///
-        /// If not provided, builds from the rustbridge workspace (must be run
-        /// from within the rustbridge repository).
-        #[arg(long)]
-        from: Option<String>,
-
-        /// Show installation status without installing
-        #[arg(long)]
-        status: bool,
-    },
 }
 
 #[derive(Subcommand)]
@@ -130,22 +107,6 @@ enum BundleAction {
         ///   --lib linux-x86_64:debug:target/debug/libplugin.so (debug variant)
         #[arg(short, long = "lib", value_name = "PLATFORM[:VARIANT]:PATH")]
         libraries: Vec<String>,
-
-        /// JNI bridge library to include (can be repeated)
-        /// Format: PLATFORM:PATH or PLATFORM:VARIANT:PATH
-        /// Bundles the JNI bridge library for Java 17+ users (recommended for all Java versions).
-        /// Examples:
-        ///   --jni-lib linux-x86_64:target/release/librustbridge_jni.so
-        ///   --jni-lib linux-x86_64:debug:target/debug/librustbridge_jni.so
-        #[arg(long = "jni-lib", value_name = "PLATFORM[:VARIANT]:PATH")]
-        jni_libraries: Vec<String>,
-
-        /// Include the installed JNI bridge for the current platform
-        ///
-        /// Uses the JNI bridge from ~/.rustbridge/lib/<version>/<platform>/.
-        /// Run `rustbridge install-jni-bridge` first to install it.
-        #[arg(long)]
-        include_jni_bridge: bool,
 
         /// Output bundle path (default: <name>-<version>.rbp)
         #[arg(short, long)]
@@ -287,7 +248,6 @@ fn main() -> anyhow::Result<()> {
             path,
             kotlin,
             java_ffm,
-            java_jni,
             csharp,
             python,
             all,
@@ -295,7 +255,6 @@ fn main() -> anyhow::Result<()> {
             let options = new::NewOptions {
                 kotlin: kotlin || all,
                 java_ffm: java_ffm || all,
-                java_jni: java_jni || all,
                 csharp: csharp || all,
                 python: python || all,
             };
@@ -311,20 +270,11 @@ fn main() -> anyhow::Result<()> {
         Commands::Keygen { output, force } => {
             keygen::run(output, force)?;
         }
-        Commands::InstallJniBridge { from, status } => {
-            if status {
-                install_jni::show_status()?;
-            } else {
-                install_jni::run(from)?;
-            }
-        }
         Commands::Bundle { action } => match action {
             BundleAction::Create {
                 name,
                 version,
                 libraries,
-                jni_libraries,
-                include_jni_bridge,
                 output,
                 schema,
                 sign_key,
@@ -360,35 +310,6 @@ fn main() -> anyhow::Result<()> {
                             }
                             _ => anyhow::bail!(
                                 "Invalid library format: {s}. Expected PLATFORM:PATH or PLATFORM:VARIANT:PATH"
-                            ),
-                        }
-                    })
-                    .collect::<anyhow::Result<_>>()?;
-
-                // Parse JNI library arguments (PLATFORM:PATH or PLATFORM:VARIANT:PATH)
-                let jni_libs: Vec<(String, String, String)> = jni_libraries
-                    .iter()
-                    .map(|s| {
-                        let parts: Vec<&str> = s.splitn(3, ':').collect();
-                        match parts.len() {
-                            2 => {
-                                // PLATFORM:PATH -> (platform, "release", path)
-                                Ok((
-                                    parts[0].to_string(),
-                                    "release".to_string(),
-                                    parts[1].to_string(),
-                                ))
-                            }
-                            3 => {
-                                // PLATFORM:VARIANT:PATH -> (platform, variant, path)
-                                Ok((
-                                    parts[0].to_string(),
-                                    parts[1].to_string(),
-                                    parts[2].to_string(),
-                                ))
-                            }
-                            _ => anyhow::bail!(
-                                "Invalid JNI library format: {s}. Expected PLATFORM:PATH or PLATFORM:VARIANT:PATH"
                             ),
                         }
                     })
@@ -436,8 +357,6 @@ fn main() -> anyhow::Result<()> {
                     &name,
                     &version,
                     &libs,
-                    &jni_libs,
-                    include_jni_bridge,
                     output,
                     &schemas,
                     sign_key,

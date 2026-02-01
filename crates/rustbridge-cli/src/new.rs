@@ -47,20 +47,6 @@ mod templates {
     pub const JAVA_FFM_GRADLE_WRAPPER_JAR: &[u8] =
         include_bytes!("../templates/java-ffm/gradle/wrapper/gradle-wrapper.jar");
 
-    // Java JNI consumer templates
-    pub const JAVA_JNI_BUILD_GRADLE: &str = include_str!("../templates/java-jni/build.gradle.kts");
-    pub const JAVA_JNI_SETTINGS_GRADLE: &str =
-        include_str!("../templates/java-jni/settings.gradle.kts.tmpl");
-    pub const JAVA_JNI_MAIN: &str =
-        include_str!("../templates/java-jni/src/main/java/com/example/Main.java.tmpl");
-    pub const JAVA_JNI_GITIGNORE: &str = include_str!("../templates/java-jni/.gitignore");
-    pub const JAVA_JNI_GRADLEW: &str = include_str!("../templates/java-jni/gradlew");
-    pub const JAVA_JNI_GRADLEW_BAT: &str = include_str!("../templates/java-jni/gradlew.bat");
-    pub const JAVA_JNI_GRADLE_WRAPPER_PROPERTIES: &str =
-        include_str!("../templates/java-jni/gradle/wrapper/gradle-wrapper.properties");
-    pub const JAVA_JNI_GRADLE_WRAPPER_JAR: &[u8] =
-        include_bytes!("../templates/java-jni/gradle/wrapper/gradle-wrapper.jar");
-
     // C# consumer templates
     pub const CSHARP_CSPROJ: &str = include_str!("../templates/csharp/Consumer.csproj.tmpl");
     pub const CSHARP_PROGRAM: &str = include_str!("../templates/csharp/Program.cs.tmpl");
@@ -117,7 +103,6 @@ impl TemplateContext {
 pub struct NewOptions {
     pub kotlin: bool,
     pub java_ffm: bool,
-    pub java_jni: bool,
     pub csharp: bool,
     pub python: bool,
 }
@@ -125,7 +110,7 @@ pub struct NewOptions {
 impl NewOptions {
     /// Returns true if any consumer language is selected
     fn has_consumers(&self) -> bool {
-        self.kotlin || self.java_ffm || self.java_jni || self.csharp || self.python
+        self.kotlin || self.java_ffm || self.csharp || self.python
     }
 }
 
@@ -159,9 +144,6 @@ pub fn run(name: &str, path: Option<String>, options: NewOptions) -> Result<()> 
         }
         if options.java_ffm {
             create_java_ffm_consumer(&consumers_dir, &ctx)?;
-        }
-        if options.java_jni {
-            create_java_jni_consumer(&consumers_dir, &ctx)?;
         }
         if options.csharp {
             create_csharp_consumer(&consumers_dir, &ctx)?;
@@ -300,57 +282,6 @@ fn create_java_ffm_consumer(consumers_dir: &Path, ctx: &TemplateContext) -> Resu
     Ok(())
 }
 
-fn create_java_jni_consumer(consumers_dir: &Path, ctx: &TemplateContext) -> Result<()> {
-    let java_dir = consumers_dir.join("java-jni");
-    let src_dir = java_dir.join("src/main/java/com/example");
-    let wrapper_dir = java_dir.join("gradle/wrapper");
-
-    fs::create_dir_all(&src_dir)?;
-    fs::create_dir_all(&wrapper_dir)?;
-
-    // Templated files
-    fs::write(
-        java_dir.join("settings.gradle.kts"),
-        ctx.apply(templates::JAVA_JNI_SETTINGS_GRADLE),
-    )?;
-    fs::write(
-        src_dir.join("Main.java"),
-        ctx.apply(templates::JAVA_JNI_MAIN),
-    )?;
-
-    // Static files
-    fs::write(
-        java_dir.join("build.gradle.kts"),
-        templates::JAVA_JNI_BUILD_GRADLE,
-    )?;
-    fs::write(java_dir.join(".gitignore"), templates::JAVA_JNI_GITIGNORE)?;
-    fs::write(java_dir.join("gradlew"), templates::JAVA_JNI_GRADLEW)?;
-    fs::write(
-        java_dir.join("gradlew.bat"),
-        templates::JAVA_JNI_GRADLEW_BAT,
-    )?;
-    fs::write(
-        wrapper_dir.join("gradle-wrapper.properties"),
-        templates::JAVA_JNI_GRADLE_WRAPPER_PROPERTIES,
-    )?;
-    fs::write(
-        wrapper_dir.join("gradle-wrapper.jar"),
-        templates::JAVA_JNI_GRADLE_WRAPPER_JAR,
-    )?;
-
-    // Make gradlew executable on Unix
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut perms = fs::metadata(java_dir.join("gradlew"))?.permissions();
-        perms.set_mode(0o755);
-        fs::set_permissions(java_dir.join("gradlew"), perms)?;
-    }
-
-    println!("  Created consumers/java-jni");
-    Ok(())
-}
-
 fn create_csharp_consumer(consumers_dir: &Path, ctx: &TemplateContext) -> Result<()> {
     let csharp_dir = consumers_dir.join("csharp");
     fs::create_dir_all(&csharp_dir)?;
@@ -412,9 +343,6 @@ fn print_next_steps(project_dir: &str, ctx: &TemplateContext, options: &NewOptio
     println!("  cd {project_dir}");
     println!("  cargo build --release");
 
-    // Determine if JNI bridge is needed (for Kotlin or Java JNI consumers)
-    let needs_jni_bridge = options.kotlin || options.java_jni;
-
     println!(
         "  rustbridge bundle create --name {} --version 0.1.0 \\",
         ctx.project_name
@@ -423,26 +351,11 @@ fn print_next_steps(project_dir: &str, ctx: &TemplateContext, options: &NewOptio
         "    --lib linux-x86_64:target/release/lib{}.so \\",
         ctx.package_name
     );
-    if needs_jni_bridge {
-        println!("    --include-jni-bridge \\");
-    }
     println!("    --output {}", ctx.bundle_path);
-
-    if needs_jni_bridge {
-        println!("\n  Note: If you haven't installed the JNI bridge yet, run:");
-        println!("    rustbridge install-jni-bridge");
-    }
 
     if options.kotlin {
         println!("\nKotlin consumer:");
         println!("  cd consumers/kotlin");
-        println!("  cp ../../{} .", ctx.bundle_path);
-        println!("  ./gradlew run");
-    }
-
-    if options.java_jni {
-        println!("\nJava JNI consumer (requires Java 17+, recommended):");
-        println!("  cd consumers/java-jni");
         println!("  cp ../../{} .", ctx.bundle_path);
         println!("  ./gradlew run");
     }

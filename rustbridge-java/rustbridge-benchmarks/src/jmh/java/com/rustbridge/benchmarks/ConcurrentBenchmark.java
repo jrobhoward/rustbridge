@@ -4,8 +4,6 @@ import com.rustbridge.*;
 import com.rustbridge.ffm.BinaryStruct;
 import com.rustbridge.ffm.FfmPlugin;
 import com.rustbridge.ffm.FfmPluginLoader;
-import com.rustbridge.jni.JniPlugin;
-import com.rustbridge.jni.JniPluginLoader;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -36,7 +34,6 @@ public class ConcurrentBenchmark {
     private static final String JSON_REQUEST = "{\"message\": \"concurrent test\"}";
 
     private FfmPlugin ffmPlugin;
-    private JniPlugin jniPlugin;
 
     @Setup(Level.Trial)
     public void setup() throws Exception {
@@ -45,19 +42,11 @@ public class ConcurrentBenchmark {
         PluginConfig config = PluginConfig.defaults().workerThreads(8);
 
         ffmPlugin = (FfmPlugin) FfmPluginLoader.load(pluginPath, config, null);
-
-        try {
-            System.loadLibrary("rustbridge_jni");
-            jniPlugin = (JniPlugin) JniPluginLoader.load(pluginPath.toString(), config);
-        } catch (UnsatisfiedLinkError e) {
-            jniPlugin = null;
-        }
     }
 
     @TearDown(Level.Trial)
     public void teardown() {
         if (ffmPlugin != null) ffmPlugin.close();
-        if (jniPlugin != null) jniPlugin.close();
     }
 
     // ==================== Single-threaded baseline ====================
@@ -123,82 +112,7 @@ public class ConcurrentBenchmark {
         }
     }
 
-    // ==================== JNI Concurrent ====================
-
-    @Benchmark
-    @Threads(1)
-    public String jniJson_1thread(Blackhole bh) throws PluginException {
-        if (jniPlugin == null) return null;
-        String response = jniPlugin.call("echo", JSON_REQUEST);
-        bh.consume(response);
-        return response;
-    }
-
-    @Benchmark
-    @Threads(4)
-    public String jniJson_4threads(Blackhole bh) throws PluginException {
-        if (jniPlugin == null) return null;
-        String response = jniPlugin.call("echo", JSON_REQUEST);
-        bh.consume(response);
-        return response;
-    }
-
-    @Benchmark
-    @Threads(8)
-    public String jniJson_8threads(Blackhole bh) throws PluginException {
-        if (jniPlugin == null) return null;
-        String response = jniPlugin.call("echo", JSON_REQUEST);
-        bh.consume(response);
-        return response;
-    }
-
-    @Benchmark
-    @Threads(1)
-    public byte[] jniBinary_1thread(Blackhole bh) throws PluginException {
-        if (jniPlugin == null) return null;
-        byte[] request = createBinaryRequest("bench_key", 0x01);
-        byte[] response = jniPlugin.callRaw(MSG_BENCH_SMALL, request);
-        bh.consume(response);
-        return response;
-    }
-
-    @Benchmark
-    @Threads(4)
-    public byte[] jniBinary_4threads(Blackhole bh) throws PluginException {
-        if (jniPlugin == null) return null;
-        byte[] request = createBinaryRequest("bench_key", 0x01);
-        byte[] response = jniPlugin.callRaw(MSG_BENCH_SMALL, request);
-        bh.consume(response);
-        return response;
-    }
-
-    @Benchmark
-    @Threads(8)
-    public byte[] jniBinary_8threads(Blackhole bh) throws PluginException {
-        if (jniPlugin == null) return null;
-        byte[] request = createBinaryRequest("bench_key", 0x01);
-        byte[] response = jniPlugin.callRaw(MSG_BENCH_SMALL, request);
-        bh.consume(response);
-        return response;
-    }
-
     // ==================== Helpers ====================
-
-    private static byte[] createBinaryRequest(String key, int flags) {
-        ByteBuffer buffer = ByteBuffer.allocate(76);
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
-        buffer.put((byte) 1);
-        buffer.put((byte) 0);
-        buffer.put((byte) 0);
-        buffer.put((byte) 0);
-        byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
-        int keyLen = Math.min(keyBytes.length, 64);
-        buffer.put(keyBytes, 0, keyLen);
-        for (int i = keyLen; i < 64; i++) buffer.put((byte) 0);
-        buffer.putInt(keyLen);
-        buffer.putInt(flags);
-        return buffer.array();
-    }
 
     static class SmallRequestRaw extends BinaryStruct {
         static final long BYTE_SIZE = 76;

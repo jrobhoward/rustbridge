@@ -10,13 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tutorial: Updated JNI examples to use `loadFromBundle()` pattern
 - Build: Added MPL-2.0 to allowed licenses in deny.toml (used by dirs crate)
 
-### Changed
-- **Java: Both JNI and FFM are now fully supported**
-  - JNI works with Java 17+ (all LTS releases: 17, 21, 25+)
-  - FFM works with Java 22+
-  - Removed "experimental" language from FFM documentation
-  - Updated all documentation, CLI help text, and tutorials to reflect this
-  - Bundle examples now include `--include-jni-bridge` to create self-contained bundles for Java users
+### Removed
+- **BREAKING: Removed JNI transport layer** - Java minimum version now 22+ (FFM only)
+  - Removed `rustbridge-jni` Rust crate and all JNI-related code
+  - Removed `rustbridge-jni` Java module and JNI implementation
+  - Removed `install-jni-bridge` CLI command and `--jni-lib` bundle flags
+  - Removed JNI templates from CLI (`java-jni/` template directory)
+  - Updated all documentation to reflect FFM-only Java integration
+  - Java users must now use Java 22+ with FFM (Foreign Function & Memory API)
 
 ### Changed
 - Java/Kotlin: Updated to Kotlin 2.3.0 and Gradle 9.3.1 for native Java 25 support
