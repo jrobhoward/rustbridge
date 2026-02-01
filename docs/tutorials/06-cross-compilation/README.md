@@ -68,4 +68,4 @@ This avoids cross-compilation complexity and uses native toolchains for best com
 
 After completing this chapter, continue to [Chapter 7: Backpressure Queues](../07-backpressure-queues/README.md) to learn how to implement bounded queues with flow control for C#, Java/JNI, and Python consumers.
 
-For Java 17-20 support without FFM, see the [Appendix: Java JNI](../appendix-java-jni/README.md).
+For Java 17+ support using JNI (recommended), see [Chapter 2: Calling from Kotlin](../02-kotlin-consumer/README.md) which uses JNI and works with Java 17+.

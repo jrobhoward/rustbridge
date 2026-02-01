@@ -46,7 +46,10 @@ pub fn run(from_path: Option<String>) -> Result<()> {
     let platform = Platform::current().context("Unsupported platform")?;
     let version = env!("CARGO_PKG_VERSION");
 
-    println!("Installing JNI bridge for {} (rustbridge v{})", platform, version);
+    println!(
+        "Installing JNI bridge for {} (rustbridge v{})",
+        platform, version
+    );
 
     let source_path = if let Some(path) = from_path {
         // Use the provided path
@@ -68,8 +71,13 @@ pub fn run(from_path: Option<String>) -> Result<()> {
         .with_context(|| format!("Failed to create directory: {}", dest_dir.display()))?;
 
     // Copy the library
-    fs::copy(&source_path, &dest_path)
-        .with_context(|| format!("Failed to copy {} to {}", source_path.display(), dest_path.display()))?;
+    fs::copy(&source_path, &dest_path).with_context(|| {
+        format!(
+            "Failed to copy {} to {}",
+            source_path.display(),
+            dest_path.display()
+        )
+    })?;
 
     println!("  Installed: {}", dest_path.display());
     println!("\nJNI bridge installed successfully!");
@@ -99,7 +107,10 @@ fn build_jni_bridge(platform: &Platform) -> Result<PathBuf> {
 
     // Find the built library
     let lib_name = platform.library_name("rustbridge_jni");
-    let lib_path = workspace_root.join("target").join("release").join(&lib_name);
+    let lib_path = workspace_root
+        .join("target")
+        .join("release")
+        .join(&lib_name);
 
     if !lib_path.exists() {
         anyhow::bail!(

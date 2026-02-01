@@ -48,8 +48,8 @@ source .venv/bin/activate && python -m pytest tests/ -v
 | Component | Minimum Version |
 |-----------|----------------|
 | Rust | 1.90.0 (Edition 2024) |
-| Java (JNI) | 17+ (recommended) |
-| Java (FFM) | 22+ (experimental) |
+| Java (JNI) | 17+ |
+| Java (FFM) | 22+ |
 | .NET | 8.0+ |
 | Python | 3.10+ |
 
@@ -114,8 +114,8 @@ All FFI functions must:
 
 The `rustbridge-java/` directory contains:
 - `rustbridge-core`: Core Java interfaces
-- `rustbridge-jni`: JNI implementation (Java 17+, recommended)
-- `rustbridge-ffm`: FFM implementation (Java 22+, experimental)
+- `rustbridge-jni`: JNI implementation (Java 17+)
+- `rustbridge-ffm`: FFM implementation (Java 22+)
 - `rustbridge-kotlin`: Kotlin extensions and DSL
 
 ## C# Integration

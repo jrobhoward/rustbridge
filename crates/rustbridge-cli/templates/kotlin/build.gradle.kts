@@ -34,9 +34,3 @@ kotlin {
 tasks.test {
     useJUnitPlatform()
 }
-
-// Set library path for JNI native library
-tasks.withType<JavaExec> {
-    systemProperty("java.library.path", System.getProperty("java.library.path", "") +
-        ":../../target/release")
-}

@@ -82,13 +82,6 @@ import com.rustbridge.PluginConfig as RbPluginConfig
 fun main(args: Array<String>) {
     val bundlePath = "regex-plugin-0.1.0.rbp"
 
-    val bundleLoader = BundleLoader.builder()
-        .bundlePath(bundlePath)
-        .verifySignatures(false)
-        .build()
-
-    val libraryPath = bundleLoader.extractLibrary()
-
     // Create log callback
     val logCallback = LogCallback { level, target, message ->
         println("[$level] $target: $message")
@@ -100,8 +93,8 @@ fun main(args: Array<String>) {
         .logLevel(LogLevel.INFO)
         .set("cache_size", pluginConfigData.cacheSize)
 
-    // Load plugin with config and callback
-    JniPluginLoader.load(libraryPath.toString(), config, logCallback).use { plugin ->
+    // Load plugin from bundle (extracts JNI bridge and plugin library)
+    JniPluginLoader.loadFromBundle(bundlePath, config, logCallback).use { plugin ->
         // Type-safe request/response
         val request = MatchRequest(
             pattern = """\d{4}-\d{2}-\d{2}""",
@@ -125,8 +118,6 @@ fun main(args: Array<String>) {
         println("Matches: ${response2.matches}")
         println("Cached: ${response2.cached}")  // Should be true!
     }
-
-    bundleLoader.close()
 }
 ```
 
@@ -140,7 +131,6 @@ package com.example
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.rustbridge.BundleLoader
 import com.rustbridge.LogCallback
 import com.rustbridge.LogLevel
 import com.rustbridge.Plugin
@@ -179,13 +169,6 @@ inline fun <reified T> Plugin.callTyped(
 fun main(args: Array<String>) {
     val bundlePath = "regex-plugin-0.1.0.rbp"
 
-    val bundleLoader = BundleLoader.builder()
-        .bundlePath(bundlePath)
-        .verifySignatures(false)
-        .build()
-
-    val libraryPath = bundleLoader.extractLibrary()
-
     // Create log callback
     val logCallback = LogCallback { level, target, message ->
         println("[$level] $target: $message")
@@ -197,8 +180,8 @@ fun main(args: Array<String>) {
         .logLevel(LogLevel.INFO)
         .set("cache_size", pluginConfigData.cacheSize)
 
-    // Load plugin with config and callback
-    JniPluginLoader.load(libraryPath.toString(), config, logCallback).use { plugin ->
+    // Load plugin from bundle (extracts JNI bridge and plugin library)
+    JniPluginLoader.loadFromBundle(bundlePath, config, logCallback).use { plugin ->
         // Test some patterns
         val patterns = listOf(
             """\d+""" to "test123",           // Digits
@@ -224,8 +207,6 @@ fun main(args: Array<String>) {
             println("$date: matches=${response.matches}, cached=${response.cached}")
         }
     }
-
-    bundleLoader.close()
 }
 ```
 

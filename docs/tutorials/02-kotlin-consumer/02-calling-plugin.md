@@ -9,35 +9,25 @@ Replace the contents of `src/main/kotlin/com/example/Main.kt`:
 ```kotlin
 package com.example
 
-import com.rustbridge.BundleLoader
 import com.rustbridge.jni.JniPluginLoader
 
 fun main(args: Array<String>) {
     // Path to your plugin bundle
     val bundlePath = "regex-plugin-0.1.0.rbp"
 
-    // Load the bundle and extract the library for this platform
-    val bundleLoader = BundleLoader.builder()
-        .bundlePath(bundlePath)
-        .verifySignatures(false)  // Set true in production with signed bundles
-        .build()
-
-    val libraryPath = bundleLoader.extractLibrary()
-    println("Extracted library: $libraryPath")
-
-    // Load the plugin
-    JniPluginLoader.load(libraryPath.toString()).use { plugin ->
+    // Load plugin from bundle (extracts both JNI bridge and plugin library)
+    JniPluginLoader.loadFromBundle(bundlePath).use { plugin ->
         // Make a raw JSON call
         val requestJson = """{"pattern": "\\d+", "text": "test123"}"""
-        println("\nRequest: $requestJson")
+        println("Request: $requestJson")
 
         val responseJson = plugin.call("match", requestJson)
         println("Response: $responseJson")
     }
-
-    bundleLoader.close()
 }
 ```
+
+The `loadFromBundle()` method handles extracting both the JNI bridge library and your plugin from the bundle, ensuring they're version-matched.
 
 ## Run the Application
 
@@ -48,20 +38,18 @@ fun main(args: Array<String>) {
 Output:
 
 ```
-Extracted library: /tmp/rustbridge-7070899839138620082/libregex_plugin.so
-
 Request: {"pattern": "\\d+", "text": "test123"}
 Response: {"cached":false,"matches":true}
 ```
 
 ## Make Multiple Calls
 
-Let's see the cache in action. Replace the `JniPluginLoader.load()` call:
+Let's see the cache in action. Replace the `loadFromBundle()` call:
 
 ```kotlin
-JniPluginLoader.load(libraryPath.toString()).use { plugin ->
+JniPluginLoader.loadFromBundle(bundlePath).use { plugin ->
     // First call - compiles the pattern
-    println("\nFirst call:")
+    println("First call:")
     var request = """{"pattern": "^\\d{4}-\\d{2}-\\d{2}$", "text": "2024-01-15"}"""
     var response = plugin.call("match", request)
     println("Response: $response")
@@ -130,7 +118,7 @@ val config = PluginConfig.defaults()
     .set("cache_size", 10)
 
 // Load plugin with config
-JniPluginLoader.load(libraryPath.toString(), config).use { plugin ->
+JniPluginLoader.loadFromBundle(bundlePath, config).use { plugin ->
     // Now make calls...
     val request = """{"pattern": "\\d+", "text": "test123"}"""
     val response = plugin.call("match", request)

@@ -375,7 +375,7 @@ System.out.println("Absolute: " + pluginFile.getAbsolutePath());
 
 ## Related Documentation
 
-- [JAVA_FFM.md](./JAVA_FFM.md) - Java 22+ FFM guide (experimental)
+- [JAVA_FFM.md](./JAVA_FFM.md) - Java 22+ FFM guide
 - [KOTLIN.md](./KOTLIN.md) - Kotlin-specific guide
 - [../TRANSPORT.md](../TRANSPORT.md) - Transport layer details
 - [../MEMORY_MODEL.md](../MEMORY_MODEL.md) - Memory ownership

@@ -528,11 +528,15 @@ codegen-units = 1
 # Build the plugin
 cargo build --release
 
-# Create a bundle
+# Install JNI bridge if not already done (needed for Java/Kotlin consumers)
+rustbridge install-jni-bridge
+
+# Create a bundle (include JNI bridge for Java/Kotlin consumers)
 rustbridge bundle create \
   --name thumbnail-plugin \
   --version 0.1.0 \
   --lib linux-x86_64:target/release/libthumbnail_plugin.so \
+  --include-jni-bridge \
   --output thumbnail-plugin-0.1.0.rbp
 
 # Copy to each consumer directory
@@ -603,8 +607,8 @@ Before starting this chapter:
 - **Completed Chapter 1** (understanding plugin structure and message types)
 - **Read docs/TRANSPORT.md** (binary transport concepts)
 - **Language-specific setup**:
-  - Java JNI: JDK 17+ (recommended for all Java versions)
-  - Java FFM: JDK 22+ (experimental)
+  - Java JNI: JDK 17+
+  - Java FFM: JDK 22+
   - Kotlin: JDK 17+ (uses JNI)
   - C#: .NET 8.0+
   - Python: Python 3.10+

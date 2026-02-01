@@ -39,7 +39,7 @@ These tutorials guide you through building Rust plugins and calling them from mu
 Before starting, ensure you have:
 
 - **Rust 1.90+** installed
-- **Java 22+** (for FFM-based consumers; JNI works with Java 17+)
+- **Java 17+** (JNI works with Java 17+; FFM works with Java 22+)
 - **rustbridge CLI** installed ([Getting Started](../GETTING_STARTED.md))
 
 ## Tutorial Chapters
@@ -78,15 +78,17 @@ Build a JSON validation and prettification plugin to learn message handling patt
 | [03-prettify-message.md](./03-json-plugin/03-prettify-message.md) | Add JSON prettification with custom indent |
 | [04-error-handling.md](./03-json-plugin/04-error-handling.md) | Error patterns, build bundle |
 
-### [Chapter 4: Calling from Java](./04-java-consumer/README.md)
+### [Chapter 4: Calling from Java (FFM)](./04-java-consumer/README.md)
 
-Load your plugin from Java using the Foreign Function & Memory (FFM) API.
+Load your plugin from Java using the Foreign Function & Memory (FFM) API (Java 22+).
 
 | Section | What You'll Learn |
 |---------|-------------------|
 | [01-project-setup.md](./04-java-consumer/01-project-setup.md) | Set up Java FFM consumer project |
 | [02-calling-plugin.md](./04-java-consumer/02-calling-plugin.md) | Load bundle, type-safe calls with records |
 | [03-error-handling.md](./04-java-consumer/03-error-handling.md) | Handle plugin errors gracefully |
+
+> **Note**: For Java 17+, JNI is the recommended approach. Chapter 2 (Kotlin) uses JNI and works with Java 17+.
 
 ### [Chapter 5: Production Bundles](./05-production-bundles/README.md)
 

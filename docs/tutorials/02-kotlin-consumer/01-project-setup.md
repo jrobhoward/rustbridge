@@ -90,11 +90,6 @@ application {
     mainClass.set("com.example.MainKt")
 }
 
-tasks.withType<JavaExec> {
-    // Set library path for JNI native library
-    systemProperty("java.library.path", System.getProperty("java.library.path", "") +
-        ":../../target/release")
-}
 ```
 
 Key points:
@@ -102,7 +97,6 @@ Key points:
 - **mavenLocal()**: Finds rustbridge libraries you installed
 - **rustbridge-jni**: Uses JNI for native access (works with Java 17+)
 - **jackson-module-kotlin**: For JSON serialization
-- **java.library.path**: Points to the JNI bridge library location
 
 ## Build the Project
 

@@ -87,7 +87,11 @@ pub fn create(
             );
         }
 
-        println!("  Adding installed JNI bridge: {} ({}:release)", jni_path.display(), platform);
+        println!(
+            "  Adding installed JNI bridge: {} ({}:release)",
+            jni_path.display(),
+            platform
+        );
         builder = builder
             .add_jni_library_variant(platform, "release", &jni_path)
             .with_context(|| format!("Failed to add JNI library: {}", jni_path.display()))?;
@@ -899,7 +903,7 @@ mod tests {
             "test-plugin",
             "1.0.0",
             &libs,
-            &[], // No JNI libraries
+            &[],   // No JNI libraries
             false, // Don't include installed JNI bridge
             Some(output.to_string_lossy().to_string()),
             &[],
@@ -946,7 +950,7 @@ mod tests {
             "test-plugin",
             "1.0.0",
             &libs,
-            &[], // No JNI libraries
+            &[],   // No JNI libraries
             false, // Don't include installed JNI bridge
             Some(output.to_string_lossy().to_string()),
             &[],
@@ -988,7 +992,7 @@ mod tests {
             "test-plugin",
             "1.0.0",
             &libs,
-            &[], // No JNI libraries
+            &[],   // No JNI libraries
             false, // Don't include installed JNI bridge
             Some(output.to_string_lossy().to_string()),
             &[],
@@ -1036,7 +1040,7 @@ mod tests {
             "test-plugin",
             "1.0.0",
             &libs,
-            &[], // No JNI libraries
+            &[],   // No JNI libraries
             false, // Don't include installed JNI bridge
             Some(full_bundle.to_string_lossy().to_string()),
             &[],

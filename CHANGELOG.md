@@ -7,14 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 - Tutorial: Consistently use version 0.1.0 for tutorial versions
+- Tutorial: Updated JNI examples to use `loadFromBundle()` pattern
+- Build: Added MPL-2.0 to allowed licenses in deny.toml (used by dirs crate)
 
 ### Changed
-- **Java: JNI is now the recommended default, FFM is experimental**
-  - JNI provides compatibility with all LTS releases (Java 17, 21, 25+)
-  - JNI has better binary transport performance (22% faster on Linux)
-  - FFM is now positioned as an experimental alternative for Java 22+ users
+- **Java: Both JNI and FFM are now fully supported**
+  - JNI works with Java 17+ (all LTS releases: 17, 21, 25+)
+  - FFM works with Java 22+
+  - Removed "experimental" language from FFM documentation
   - Updated all documentation, CLI help text, and tutorials to reflect this
-  - Bundle examples now include `--jni-lib` to create self-contained bundles for Java users
+  - Bundle examples now include `--include-jni-bridge` to create self-contained bundles for Java users
 
 ### Changed
 - Java/Kotlin: Updated to Kotlin 2.3.0 and Gradle 9.3.1 for native Java 25 support

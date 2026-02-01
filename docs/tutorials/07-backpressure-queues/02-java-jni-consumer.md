@@ -44,7 +44,6 @@ Look at `src/main/java/com/example/Main.java`:
 ```java
 package com.example;
 
-import com.rustbridge.BundleLoader;
 import com.rustbridge.Plugin;
 import com.rustbridge.jni.JniPluginLoader;
 import com.google.gson.Gson;
@@ -65,14 +64,8 @@ public class Main {
     public static void main(String[] args) throws Exception {
         String bundlePath = "sync-demo-0.1.0.rbp";
 
-        BundleLoader bundleLoader = BundleLoader.builder()
-            .bundlePath(bundlePath)
-            .verifySignatures(false)
-            .build();
-
-        String libraryPath = bundleLoader.extractLibrary().toString();
-
-        try (Plugin plugin = JniPluginLoader.load(libraryPath)) {
+        // Load plugin from bundle (extracts JNI bridge and plugin library)
+        try (Plugin plugin = JniPluginLoader.loadFromBundle(bundlePath)) {
             EchoRequest request = new EchoRequest("Hello from Java JNI!");
             String requestJson = gson.toJson(request);
 
@@ -82,15 +75,13 @@ public class Main {
             System.out.println("Response: " + response.message);
             System.out.println("Length: " + response.length);
         }
-
-        bundleLoader.close();
     }
 }
 ```
 
 Key points:
-- `BundleLoader.builder()` extracts the native library from the bundle
-- `JniPluginLoader.load()` loads the plugin using JNI (works with Java 17+)
+- `JniPluginLoader.loadFromBundle()` extracts both the JNI bridge and plugin from the bundle
+- Works with Java 17+ (no FFM required)
 - Gson handles JSON serialization with snake_case field names
 
 ## Add the SynchronizedPlugin Wrapper
@@ -299,7 +290,6 @@ Replace `src/main/java/com/example/Main.java`:
 ```java
 package com.example;
 
-import com.rustbridge.BundleLoader;
 import com.rustbridge.jni.JniPluginLoader;
 import com.example.Messages.*;
 
@@ -313,12 +303,8 @@ public class Main {
 
         String bundlePath = "sync-demo-0.1.0.rbp";
 
-        BundleLoader bundleLoader = BundleLoader.builder()
-            .bundlePath(bundlePath)
-            .verifySignatures(false)
-            .build();
-
-        var plugin = JniPluginLoader.load(bundleLoader.extractLibrary().toString());
+        // Load plugin from bundle (extracts JNI bridge and plugin library)
+        var plugin = JniPluginLoader.loadFromBundle(bundlePath);
 
         // Wrap with synchronized access (queue size = 5 for demo)
         try (var syncPlugin = new SynchronizedPlugin(plugin, 5)) {
@@ -395,7 +381,6 @@ public class Main {
                 System.currentTimeMillis() - pressureStart);
         }
 
-        bundleLoader.close();
         System.out.println("\n=== Demo Complete ===");
     }
 }

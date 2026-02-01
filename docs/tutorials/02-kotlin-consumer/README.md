@@ -18,9 +18,7 @@ In this chapter, you'll load your regex plugin from Kotlin, make type-safe calls
 │                       │                                                     │
 │                       ▼                                                     │
 │  ┌──────────────────────────────────────────────────────┐                   │
-│  │  BundleLoader.extractLibrary()                       │                   │
-│  │  JniPluginLoader.load(library)                       │                   │
-│  │  plugin.setLogCallback { level, msg -> ... }         │                   │
+│  │  JniPluginLoader.loadFromBundle(path, config, log)   │                   │
 │  │  plugin.call("match", json) → json                   │                   │
 │  └──────────────────────────────────────────────────────┘                   │
 │                       │                                                     │

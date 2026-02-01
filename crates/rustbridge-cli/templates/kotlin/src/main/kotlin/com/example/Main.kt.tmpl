@@ -1,6 +1,5 @@
 package com.example
 
-import com.rustbridge.BundleLoader
 import com.rustbridge.jni.JniPluginLoader
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -25,14 +24,8 @@ fun main(args: Array<String>) {
     // Update this path to your .rbp bundle file
     val bundlePath = "{{bundle-path}}"
 
-    val bundleLoader = BundleLoader.builder()
-        .bundlePath(bundlePath)
-        .verifySignatures(false)  // Set true for production
-        .build()
-
-    val libraryPath = bundleLoader.extractLibrary()
-
-    JniPluginLoader.load(libraryPath.toString()).use { plugin ->
+    // Load plugin from bundle (handles JNI bridge extraction automatically)
+    JniPluginLoader.loadFromBundle(bundlePath).use { plugin ->
         // Example: Call the "echo" message type
         val response = plugin.callTyped<EchoResponse>(
             "echo",
@@ -42,6 +35,4 @@ fun main(args: Array<String>) {
         println("Response: ${response.message}")
         println("Length: ${response.length}")
     }
-
-    bundleLoader.close()
 }

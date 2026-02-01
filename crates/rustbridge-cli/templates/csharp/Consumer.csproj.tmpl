@@ -8,7 +8,15 @@
     <RootNamespace>{{class-name}}</RootNamespace>
   </PropertyGroup>
 
-  <!-- Reference local rustbridge projects (assumes ~/rustbridge-workspace/ structure) -->
+  <!--
+    Prerequisites:
+    This template expects rustbridge to be cloned at ~/rustbridge-workspace/rustbridge/
+    as described in docs/GETTING_STARTED.md. If you cloned rustbridge elsewhere,
+    update the paths below to match your setup.
+
+    When RustBridge packages are published to NuGet, you can replace the
+    ProjectReference items with PackageReference items instead.
+  -->
   <ItemGroup>
     <ProjectReference Include="$(HOME)/rustbridge-workspace/rustbridge/rustbridge-csharp/RustBridge.Core/RustBridge.Core.csproj" />
     <ProjectReference Include="$(HOME)/rustbridge-workspace/rustbridge/rustbridge-csharp/RustBridge.Native/RustBridge.Native.csproj" />

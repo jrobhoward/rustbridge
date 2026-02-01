@@ -323,7 +323,12 @@ cargo test
 
 ## Create a Bundle
 
-Now let's package it for distribution:
+Now let's package it for distribution. We include `--include-jni-bridge` so the bundle works with Java/Kotlin consumers:
+
+```bash
+# First, install the JNI bridge if you haven't already
+rustbridge install-jni-bridge
+```
 
 ```bash
 # Linux
@@ -331,6 +336,7 @@ rustbridge bundle create \
   --name regex-plugin \
   --version 0.1.0 \
   --lib linux-x86_64:target/release/libregex_plugin.so \
+  --include-jni-bridge \
   --output regex-plugin-0.1.0.rbp
 ```
 
@@ -340,6 +346,7 @@ rustbridge bundle create \
   --name regex-plugin \
   --version 0.1.0 \
   --lib darwin-aarch64:target/release/libregex_plugin.dylib \
+  --include-jni-bridge \
   --output regex-plugin-0.1.0.rbp
 ```
 
@@ -349,8 +356,11 @@ rustbridge bundle create \
   --name regex-plugin \
   --version 0.1.0 \
   --lib windows-x86_64:target/release/regex_plugin.dll \
+  --include-jni-bridge \
   --output regex-plugin-0.1.0.rbp
 ```
+
+> **Note**: The `--include-jni-bridge` flag bundles the JNI bridge library required for Java 17+ consumers. You can omit this flag if you're only targeting C#, Python, or if you've installed the JNI bridge system-wide.
 
 Verify:
 

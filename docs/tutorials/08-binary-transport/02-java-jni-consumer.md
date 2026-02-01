@@ -230,7 +230,7 @@ Replace `src/main/java/com/example/Main.java`:
 ```java
 package com.example;
 
-import com.rustbridge.BundleLoader;
+import com.rustbridge.Plugin;
 import com.rustbridge.jni.JniPluginLoader;
 import com.example.ThumbnailStructs.ThumbnailResponse;
 
@@ -252,12 +252,8 @@ public class Main {
         byte[] imageData = loadImage(imagePath);
         System.out.printf("Loaded image: %s (%d bytes)%n%n", imagePath, imageData.length);
 
-        BundleLoader bundleLoader = BundleLoader.builder()
-            .bundlePath(bundlePath)
-            .verifySignatures(false)
-            .build();
-
-        try (var plugin = JniPluginLoader.load(bundleLoader.extractLibrary().toString())) {
+        // Load plugin from bundle (extracts JNI bridge and plugin library)
+        try (Plugin plugin = JniPluginLoader.loadFromBundle(bundlePath)) {
 
             // Demo 1: Create JPEG thumbnail
             System.out.println("Demo 1: Create JPEG thumbnail (100x100)");
@@ -350,7 +346,6 @@ public class Main {
             System.out.printf("  Throughput: %.1f thumbnails/sec%n", 1000.0 / avgMs);
         }
 
-        bundleLoader.close();
         System.out.println("\n=== Demo Complete ===");
     }
 
@@ -521,21 +516,20 @@ try {
 }
 ```
 
-## Comparison: FFM vs JNI
+## Comparison: JNI vs FFM
 
 | Aspect | JNI (Java 17+) | FFM (Java 22+) |
 |--------|------------------|----------------|
-| Java version | 17+ (recommended) | 22+ (experimental) |
-| Type safety | High (StructLayout) | Low (manual offsets) |
-| Memory management | Manual (Arena, freeBuffer) | Automatic (JNI copies) |
-| Performance | Better (zero-copy possible) | Good (extra copy) |
-| Complexity | Higher | Lower |
-| Error messages | Better (named fields) | Basic |
+| Java version | 17+ | 22+ |
+| Type safety | Low (manual offsets) | High (StructLayout) |
+| Memory management | Automatic (JNI copies) | Manual (Arena, freeBuffer) |
+| Performance | Good (extra copy) | Better (zero-copy possible) |
+| Complexity | Lower | Higher |
+| Error messages | Basic | Better (named fields) |
 
-**Recommendation:**
-- Use JNI for all Java versions (17+) - it's the recommended default
-- JNI provides better binary transport performance (22% faster on Linux)
-- FFM is available as an experimental alternative for Java 22+ users
+**Choose based on your needs:**
+- **JNI** works with Java 17+ and has simpler memory management
+- **FFM** works with Java 22+ and offers better performance for binary transport
 
 ## What's Next?
 

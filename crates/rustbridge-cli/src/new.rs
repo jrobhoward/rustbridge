@@ -411,6 +411,10 @@ fn print_next_steps(project_dir: &str, ctx: &TemplateContext, options: &NewOptio
     println!("Next steps:");
     println!("  cd {project_dir}");
     println!("  cargo build --release");
+
+    // Determine if JNI bridge is needed (for Kotlin or Java JNI consumers)
+    let needs_jni_bridge = options.kotlin || options.java_jni;
+
     println!(
         "  rustbridge bundle create --name {} --version 0.1.0 \\",
         ctx.project_name
@@ -419,7 +423,15 @@ fn print_next_steps(project_dir: &str, ctx: &TemplateContext, options: &NewOptio
         "    --lib linux-x86_64:target/release/lib{}.so \\",
         ctx.package_name
     );
+    if needs_jni_bridge {
+        println!("    --include-jni-bridge \\");
+    }
     println!("    --output {}", ctx.bundle_path);
+
+    if needs_jni_bridge {
+        println!("\n  Note: If you haven't installed the JNI bridge yet, run:");
+        println!("    rustbridge install-jni-bridge");
+    }
 
     if options.kotlin {
         println!("\nKotlin consumer:");
@@ -436,7 +448,7 @@ fn print_next_steps(project_dir: &str, ctx: &TemplateContext, options: &NewOptio
     }
 
     if options.java_ffm {
-        println!("\nJava FFM consumer (requires Java 22+, experimental):");
+        println!("\nJava FFM consumer (requires Java 22+):");
         println!("  cd consumers/java-ffm");
         println!("  cp ../../{} .", ctx.bundle_path);
         println!("  ./gradlew run");

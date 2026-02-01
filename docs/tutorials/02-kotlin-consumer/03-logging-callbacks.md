@@ -23,7 +23,6 @@ Update your Main.kt to pass a log callback when loading the plugin:
 ```kotlin
 package com.example
 
-import com.rustbridge.BundleLoader
 import com.rustbridge.LogCallback
 import com.rustbridge.LogLevel
 import com.rustbridge.PluginConfig
@@ -31,13 +30,6 @@ import com.rustbridge.jni.JniPluginLoader
 
 fun main(args: Array<String>) {
     val bundlePath = "regex-plugin-0.1.0.rbp"
-
-    val bundleLoader = BundleLoader.builder()
-        .bundlePath(bundlePath)
-        .verifySignatures(false)
-        .build()
-
-    val libraryPath = bundleLoader.extractLibrary()
 
     // Create a log callback
     val logCallback = LogCallback { level, target, message ->
@@ -48,8 +40,8 @@ fun main(args: Array<String>) {
     val config = PluginConfig.defaults()
         .logLevel(LogLevel.DEBUG)
 
-    // Load plugin with config and callback
-    JniPluginLoader.load(libraryPath.toString(), config, logCallback).use { plugin ->
+    // Load plugin from bundle with config and callback
+    JniPluginLoader.loadFromBundle(bundlePath, config, logCallback).use { plugin ->
         // Make some calls - you'll see debug logs
         val request1 = """{"pattern": "\\d+", "text": "test123"}"""
         val response1 = plugin.call("match", request1)
@@ -59,8 +51,6 @@ fun main(args: Array<String>) {
         val response2 = plugin.call("match", request2)
         println("Response: $response2\n")
     }
-
-    bundleLoader.close()
 }
 ```
 
@@ -141,7 +131,7 @@ val logCallback = LogCallback { level, target, message ->
     }
 }
 
-JniPluginLoader.load(libraryPath.toString(), config, logCallback).use { plugin ->
+JniPluginLoader.loadFromBundle(bundlePath, config, logCallback).use { plugin ->
     // Now plugin logs go through SLF4J
 }
 ```

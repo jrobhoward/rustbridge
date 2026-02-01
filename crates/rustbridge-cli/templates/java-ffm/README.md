@@ -1,8 +1,8 @@
-# rustbridge Java FFM Consumer Template (Experimental)
+# rustbridge Java FFM Consumer Template
 
 A minimal Java 22+ project template for consuming rustbridge plugins using FFM (Foreign Function & Memory API).
 
-> **Note:** FFM is experimental. For most use cases, we recommend the [JNI template](../java-jni/) which works on Java 17+ and has better binary transport performance.
+> **Note:** Both JNI (Java 17+) and FFM (Java 22+) are fully supported. Choose based on your Java version and preference.
 
 ## Prerequisites
 

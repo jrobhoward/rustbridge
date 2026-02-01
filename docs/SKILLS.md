@@ -475,9 +475,9 @@ JNI is the recommended approach for all Java versions (17+):
 - Better binary transport performance than FFM
 - Requires JNI bridge library (bundle with `--jni-lib`)
 
-### FFM (Java 22+) - Experimental
+### FFM (Java 22+)
 
-FFM is available as an experimental alternative for Java 22+:
+FFM is available for Java 22+:
 - Pure Java bindings, no JNI code needed
 - Arena-based memory management
 - Better JSON performance than JNI

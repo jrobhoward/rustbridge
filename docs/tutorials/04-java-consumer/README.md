@@ -58,10 +58,13 @@ Handle plugin errors gracefully in Java.
 
 This chapter takes approximately 20-30 minutes to complete.
 
-## JNI Alternative (Recommended)
+## JNI Alternative
 
-JNI is the recommended approach for all Java versions (17+). See the [Java JNI appendix](../appendix-java-jni/README.md) for the recommended approach.
-This chapter shows FFM as an experimental alternative for Java 22+ users.
+Both JNI and FFM are fully supported:
+- **JNI** works with Java 17+ and is covered in [Chapter 2](../02-kotlin-consumer/README.md) (Kotlin) and [Chapter 7](../07-backpressure-queues/02-java-jni-consumer.md) (Java)
+- **FFM** works with Java 22+ and is covered in this chapter
+
+Choose based on your Java version and preference.
 
 ## Next Steps
 

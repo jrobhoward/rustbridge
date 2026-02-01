@@ -210,11 +210,15 @@ pub use rustbridge::ffi_exports::*;
 # Build the plugin
 cargo build --release
 
-# Create a bundle
+# Install JNI bridge if not already done
+rustbridge install-jni-bridge
+
+# Create a bundle (include JNI bridge for Java consumers)
 rustbridge bundle create \
   --name sync-demo \
   --version 0.1.0 \
   --lib linux-x86_64:target/release/libsync_demo.so \
+  --include-jni-bridge \
   --output sync-demo-0.1.0.rbp
 
 # Copy to each consumer directory

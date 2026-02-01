@@ -244,9 +244,9 @@ pip install -e ~/rustbridge-workspace/rustbridge/rustbridge-python
 python main.py
 ```
 
-### Java (FFM) - Experimental (Java 22+)
+### Java (FFM) - Java 22+
 
-> **Note**: FFM is available as an experimental alternative for Java 22+. For most use cases, we recommend JNI above.
+> **Note**: Both JNI (Java 17+) and FFM (Java 22+) are fully supported. Choose based on your Java version.
 
 ```bash
 cd ~/rustbridge-workspace/my-plugin/consumers/java-ffm
@@ -290,8 +290,8 @@ calculator with multiple message types:
 | Language   | Guide                                                      |
 |------------|------------------------------------------------------------|
 | Kotlin     | [KOTLIN.md](./using-plugins/KOTLIN.md)                     |
-| Java (JNI) | [JAVA_JNI.md](./using-plugins/JAVA_JNI.md) (recommended)   |
-| Java (FFM) | [JAVA_FFM.md](./using-plugins/JAVA_FFM.md) (experimental)  |
+| Java (JNI) | [JAVA_JNI.md](./using-plugins/JAVA_JNI.md) (Java 17+)      |
+| Java (FFM) | [JAVA_FFM.md](./using-plugins/JAVA_FFM.md) (Java 22+)      |
 | C#         | [CSHARP.md](./using-plugins/CSHARP.md)                     |
 | Python     | [PYTHON.md](./using-plugins/PYTHON.md)                     |
 
@@ -322,8 +322,8 @@ rustbridge new my-plugin --all              # Rust + all consumers
 |-----------|-----------------------------------|--------------|
 | rust      | Rust plugin                       | Rust 1.90+   |
 | kotlin    | Kotlin consumer                   | Java 17+     |
-| java-jni  | Java JNI consumer (recommended)   | Java 17+     |
-| java-ffm  | Java FFM consumer (experimental)  | Java 22+     |
+| java-jni  | Java JNI consumer                 | Java 17+     |
+| java-ffm  | Java FFM consumer                 | Java 22+     |
 | csharp    | C# consumer                       | .NET 8.0+    |
 | python    | Python consumer                   | Python 3.10+ |
 
