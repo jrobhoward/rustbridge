@@ -23,7 +23,7 @@ package com.example
 import com.rustbridge.BundleLoader
 import com.rustbridge.LogCallback
 import com.rustbridge.LogLevel
-import com.rustbridge.ffm.FfmPluginLoader
+import com.rustbridge.jni.JniPluginLoader
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -58,7 +58,7 @@ fun main() {
     }
 
     // Load with logging enabled
-    FfmPluginLoader.builder()
+    JniPluginLoader.builder()
         .libraryPath(libraryPath)
         .logCallback(logCallback)
         .logLevel(LogLevel.DEBUG)  // Capture DEBUG and above

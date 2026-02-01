@@ -10,7 +10,7 @@ Create `src\main\kotlin\com\example\Benchmark.kt`:
 package com.example
 
 import com.rustbridge.BundleLoader
-import com.rustbridge.ffm.FfmPluginLoader
+import com.rustbridge.jni.JniPluginLoader
 import kotlin.system.measureNanoTime
 
 fun main() {
@@ -24,7 +24,7 @@ fun main() {
         .build()
 
     val libraryPath = bundleLoader.extractLibrary().toString()
-    val plugin = FfmPluginLoader.load(libraryPath)
+    val plugin = JniPluginLoader.load(libraryPath)
 
     RegexPlugin(plugin).use { regex ->
 
@@ -167,11 +167,11 @@ With 1000 iterations per pattern:
 ### Latency Components
 
 Each call includes:
-- FFI boundary crossing (~2 µs)
+- JNI boundary crossing (~2 µs)
 - JSON serialization (~1-2 µs)
 - Regex matching (varies by pattern)
 - JSON deserialization (~1-2 µs)
-- FFI return (~2 µs)
+- JNI return (~2 µs)
 
 ### Cache Miss Cost
 

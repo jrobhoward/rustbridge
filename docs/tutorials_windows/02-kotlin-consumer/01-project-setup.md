@@ -16,8 +16,8 @@ Create `build.gradle.kts`:
 
 ```kotlin
 plugins {
-    kotlin("jvm") version "2.0.21"
-    kotlin("plugin.serialization") version "2.0.21"
+    kotlin("jvm") version "2.3.0"
+    kotlin("plugin.serialization") version "2.3.0"
     application
 }
 
@@ -30,10 +30,9 @@ repositories {
 }
 
 dependencies {
-    // Rustbridge FFM (requires Java 22+)
+    // Rustbridge JNI (works with Java 17+)
     implementation("com.rustbridge:rustbridge-core:0.7.0")
-    implementation("com.rustbridge:rustbridge-ffm:0.7.0")
-    implementation("com.rustbridge:rustbridge-kotlin:0.7.0")
+    implementation("com.rustbridge:rustbridge-jni:0.7.0")
 
     // JSON serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
@@ -46,15 +45,19 @@ application {
     mainClass.set("com.example.MainKt")
 }
 
-java {
-    toolchain {
-        // Java 22+ required for FFM
-        languageVersion.set(JavaLanguageVersion.of(22))
-    }
+kotlin {
+    // JNI works with Java 17+ (LTS: 17, 21, 25)
+    jvmToolchain(17)
 }
 
 tasks.test {
     useJUnitPlatform()
+}
+
+// Set library path for JNI native library
+tasks.withType<JavaExec> {
+    systemProperty("java.library.path", System.getProperty("java.library.path", "") +
+        ";..\\..\\target\\release")
 }
 ```
 
@@ -79,7 +82,7 @@ Create `src\main\kotlin\com\example\Main.kt`:
 package com.example
 
 import com.rustbridge.BundleLoader
-import com.rustbridge.ffm.FfmPluginLoader
+import com.rustbridge.jni.JniPluginLoader
 import kotlinx.serialization.json.Json
 
 fun main() {
@@ -97,7 +100,7 @@ fun main() {
     println("Extracted library: $libraryPath")
 
     // Load the plugin
-    FfmPluginLoader.load(libraryPath).use { plugin ->
+    JniPluginLoader.load(libraryPath).use { plugin ->
         println("Plugin loaded successfully!")
 
         // Simple echo test
@@ -149,15 +152,13 @@ Done!
 
 ## Understanding the Setup
 
-### Java 22+ Requirement
+### Java 17+ Compatibility
 
-The FFM API became final (non-preview) in Java 22:
+JNI works with Java 17 and later LTS versions (17, 21, 25):
 
 ```kotlin
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(22))
-    }
+kotlin {
+    jvmToolchain(17)
 }
 ```
 
@@ -177,7 +178,7 @@ val bundleLoader = BundleLoader.builder()
 The plugin is loaded and automatically closed with Kotlin's `use`:
 
 ```kotlin
-FfmPluginLoader.load(libraryPath).use { plugin ->
+JniPluginLoader.load(libraryPath).use { plugin ->
     // Plugin is available here
 }  // Automatically closed
 ```

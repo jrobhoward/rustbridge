@@ -1,6 +1,6 @@
 # Chapter 2: Kotlin Consumer
 
-In this chapter, you'll call your regex plugin from Kotlin using Java's Foreign Function & Memory (FFM) API.
+In this chapter, you'll call your regex plugin from Kotlin using JNI (Java Native Interface).
 
 ## What You'll Build
 
@@ -13,7 +13,7 @@ A Kotlin application that:
 ## Prerequisites
 
 - Completed [Chapter 1: Regex Plugin](../01-regex-plugin/README.md)
-- JDK 21+ (for FFM API)
+- JDK 17+ (LTS versions: 17, 21, or 25)
 - Gradle 8.5+
 
 ## Sections
@@ -36,7 +36,7 @@ Measure cache hit performance improvements.
 ## What You'll Learn
 
 - Setting up a Kotlin project with rustbridge
-- Using the FFM API for native library calls
+- Using JNI for native library calls
 - JSON serialization with kotlinx.serialization
 - Callback patterns for logging
 - Creating idiomatic Kotlin wrappers

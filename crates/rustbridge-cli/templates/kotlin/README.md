@@ -1,12 +1,13 @@
 # rustbridge Kotlin Consumer Template
 
-A minimal Kotlin project template for consuming rustbridge plugins.
+A minimal Kotlin project template for consuming rustbridge plugins using JNI.
 
 ## Prerequisites
 
-- **Java 22+** - Required for FFM (Foreign Function & Memory API, final since Java 22)
+- **Java 17+** - JNI works with Java 17+ (LTS versions: 17, 21, 25)
 - **Gradle 8.0+** - Build tool
 - **A rustbridge plugin** - Your `.rbp` bundle file
+- **JNI bridge library** - `librustbridge_jni.so` (built from rustbridge)
 
 ## Quick Start
 
@@ -22,13 +23,19 @@ A minimal Kotlin project template for consuming rustbridge plugins.
    ./gradlew publishToMavenLocal
    ```
 
-3. **Add your plugin bundle** - Copy your `.rbp` file to the project root
+3. **Build the JNI bridge** (if not already built):
+   ```bash
+   cd /path/to/rustbridge
+   cargo build --release -p rustbridge-jni
+   ```
 
-4. **Update Main.kt** - Edit `src/main/kotlin/com/example/Main.kt`:
+4. **Add your plugin bundle** - Copy your `.rbp` file to the project root
+
+5. **Update Main.kt** - Edit `src/main/kotlin/com/example/Main.kt`:
    - Set `bundlePath` to your `.rbp` file
    - Define request/response data classes matching your plugin's API
 
-5. **Run**:
+6. **Run**:
    ```bash
    ./gradlew run
    ```
@@ -46,20 +53,23 @@ A minimal Kotlin project template for consuming rustbridge plugins.
 
 ## Configuration
 
-### JVM Arguments
+### JNI Library Path
 
-The `build.gradle.kts` includes required JVM arguments for FFM:
+The `build.gradle.kts` configures the JNI native library path:
 
 ```kotlin
 tasks.withType<JavaExec> {
-    jvmArgs("--enable-native-access=ALL-UNNAMED")
+    systemProperty("java.library.path", System.getProperty("java.library.path", "") +
+        ":../../target/release")
 }
 ```
+
+Update the path to point to where `librustbridge_jni.so` is located.
 
 ### Dependencies
 
 - `rustbridge-core` - Core interfaces and types
-- `rustbridge-ffm` - FFM-based native plugin loader
+- `rustbridge-jni` - JNI-based native plugin loader (Java 17+)
 - `jackson-module-kotlin` - JSON serialization
 
 ## Type-Safe Calls

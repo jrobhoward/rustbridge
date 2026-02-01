@@ -155,7 +155,7 @@ Replace `src\main\kotlin\com\example\Main.kt`:
 package com.example
 
 import com.rustbridge.BundleLoader
-import com.rustbridge.ffm.FfmPluginLoader
+import com.rustbridge.jni.JniPluginLoader
 
 fun main() {
     println("=== Kotlin Consumer - Type-Safe API Demo ===\n")
@@ -168,7 +168,7 @@ fun main() {
         .build()
 
     val libraryPath = bundleLoader.extractLibrary().toString()
-    val plugin = FfmPluginLoader.load(libraryPath)
+    val plugin = JniPluginLoader.load(libraryPath)
 
     // Use the type-safe wrapper
     RegexPlugin(plugin).use { regex ->

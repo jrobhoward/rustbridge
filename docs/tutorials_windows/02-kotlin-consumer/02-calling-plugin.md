@@ -84,7 +84,7 @@ Replace `src\main\kotlin\com\example\Main.kt`:
 package com.example
 
 import com.rustbridge.BundleLoader
-import com.rustbridge.ffm.FfmPluginLoader
+import com.rustbridge.jni.JniPluginLoader
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -105,7 +105,7 @@ fun main() {
 
     val libraryPath = bundleLoader.extractLibrary().toString()
 
-    FfmPluginLoader.load(libraryPath).use { plugin ->
+    JniPluginLoader.load(libraryPath).use { plugin ->
 
         // Demo 1: Simple match
         println("Demo 1: Simple match")

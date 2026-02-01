@@ -15,7 +15,7 @@ These tutorials guide you through building Rust plugins and calling them from mu
 │                                                                             │
 │  Rust Plugins (Chapters 1, 3)         Language Consumers (Chapters 2, 4)   │
 │  ─────────────────────────────        ──────────────────────────────────   │
-│  • Regex pattern matching             • Kotlin: Load bundles, logging      │
+│  • Regex pattern matching             • Kotlin: JNI, logging, type-safe    │
 │  • LRU cache for patterns             • Java: FFM API, type-safe calls     │
 │  • JSON validation/prettify           • Error handling patterns            │
 │  • Configurable behavior              • Performance benchmarking           │
@@ -41,7 +41,7 @@ These tutorials guide you through building Rust plugins and calling them from mu
 Before starting, ensure you have:
 
 - **Rust 1.90+** installed
-- **Java 22+** (for FFM-based Kotlin consumer)
+- **Java 22+** (for FFM-based consumers; JNI works with Java 17+)
 - **rustbridge CLI** installed ([Getting Started](../GETTING_STARTED.md))
 
 ## Tutorial Chapters

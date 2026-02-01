@@ -67,7 +67,7 @@ The template's `build.gradle.kts` includes:
 
 ```kotlin
 plugins {
-    kotlin("jvm") version "2.0.0"
+    kotlin("jvm") version "2.3.0"
     application
 }
 
@@ -78,9 +78,12 @@ repositories {
 
 dependencies {
     implementation("com.rustbridge:rustbridge-core:0.7.0")
-    implementation("com.rustbridge:rustbridge-ffm:0.7.0")
-    implementation("com.rustbridge:rustbridge-kotlin:0.7.0")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.2")
+    implementation("com.rustbridge:rustbridge-jni:0.7.0")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
+}
+
+kotlin {
+    jvmToolchain(17)  // JNI works with Java 17+ (LTS: 17, 21, 25)
 }
 
 application {
@@ -88,17 +91,18 @@ application {
 }
 
 tasks.withType<JavaExec> {
-    // Required for Foreign Function & Memory API
-    jvmArgs("--enable-native-access=ALL-UNNAMED")
+    // Set library path for JNI native library
+    systemProperty("java.library.path", System.getProperty("java.library.path", "") +
+        ":../../target/release")
 }
 ```
 
 Key points:
 
 - **mavenLocal()**: Finds rustbridge libraries you installed
-- **rustbridge-ffm**: Uses Java 22+'s Foreign Function API (faster JSON performance than JNI)
+- **rustbridge-jni**: Uses JNI for native access (works with Java 17+)
 - **jackson-module-kotlin**: For JSON serialization
-- **jvmArgs**: Required for FFM access
+- **java.library.path**: Points to the JNI bridge library location
 
 ## Build the Project
 

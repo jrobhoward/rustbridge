@@ -52,7 +52,7 @@ import com.rustbridge.BundleLoader
 import com.rustbridge.LogLevel
 import com.rustbridge.Plugin
 import com.rustbridge.PluginConfig
-import com.rustbridge.ffm.FfmPluginLoader
+import com.rustbridge.jni.JniPluginLoader
 import java.nio.file.Path
 
 data class MatchRequest(val pattern: String, val text: String)
@@ -97,7 +97,7 @@ fun runBenchmark(bundlePath: String, variant: String) {
     val config = PluginConfig.defaults()
         .logLevel(LogLevel.WARN)
 
-    FfmPluginLoader.load(libraryPath, config, null).use { plugin ->
+    JniPluginLoader.load(libraryPath, config, null).use { plugin ->
         benchmark(plugin)
     }
 
@@ -151,7 +151,7 @@ fun cacheEffectivenessBenchmark(bundlePath: String) {
     val config = PluginConfig.defaults()
         .logLevel(LogLevel.WARN)
 
-    FfmPluginLoader.load(libraryPath, config, null).use { plugin ->
+    JniPluginLoader.load(libraryPath, config, null).use { plugin ->
         val pattern = """^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"""
         val sample = "user@example.com"
         val iterations = 10_000

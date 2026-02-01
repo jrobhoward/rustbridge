@@ -27,8 +27,7 @@ import com.rustbridge.BundleLoader
 import com.rustbridge.LogCallback
 import com.rustbridge.LogLevel
 import com.rustbridge.PluginConfig
-import com.rustbridge.ffm.FfmPluginLoader
-import java.nio.file.Path
+import com.rustbridge.jni.JniPluginLoader
 
 fun main(args: Array<String>) {
     val bundlePath = "regex-plugin-0.1.0.rbp"
@@ -50,7 +49,7 @@ fun main(args: Array<String>) {
         .logLevel(LogLevel.DEBUG)
 
     // Load plugin with config and callback
-    FfmPluginLoader.load(Path.of(libraryPath.toString()), config, logCallback).use { plugin ->
+    JniPluginLoader.load(libraryPath.toString(), config, logCallback).use { plugin ->
         // Make some calls - you'll see debug logs
         val request1 = """{"pattern": "\\d+", "text": "test123"}"""
         val response1 = plugin.call("match", request1)
@@ -142,7 +141,7 @@ val logCallback = LogCallback { level, target, message ->
     }
 }
 
-FfmPluginLoader.load(Path.of(libraryPath.toString()), config, logCallback).use { plugin ->
+JniPluginLoader.load(libraryPath.toString(), config, logCallback).use { plugin ->
     // Now plugin logs go through SLF4J
 }
 ```

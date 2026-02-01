@@ -78,7 +78,6 @@ Now you can write:
 ```kotlin
 import com.rustbridge.LogCallback
 import com.rustbridge.PluginConfig as RbPluginConfig
-import java.nio.file.Path
 
 fun main(args: Array<String>) {
     val bundlePath = "regex-plugin-0.1.0.rbp"
@@ -102,7 +101,7 @@ fun main(args: Array<String>) {
         .set("cache_size", pluginConfigData.cacheSize)
 
     // Load plugin with config and callback
-    FfmPluginLoader.load(Path.of(libraryPath.toString()), config, logCallback).use { plugin ->
+    JniPluginLoader.load(libraryPath.toString(), config, logCallback).use { plugin ->
         // Type-safe request/response
         val request = MatchRequest(
             pattern = """\d{4}-\d{2}-\d{2}""",
@@ -146,8 +145,7 @@ import com.rustbridge.LogCallback
 import com.rustbridge.LogLevel
 import com.rustbridge.Plugin
 import com.rustbridge.PluginConfig as RbPluginConfig
-import com.rustbridge.ffm.FfmPluginLoader
-import java.nio.file.Path
+import com.rustbridge.jni.JniPluginLoader
 
 // Data classes matching plugin message types
 data class MatchRequest(
@@ -200,7 +198,7 @@ fun main(args: Array<String>) {
         .set("cache_size", pluginConfigData.cacheSize)
 
     // Load plugin with config and callback
-    FfmPluginLoader.load(Path.of(libraryPath.toString()), config, logCallback).use { plugin ->
+    JniPluginLoader.load(libraryPath.toString(), config, logCallback).use { plugin ->
         // Test some patterns
         val patterns = listOf(
             """\d+""" to "test123",           // Digits

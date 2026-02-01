@@ -10,7 +10,7 @@ Replace the contents of `src/main/kotlin/com/example/Main.kt`:
 package com.example
 
 import com.rustbridge.BundleLoader
-import com.rustbridge.ffm.FfmPluginLoader
+import com.rustbridge.jni.JniPluginLoader
 
 fun main(args: Array<String>) {
     // Path to your plugin bundle
@@ -26,7 +26,7 @@ fun main(args: Array<String>) {
     println("Extracted library: $libraryPath")
 
     // Load the plugin
-    FfmPluginLoader.load(libraryPath.toString()).use { plugin ->
+    JniPluginLoader.load(libraryPath.toString()).use { plugin ->
         // Make a raw JSON call
         val requestJson = """{"pattern": "\\d+", "text": "test123"}"""
         println("\nRequest: $requestJson")
@@ -56,10 +56,10 @@ Response: {"cached":false,"matches":true}
 
 ## Make Multiple Calls
 
-Let's see the cache in action. Replace the `FfmPluginLoader.load()` call:
+Let's see the cache in action. Replace the `JniPluginLoader.load()` call:
 
 ```kotlin
-FfmPluginLoader.load(libraryPath.toString()).use { plugin ->
+JniPluginLoader.load(libraryPath.toString()).use { plugin ->
     // First call - compiles the pattern
     println("\nFirst call:")
     var request = """{"pattern": "^\\d{4}-\\d{2}-\\d{2}$", "text": "2024-01-15"}"""
@@ -112,8 +112,7 @@ Output:
 
 ```
 Exception in thread "main" com.rustbridge.PluginException: {"status":"error","error_code":7,"error_message":"handler error: Invalid regex pattern: regex parse error:\n    [invalid\n    ^\nerror: unclosed character class"}
-        at com.rustbridge.ffm.FfmPlugin.parseResultBuffer(FfmPlugin.java:512)
-        at com.rustbridge.ffm.FfmPlugin.call(FfmPlugin.java:111)
+        at com.rustbridge.jni.JniPlugin.call(JniPlugin.java:89)
         at com.example.MainKt.main(Main.kt:25)
 ```
 
@@ -131,7 +130,7 @@ val config = PluginConfig.defaults()
     .set("cache_size", 10)
 
 // Load plugin with config
-FfmPluginLoader.load(libraryPath.toString(), config).use { plugin ->
+JniPluginLoader.load(libraryPath.toString(), config).use { plugin ->
     // Now make calls...
     val request = """{"pattern": "\\d+", "text": "test123"}"""
     val response = plugin.call("match", request)

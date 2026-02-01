@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tutorial: Consistently use version 0.1.0 for tutorial versions
 
 ### Changed
+- Java/Kotlin: Updated to Kotlin 2.3.0 and Gradle 9.3.1 for native Java 25 support
+  - Templates: kotlin, java-ffm, java-jni now use Gradle 9.3.1
+  - rustbridge-kotlin uses Kotlin 2.3.0 (was 2.0.21)
+  - Kotlin template uses Kotlin 2.3.0 (was 2.0.0)
+
+### Changed
 - Docs: Clarified Java version requirements across all documentation
   - FFM requires Java 22+ (not Java 21+ as previously documented)
   - JNI works on Java 17+ (FFM is recommended for Java 22+)
