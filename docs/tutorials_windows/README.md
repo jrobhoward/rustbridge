@@ -2,7 +2,7 @@
 
 Step-by-step tutorials for building, distributing, and consuming rustbridge plugins on Windows.
 
-> **Note**: This is the Windows version of the tutorials, using PowerShell commands. For Linux/macOS, see [docs/tutorials/](../tutorials/).
+> **Platform Note**: These tutorials use Windows commands (PowerShell). For Linux/macOS users, see [tutorials/](../tutorials/) which uses bash commands and Unix-style paths.
 
 ## Prerequisites
 
