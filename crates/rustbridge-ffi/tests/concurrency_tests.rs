@@ -2,12 +2,25 @@
 //!
 //! These tests verify that concurrent operations on handles, buffers, and
 //! plugins don't cause deadlocks, data corruption, or panic.
+//!
+//! Note: These tests use reduced thread counts and explicit cleanup to avoid
+//! resource exhaustion. Each PluginHandle creates a Tokio runtime with worker
+//! threads and file descriptors.
 
 use async_trait::async_trait;
 use rustbridge_core::{Plugin, PluginConfig, PluginContext, PluginResult};
 use rustbridge_ffi::{PluginHandle, PluginHandleManager};
 use std::sync::{Arc, Barrier};
 use std::thread;
+
+/// Create a PluginConfig with minimal resource usage for tests.
+/// Uses 1 worker thread to minimize resource consumption when creating many handles.
+fn test_config() -> PluginConfig {
+    PluginConfig {
+        worker_threads: Some(1),
+        ..Default::default()
+    }
+}
 
 /// Minimal test plugin
 struct TestPlugin {
@@ -47,7 +60,8 @@ impl Plugin for TestPlugin {
 #[test]
 fn test_concurrent_handle_registration() {
     let manager = Arc::new(PluginHandleManager::new());
-    let num_threads = 20;
+    // Reduced from 20 to 8 to minimize resource usage
+    let num_threads = 8;
     let barrier = Arc::new(Barrier::new(num_threads));
 
     let mut handles = vec![];
@@ -61,7 +75,7 @@ fn test_concurrent_handle_registration() {
             barrier_clone.wait();
 
             // Create and register handle
-            let config = PluginConfig::default();
+            let config = test_config();
             let plugin_handle = PluginHandle::new(Box::new(TestPlugin::new()), config)
                 .expect("Should create handle");
 
@@ -96,12 +110,13 @@ fn test_concurrent_handle_registration() {
 #[test]
 fn test_concurrent_handle_removal() {
     let manager = Arc::new(PluginHandleManager::new());
-    let num_threads = 20;
+    // Reduced from 20 to 8 to minimize resource usage
+    let num_threads = 8;
 
     // Pre-register handles
     let mut ids = vec![];
     for _ in 0..num_threads {
-        let config = PluginConfig::default();
+        let config = test_config();
         let handle =
             PluginHandle::new(Box::new(TestPlugin::new()), config).expect("Should create handle");
         ids.push(manager.register(handle));
@@ -132,10 +147,17 @@ fn test_concurrent_handle_removal() {
         .map(|h| h.join().expect("Thread should complete"))
         .collect();
 
-    // All removals should succeed
+    // All removals should succeed - each thread removes a unique ID
+    let failed_removals: Vec<_> = removals
+        .iter()
+        .enumerate()
+        .filter(|(_, r)| r.is_none())
+        .map(|(i, _)| i)
+        .collect();
     assert!(
-        removals.iter().all(|r| r.is_some()),
-        "All handles should be removed"
+        failed_removals.is_empty(),
+        "All handles should be removed, but removals at indices {:?} returned None",
+        failed_removals
     );
 
     // All handles should be gone
@@ -147,7 +169,7 @@ fn test_concurrent_handle_removal() {
 #[test]
 fn test_concurrent_handle_get_and_remove() {
     let manager = Arc::new(PluginHandleManager::new());
-    let config = PluginConfig::default();
+    let config = test_config();
     let handle =
         PluginHandle::new(Box::new(TestPlugin::new()), config).expect("Should create handle");
 
@@ -186,12 +208,13 @@ fn test_concurrent_handle_get_and_remove() {
 #[test]
 fn test_multiple_handles_lifecycle() {
     let manager = Arc::new(PluginHandleManager::new());
-    let num_handles = 10;
+    // Reduced from 10 to 5 to minimize resource usage
+    let num_handles = 5;
     let mut ids = vec![];
 
     // Create handles
     for _ in 0..num_handles {
-        let config = PluginConfig::default();
+        let config = test_config();
         let handle =
             PluginHandle::new(Box::new(TestPlugin::new()), config).expect("Should create handle");
         ids.push(manager.register(handle));
@@ -263,7 +286,7 @@ fn test_handle_id_uniqueness_under_concurrent_registration() {
             barrier_clone.wait();
 
             for _ in 0..num_iterations {
-                let config = PluginConfig::default();
+                let config = test_config();
                 let plugin_handle = PluginHandle::new(Box::new(TestPlugin::new()), config)
                     .expect("Should create handle");
 
@@ -299,10 +322,10 @@ fn test_rapid_register_remove_no_leak() {
     let manager = PluginHandleManager::new();
     // Reduced iterations to avoid exhausting file descriptors
     // Each PluginHandle creates a Tokio runtime which opens FDs
-    let iterations = 20;
+    let iterations = 10;
 
     for _ in 0..iterations {
-        let config = PluginConfig::default();
+        let config = test_config();
         let handle =
             PluginHandle::new(Box::new(TestPlugin::new()), config).expect("Should create handle");
 
