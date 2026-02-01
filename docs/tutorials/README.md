@@ -39,7 +39,7 @@ These tutorials guide you through building Rust plugins and calling them from mu
 Before starting, ensure you have:
 
 - **Rust 1.90+** installed
-- **Java 17+** (JNI works with Java 17+; FFM works with Java 22+)
+- **Java 21+**
 - **rustbridge CLI** installed ([Getting Started](../GETTING_STARTED.md))
 
 ## Tutorial Chapters
@@ -80,7 +80,7 @@ Build a JSON validation and prettification plugin to learn message handling patt
 
 ### [Chapter 4: Calling from Java (FFM)](./04-java-consumer/README.md)
 
-Load your plugin from Java using the Foreign Function & Memory (FFM) API (Java 22+).
+Load your plugin from Java using the Foreign Function & Memory (FFM) API (Java 21+).
 
 | Section | What You'll Learn |
 |---------|-------------------|
@@ -88,7 +88,7 @@ Load your plugin from Java using the Foreign Function & Memory (FFM) API (Java 2
 | [02-calling-plugin.md](./04-java-consumer/02-calling-plugin.md) | Load bundle, type-safe calls with records |
 | [03-error-handling.md](./04-java-consumer/03-error-handling.md) | Handle plugin errors gracefully |
 
-> **Note**: For Java 17+, JNI is the recommended approach. Chapter 2 (Kotlin) uses JNI and works with Java 17+.
+> **Note**: Java 21 requires `--enable-preview` flag. Java 22+ is recommended for stable FFM APIs.
 
 ### [Chapter 5: Production Bundles](./05-production-bundles/README.md)
 
@@ -118,7 +118,6 @@ Implement bounded queues with backpressure for flow control in C#, Java/JNI, and
 | Section | What You'll Learn |
 |---------|-------------------|
 | [01-csharp-consumer.md](./07-backpressure-queues/01-csharp-consumer.md) | C# with BlockingCollection and Task |
-| [02-java-jni-consumer.md](./07-backpressure-queues/02-java-jni-consumer.md) | Java/JNI with BlockingQueue and CompletableFuture |
 | [03-python-consumer.md](./07-backpressure-queues/03-python-consumer.md) | Python with queue.Queue and concurrent.futures |
 
 ### [Chapter 8: Binary Transport](./08-binary-transport/README.md)
@@ -127,8 +126,7 @@ Build an image thumbnail generator using binary transport for efficient large pa
 
 | Section | What You'll Learn |
 |---------|-------------------|
-| [01-java-ffm-consumer.md](./08-binary-transport/01-java-ffm-consumer.md) | Java 22+ FFM with StructLayout and VarHandle |
-| [02-java-jni-consumer.md](./08-binary-transport/02-java-jni-consumer.md) | Java 17+ JNI with ByteBuffer |
+| [01-java-ffm-consumer.md](./08-binary-transport/01-java-ffm-consumer.md) | Java 21+ FFM with StructLayout and VarHandle |
 | [03-kotlin-consumer.md](./08-binary-transport/03-kotlin-consumer.md) | Kotlin FFM with extension functions |
 | [04-csharp-consumer.md](./08-binary-transport/04-csharp-consumer.md) | C# with StructLayout and Marshal |
 | [05-python-consumer.md](./08-binary-transport/05-python-consumer.md) | Python with ctypes.Structure |

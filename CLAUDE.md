@@ -48,9 +48,11 @@ source .venv/bin/activate && python -m pytest tests/ -v
 | Component | Minimum Version |
 |-----------|----------------|
 | Rust | 1.90.0 (Edition 2024) |
-| Java | 22+ |
+| Java | 21+ (22+ recommended) |
 | .NET | 8.0+ |
 | Python | 3.10+ |
+
+**Note**: Java 21 requires `--enable-preview` flag in addition to `--enable-native-access=ALL-UNNAMED`. Java 22+ only needs `--enable-native-access=ALL-UNNAMED`.
 
 Use `cargo msrv verify` when adding Rust dependencies.
 
@@ -113,7 +115,7 @@ All FFI functions must:
 
 The `rustbridge-java/` directory contains:
 - `rustbridge-core`: Core Java interfaces
-- `rustbridge-ffm`: FFM implementation (Java 22+)
+- `rustbridge-ffm`: FFM implementation (Java 21+)
 - `rustbridge-kotlin`: Kotlin extensions and DSL
 
 ## C# Integration

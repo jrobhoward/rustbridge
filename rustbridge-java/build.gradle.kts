@@ -20,14 +20,26 @@ subprojects {
 
     java {
         toolchain {
-            // Java 22+ required for FFM
-            languageVersion.set(JavaLanguageVersion.of(22))
+            // FFM requires Java 21+
+            languageVersion.set(JavaLanguageVersion.of(21))
         }
     }
+
+    // Check if running Java 21 (needs --enable-preview for FFM)
+    // Java 22+ has FFM as a stable feature and doesn't need this flag
+    val needsPreview = provider {
+        java.toolchain.languageVersion.get().asInt() == 21
+    }
+
+    // Modules that use FFM APIs (excludes rustbridge-core which only uses standard Java APIs)
+    val usesFfm = project.name != "rustbridge-core"
 
     tasks.withType<JavaCompile> {
         options.encoding = "UTF-8"
         options.compilerArgs.add("-Xlint:all")
+        if (usesFfm && needsPreview.get()) {
+            options.compilerArgs.add("--enable-preview")
+        }
     }
 
     tasks.withType<Javadoc> {
@@ -39,6 +51,9 @@ subprojects {
 
     tasks.withType<Test> {
         useJUnitPlatform()
+        if (usesFfm && needsPreview.get()) {
+            jvmArgs("--enable-preview")
+        }
     }
 
     dependencies {

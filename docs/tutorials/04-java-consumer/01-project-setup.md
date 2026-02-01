@@ -91,12 +91,26 @@ dependencies {
 
 java {
     toolchain {
-        // Java 22+ required for FFM
-        languageVersion.set(JavaLanguageVersion.of(22))
+        // FFM requires Java 21+
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
+// Check if running Java 21 (needs --enable-preview for FFM)
+val needsPreview = provider {
+    java.toolchain.languageVersion.get().asInt() == 21
+}
+
+tasks.withType<JavaCompile> {
+    if (needsPreview.get()) {
+        options.compilerArgs.add("--enable-preview")
     }
 }
 
 tasks.withType<JavaExec> {
+    if (needsPreview.get()) {
+        jvmArgs("--enable-preview")
+    }
     jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 ```
@@ -104,8 +118,9 @@ tasks.withType<JavaExec> {
 Key points:
 
 - **mavenLocal()**: Finds rustbridge libraries you installed
-- **rustbridge-ffm**: Uses Java 22+'s Foreign Function & Memory API
+- **rustbridge-ffm**: Uses Java's Foreign Function & Memory API
 - **gson**: For JSON serialization (simpler than Jackson for Java)
+- **needsPreview**: Automatically detects Java 21 and adds `--enable-preview`
 - **jvmArgs**: Required for FFM native access
 
 ## Build the Project

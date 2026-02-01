@@ -28,15 +28,37 @@ dependencies {
 
 java {
     toolchain {
-        // Java 22+ required for FFM
-        languageVersion.set(JavaLanguageVersion.of(22))
+        // FFM requires Java 21+
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
+}
+
+// Check if running Java 21 (needs --enable-preview for FFM)
+// Java 22+ has FFM as a stable feature and doesn't need this flag
+val needsPreview = provider {
+    java.toolchain.languageVersion.get().asInt() == 21
 }
 
 tasks.test {
     useJUnitPlatform()
 }
 
+tasks.withType<JavaCompile> {
+    if (needsPreview.get()) {
+        options.compilerArgs.add("--enable-preview")
+    }
+}
+
 tasks.withType<JavaExec> {
+    // --enable-native-access is always required for FFM
+    if (needsPreview.get()) {
+        jvmArgs("--enable-preview")
+    }
     jvmArgs("--enable-native-access=ALL-UNNAMED")
+}
+
+tasks.withType<Test> {
+    if (needsPreview.get()) {
+        jvmArgs("--enable-preview")
+    }
 }

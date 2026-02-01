@@ -15,9 +15,14 @@ dependencies {
 
 java {
     toolchain {
-        // Java 22+ required for FFM
-        languageVersion.set(JavaLanguageVersion.of(22))
+        // FFM requires Java 21+
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
+}
+
+// Check if running Java 21 (needs --enable-preview for FFM)
+val needsPreview = provider {
+    java.toolchain.languageVersion.get().asInt() == 21
 }
 
 jmh {
@@ -35,8 +40,13 @@ jmh {
     includes.set(listOf(".*Benchmark.*"))
 
     // JVM args for benchmark execution
-    jvmArgs.set(listOf(
-        "--enable-native-access=ALL-UNNAMED",
-        "-Djava.library.path=${rootProject.projectDir.parentFile}/target/release"
-    ))
+    // --enable-native-access is always required for FFM
+    // --enable-preview is only needed for Java 21 (FFM is stable in Java 22+)
+    jvmArgs.set(buildList {
+        if (needsPreview.get()) {
+            add("--enable-preview")
+        }
+        add("--enable-native-access=ALL-UNNAMED")
+        add("-Djava.library.path=${rootProject.projectDir.parentFile}/target/release")
+    })
 }

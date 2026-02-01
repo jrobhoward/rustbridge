@@ -15,7 +15,7 @@ dependencies {
     // rustbridge dependencies from Maven Local
     // (Run: cd ../../rustbridge-java && ./gradlew publishToMavenLocal)
     implementation("com.rustbridge:rustbridge-core:0.7.0")
-    implementation("com.rustbridge:rustbridge-jni:0.7.0")  // JNI is recommended for all Java versions
+    implementation("com.rustbridge:rustbridge-ffm:0.7.0")
 
     // JSON serialization
     implementation("com.fasterxml.jackson.core:jackson-databind:2.16.1")
@@ -26,18 +26,24 @@ dependencies {
 
 java {
     toolchain {
-        // Java 17+ for JNI (recommended)
-        languageVersion.set(JavaLanguageVersion.of(17))
+        // FFM requires Java 21+
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
 
 kotlin {
-    // Java 17+ for JNI (recommended)
-    jvmToolchain(17)
+    // FFM requires Java 21+
+    jvmToolchain(21)
 }
 
-// JNI library path - points to where librustbridge_jni.so is built
-val jniLibraryPath = "../../target/release"
+// Check if running Java 21 (needs --enable-preview for FFM)
+// Java 22+ has FFM as a stable feature and doesn't need this flag
+val needsPreview = provider {
+    java.toolchain.languageVersion.get().asInt() == 21
+}
+
+// Native library path - points to where the Rust library is built
+val nativeLibraryPath = "../../target/release"
 
 // Individual example tasks
 tasks.register<JavaExec>("runBasic") {
@@ -45,7 +51,11 @@ tasks.register<JavaExec>("runBasic") {
     description = "Run basic Kotlin example"
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set("com.rustbridge.examples.BasicExampleKt")
-    systemProperty("java.library.path", jniLibraryPath)
+    systemProperty("java.library.path", nativeLibraryPath)
+    if (needsPreview.get()) {
+        jvmArgs("--enable-preview")
+    }
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 
 tasks.register<JavaExec>("runLogging") {
@@ -53,7 +63,11 @@ tasks.register<JavaExec>("runLogging") {
     description = "Run logging example"
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set("com.rustbridge.examples.LoggingExampleKt")
-    systemProperty("java.library.path", jniLibraryPath)
+    systemProperty("java.library.path", nativeLibraryPath)
+    if (needsPreview.get()) {
+        jvmArgs("--enable-preview")
+    }
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 
 tasks.register<JavaExec>("runErrorHandling") {
@@ -61,5 +75,9 @@ tasks.register<JavaExec>("runErrorHandling") {
     description = "Run error handling example"
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set("com.rustbridge.examples.ErrorHandlingExampleKt")
-    systemProperty("java.library.path", jniLibraryPath)
+    systemProperty("java.library.path", nativeLibraryPath)
+    if (needsPreview.get()) {
+        jvmArgs("--enable-preview")
+    }
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }

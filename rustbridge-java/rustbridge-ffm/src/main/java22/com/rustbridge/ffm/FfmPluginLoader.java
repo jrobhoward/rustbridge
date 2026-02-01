@@ -259,7 +259,7 @@ public class FfmPluginLoader {
                 target = "";
             } else {
                 MemorySegment unboundedTarget = targetPtr.reinterpret(Long.MAX_VALUE);
-                target = unboundedTarget.getUtf8String(0);
+                target = unboundedTarget.getString(0);
             }
 
             // Extract message from raw bytes

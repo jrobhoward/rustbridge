@@ -26,8 +26,13 @@ java {
 }
 
 kotlin {
-    // Java 22+ required for FFM
-    jvmToolchain(22)
+    // FFM requires Java 21+
+    jvmToolchain(21)
+}
+
+// Check if running Java 21 (needs --enable-preview for FFM)
+val needsPreview = provider {
+    java.toolchain.languageVersion.get().asInt() == 21
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
@@ -37,6 +42,11 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 }
 
 tasks.withType<Test> {
+    // --enable-native-access is always required for FFM
+    // --enable-preview is only needed for Java 21 (FFM is stable in Java 22+)
+    if (needsPreview.get()) {
+        jvmArgs("--enable-preview")
+    }
     jvmArgs("--enable-native-access=ALL-UNNAMED")
     systemProperty("junit.jupiter.execution.timeout.default", "60s")
 }

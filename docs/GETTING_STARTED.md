@@ -244,9 +244,9 @@ pip install -e ~/rustbridge-workspace/rustbridge/rustbridge-python
 python main.py
 ```
 
-### Java (FFM) - Java 22+
+### Java (FFM) - Java 21+
 
-> **Note**: Both JNI (Java 17+) and FFM (Java 22+) are fully supported. Choose based on your Java version.
+> **Note**: Java 21 requires `--enable-preview` flag. Java 22+ is recommended for stable FFM APIs.
 
 ```bash
 cd ~/rustbridge-workspace/my-plugin/consumers/java-ffm
@@ -290,8 +290,7 @@ calculator with multiple message types:
 | Language   | Guide                                                      |
 |------------|------------------------------------------------------------|
 | Kotlin     | [KOTLIN.md](./using-plugins/KOTLIN.md)                     |
-| Java (JNI) | [JAVA_JNI.md](./using-plugins/JAVA_JNI.md) (Java 17+)      |
-| Java (FFM) | [JAVA_FFM.md](./using-plugins/JAVA_FFM.md) (Java 22+)      |
+| Java       | [JAVA_FFM.md](./using-plugins/JAVA_FFM.md) (Java 21+)      |
 | C#         | [CSHARP.md](./using-plugins/CSHARP.md)                     |
 | Python     | [PYTHON.md](./using-plugins/PYTHON.md)                     |
 
@@ -312,7 +311,6 @@ The `rustbridge new` command generates projects from templates embedded in the C
 rustbridge new my-plugin                    # Rust plugin only
 rustbridge new my-plugin --kotlin           # Rust + Kotlin consumer
 rustbridge new my-plugin --java-ffm         # Rust + Java FFM consumer
-rustbridge new my-plugin --java-jni         # Rust + Java JNI consumer
 rustbridge new my-plugin --csharp           # Rust + C# consumer
 rustbridge new my-plugin --python           # Rust + Python consumer
 rustbridge new my-plugin --all              # Rust + all consumers
@@ -321,9 +319,8 @@ rustbridge new my-plugin --all              # Rust + all consumers
 | Template  | Description                       | Requirements |
 |-----------|-----------------------------------|--------------|
 | rust      | Rust plugin                       | Rust 1.90+   |
-| kotlin    | Kotlin consumer                   | Java 17+     |
-| java-jni  | Java JNI consumer                 | Java 17+     |
-| java-ffm  | Java FFM consumer                 | Java 22+     |
+| kotlin    | Kotlin consumer                   | Java 21+     |
+| java-ffm  | Java FFM consumer                 | Java 21+     |
 | csharp    | C# consumer                       | .NET 8.0+    |
 | python    | Python consumer                   | Python 3.10+ |
 

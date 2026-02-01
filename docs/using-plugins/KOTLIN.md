@@ -4,10 +4,12 @@ This guide walks you through using rustbridge plugins from Kotlin with idiomatic
 
 ## Prerequisites
 
-- **Kotlin 2.0+** - For Java 22 support
-- **Java 22+** - Required for FFM (Foreign Function & Memory API)
+- **Kotlin 2.0+** - For Java 21+ support
+- **Java 21+** - Required for FFM
 - **Gradle** - For dependency management
 - **A rustbridge plugin** - Either a `.rbp` bundle or native library
+
+> **Note:** Java 21 requires `--enable-preview` flag in addition to `--enable-native-access=ALL-UNNAMED`. Java 22+ only needs `--enable-native-access=ALL-UNNAMED`.
 
 ## Project Setup
 
@@ -41,21 +43,32 @@ dependencies {
 }
 
 kotlin {
-    // Java 22+ required for FFM
-    jvmToolchain(22)
+    // FFM requires Java 21+
+    jvmToolchain(21)
+}
+
+// Check if running Java 21 (needs --enable-preview for FFM)
+val needsPreview = provider {
+    java.toolchain.languageVersion.get().asInt() == 21
 }
 
 tasks.test {
     useJUnitPlatform()
+    if (needsPreview.get()) {
+        jvmArgs("--enable-preview")
+    }
 }
 
 // Required for FFM native access
 tasks.withType<JavaExec> {
+    if (needsPreview.get()) {
+        jvmArgs("--enable-preview")
+    }
     jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 ```
 
-> **Important**: The `--enable-native-access=ALL-UNNAMED` flag is required for FFM to call native code. Without it, you'll get `IllegalCallerException`. 
+> **Important**: The `--enable-native-access=ALL-UNNAMED` flag is required for FFM to call native code. Java 21 additionally requires `--enable-preview`. Without these flags, you'll get `IllegalCallerException`. 
 ## The rustbridge-kotlin Module
 
 The `rustbridge-kotlin` module provides idiomatic Kotlin extensions:

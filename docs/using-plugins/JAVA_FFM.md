@@ -1,15 +1,14 @@
-# Getting Started: Java 22+ (FFM)
+# Getting Started: Java (FFM)
 
-This guide walks you through using rustbridge plugins from Java 22+ using the Foreign Function & Memory API (FFM).
-
-> **Note:** Both JNI (Java 17+) and FFM (Java 22+) are fully supported. See [JNI](./JAVA_JNI.md) for the Java 17+ option.
+This guide walks you through using rustbridge plugins from Java using the Foreign Function & Memory API (FFM).
 
 ## Prerequisites
 
-- **Java 22 or later** - FFM requires Java 22
+- **Java 21 or later** - FFM requires Java 21+
   ```bash
-  java --version  # Should be >= 22
+  java --version  # Should be >= 21
   ```
+  > **Note:** Java 21 requires `--enable-preview` flag in addition to `--enable-native-access=ALL-UNNAMED`. Java 22+ only needs `--enable-native-access=ALL-UNNAMED`.
 - **Gradle or Maven** - For dependency management
 - **A rustbridge plugin** - Either a `.rbp` bundle or `.so`/`.dylib`/`.dll` file
 
@@ -277,16 +276,29 @@ if (rejectedCount > 0) {
 
 ## JVM Arguments
 
-For FFM to work, you need to enable native access:
+For FFM to work, you need to enable native access. Java 21 also requires preview features:
 
+**Java 21:**
+```bash
+java --enable-preview --enable-native-access=ALL-UNNAMED -jar myapp.jar
+```
+
+**Java 22+:**
 ```bash
 java --enable-native-access=ALL-UNNAMED -jar myapp.jar
 ```
 
-Or in Gradle:
+Or in Gradle (with automatic Java version detection):
 
 ```kotlin
+val needsPreview = provider {
+    java.toolchain.languageVersion.get().asInt() == 21
+}
+
 tasks.withType<JavaExec> {
+    if (needsPreview.get()) {
+        jvmArgs("--enable-preview")
+    }
     jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 ```
@@ -333,7 +345,6 @@ public class CalculatorExample {
 
 ## Related Documentation
 
-- [JAVA_JNI.md](./JAVA_JNI.md) - Java 17+ JNI guide
 - [KOTLIN.md](./KOTLIN.md) - Kotlin-specific guide
 - [../TRANSPORT.md](../TRANSPORT.md) - Transport layer details
 - [../MEMORY_MODEL.md](../MEMORY_MODEL.md) - Memory ownership

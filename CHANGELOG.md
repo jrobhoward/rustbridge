@@ -11,13 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Build: Added MPL-2.0 to allowed licenses in deny.toml (used by dirs crate)
 
 ### Removed
-- **BREAKING: Removed JNI transport layer** - Java minimum version now 22+ (FFM only)
+- **BREAKING: Removed JNI transport layer** - Java minimum version now 21+ (FFM only)
   - Removed `rustbridge-jni` Rust crate and all JNI-related code
   - Removed `rustbridge-jni` Java module and JNI implementation
   - Removed `install-jni-bridge` CLI command and `--jni-lib` bundle flags
   - Removed JNI templates from CLI (`java-jni/` template directory)
   - Updated all documentation to reflect FFM-only Java integration
-  - Java users must now use Java 22+ with FFM (Foreign Function & Memory API)
+  - Java users must now use Java 21+ with FFM (Foreign Function & Memory API)
+  - Note: Java 21 requires `--enable-preview` in addition to `--enable-native-access=ALL-UNNAMED`
 
 ### Changed
 - Java/Kotlin: Updated to Kotlin 2.3.0 and Gradle 9.3.1 for native Java 25 support
@@ -26,10 +27,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Kotlin template uses Kotlin 2.3.0 (was 2.0.0)
 
 ### Changed
-- Docs: Clarified Java version requirements across all documentation
-  - FFM requires Java 22+ (not Java 21+ as previously documented)
-  - JNI works on Java 17+ (recommended for all Java versions)
-  - Removed unnecessary "FFM is final" and "--enable-preview" comments
+- Java: Added automatic Java 21 preview feature detection in Gradle builds
+  - Build files now conditionally add `--enable-preview` only when Java 21 is detected
+  - Same build files work seamlessly on Java 21 and Java 22+ without modification
+  - Updated FFM API calls to use Java 21-compatible methods (`allocateUtf8String`, `getUtf8String`)
+- Docs: Updated all documentation to reflect Java 21+ support
+  - FFM now works with Java 21+
+  - Java 21 requires `--enable-preview` flag (automatically handled by Gradle)
+  - Removed all JNI references from documentation
 
 ### Added
 - Tutorial: Chapter 8 - Binary Transport with image thumbnail generator plugin

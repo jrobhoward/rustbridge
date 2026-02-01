@@ -165,10 +165,12 @@ Plugin plugin = BundleLoader.load("my-plugin-1.0.0.rbp");
 
 | Language | Version   | Guide                                                                                                               |
 |----------|-----------|---------------------------------------------------------------------------------------------------------------------|
-| Java     | 22+       | [docs/using-plugins/JAVA_FFM.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_FFM.md) |
-| Kotlin   | 22+       | [docs/using-plugins/KOTLIN.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/KOTLIN.md)     |
+| Java     | 21+       | [docs/using-plugins/JAVA_FFM.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_FFM.md) |
+| Kotlin   | 21+       | [docs/using-plugins/KOTLIN.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/KOTLIN.md)     |
 | C#       | .NET 8.0+ | [docs/using-plugins/CSHARP.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/CSHARP.md)     |
 | Python   | 3.10+     | [docs/using-plugins/PYTHON.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/PYTHON.md)     |
+
+> **Note**: Java 21 users must add `--enable-preview` flag. Java 22+ is recommended.
 
 ## Building from Source
 
@@ -196,7 +198,7 @@ repositories {
     mavenLocal()
 }
 dependencies {
-    implementation("com.rustbridge:rustbridge-ffm:0.7.0")  // Java 22+
+    implementation("com.rustbridge:rustbridge-ffm:0.7.0")  // Java 21+
 }
 ```
 

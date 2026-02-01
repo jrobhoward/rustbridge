@@ -16,7 +16,7 @@ repositories {
 }
 
 dependencies {
-    // rustbridge dependencies (FFM requires Java 22+)
+    // rustbridge dependencies
     implementation("com.rustbridge:rustbridge-core:0.7.0")
     implementation("com.rustbridge:rustbridge-ffm:0.7.0")
 
@@ -27,10 +27,33 @@ dependencies {
 }
 
 kotlin {
-    // FFM requires Java 22+
-    jvmToolchain(22)
+    // FFM requires Java 21+
+    jvmToolchain(21)
+}
+
+// Check if running Java 21 (needs --enable-preview for FFM)
+// Java 22+ has FFM as a stable feature and doesn't need this flag
+val needsPreview = provider {
+    java.toolchain.languageVersion.get().asInt() == 21
+}
+
+tasks.withType<org.gradle.api.tasks.compile.JavaCompile> {
+    if (needsPreview.get()) {
+        options.compilerArgs.add("--enable-preview")
+    }
 }
 
 tasks.test {
     useJUnitPlatform()
+    if (needsPreview.get()) {
+        jvmArgs("--enable-preview")
+    }
+}
+
+tasks.withType<JavaExec> {
+    // --enable-native-access is always required for FFM
+    if (needsPreview.get()) {
+        jvmArgs("--enable-preview")
+    }
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }

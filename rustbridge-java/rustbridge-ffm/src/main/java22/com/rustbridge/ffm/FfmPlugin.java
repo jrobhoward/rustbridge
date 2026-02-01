@@ -93,7 +93,7 @@ public class FfmPlugin implements Plugin {
         // Use confined arena - faster than shared, safe since we only use it in this thread
         try (Arena callArena = Arena.ofConfined()) {
             // Allocate type tag as null-terminated string
-            MemorySegment typeTagSegment = callArena.allocateUtf8String(typeTag);
+            MemorySegment typeTagSegment = callArena.allocateFrom(typeTag);
 
             // Allocate request data
             byte[] requestBytes = request.getBytes(StandardCharsets.UTF_8);

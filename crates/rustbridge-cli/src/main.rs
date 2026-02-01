@@ -34,11 +34,11 @@ enum Commands {
         #[arg(short, long)]
         path: Option<String>,
 
-        /// Also generate Kotlin consumer project (requires Java 22+)
+        /// Also generate Kotlin consumer project (requires Java 21+)
         #[arg(long)]
         kotlin: bool,
 
-        /// Also generate Java FFM consumer project (requires Java 22+)
+        /// Also generate Java FFM consumer project (requires Java 21+)
         #[arg(long)]
         java_ffm: bool,
 
