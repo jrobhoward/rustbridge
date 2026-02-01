@@ -347,5 +347,4 @@ Errors are propagated to the host language with error codes and messages.
 
 ## Complete Examples
 
-- `examples/hello-plugin/` - Minimal plugin example
-- `examples/regex-plugin/` - Full-featured regex plugin with LRU caching and configuration
+- `examples/hello-plugin/` - Minimal plugin example with echo and math handlers

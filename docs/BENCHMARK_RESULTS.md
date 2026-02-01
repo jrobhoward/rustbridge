@@ -4,6 +4,9 @@
 **Hardware:** AMD Ryzen Threadripper 1950X (16 cores) - Same CPU on both platforms
 **Plugin:** hello-plugin (release build)
 
+> **Note**: JNI support has been removed. Java integration now uses FFM exclusively (Java 21+).
+> JNI benchmark data is retained for historical reference only.
+
 ## Summary: Windows vs Linux
 
 | Language | Transport | Windows | Linux | Difference | Winner |

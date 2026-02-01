@@ -1,4 +1,4 @@
-# Chapter 7: Backpressure Queues
+# Chapter 3: Backpressure Queues
 
 In this chapter, you'll implement bounded queues with backpressure for plugin calls. This pattern lets you control
 memory usage and throttle producers when the plugin can't keep up—callers block when the queue is full rather than
@@ -67,8 +67,6 @@ Skip this pattern when:
 First, scaffold a new project with all consumer types:
 
 ```bash
-cd ~/rustbridge-workspace
-
 rustbridge new sync-demo --all
 cd sync-demo
 ```
@@ -83,7 +81,6 @@ sync-demo/
 └── consumers/
     ├── kotlin/                     # Kotlin/FFM consumer
     ├── java-ffm/                   # Java FFM consumer
-    ├── java-jni/                   # Java JNI consumer
     ├── csharp/                     # C# consumer
     └── python/                     # Python consumer
 ```
@@ -210,20 +207,15 @@ pub use rustbridge::ffi_exports::*;
 # Build the plugin
 cargo build --release
 
-# Install JNI bridge if not already done
-rustbridge install-jni-bridge
-
-# Create a bundle (include JNI bridge for Java consumers)
+# Create a bundle
 rustbridge bundle create \
   --name sync-demo \
   --version 0.1.0 \
   --lib linux-x86_64:target/release/libsync_demo.so \
-  --include-jni-bridge \
   --output sync-demo-0.1.0.rbp
 
 # Copy to each consumer directory
 cp sync-demo-0.1.0.rbp consumers/csharp/
-cp sync-demo-0.1.0.rbp consumers/java-jni/
 cp sync-demo-0.1.0.rbp consumers/python/
 ```
 
@@ -241,11 +233,7 @@ Now implement the synchronized wrapper in each language:
 
 Implement synchronized access in C# using `BlockingCollection<T>` and `Task`.
 
-### [02: Java/JNI Consumer](./02-java-jni-consumer.md)
-
-Implement synchronized access in Java using `BlockingQueue` and `CompletableFuture`.
-
-### [03: Python Consumer](./03-python-consumer.md)
+### [02: Python Consumer](./02-python-consumer.md)
 
 Implement synchronized access in Python using `queue.Queue` and `concurrent.futures`.
 
@@ -253,10 +241,9 @@ Implement synchronized access in Python using `queue.Queue` and `concurrent.futu
 
 Before starting this chapter:
 
-- **Completed Chapter 1** (understanding plugin structure and message types)
+- **Completed the [Getting Started Guide](../../GETTING_STARTED.md)** (understanding plugin structure and message types)
 - **Language-specific setup**:
   - C#: .NET 8.0+
-  - Java: JDK 17+ (for JNI)
   - Python: Python 3.10+
 
 ## Key Concepts
@@ -305,9 +292,9 @@ By completing this chapter, you'll understand:
 
 ## Next Steps
 
-After completing this chapter, you'll have production-ready patterns for serialized plugin access in three languages.
+After completing this chapter, you'll have production-ready patterns for serialized plugin access.
 These patterns can be adapted for other use cases like connection pooling or rate limiting.
 
-Continue to Chapter 8 to learn about binary transport for high-performance scenarios with large payloads.
+Continue to Chapter 4 to learn about binary transport for high-performance scenarios with large payloads.
 
-[Continue to Chapter 8: Binary Transport](../08-binary-transport/README.md)
+[Continue to Chapter 4: Binary Transport](../04-binary-transport/README.md)

@@ -31,7 +31,7 @@ subprojects {
         java.toolchain.languageVersion.get().asInt() == 21
     }
 
-    // Modules that use FFM APIs (excludes rustbridge-core which only uses standard Java APIs)
+    // Modules that use FFM APIs directly (rustbridge-core only uses standard Java APIs)
     val usesFfm = project.name != "rustbridge-core"
 
     tasks.withType<JavaCompile> {

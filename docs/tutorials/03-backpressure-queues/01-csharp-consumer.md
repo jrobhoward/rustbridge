@@ -418,6 +418,6 @@ catch (PluginException ex)
 
 ## What's Next?
 
-Continue to the Java/JNI implementation.
+Continue to the Python implementation.
 
-[Continue to Section 2: Java/JNI Consumer →](./02-java-jni-consumer.md)
+[Continue to Section 2: Python Consumer →](./02-python-consumer.md)

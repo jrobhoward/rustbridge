@@ -15,7 +15,7 @@ java {
     withSourcesJar()
 }
 
-// Compile for Java 17 compatibility
+// Compile for Java 21 (FFM is the only implementation, requires 21+)
 tasks.withType<JavaCompile> {
-    options.release.set(17)
+    options.release.set(21)
 }

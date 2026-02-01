@@ -58,8 +58,7 @@ flowchart TB
 | Component | Minimum Version |
 |-----------|----------------|
 | Rust | 1.90.0 (Edition 2024) |
-| Java (JNI) | 17+ |
-| Java (FFM) | 22+ |
+| Java (FFM) | 21+ (22+ recommended) |
 | .NET | 8.0+ |
 | Python | 3.10+ |
 
@@ -81,7 +80,6 @@ flowchart BT
 
     subgraph FFI["FFI Layer"]
         RF[rustbridge-ffi<br/>C ABI Exports]
-        RJ[rustbridge-jni<br/>JNI Bridge]
     end
 
     subgraph Tooling["Tooling Layer"]
@@ -99,7 +97,6 @@ flowchart BT
     RT --> RF
     RL --> RF
     RR --> RF
-    RC --> RJ
     RC --> RM
     RC --> RB
     RB --> CLI
@@ -118,7 +115,6 @@ flowchart BT
 | **rustbridge-runtime** | Async execution | `AsyncRuntime`, `AsyncBridge`, `ShutdownSignal` |
 | **rustbridge-logging** | Log forwarding | `FfiLoggingLayer`, `LogCallbackManager` |
 | **rustbridge-ffi** | C ABI exports | `FfiBuffer`, `PluginHandle`, `RbString`, `RbBytes`, FFI functions |
-| **rustbridge-jni** | JNI bindings | JNI bridge for Java 17+ |
 | **rustbridge-macros** | Code generation | `#[rustbridge_plugin]`, `#[derive(Message)]`, `rustbridge_entry!` |
 | **rustbridge-cli** | Build tooling | `new`, `bundle create/inspect/extract`, `keygen`, `generate-header` |
 | **rustbridge-bundle** | Bundle handling | `BundleBuilder`, `BundleLoader`, `Manifest`, minisign verification |
@@ -539,42 +535,25 @@ flowchart TB
         NB[NativeBindings]
     end
 
-    subgraph JNI["JNI (Java 17+)"]
-        JL[JniPluginLoader]
-        JP[JniPlugin]
-        NC[Native C Code]
-    end
-
     APP --> PI
     PI --> FL
-    PI --> JL
     FL --> FP --> NB
-    JL --> JP --> NC
 ```
 
 | Module | Java Version | Technology |
 |--------|--------------|------------|
-| `rustbridge-jni` | 17+ | JNI via `rustbridge-jni` crate |
-| `rustbridge-ffm` | 22+ | Foreign Function & Memory API |
-| `rustbridge-kotlin` | - | Kotlin DSL extensions |
+| `rustbridge-ffm` | 21+ | Foreign Function & Memory API |
+| `rustbridge-kotlin` | 21+ | Kotlin DSL extensions |
 
-**Usage (FFM):**
+> **Note**: Java 21 requires `--enable-preview` flag. Java 22+ is recommended for stable FFM APIs.
+
+**Usage:**
 ```java
 try (var plugin = FfmPluginLoader.load("libmyplugin.so")) {
     var response = plugin.call("echo", "{\"message\": \"hello\"}");
     // plugin automatically closed
 }
 ```
-
-**Design Decision: Support Both JNI and FFM**
-
-| Approach | Pros | Cons |
-|----------|------|------|
-| **JNI** | Wide compatibility (17+), simpler memory mgmt | Requires native bridge library |
-| **FFM** | Modern, pure Java, better binary perf | Requires Java 22+ |
-| **Both** | Best of both worlds | More code to maintain |
-
-**Decision**: Support both. JNI provides compatibility with all LTS releases (Java 17, 21, 25+). FFM offers better binary transport performance for Java 22+ users.
 
 ### C# Integration (.NET 8.0+)
 
@@ -625,9 +604,6 @@ my-plugin-1.0.0.rbp (ZIP archive)
 │   │   └── release/libmyplugin.dylib
 │   └── windows-x86_64/
 │       └── release/myplugin.dll
-├── bridges/                         # Optional JNI bridge libraries
-│   └── linux-x86_64/
-│       └── libjnibridge.so
 ├── schema/                          # Optional schemas
 │   ├── messages.json                # JSON Schema
 │   └── messages.h                   # C headers

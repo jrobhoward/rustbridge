@@ -1,4 +1,4 @@
-# Chapter 6: Cross-Compilation
+# Chapter 2: Cross-Compilation
 
 In this chapter, you'll learn how to build multi-platform plugin bundles for Linux, macOS, and Windows.
 
@@ -51,7 +51,7 @@ Cross-compile from a single machine using `cross` or cargo targets.
 
 ## Prerequisites
 
-- Completed Chapter 5 (Production Bundles)
+- Completed Chapter 1 (Production Bundles) or have a working plugin
 - Access to target platforms (physical, VM, or CI)
 
 ## Recommended Approach
@@ -66,6 +66,4 @@ This avoids cross-compilation complexity and uses native toolchains for best com
 
 ## Next Steps
 
-After completing this chapter, continue to [Chapter 7: Backpressure Queues](../07-backpressure-queues/README.md) to learn how to implement bounded queues with flow control for C#, Java/JNI, and Python consumers.
-
-For Java 17+ support using JNI (recommended), see [Chapter 2: Calling from Kotlin](../02-kotlin-consumer/README.md) which uses JNI and works with Java 17+.
+After completing this chapter, continue to [Chapter 3: Backpressure Queues](../03-backpressure-queues/README.md) to learn how to implement bounded queues with flow control for C# and Python consumers.

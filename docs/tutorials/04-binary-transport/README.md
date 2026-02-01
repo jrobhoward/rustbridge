@@ -1,4 +1,4 @@
-# Chapter 8: Binary Transport
+# Chapter 4: Binary Transport
 
 In this chapter, you'll build an image thumbnail generator plugin that uses binary transport for efficient data transfer. Binary transport bypasses JSON serialization overhead, making it ideal for large payloads like images where base64 encoding would add ~33% size overhead.
 
@@ -94,8 +94,6 @@ When NOT to use binary transport:
 Scaffold a new project with all consumer types:
 
 ```bash
-cd ~/rustbridge-workspace
-
 rustbridge new thumbnail-plugin --all
 cd thumbnail-plugin
 ```
@@ -110,7 +108,6 @@ thumbnail-plugin/
 +-- consumers/
     +-- kotlin/                     # Kotlin/FFM consumer
     +-- java-ffm/                   # Java FFM consumer
-    +-- java-jni/                   # Java JNI consumer
     +-- csharp/                     # C# consumer
     +-- python/                     # Python consumer
 ```
@@ -528,21 +525,16 @@ codegen-units = 1
 # Build the plugin
 cargo build --release
 
-# Install JNI bridge if not already done (needed for Java/Kotlin consumers)
-rustbridge install-jni-bridge
-
-# Create a bundle (include JNI bridge for Java/Kotlin consumers)
+# Create a bundle
 rustbridge bundle create \
   --name thumbnail-plugin \
   --version 0.1.0 \
   --lib linux-x86_64:target/release/libthumbnail_plugin.so \
-  --include-jni-bridge \
   --output thumbnail-plugin-0.1.0.rbp
 
 # Copy to each consumer directory
 cp thumbnail-plugin-0.1.0.rbp consumers/kotlin/
 cp thumbnail-plugin-0.1.0.rbp consumers/java-ffm/
-cp thumbnail-plugin-0.1.0.rbp consumers/java-jni/
 cp thumbnail-plugin-0.1.0.rbp consumers/csharp/
 cp thumbnail-plugin-0.1.0.rbp consumers/python/
 ```
@@ -571,7 +563,6 @@ Copy to all consumer directories:
 ```bash
 cp consumers/test-image.jpg consumers/kotlin/
 cp consumers/test-image.jpg consumers/java-ffm/
-cp consumers/test-image.jpg consumers/java-jni/
 cp consumers/test-image.jpg consumers/csharp/
 cp consumers/test-image.jpg consumers/python/
 ```
@@ -582,21 +573,17 @@ Implement the binary transport consumer in each language:
 
 ### [01: Java FFM Consumer](./01-java-ffm-consumer.md)
 
-Java 22+ using the Foreign Function & Memory API for direct struct manipulation.
+Java 21+ using the Foreign Function & Memory API for direct struct manipulation.
 
-### [02: Java JNI Consumer](./02-java-jni-consumer.md)
+### [02: Kotlin Consumer](./02-kotlin-consumer.md)
 
-Java 17+ using JNI with ByteBuffer for binary data handling (recommended for all Java versions).
+Kotlin with FFM and idiomatic extension functions.
 
-### [03: Kotlin Consumer](./03-kotlin-consumer.md)
-
-Kotlin with JNI and idiomatic extension functions.
-
-### [04: C# Consumer](./04-csharp-consumer.md)
+### [03: C# Consumer](./03-csharp-consumer.md)
 
 C# using unsafe structs and StructLayout for memory mapping.
 
-### [05: Python Consumer](./05-python-consumer.md)
+### [04: Python Consumer](./04-python-consumer.md)
 
 Python using ctypes for struct definitions and binary data handling.
 
@@ -604,12 +591,11 @@ Python using ctypes for struct definitions and binary data handling.
 
 Before starting this chapter:
 
-- **Completed Chapter 1** (understanding plugin structure and message types)
+- **Completed the [Getting Started Guide](../../GETTING_STARTED.md)** (understanding plugin structure and message types)
 - **Read docs/TRANSPORT.md** (binary transport concepts)
 - **Language-specific setup**:
-  - Java JNI: JDK 17+
-  - Java FFM: JDK 22+
-  - Kotlin: JDK 17+ (uses JNI)
+  - Java FFM: JDK 21+ (22+ recommended)
+  - Kotlin: JDK 21+ (22+ recommended)
   - C#: .NET 8.0+
   - Python: Python 3.10+
 

@@ -17,7 +17,7 @@ import java.nio.file.Path;
  * Loader for rustbridge plugins using Java 21+ FFM API.
  * <p>
  * This loader uses Project Panama's Foreign Function and Memory API
- * to load and interact with native plugins without JNI.
+ * to load and interact with native plugins.
  *
  * <h2>Usage</h2>
  * <pre>{@code

@@ -15,8 +15,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * FFM-based plugin implementation using Java 21+ Foreign Function and Memory API.
  * <p>
- * This implementation uses Project Panama to call native plugin functions directly,
- * without JNI overhead.
+ * This implementation uses Project Panama to call native plugin functions directly.
  *
  * <h2>Thread Safety</h2>
  * This class is fully thread-safe and supports concurrent calls from multiple threads.

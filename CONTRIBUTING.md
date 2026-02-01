@@ -16,7 +16,7 @@ Thank you for your interest in contributing to rustbridge! This document provide
 ### Prerequisites
 
 - **Rust**: Edition 2024, MSRV 1.90.0
-- **Java**: JDK 21+ (for FFM), JDK 17+ (for JNI)
+- **Java**: JDK 21+ (FFM)
 - **C#**: .NET 8.0+
 - **Python**: 3.10+
 
@@ -165,8 +165,7 @@ rustbridge/
 │   ├── rustbridge-logging/  # Tracing bridge
 │   ├── rustbridge-macros/   # Procedural macros
 │   ├── rustbridge-bundle/   # Bundle format
-│   ├── rustbridge-cli/      # CLI tool (includes templates/)
-│   └── rustbridge-jni/      # JNI bridge
+│   └── rustbridge-cli/      # CLI tool (includes templates/)
 ├── rustbridge-java/         # Java/Kotlin bindings
 ├── rustbridge-csharp/       # C# bindings
 ├── rustbridge-python/       # Python bindings

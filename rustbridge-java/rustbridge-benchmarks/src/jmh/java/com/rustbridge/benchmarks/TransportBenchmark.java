@@ -17,7 +17,7 @@ import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 /**
- * JMH benchmarks comparing transport methods across FFM and JNI.
+ * JMH benchmarks comparing transport methods (JSON vs binary).
  * <p>
  * Run with: ./gradlew :rustbridge-benchmarks:jmh
  * Quick run: ./gradlew :rustbridge-benchmarks:jmhQuick

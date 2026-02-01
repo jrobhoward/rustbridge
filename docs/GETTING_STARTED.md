@@ -15,94 +15,36 @@ guide walks you through creating a plugin, packaging it, and running it from you
 
 ---
 
-## Prerequisites & Directory Structure
+## Prerequisites
 
-> **Important**: The current version of this guide assumes all work is done in `~/rustbridge-workspace/`. The commands
-> in this tutorial assume this path structure. If you use a different location, adjust the paths accordingly.
+Before starting, complete the installation steps in the [README](../README.md#install-from-source):
 
-```
-~/rustbridge-workspace/
-├── rustbridge/          # Cloned repository
-├── my-plugin/           # Your Rust plugin (Step 2)
-├── my-kotlin-app/       # Consumer app (Step 4)
-├── my-java-app/
-├── my-csharp-app/
-└── my-python-app/
+1. Clone the repository and install the CLI: `cargo install --force --path crates/rustbridge-cli`
+2. Install host language libraries for your target language(s)
+
+Verify your installation:
+
+```bash
+rustbridge --version
 ```
 
-### Prerequisites
+You should see version output (e.g., `rustbridge 0.7.0`). If not, revisit the installation steps.
+
+### Requirements
 
 - Rust 1.90+ installed
 - Basic familiarity with Rust
+- rustbridge CLI installed (see above)
 
 ---
 
-## Step 1: Clone rustbridge and Install Tools
-
-Create a workspace directory and clone the repository:
-
-```bash
-mkdir -p ~/rustbridge-workspace
-cd ~/rustbridge-workspace
-git clone https://github.com/jrobhoward/rustbridge.git
-cd rustbridge
-```
-
-### Install the CLI
-
-The rustbridge CLI simplifies plugin development.  
-In this tutorial, we'll use it to bundle a shared library into a `.rbp` file.
-
-```bash
-cargo install --path crates/rustbridge-cli
-rustbridge --version
-rustbridge --help
-```
-
-### Install Host Language Libraries
-
-> **Package Availability**: The host language libraries are currently built from source. Once the APIs and `.rbp` file
-> format are stable (i.e. 1.0 release), packages may be published to Maven Central (Java/Kotlin), NuGet (C#), and PyPI (
-> Python) for easier consumption.
-
-
-Choose your target language:
-
-**Kotlin / Java:**
-
-```bash
-cd ~/rustbridge-workspace/rustbridge/rustbridge-java
-./gradlew publishToMavenLocal
-```
-
-**C#:**
-
-```bash
-cd ~/rustbridge-workspace/rustbridge/rustbridge-csharp
-dotnet build
-```
-
-**Python:**
-
-```bash
-cd ~/rustbridge-workspace/rustbridge/rustbridge-python
-pip install -e .
-```
-
-> Note: If you see an error about `externally-managed-environment`, you may want to use a virtual environment.
-> See Step 4 (Python) for details.
-
----
-
-## Step 2: Build a Plugin
+## Step 1: Build a Plugin
 
 Generate a plugin with consumer projects for all supported languages:
 
 ```bash
-cd ~/rustbridge-workspace
-
+# Run from any directory where you want to create your plugin
 rustbridge new my-plugin --all
-
 cd my-plugin
 ```
 
@@ -130,13 +72,9 @@ What we've done so far creates a standard shared library:
 
 ---
 
-## Step 3: Create a Bundle
+## Step 2: Create a Bundle
 
-Now use the `rustbridge` CLI to package your plugin as a portable `.rbp` file:
-
-```bash
-cd ~/rustbridge-workspace/my-plugin
-```
+Now use the `rustbridge` CLI to package your plugin as a portable `.rbp` file (run from your plugin directory):
 
 ```bash
 # Linux
@@ -177,15 +115,15 @@ unzip -p my-plugin-1.0.0.rbp manifest.json
 
 ---
 
-## Step 4: Run from Your Language
+## Step 3: Run from Your Language
 
-If you ran `rustbridge new my-plugin --all` in Step 2, you already have consumer projects in `consumers/`.
+If you ran `rustbridge new my-plugin --all` in Step 1, you already have consumer projects in `consumers/`.
 Pick your language below and run it.
 
 ### Kotlin
 
 ```bash
-cd ~/rustbridge-workspace/my-plugin/consumers/kotlin
+cd consumers/kotlin
 cp ../../my-plugin-1.0.0.rbp .
 ./gradlew run
 ```
@@ -195,7 +133,7 @@ cp ../../my-plugin-1.0.0.rbp .
 > **Note**: Java 21 requires `--enable-preview` flag. Java 22+ is recommended for stable FFM APIs.
 
 ```bash
-cd ~/rustbridge-workspace/my-plugin/consumers/java-ffm
+cd consumers/java-ffm
 cp ../../my-plugin-1.0.0.rbp .
 ./gradlew run
 ```
@@ -203,7 +141,7 @@ cp ../../my-plugin-1.0.0.rbp .
 ### C#
 
 ```bash
-cd ~/rustbridge-workspace/my-plugin/consumers/csharp
+cd consumers/csharp
 cp ../../my-plugin-1.0.0.rbp .
 dotnet run
 ```
@@ -211,7 +149,7 @@ dotnet run
 ### Python
 
 ```bash
-cd ~/rustbridge-workspace/my-plugin/consumers/python
+cd consumers/python
 cp ../../my-plugin-1.0.0.rbp .
 
 # Create and activate virtual environment
@@ -219,8 +157,8 @@ python3 -m venv .venv
 source .venv/bin/activate  # Linux/macOS
 # .venv\Scripts\activate   # Windows
 
-# Install rustbridge from the cloned repo
-pip install -e ~/rustbridge-workspace/rustbridge/rustbridge-python
+# Install rustbridge (adjust path to where you cloned the repo)
+pip install -e /path/to/rustbridge/rustbridge-python
 
 python main.py
 ```
@@ -231,7 +169,7 @@ python main.py
 
 1. **You built a Rust plugin** that exports FFI functions
 2. **You packaged it** into a portable `.rbp` bundle
-3. **You loaded it** from another language via FFM/JNI/PInvoke/ctypes
+3. **You loaded it** from another language via FFM/PInvoke/ctypes
 4. **You called a function** using JSON messages
 
 The template plugin implements an "echo" message type:
@@ -245,9 +183,9 @@ The template plugin implements an "echo" message type:
 
 ### Tutorials
 
-Follow the step-by-step tutorials to evolve this basic echo plugin into something more useful:
+Follow the step-by-step tutorials to learn advanced topics:
 
-- **[Tutorials](./tutorials/README.md)** - Build a regex plugin with caching, configuration, and call it from Kotlin
+- **[Tutorials](./tutorials/README.md)** - Production bundles, cross-compilation, backpressure, and binary transport
 
 ### Language Guides
 
@@ -304,7 +242,7 @@ rustbridge new my-plugin --all              # Rust + all consumers
 The CLI isn't in your PATH. Either:
 
 - Run `cargo install --path crates/rustbridge-cli` again
-- Or use the full path: `~/rustbridge-workspace/rustbridge/target/release/rustbridge`
+- Or use the full path: `/path/to/rustbridge/target/release/rustbridge`
 
 ### "Plugin library not found" or "symbol not found"
 
@@ -339,5 +277,5 @@ Your bundle doesn't include a library for your OS/architecture. Rebuild with the
 
 ### C#: Project reference not found
 
-The C# template references rustbridge projects at `~/rustbridge-workspace/rustbridge/rustbridge-csharp/`. If you cloned
-to a different location, update the `<ProjectReference>` paths in `RustBridgeConsumer.csproj`.
+The C# template references rustbridge projects relative to where you cloned the repo. If paths don't match,
+update the `<ProjectReference>` paths in `RustBridgeConsumer.csproj`.

@@ -71,8 +71,8 @@ public class Main {
 ```
 
 Key points:
-- `FfmPluginLoader.load()` uses Java 22+ FFM for native access
-- JSON calls work the same as JNI
+- `FfmPluginLoader.load()` uses Java 21+ FFM for native access
+- JSON calls work the same as other language bindings
 - FFM enables direct memory access for binary transport
 
 ## Define Struct Layouts
@@ -573,6 +573,6 @@ try {
 
 ## What's Next?
 
-Continue to the Java JNI implementation, which uses ByteBuffer instead of FFM.
+Continue to the Kotlin implementation, which uses FFM with idiomatic extension functions.
 
-[Continue to Section 2: Java JNI Consumer](./02-java-jni-consumer.md)
+[Continue to Section 2: Kotlin Consumer](./02-kotlin-consumer.md)

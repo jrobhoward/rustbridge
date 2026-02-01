@@ -468,10 +468,12 @@ pub unsafe extern "C" fn plugin_init(...) -> FfiPluginHandle { ... }
 
 ### FFM (Java 21+)
 
-FFM is available for Java 21+:
-- Pure Java bindings, no JNI code needed
+FFM (Foreign Function & Memory API) is used for Java 21+:
+- Pure Java bindings via FFM API
 - Arena-based memory management
-- Better JSON performance than JNI
+- Excellent JSON and binary transport performance
+
+> **Note**: Java 21 requires `--enable-preview` flag. Java 22+ is recommended for stable FFM APIs.
 
 ### Memory Management
 

@@ -1,6 +1,6 @@
 # rustbridge Kotlin Consumer Template
 
-A minimal Kotlin project template for consuming rustbridge plugins using JNI.
+A minimal Kotlin project template for consuming rustbridge plugins using FFM.
 
 ## Prerequisites
 

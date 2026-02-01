@@ -720,12 +720,11 @@ except ValueError as e:
 
 ## Summary
 
-You've now implemented binary transport in all five languages:
+You've now implemented binary transport in all four languages:
 
 | Language | Struct System | Memory Management | Key Classes |
 |----------|--------------|-------------------|-------------|
 | Java FFM | StructLayout | Arena, freeBuffer() | MemorySegment, VarHandle |
-| Java JNI | ByteBuffer | Automatic (JNI copies) | ByteBuffer, ByteOrder |
 | Kotlin | StructLayout | Arena, use{} | MemorySegment, extension functions |
 | C# | StructLayout | Marshal, fixed | Marshal.StructureToPtr |
 | Python | ctypes.Structure | Automatic (bytes copy) | Structure, from_buffer_copy |

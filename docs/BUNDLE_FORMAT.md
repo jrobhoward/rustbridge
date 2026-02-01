@@ -11,7 +11,7 @@ A `.rbp` file is a ZIP archive containing:
 - Optional documentation and license notices
 - Optional code signatures (minisign)
 - Optional Software Bill of Materials (SBOM)
-- Optional bridge libraries (e.g., JNI bridge for Java 17+ users)
+- Optional bridge libraries
 
 **Bundle Version**: 1.0
 
@@ -378,7 +378,7 @@ This checksum is computed by hashing the concatenation of all schema file checks
 | `public_key` | string | Minisign public key for signature verification |
 | `api` | object | API metadata including message definitions |
 | `schemas` | object | Schema file references |
-| `bridges` | object | Bridge libraries (e.g., JNI bridge) |
+| `bridges` | object | Bridge libraries |
 
 ## Platform Support
 

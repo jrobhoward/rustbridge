@@ -1,4 +1,4 @@
-# Chapter 5: Production Bundles
+# Chapter 1: Production Bundles
 
 In this chapter, you'll learn how to create production-ready plugin bundles with code signing, schemas, build metadata,
 and Software Bill of Materials (SBOM).
@@ -47,7 +47,7 @@ Add Software Bill of Materials for dependency transparency.
 
 ## Prerequisites
 
-- Completed Chapter 3 (json-plugin) or have a working plugin
+- Completed the [Getting Started Guide](../../GETTING_STARTED.md) or have a working plugin
 - rustbridge CLI installed
 - Basic familiarity with command-line tools
 
@@ -63,5 +63,5 @@ Add Software Bill of Materials for dependency transparency.
 
 ## Next Steps
 
-After completing this chapter, continue to [Chapter 6: Cross-Compilation](../06-cross-compilation/README.md) to build
+After completing this chapter, continue to [Chapter 2: Cross-Compilation](../02-cross-compilation/README.md) to build
 multi-platform bundles for Linux, macOS, and Windows.

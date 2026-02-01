@@ -1,157 +1,99 @@
 # rustbridge Tutorials
 
-Learn to build custom plugins with rustbridge through hands-on tutorials.
+Learn advanced rustbridge topics through hands-on tutorials.
+
+## Prerequisites
+
+Before starting these tutorials, complete the installation steps in the [README](../../README.md#install-from-source):
+
+1. Clone the repository and install the CLI
+2. Install host language libraries for your target language(s)
+
+Verify your installation:
+
+```bash
+rustbridge --version
+```
+
+You should also complete the [Getting Started Guide](../GETTING_STARTED.md) to build your first plugin.
 
 ## Overview
 
-These tutorials guide you through building Rust plugins and calling them from multiple languages. Start with the regex plugin to learn core concepts, then explore JSON processing and language-specific consumers.
+These tutorials cover advanced topics for production-ready plugins. Each assumes you have the rustbridge CLI installed and your host language libraries set up.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                          What You'll Build                                  │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  Rust Plugins (Chapters 1, 3)         Language Consumers (Chapters 2, 4)   │
-│  ─────────────────────────────        ──────────────────────────────────   │
-│  • Regex pattern matching             • Kotlin: JNI, logging, type-safe    │
-│  • LRU cache for patterns             • Java: FFM API, type-safe calls     │
-│  • JSON validation/prettify           • Error handling patterns            │
-│  • Configurable behavior              • Performance benchmarking           │
-│                                                                             │
-│  Production Bundles (Chapter 5)       Cross-Compilation (Chapter 6)        │
+│  Production Bundles (Chapter 1)       Cross-Compilation (Chapter 2)        │
 │  ──────────────────────────────       ──────────────────────────────       │
 │  • Code signing with minisign         • Multi-platform bundles             │
 │  • JSON schemas for validation        • Native and cross builds            │
 │  • Build metadata and provenance      • Bundle combining                   │
 │  • SBOM for compliance                                                     │
 │                                                                             │
-│  Backpressure Queues (Chapter 7)     Binary Transport (Chapter 8)         │
-│  ───────────────────────────────     ────────────────────────────         │
-│  • C#, Java/JNI, Python consumers    • Image thumbnail generator          │
-│  • Bounded queues for flow control   • C-compatible struct layouts        │
-│  • Block producers when queue is full• 7x faster than JSON for binaries  │
+│  Backpressure Queues (Chapter 3)      Binary Transport (Chapter 4)         │
+│  ───────────────────────────────      ────────────────────────────         │
+│  • C# and Python consumers            • Image thumbnail generator          │
+│  • Bounded queues for flow control    • C-compatible struct layouts        │
+│  • Block producers when queue full    • 7x faster than JSON for binaries   │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Prerequisites
-
-Before starting, ensure you have:
-
-- **Rust 1.90+** installed
-- **Java 21+**
-- **rustbridge CLI** installed ([Getting Started](../GETTING_STARTED.md))
-
 ## Tutorial Chapters
 
-### [Chapter 1: Building a Regex Plugin](./01-regex-plugin/README.md)
-
-Build a production-quality Rust plugin from scratch.
-
-| Section | What You'll Learn |
-|---------|-------------------|
-| [01-scaffold.md](./01-regex-plugin/01-scaffold.md) | Generate project with `rustbridge new` |
-| [02-basic-matching.md](./01-regex-plugin/02-basic-matching.md) | Define messages, implement matching |
-| [03-lru-cache.md](./01-regex-plugin/03-lru-cache.md) | Add LRU cache, measure performance |
-| [04-configuration.md](./01-regex-plugin/04-configuration.md) | Make cache size configurable |
-
-### [Chapter 2: Calling from Kotlin](./02-kotlin-consumer/README.md)
-
-Call your plugin from Kotlin with type safety and logging.
-
-| Section | What You'll Learn |
-|---------|-------------------|
-| [01-project-setup.md](./02-kotlin-consumer/01-project-setup.md) | Set up Gradle project, build bundle |
-| [02-calling-plugin.md](./02-kotlin-consumer/02-calling-plugin.md) | Load bundle, make JSON calls |
-| [03-logging-callbacks.md](./02-kotlin-consumer/03-logging-callbacks.md) | Capture plugin logs in Kotlin |
-| [04-type-safe-calls.md](./02-kotlin-consumer/04-type-safe-calls.md) | Data classes, extension functions |
-| [05-benchmarking.md](./02-kotlin-consumer/05-benchmarking.md) | Debug vs release, cache effectiveness |
-
-### [Chapter 3: Building a JSON Plugin](./03-json-plugin/README.md)
-
-Build a JSON validation and prettification plugin to learn message handling patterns.
-
-| Section | What You'll Learn |
-|---------|-------------------|
-| [01-scaffold.md](./03-json-plugin/01-scaffold.md) | Generate project structure |
-| [02-validate-message.md](./03-json-plugin/02-validate-message.md) | Implement JSON validation endpoint |
-| [03-prettify-message.md](./03-json-plugin/03-prettify-message.md) | Add JSON prettification with custom indent |
-| [04-error-handling.md](./03-json-plugin/04-error-handling.md) | Error patterns, build bundle |
-
-### [Chapter 4: Calling from Java (FFM)](./04-java-consumer/README.md)
-
-Load your plugin from Java using the Foreign Function & Memory (FFM) API (Java 21+).
-
-| Section | What You'll Learn |
-|---------|-------------------|
-| [01-project-setup.md](./04-java-consumer/01-project-setup.md) | Set up Java FFM consumer project |
-| [02-calling-plugin.md](./04-java-consumer/02-calling-plugin.md) | Load bundle, type-safe calls with records |
-| [03-error-handling.md](./04-java-consumer/03-error-handling.md) | Handle plugin errors gracefully |
-
-> **Note**: Java 21 requires `--enable-preview` flag. Java 22+ is recommended for stable FFM APIs.
-
-### [Chapter 5: Production Bundles](./05-production-bundles/README.md)
+### [Chapter 1: Production Bundles](./01-production-bundles/README.md)
 
 Create production-ready bundles with signing, schemas, and compliance features.
 
 | Section | What You'll Learn |
 |---------|-------------------|
-| [01-code-signing.md](./05-production-bundles/01-code-signing.md) | Generate keys, sign bundles with minisign |
-| [02-json-schemas.md](./05-production-bundles/02-json-schemas.md) | Embed schemas for validation |
-| [03-build-metadata.md](./05-production-bundles/03-build-metadata.md) | Include provenance and git info |
-| [04-sbom.md](./05-production-bundles/04-sbom.md) | Add Software Bill of Materials |
+| [01-code-signing.md](./01-production-bundles/01-code-signing.md) | Generate keys, sign bundles with minisign |
+| [02-json-schemas.md](./01-production-bundles/02-json-schemas.md) | Embed schemas for validation |
+| [03-build-metadata.md](./01-production-bundles/03-build-metadata.md) | Include provenance and git info |
+| [04-sbom.md](./01-production-bundles/04-sbom.md) | Add Software Bill of Materials |
 
-### [Chapter 6: Cross-Compilation](./06-cross-compilation/README.md)
+### [Chapter 2: Cross-Compilation](./02-cross-compilation/README.md)
 
 Build multi-platform bundles for Linux, macOS, and Windows.
 
 | Section | What You'll Learn |
 |---------|-------------------|
-| [01-platform-overview.md](./06-cross-compilation/01-platform-overview.md) | Platform identifiers and target triples |
-| [02-native-toolchains.md](./06-cross-compilation/02-native-toolchains.md) | Build natively on each platform |
-| [03-cross-compilation.md](./06-cross-compilation/03-cross-compilation.md) | Cross-compile with `cross` or cargo |
+| [01-platform-overview.md](./02-cross-compilation/01-platform-overview.md) | Platform identifiers and target triples |
+| [02-native-toolchains.md](./02-cross-compilation/02-native-toolchains.md) | Build natively on each platform |
+| [03-cross-compilation.md](./02-cross-compilation/03-cross-compilation.md) | Cross-compile with `cross` or cargo |
 
-### [Chapter 7: Backpressure Queues](./07-backpressure-queues/README.md)
+### [Chapter 3: Backpressure Queues](./03-backpressure-queues/README.md)
 
-Implement bounded queues with backpressure for flow control in C#, Java/JNI, and Python.
+Implement bounded queues with backpressure for flow control in C# and Python.
 
 | Section | What You'll Learn |
 |---------|-------------------|
-| [01-csharp-consumer.md](./07-backpressure-queues/01-csharp-consumer.md) | C# with BlockingCollection and Task |
-| [03-python-consumer.md](./07-backpressure-queues/03-python-consumer.md) | Python with queue.Queue and concurrent.futures |
+| [01-csharp-consumer.md](./03-backpressure-queues/01-csharp-consumer.md) | C# with BlockingCollection and Task |
+| [02-python-consumer.md](./03-backpressure-queues/02-python-consumer.md) | Python with queue.Queue and concurrent.futures |
 
-### [Chapter 8: Binary Transport](./08-binary-transport/README.md)
+### [Chapter 4: Binary Transport](./04-binary-transport/README.md)
 
 Build an image thumbnail generator using binary transport for efficient large payload handling.
 
 | Section | What You'll Learn |
 |---------|-------------------|
-| [01-java-ffm-consumer.md](./08-binary-transport/01-java-ffm-consumer.md) | Java 21+ FFM with StructLayout and VarHandle |
-| [03-kotlin-consumer.md](./08-binary-transport/03-kotlin-consumer.md) | Kotlin FFM with extension functions |
-| [04-csharp-consumer.md](./08-binary-transport/04-csharp-consumer.md) | C# with StructLayout and Marshal |
-| [05-python-consumer.md](./08-binary-transport/05-python-consumer.md) | Python with ctypes.Structure |
+| [01-java-ffm-consumer.md](./04-binary-transport/01-java-ffm-consumer.md) | Java 21+ FFM with StructLayout and VarHandle |
+| [02-kotlin-consumer.md](./04-binary-transport/02-kotlin-consumer.md) | Kotlin FFM with extension functions |
+| [03-csharp-consumer.md](./04-binary-transport/03-csharp-consumer.md) | C# with StructLayout and Marshal |
+| [04-python-consumer.md](./04-binary-transport/04-python-consumer.md) | Python with ctypes.Structure |
 
 ## Reference Implementations
 
 Completed examples are available for reference. If you get stuck, compare your code against these working implementations:
 
-- **Regex plugin** (Chapters 1-2): [`examples/regex-plugin/`](../../examples/regex-plugin/)
-- **JSON plugin** (Chapters 3-4): [`examples/json-plugin/`](../../examples/json-plugin/)
-- **Hello plugin** (Chapter 7): [`examples/hello-plugin/`](../../examples/hello-plugin/)
+- **Hello plugin**: [`examples/hello-plugin/`](../../examples/hello-plugin/)
 
 ## Choosing Your Path
 
-**New to rustbridge?** Start with the [Getting Started Guide](../GETTING_STARTED.md), then return here for the deeper dive.
-
-**Want to skip the tutorial?** Use the completed examples as a reference:
-
-```bash
-# Copy the regex plugin example
-cp -r ~/rustbridge-workspace/rustbridge/examples/regex-plugin ~/rustbridge-workspace/my-plugin
-
-# Or the JSON plugin example
-cp -r ~/rustbridge-workspace/rustbridge/examples/json-plugin ~/rustbridge-workspace/my-plugin
-```
+**New to rustbridge?** Start with the [Getting Started Guide](../GETTING_STARTED.md), then return here for advanced topics.
 
 ## Getting Help
 

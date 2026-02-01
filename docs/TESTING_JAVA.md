@@ -1,6 +1,6 @@
 # rustbridge Java Testing Conventions
 
-This document describes the testing conventions for Java code in the rustbridge workspace (primarily `rustbridge-java/rustbridge-jni`).
+This document describes the testing conventions for Java code in the rustbridge workspace (primarily `rustbridge-java/rustbridge-ffm`).
 
 > **Note**: This guide follows the [shared testing conventions](./TESTING.md#cross-language-testing-conventions) used across all rustbridge languages, including the triple-underscore naming pattern and Arrange-Act-Assert structure.
 
@@ -41,18 +41,18 @@ public void pluginConfig___fromValidJson___parsesCorrectly() throws IOException 
 Tests are located alongside source files in the `test` directory, mirroring the source structure:
 
 ```
-rustbridge-java/rustbridge-jni/src/
+rustbridge-java/rustbridge-ffm/src/
 ├── main/
 │   └── java/
-│       └── com/rustbridge/jni/
+│       └── com/rustbridge/ffm/
 │           ├── Plugin.java
-│           ├── JniPlugin.java
+│           ├── FfmPlugin.java
 │           └── ...
 └── test/
     └── java/
-        └── com/rustbridge/jni/
+        └── com/rustbridge/ffm/
             ├── PluginTest.java
-            ├── JniPluginTest.java
+            ├── FfmPluginTest.java
             └── ...
 ```
 
@@ -61,7 +61,7 @@ rustbridge-java/rustbridge-jni/src/
 Test classes follow the pattern: `{ClassName}Test.java`
 
 - `Plugin.java` → `PluginTest.java`
-- `JniPlugin.java` → `JniPluginTest.java`
+- `FfmPlugin.java` → `FfmPluginTest.java`
 
 ## Test Naming Convention
 
@@ -154,8 +154,8 @@ public void plugin___handleInvalidMessage___throwsException() {
 Use `@BeforeEach` and `@AfterEach` for test setup/teardown:
 
 ```java
-public class JniPluginTest {
-    private JniPlugin plugin;
+public class FfmPluginTest {
+    private FfmPlugin plugin;
     private PluginConfig config;
 
     @BeforeEach
@@ -163,7 +163,7 @@ public class JniPluginTest {
         config = new PluginConfig.Builder()
             .logLevel(LogLevel.DEBUG)
             .build();
-        plugin = new JniPlugin();
+        plugin = new FfmPlugin();
     }
 
     @AfterEach
@@ -322,7 +322,7 @@ import static org.mockito.Mockito.*;
 @Test
 public void plugin___callWithMockedCallback___returnsCorrectly() throws Exception {
     PluginCallback mockCallback = mock(PluginCallback.class);
-    JniPlugin plugin = new JniPlugin(mockCallback);
+    FfmPlugin plugin = new FfmPlugin(mockCallback);
 
     plugin.handleRequest("test", new byte[]{1, 2, 3});
 
@@ -334,7 +334,7 @@ public void plugin___errorInCallback___isHandled() throws Exception {
     PluginCallback mockCallback = mock(PluginCallback.class);
     doThrow(new IOException("Test error")).when(mockCallback).onSuccess(any());
 
-    JniPlugin plugin = new JniPlugin(mockCallback);
+    FfmPlugin plugin = new FfmPlugin(mockCallback);
     assertThrows(IOException.class, () -> {
         plugin.handleRequest("test", new byte[]{1, 2, 3});
     });
@@ -353,12 +353,12 @@ testImplementation 'org.mockito:mockito-inline:5.3.1'
 Integration tests live in `src/integrationTest/java` and test end-to-end flows:
 
 ```
-rustbridge-java/rustbridge-jni/src/
+rustbridge-java/rustbridge-ffm/src/
 └── integrationTest/
     └── java/
-        └── com/rustbridge/jni/
+        └── com/rustbridge/ffm/
             ├── PluginLifecycleIntegrationTest.java
-            └── JniRoundtripIntegrationTest.java
+            └── FfmRoundtripIntegrationTest.java
 ```
 
 Integration tests follow the **same naming conventions** as unit tests:
@@ -369,7 +369,7 @@ public void plugin___fullLifecycle___startCallStopSucceeds() throws Exception {
     PluginConfig config = new PluginConfig.Builder()
         .logLevel(LogLevel.DEBUG)
         .build();
-    JniPlugin plugin = new JniPlugin();
+    FfmPlugin plugin = new FfmPlugin();
 
     plugin.initialize(config);
     plugin.onStart(createTestContext());
@@ -411,13 +411,13 @@ cd rustbridge-java
 ./gradlew test
 
 # Run tests for a specific subproject
-./gradlew :rustbridge-jni:test
+./gradlew :rustbridge-ffm:test
 
 # Run a specific test class
-./gradlew test --tests "com.rustbridge.jni.PluginTest"
+./gradlew test --tests "com.rustbridge.ffm.PluginTest"
 
 # Run a specific test method
-./gradlew test --tests "com.rustbridge.jni.PluginTest.pluginConfig___fromEmptyJson___returnsDefaults"
+./gradlew test --tests "com.rustbridge.ffm.PluginTest.pluginConfig___fromEmptyJson___returnsDefaults"
 
 # Run with output
 ./gradlew test --info
@@ -447,7 +447,7 @@ Coverage goals:
 View the HTML report:
 
 ```bash
-open rustbridge-jni/build/reports/jacoco/test/html/index.html
+open rustbridge-ffm/build/reports/jacoco/test/html/index.html
 ```
 
 ## Dependencies

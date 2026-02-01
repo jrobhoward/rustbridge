@@ -56,4 +56,4 @@ These tasks are explicitly deferred pending user requirements:
 
 | Task | Area | Date | Notes |
 |------|------|------|-------|
-| Include JNI bridge in .rbp bundle | JNI | 2026-01-30 | `--jni-lib` CLI flag, `BundleLoader.extractJniBridge()`, `JniPluginLoader.loadFromBundle()` |
+| Remove JNI transport layer | FFM | 2026-02-01 | Focus on FFM exclusively for Java 21+ |

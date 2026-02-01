@@ -3,7 +3,7 @@
 [![CI](https://github.com/jrobhoward/rustbridge/actions/workflows/ci.yml/badge.svg)](https://github.com/jrobhoward/rustbridge/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
 [![Rust](https://img.shields.io/badge/rust-1.90%2B-orange.svg)](https://www.rust-lang.org)
-[![Java](https://img.shields.io/badge/java-17%2B-red.svg)](https://openjdk.org)
+[![Java](https://img.shields.io/badge/java-21%2B-red.svg)](https://openjdk.org)
 [![.NET](https://img.shields.io/badge/.NET-8.0%2B-purple.svg)](https://dotnet.microsoft.com)
 [![Python](https://img.shields.io/badge/python-3.10%2B-green.svg)](https://www.python.org)
 
@@ -98,14 +98,10 @@ Or dive into the tutorials (more to come):
 
 | Tutorial                                                                                                       | What You'll Learn                                  |
 |----------------------------------------------------------------------------------------------------------------|----------------------------------------------------|
-| [Build a Regex Plugin](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/01-regex-plugin/)     | Rust plugin development, message handling, caching |
-| [Call from Kotlin](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/02-kotlin-consumer/)      | Type-safe calls, logging integration, benchmarking |
-| [Build a JSON Plugin](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/03-json-plugin/)       | Validation, error handling patterns                |
-| [Call from Java](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/04-java-consumer/)          | FFM setup, Gradle configuration                    |
-| [Production Bundles](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/05-production-bundles/) | Code signing, schemas, SBOMs                       |
-| [Cross-Compilation](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/06-cross-compilation/)   | Building for multiple platforms                    |
-| [Backpressure Queues](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/07-backpressure-queues/) | Bounded queues, blocking callers, flow control     |
-| [Binary Transport](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/08-binary-transport/)       | High-performance binary FFI, image processing      |
+| [Production Bundles](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/01-production-bundles/) | Code signing, schemas, SBOMs                       |
+| [Cross-Compilation](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/02-cross-compilation/)   | Building for multiple platforms                    |
+| [Backpressure Queues](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/03-backpressure-queues/) | Bounded queues, blocking callers, flow control     |
+| [Binary Transport](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/04-binary-transport/)       | High-performance binary FFI, image processing      |
 
 ## Quick Example
 
@@ -133,7 +129,7 @@ rustbridge_entry!(EchoPlugin::default);
 **Java consumer:**
 
 ```java
-try (Plugin plugin = JniPluginLoader.load("libecho.so")) {
+try (Plugin plugin = FfmPluginLoader.load("libecho.so")) {
     String response = plugin.call("echo", "{\"message\": \"Hello!\"}");
     System.out.println(response);  // {"message": "Hello!"}
 }
@@ -172,17 +168,27 @@ Plugin plugin = BundleLoader.load("my-plugin-1.0.0.rbp");
 
 > **Note**: Java 21 users must add `--enable-preview` flag. Java 22+ is recommended.
 
-## Building from Source
+## Install from Source
 
-rustbridge is not yet published to package registries. Build from source:
+rustbridge is not yet published to package registries. Install from source to get started.
 
-**Rust CLI** (for creating plugins and bundles):
+### Prerequisites
+
+- Rust 1.90+ installed
+- Java 21+ (for Java/Kotlin), .NET 8.0+ (for C#), or Python 3.10+
+
+### 1. Clone and Install the CLI
 
 ```bash
 git clone https://github.com/jrobhoward/rustbridge.git
 cd rustbridge
-cargo install --path crates/rustbridge-cli
+cargo install --force --path crates/rustbridge-cli
+rustbridge --version  # Verify installation
 ```
+
+### 2. Install Host Language Libraries
+
+Choose your target language(s):
 
 **Java/Kotlin** (build and publish to local Maven):
 
