@@ -16,7 +16,7 @@ cd json-plugin
 ```toml
 [package]
 name = "json-plugin"
-version = "1.0.0"
+version = "0.1.0"
 edition = "2024"
 
 [lib]

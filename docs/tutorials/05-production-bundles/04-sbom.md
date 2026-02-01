@@ -63,11 +63,11 @@ Use the `--sbom` flag:
 ```bash
 rustbridge bundle create \
   --name json-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib linux-x86_64:target/release/libjson_plugin.so \
   --sbom sbom.cdx.json:sbom.cdx.json \
   --sign-key ~/.rustbridge/signing.key \
-  --output json-plugin-1.0.0.rbp
+  --output json-plugin-0.1.0.rbp
 ```
 
 Include both formats:
@@ -75,22 +75,22 @@ Include both formats:
 ```bash
 rustbridge bundle create \
   --name json-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib linux-x86_64:target/release/libjson_plugin.so \
   --sbom sbom.cdx.json:sbom.cdx.json \
   --sbom sbom.spdx.json:sbom.spdx.json \
   --sign-key ~/.rustbridge/signing.key \
-  --output json-plugin-1.0.0.rbp
+  --output json-plugin-0.1.0.rbp
 ```
 
 ## Verify SBOM Inclusion
 
 ```bash
-rustbridge bundle list json-plugin-1.0.0.rbp
+rustbridge bundle list json-plugin-0.1.0.rbp
 ```
 
 ```
-json-plugin-1.0.0.rbp
+json-plugin-0.1.0.rbp
 ├── manifest.json
 ├── manifest.json.minisig
 ├── lib/
@@ -119,7 +119,7 @@ The manifest references the SBOM files:
 ### Command Line
 
 ```bash
-unzip -j json-plugin-1.0.0.rbp "sbom/*" -d ./
+unzip -j json-plugin-0.1.0.rbp "sbom/*" -d ./
 ```
 
 ### Java
@@ -128,7 +128,7 @@ unzip -j json-plugin-1.0.0.rbp "sbom/*" -d ./
 import java.util.zip.ZipFile;
 import java.util.zip.ZipEntry;
 
-try (var zipFile = new ZipFile("json-plugin-1.0.0.rbp")) {
+try (var zipFile = new ZipFile("json-plugin-0.1.0.rbp")) {
     // Check manifest for SBOM path
     ZipEntry sbomEntry = zipFile.getEntry("sbom/sbom.cdx.json");
     if (sbomEntry != null) {
@@ -145,7 +145,7 @@ try (var zipFile = new ZipFile("json-plugin-1.0.0.rbp")) {
 ```python
 import zipfile
 
-with zipfile.ZipFile("json-plugin-1.0.0.rbp", "r") as zf:
+with zipfile.ZipFile("json-plugin-0.1.0.rbp", "r") as zf:
     # List SBOM files
     sbom_files = [f for f in zf.namelist() if f.startswith("sbom/")]
 
@@ -173,7 +173,7 @@ with zipfile.ZipFile("json-plugin-1.0.0.rbp", "r") as zf:
     "component": {
       "type": "application",
       "name": "json-plugin",
-      "version": "1.0.0"
+      "version": "0.1.0"
     }
   },
   "components": [
@@ -212,12 +212,12 @@ For license compliance, include a NOTICES file with full license texts:
 ```bash
 rustbridge bundle create \
   --name json-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib linux-x86_64:target/release/libjson_plugin.so \
   --sbom sbom.cdx.json:sbom.cdx.json \
   --notices NOTICES.txt \
   --sign-key ~/.rustbridge/signing.key \
-  --output json-plugin-1.0.0.rbp
+  --output json-plugin-0.1.0.rbp
 ```
 
 Generate NOTICES.txt with cargo-about:

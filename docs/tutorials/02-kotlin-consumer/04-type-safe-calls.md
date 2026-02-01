@@ -81,7 +81,7 @@ import com.rustbridge.PluginConfig as RbPluginConfig
 import java.nio.file.Path
 
 fun main(args: Array<String>) {
-    val bundlePath = "regex-plugin-1.0.0.rbp"
+    val bundlePath = "regex-plugin-0.1.0.rbp"
 
     val bundleLoader = BundleLoader.builder()
         .bundlePath(bundlePath)
@@ -179,7 +179,7 @@ inline fun <reified T> Plugin.callTyped(
 }
 
 fun main(args: Array<String>) {
-    val bundlePath = "regex-plugin-1.0.0.rbp"
+    val bundlePath = "regex-plugin-0.1.0.rbp"
 
     val bundleLoader = BundleLoader.builder()
         .bundlePath(bundlePath)

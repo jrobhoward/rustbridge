@@ -93,7 +93,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
         System.out.println("=== Java Consumer - JSON Plugin Demo ===\n");
 
-        String bundlePath = "json-plugin-1.0.0.rbp";
+        String bundlePath = "json-plugin-0.1.0.rbp";
 
         BundleLoader bundleLoader = BundleLoader.builder()
             .bundlePath(bundlePath)

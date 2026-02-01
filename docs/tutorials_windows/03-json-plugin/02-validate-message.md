@@ -102,9 +102,9 @@ Create a quick test bundle:
 ```powershell
 rustbridge bundle create `
   --name json-plugin `
-  --version 1.0.0 `
+  --version 0.1.0 `
   --lib windows-x86_64:target\release\json_plugin.dll `
-  --output json-plugin-1.0.0.rbp
+  --output json-plugin-0.1.0.rbp
 ```
 
 ## Understanding Error Reporting

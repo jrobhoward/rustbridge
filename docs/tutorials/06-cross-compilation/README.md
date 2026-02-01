@@ -9,7 +9,7 @@ In this chapter, you'll learn how to build multi-platform plugin bundles for Lin
 │                       Multi-Platform Bundle                                 │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  my-plugin-1.0.0.rbp                                                        │
+│  my-plugin-0.1.0.rbp                                                        │
 │  ────────────────────                                                       │
 │  └── lib/                                                                   │
 │      ├── linux-x86_64/                                                      │

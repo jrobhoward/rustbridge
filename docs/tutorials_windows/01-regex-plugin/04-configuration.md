@@ -309,9 +309,9 @@ cargo build --release
 ```powershell
 rustbridge bundle create `
   --name regex-plugin `
-  --version 1.0.0 `
+  --version 0.1.0 `
   --lib windows-x86_64:target\release\regex_plugin.dll `
-  --output regex-plugin-1.0.0.rbp
+  --output regex-plugin-0.1.0.rbp
 ```
 
 ## Host Configuration Example

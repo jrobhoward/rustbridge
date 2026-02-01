@@ -107,16 +107,18 @@ cd hello-plugin
 # Build it
 cargo build --release
 
-# Create a bundle
+# Create a bundle (use version 0.1.0 to match generated Cargo.toml)
 rustbridge bundle create `
   --name hello-plugin `
-  --version 1.0.0 `
+  --version 0.1.0 `
   --lib windows-x86_64:target\release\hello_plugin.dll `
-  --output hello-plugin-1.0.0.rbp
+  --output hello-plugin-0.1.0.rbp
 
 # List bundle contents
-rustbridge bundle list hello-plugin-1.0.0.rbp
+rustbridge bundle list hello-plugin-0.1.0.rbp
 ```
+
+> **Note**: The `rustbridge new` command generates projects with the version from the CLI. The generated `Cargo.toml` may use a slightly different rustbridge version than documented. Always check the generated files.
 
 ## Conventions Used
 

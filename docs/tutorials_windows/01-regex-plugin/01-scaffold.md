@@ -13,6 +13,8 @@ rustbridge new regex-plugin
 cd regex-plugin
 ```
 
+> **Note**: The CLI generates a project with its bundled templates. Check the generated `Cargo.toml` for the actual rustbridge version being used.
+
 This creates a new plugin project with the following structure:
 
 ```

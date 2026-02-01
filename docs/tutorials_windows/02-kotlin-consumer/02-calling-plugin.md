@@ -96,7 +96,7 @@ private val json = Json {
 fun main() {
     println("=== Kotlin Consumer - Regex Plugin Demo ===\n")
 
-    val bundlePath = "regex-plugin-1.0.0.rbp"
+    val bundlePath = "regex-plugin-0.1.0.rbp"
 
     val bundleLoader = BundleLoader.builder()
         .bundlePath(bundlePath)

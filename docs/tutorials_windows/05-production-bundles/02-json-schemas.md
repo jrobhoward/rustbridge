@@ -98,21 +98,21 @@ schemas\
 ```powershell
 rustbridge bundle create `
   --name json-plugin `
-  --version 1.0.0 `
+  --version 0.1.0 `
   --lib windows-x86_64:target\release\json_plugin.dll `
   --schemas schemas\ `
   --sign-key $env:USERPROFILE\.rustbridge\signing.key `
-  --output json-plugin-1.0.0.rbp
+  --output json-plugin-0.1.0.rbp
 ```
 
 ## List Bundle with Schemas
 
 ```powershell
-rustbridge bundle list json-plugin-1.0.0.rbp
+rustbridge bundle list json-plugin-0.1.0.rbp
 ```
 
 ```
-json-plugin-1.0.0.rbp
+json-plugin-0.1.0.rbp
 ├── manifest.json
 ├── manifest.json.minisig
 ├── schemas\
@@ -131,7 +131,7 @@ Extract and use schemas for validation:
 ```kotlin
 // Kotlin with everit-json-schema
 val bundleLoader = BundleLoader.builder()
-    .bundlePath("json-plugin-1.0.0.rbp")
+    .bundlePath("json-plugin-0.1.0.rbp")
     .build()
 
 val schemaPath = bundleLoader.extractSchema("validate_request.json")

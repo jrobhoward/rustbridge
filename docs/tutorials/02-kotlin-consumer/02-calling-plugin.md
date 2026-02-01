@@ -14,7 +14,7 @@ import com.rustbridge.ffm.FfmPluginLoader
 
 fun main(args: Array<String>) {
     // Path to your plugin bundle
-    val bundlePath = "regex-plugin-1.0.0.rbp"
+    val bundlePath = "regex-plugin-0.1.0.rbp"
 
     // Load the bundle and extract the library for this platform
     val bundleLoader = BundleLoader.builder()

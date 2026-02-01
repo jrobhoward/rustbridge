@@ -21,7 +21,7 @@ plugins {
 }
 
 group = "com.example"
-version = "1.0.0"
+version = "0.1.0"
 
 repositories {
     mavenCentral()
@@ -84,7 +84,7 @@ public class Main {
         System.out.println("Java Consumer - JSON Plugin Demo");
         System.out.println("================================\n");
 
-        String bundlePath = "..\\..\\json-plugin-1.0.0.rbp";
+        String bundlePath = "..\\..\\json-plugin-0.1.0.rbp";
 
         // Load the bundle
         BundleLoader bundleLoader = BundleLoader.builder()
@@ -148,7 +148,7 @@ class ValidateResponse {
 
 ```powershell
 cd $env:USERPROFILE\rustbridge-workspace\json-plugin
-Copy-Item json-plugin-1.0.0.rbp consumers\java-ffm\
+Copy-Item json-plugin-0.1.0.rbp consumers\java-ffm\
 ```
 
 ## Build and Run

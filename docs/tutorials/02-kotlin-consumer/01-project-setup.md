@@ -48,7 +48,7 @@ Copy the bundle you created in Chapter 1:
 
 ```bash
 # From consumers/kotlin/
-cp ~/rustbridge-workspace/regex-plugin/regex-plugin-1.0.0.rbp .
+cp ~/rustbridge-workspace/regex-plugin/regex-plugin-0.1.0.rbp .
 ```
 
 ## Install rustbridge Java Libraries
@@ -115,13 +115,13 @@ You might see warnings about the echo plugin not being found - that's expected s
 You can inspect the bundle contents:
 
 ```bash
-rustbridge bundle list regex-plugin-1.0.0.rbp
+rustbridge bundle list regex-plugin-0.1.0.rbp
 ```
 
 Output:
 
 ```
-Bundle: regex-plugin v1.0.0
+Bundle: regex-plugin v0.1.0
 Bundle format: v1.0
 
 Platforms:

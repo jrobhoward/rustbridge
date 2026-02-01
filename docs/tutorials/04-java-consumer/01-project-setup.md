@@ -41,7 +41,7 @@ consumers/java-ffm/
 Copy the bundle you created in Chapter 3:
 
 ```bash
-cp ../../json-plugin-1.0.0.rbp .
+cp ../../json-plugin-0.1.0.rbp .
 ```
 
 > **Note**: The bundle path is relative to the consumers/java-ffm directory.
@@ -67,7 +67,7 @@ plugins {
 }
 
 group = "com.example"
-version = "1.0.0"
+version = "0.1.0"
 
 application {
     mainClass.set("com.example.Main")

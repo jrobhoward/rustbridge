@@ -46,10 +46,10 @@ cargo build --release
 
 rustbridge bundle create \
   --name json-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib linux-x86_64:target/release/libjson_plugin.so \
   --sign-key ~/.rustbridge/signing.key \
-  --output json-plugin-1.0.0.rbp
+  --output json-plugin-0.1.0.rbp
 ```
 
 You'll be prompted for the key password.
@@ -59,11 +59,11 @@ You'll be prompted for the key password.
 The bundle now includes signature files:
 
 ```bash
-rustbridge bundle list json-plugin-1.0.0.rbp
+rustbridge bundle list json-plugin-0.1.0.rbp
 ```
 
 ```
-json-plugin-1.0.0.rbp
+json-plugin-0.1.0.rbp
 ├── manifest.json
 ├── manifest.json.minisig              ← Manifest signature
 └── lib/
@@ -89,19 +89,19 @@ The manifest also includes the public key:
 ```java
 // Verification enabled by default - throws if invalid
 var bundleLoader = BundleLoader.builder()
-    .bundlePath("json-plugin-1.0.0.rbp")
+    .bundlePath("json-plugin-0.1.0.rbp")
     .build();
 
 // Explicit verification with known public key
 var bundleLoader = BundleLoader.builder()
-    .bundlePath("json-plugin-1.0.0.rbp")
+    .bundlePath("json-plugin-0.1.0.rbp")
     .verifySignatures(true)
     .publicKey("RWTxxxxxxxx...")  // Override embedded key
     .build();
 
 // Disable verification
 var bundleLoader = BundleLoader.builder()
-    .bundlePath("json-plugin-1.0.0.rbp")
+    .bundlePath("json-plugin-0.1.0.rbp")
     .verifySignatures(false)
     .build();
 ```
@@ -110,10 +110,10 @@ var bundleLoader = BundleLoader.builder()
 
 ```kotlin
 // Verification enabled by default
-val plugin = BundleLoader.load("json-plugin-1.0.0.rbp")
+val plugin = BundleLoader.load("json-plugin-0.1.0.rbp")
 
 // Disable verification
-val plugin = BundleLoader.load("json-plugin-1.0.0.rbp", verifySignatures = false)
+val plugin = BundleLoader.load("json-plugin-0.1.0.rbp", verifySignatures = false)
 ```
 
 ### Python
@@ -122,20 +122,20 @@ val plugin = BundleLoader.load("json-plugin-1.0.0.rbp", verifySignatures = false
 from rustbridge import BundleLoader
 
 # Verification enabled by default
-plugin = BundleLoader.load("json-plugin-1.0.0.rbp")
+plugin = BundleLoader.load("json-plugin-0.1.0.rbp")
 
 # Disable verification
-plugin = BundleLoader.load("json-plugin-1.0.0.rbp", verify_signatures=False)
+plugin = BundleLoader.load("json-plugin-0.1.0.rbp", verify_signatures=False)
 ```
 
 ### C#
 
 ```csharp
 // Verification enabled by default
-var plugin = BundleLoader.Load("json-plugin-1.0.0.rbp");
+var plugin = BundleLoader.Load("json-plugin-0.1.0.rbp");
 
 // Disable verification (development only!)
-var plugin = BundleLoader.Load("json-plugin-1.0.0.rbp", verifySignatures: false);
+var plugin = BundleLoader.Load("json-plugin-0.1.0.rbp", verifySignatures: false);
 ```
 
 ## Distributing Your Public Key
@@ -168,7 +168,7 @@ Once consumers know your public key, they can pin it:
 
 ```java
 var bundleLoader = BundleLoader.builder()
-    .bundlePath("json-plugin-1.0.0.rbp")
+    .bundlePath("json-plugin-0.1.0.rbp")
     .publicKey("RWTxxxxxxxx...")  // Pinned key
     .build();
 ```

@@ -360,7 +360,7 @@ import kotlin.time.measureTime
 fun main() {
     println("=== Binary Transport Demo (Kotlin) ===\n")
 
-    val bundlePath = "thumbnail-plugin-1.0.0.rbp"
+    val bundlePath = "thumbnail-plugin-0.1.0.rbp"
     val imagePath = "test-image.jpg"
 
     // Load the test image

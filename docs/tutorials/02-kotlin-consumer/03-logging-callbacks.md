@@ -31,7 +31,7 @@ import com.rustbridge.ffm.FfmPluginLoader
 import java.nio.file.Path
 
 fun main(args: Array<String>) {
-    val bundlePath = "regex-plugin-1.0.0.rbp"
+    val bundlePath = "regex-plugin-0.1.0.rbp"
 
     val bundleLoader = BundleLoader.builder()
         .bundlePath(bundlePath)

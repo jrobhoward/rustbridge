@@ -33,7 +33,7 @@ pip install -e ~/rustbridge-workspace/rustbridge/rustbridge-python
 Copy the bundle and verify it works:
 
 ```bash
-cp ../../thumbnail-plugin-1.0.0.rbp .
+cp ../../thumbnail-plugin-0.1.0.rbp .
 cp ../../consumers/test-image.jpg .
 python main.py
 ```
@@ -431,7 +431,7 @@ from thumbnail_structs import OutputFormat
 def main() -> None:
     print("=== Binary Transport Demo (Python) ===\n")
 
-    bundle_path = "thumbnail-plugin-1.0.0.rbp"
+    bundle_path = "thumbnail-plugin-0.1.0.rbp"
     image_path = Path("test-image.jpg")
 
     # Load the test image

@@ -40,16 +40,16 @@ cargo build --release
 # Create a bundle
 rustbridge bundle create `
   --name thumbnail-plugin `
-  --version 1.0.0 `
+  --version 0.1.0 `
   --lib windows-x86_64:target\release\thumbnail_plugin.dll `
-  --output thumbnail-plugin-1.0.0.rbp
+  --output thumbnail-plugin-0.1.0.rbp
 
 # Copy to each consumer directory
-Copy-Item thumbnail-plugin-1.0.0.rbp consumers\kotlin\
-Copy-Item thumbnail-plugin-1.0.0.rbp consumers\java-ffm\
-Copy-Item thumbnail-plugin-1.0.0.rbp consumers\java-jni\
-Copy-Item thumbnail-plugin-1.0.0.rbp consumers\csharp\
-Copy-Item thumbnail-plugin-1.0.0.rbp consumers\python\
+Copy-Item thumbnail-plugin-0.1.0.rbp consumers\kotlin\
+Copy-Item thumbnail-plugin-0.1.0.rbp consumers\java-ffm\
+Copy-Item thumbnail-plugin-0.1.0.rbp consumers\java-jni\
+Copy-Item thumbnail-plugin-0.1.0.rbp consumers\csharp\
+Copy-Item thumbnail-plugin-0.1.0.rbp consumers\python\
 ```
 
 ## Create a Test Image

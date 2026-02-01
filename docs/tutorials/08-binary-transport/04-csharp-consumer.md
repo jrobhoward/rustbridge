@@ -303,7 +303,7 @@ using ThumbnailDemo;
 
 Console.WriteLine("=== Binary Transport Demo (C#) ===\n");
 
-var bundlePath = "thumbnail-plugin-1.0.0.rbp";
+var bundlePath = "thumbnail-plugin-0.1.0.rbp";
 var imagePath = "test-image.jpg";
 
 // Load the test image

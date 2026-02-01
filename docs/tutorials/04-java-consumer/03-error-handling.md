@@ -29,7 +29,7 @@ public class Main {
     private static final Gson gson = new Gson();
 
     public static void main(String[] args) throws Exception {
-        String bundlePath = "json-plugin-1.0.0.rbp";
+        String bundlePath = "json-plugin-0.1.0.rbp";
 
         var bundleLoader = BundleLoader.builder()
             .bundlePath(bundlePath)
@@ -145,7 +145,7 @@ public class Main {
     private static final Gson gson = new Gson();
 
     public static void main(String[] args) throws Exception {
-        String bundlePath = "json-plugin-1.0.0.rbp";
+        String bundlePath = "json-plugin-0.1.0.rbp";
 
         var bundleLoader = BundleLoader.builder()
             .bundlePath(bundlePath)

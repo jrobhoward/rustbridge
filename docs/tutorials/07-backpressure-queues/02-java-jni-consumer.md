@@ -26,7 +26,7 @@ The scaffolded Java JNI consumer is in `consumers/java-jni/`. First, copy the bu
 
 ```bash
 cd ~/rustbridge-workspace/sync-demo/consumers/java-jni
-cp ../../sync-demo-1.0.0.rbp .
+cp ../../sync-demo-0.1.0.rbp .
 ./gradlew run
 ```
 
@@ -63,7 +63,7 @@ public class Main {
     private static final Gson gson = new Gson();
 
     public static void main(String[] args) throws Exception {
-        String bundlePath = "sync-demo-1.0.0.rbp";
+        String bundlePath = "sync-demo-0.1.0.rbp";
 
         BundleLoader bundleLoader = BundleLoader.builder()
             .bundlePath(bundlePath)
@@ -311,7 +311,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
         System.out.println("=== Synchronized Plugin Demo (Java/JNI) ===\n");
 
-        String bundlePath = "sync-demo-1.0.0.rbp";
+        String bundlePath = "sync-demo-0.1.0.rbp";
 
         BundleLoader bundleLoader = BundleLoader.builder()
             .bundlePath(bundlePath)

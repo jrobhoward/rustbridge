@@ -329,33 +329,33 @@ Now let's package it for distribution:
 # Linux
 rustbridge bundle create \
   --name regex-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib linux-x86_64:target/release/libregex_plugin.so \
-  --output regex-plugin-1.0.0.rbp
+  --output regex-plugin-0.1.0.rbp
 ```
 
 ```bash
 # macOS
 rustbridge bundle create \
   --name regex-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib darwin-aarch64:target/release/libregex_plugin.dylib \
-  --output regex-plugin-1.0.0.rbp
+  --output regex-plugin-0.1.0.rbp
 ```
 
 ```bash
 # Windows
 rustbridge bundle create \
   --name regex-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib windows-x86_64:target/release/regex_plugin.dll \
-  --output regex-plugin-1.0.0.rbp
+  --output regex-plugin-0.1.0.rbp
 ```
 
 Verify:
 
 ```bash
-rustbridge bundle list regex-plugin-1.0.0.rbp
+rustbridge bundle list regex-plugin-0.1.0.rbp
 ```
 
 ## Summary

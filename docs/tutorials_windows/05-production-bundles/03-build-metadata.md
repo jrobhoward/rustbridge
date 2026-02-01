@@ -22,25 +22,25 @@ $gitBranch = git rev-parse --abbrev-ref HEAD
 # Create bundle with metadata
 rustbridge bundle create `
   --name json-plugin `
-  --version 1.0.0 `
+  --version 0.1.0 `
   --lib windows-x86_64:target\release\json_plugin.dll `
   --sign-key $env:USERPROFILE\.rustbridge\signing.key `
   --meta git.commit=$gitCommit `
   --meta git.branch=$gitBranch `
   --meta build.time=$(Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ") `
   --meta build.host=$env:COMPUTERNAME `
-  --output json-plugin-1.0.0.rbp
+  --output json-plugin-0.1.0.rbp
 ```
 
 ## View Metadata
 
 ```powershell
-rustbridge bundle info json-plugin-1.0.0.rbp
+rustbridge bundle info json-plugin-0.1.0.rbp
 ```
 
 ```yaml
 name: json-plugin
-version: 1.0.0
+version: 0.1.0
 platforms:
   - windows-x86_64
 metadata:
@@ -59,7 +59,7 @@ Create `build.ps1`:
 
 ```powershell
 param(
-    [string]$Version = "1.0.0"
+    [string]$Version = "0.1.0"
 )
 
 $ErrorActionPreference = "Stop"
@@ -112,7 +112,7 @@ rustbridge bundle info "json-plugin-$Version.rbp"
 ```kotlin
 // Kotlin
 val bundleLoader = BundleLoader.builder()
-    .bundlePath("json-plugin-1.0.0.rbp")
+    .bundlePath("json-plugin-0.1.0.rbp")
     .build()
 
 val manifest = bundleLoader.manifest()

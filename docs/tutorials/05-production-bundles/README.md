@@ -10,7 +10,7 @@ and Software Bill of Materials (SBOM).
 │                       Production Bundle Features                            │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  my-plugin-1.0.0.rbp                                                        │
+│  my-plugin-0.1.0.rbp                                                        │
 │  ────────────────────                                                       │
 │  ├── manifest.json              ← Plugin metadata + checksums               │
 │  ├── manifest.json.minisig      ← Code signature (minisign)                 │

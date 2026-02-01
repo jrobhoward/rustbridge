@@ -13,6 +13,8 @@ cd $env:USERPROFILE\rustbridge-workspace\sync-demo\consumers\csharp
 dotnet run
 ```
 
+> **Note**: The generated `.csproj` file references the rustbridge C# projects via `$(HOME)/rustbridge-workspace/rustbridge/...`. If your rustbridge repository is in a different location (e.g., `$(HOME)/git/rustbridge/...`), update the `ProjectReference` paths in the `.csproj` file. Also update the bundle path in `Program.cs` to match the version you created.
+
 You should see:
 
 ```

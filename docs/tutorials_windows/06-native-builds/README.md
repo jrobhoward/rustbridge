@@ -28,7 +28,7 @@ cargo build --release
 # Create bundle
 rustbridge bundle create `
   --name json-plugin `
-  --version 1.0.0 `
+  --version 0.1.0 `
   --lib windows-x86_64:target\release\json_plugin.dll `
   --output json-plugin-windows-x86_64.rbp
 ```
@@ -44,7 +44,7 @@ cargo build --release
 # Create bundle
 rustbridge bundle create `
   --name json-plugin `
-  --version 1.0.0 `
+  --version 0.1.0 `
   --lib windows-aarch64:target\release\json_plugin.dll `
   --output json-plugin-windows-aarch64.rbp
 ```
@@ -63,7 +63,7 @@ cargo build --release --target aarch64-pc-windows-msvc
 # Create bundle
 rustbridge bundle create `
   --name json-plugin `
-  --version 1.0.0 `
+  --version 0.1.0 `
   --lib windows-aarch64:target\aarch64-pc-windows-msvc\release\json_plugin.dll `
   --output json-plugin-windows-aarch64.rbp
 ```
@@ -78,18 +78,18 @@ After building for both platforms, combine them:
 rustbridge bundle combine `
   json-plugin-windows-x86_64.rbp `
   json-plugin-windows-aarch64.rbp `
-  --output json-plugin-1.0.0.rbp `
+  --output json-plugin-0.1.0.rbp `
   --sign-key $env:USERPROFILE\.rustbridge\signing.key
 ```
 
 ## Verify the Combined Bundle
 
 ```powershell
-rustbridge bundle list json-plugin-1.0.0.rbp
+rustbridge bundle list json-plugin-0.1.0.rbp
 ```
 
 ```
-json-plugin-1.0.0.rbp
+json-plugin-0.1.0.rbp
 ├── manifest.json
 ├── manifest.json.minisig
 └── lib\
@@ -107,7 +107,7 @@ Create `build-all.ps1`:
 
 ```powershell
 param(
-    [string]$Version = "1.0.0"
+    [string]$Version = "0.1.0"
 )
 
 $ErrorActionPreference = "Stop"

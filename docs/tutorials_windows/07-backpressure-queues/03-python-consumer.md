@@ -24,7 +24,7 @@ pip install -e $env:USERPROFILE\rustbridge-workspace\rustbridge\rustbridge-pytho
 ## Verify the Generated Consumer
 
 ```powershell
-Copy-Item ..\..\sync-demo-1.0.0.rbp .
+Copy-Item ..\..\sync-demo-0.1.0.rbp .
 python main.py
 ```
 

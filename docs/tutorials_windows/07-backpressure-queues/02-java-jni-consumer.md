@@ -17,7 +17,7 @@ cd $env:USERPROFILE\rustbridge-workspace\rustbridge\rustbridge-java
 
 ```powershell
 cd $env:USERPROFILE\rustbridge-workspace\sync-demo\consumers\java-jni
-Copy-Item ..\..\sync-demo-1.0.0.rbp .
+Copy-Item ..\..\sync-demo-0.1.0.rbp .
 .\gradlew.bat run
 ```
 

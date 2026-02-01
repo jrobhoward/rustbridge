@@ -213,14 +213,14 @@ cargo build --release
 # Create a bundle
 rustbridge bundle create \
   --name sync-demo \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib linux-x86_64:target/release/libsync_demo.so \
-  --output sync-demo-1.0.0.rbp
+  --output sync-demo-0.1.0.rbp
 
 # Copy to each consumer directory
-cp sync-demo-1.0.0.rbp consumers/csharp/
-cp sync-demo-1.0.0.rbp consumers/java-jni/
-cp sync-demo-1.0.0.rbp consumers/python/
+cp sync-demo-0.1.0.rbp consumers/csharp/
+cp sync-demo-0.1.0.rbp consumers/java-jni/
+cp sync-demo-0.1.0.rbp consumers/python/
 ```
 
 > **Note**: Adjust the `--lib` platform identifier for your OS:

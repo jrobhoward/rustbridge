@@ -22,7 +22,7 @@ plugins {
 }
 
 group = "com.example"
-version = "1.0.0"
+version = "0.1.0"
 
 repositories {
     mavenCentral()
@@ -84,7 +84,7 @@ import kotlinx.serialization.json.Json
 fun main() {
     println("Kotlin Consumer - Regex Plugin Demo")
 
-    val bundlePath = "..\\..\\regex-plugin-1.0.0.rbp"
+    val bundlePath = "..\\..\\regex-plugin-0.1.0.rbp"
 
     // Load the bundle
     val bundleLoader = BundleLoader.builder()
@@ -117,7 +117,7 @@ Copy the regex plugin bundle to the consumers directory:
 
 ```powershell
 cd $env:USERPROFILE\rustbridge-workspace\regex-plugin
-Copy-Item regex-plugin-1.0.0.rbp consumers\kotlin\
+Copy-Item regex-plugin-0.1.0.rbp consumers\kotlin\
 ```
 
 ## Install rustbridge Java Libraries

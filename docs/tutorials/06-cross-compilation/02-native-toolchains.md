@@ -25,7 +25,7 @@ cargo build --release
 # Create bundle
 rustbridge bundle create \
   --name json-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib linux-x86_64:target/release/libjson_plugin.so \
   --output json-plugin-linux-x86_64.rbp
 ```
@@ -39,7 +39,7 @@ cargo build --release
 
 rustbridge bundle create \
   --name json-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib linux-aarch64:target/release/libjson_plugin.so \
   --output json-plugin-linux-aarch64.rbp
 ```
@@ -53,7 +53,7 @@ cargo build --release
 
 rustbridge bundle create \
   --name json-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib darwin-aarch64:target/release/libjson_plugin.dylib \
   --output json-plugin-darwin-aarch64.rbp
 ```
@@ -67,7 +67,7 @@ cargo build --release
 
 rustbridge bundle create \
   --name json-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib darwin-x86_64:target/release/libjson_plugin.dylib \
   --output json-plugin-darwin-x86_64.rbp
 ```
@@ -93,7 +93,7 @@ lipo -create \
 # Bundle with universal binary
 rustbridge bundle create \
   --name json-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib darwin-aarch64:target/aarch64-apple-darwin/release/libjson_plugin.dylib \
   --lib darwin-x86_64:target/x86_64-apple-darwin/release/libjson_plugin.dylib \
   --output json-plugin-darwin.rbp
@@ -112,7 +112,7 @@ cargo build --release
 # Create bundle
 rustbridge bundle create `
   --name json-plugin `
-  --version 1.0.0 `
+  --version 0.1.0 `
   --lib windows-x86_64:target\release\json_plugin.dll `
   --output json-plugin-windows-x86_64.rbp
 ```
@@ -136,18 +136,18 @@ rustbridge bundle combine \
   json-plugin-darwin-aarch64.rbp \
   json-plugin-darwin-x86_64.rbp \
   json-plugin-windows-x86_64.rbp \
-  --output json-plugin-1.0.0.rbp \
+  --output json-plugin-0.1.0.rbp \
   --sign-key ~/.rustbridge/signing.key
 ```
 
 ## Verify the Combined Bundle
 
 ```bash
-rustbridge bundle list json-plugin-1.0.0.rbp
+rustbridge bundle list json-plugin-0.1.0.rbp
 ```
 
 ```
-json-plugin-1.0.0.rbp
+json-plugin-0.1.0.rbp
 ├── manifest.json
 ├── manifest.json.minisig
 └── lib/
@@ -179,7 +179,7 @@ Create a build script for each platform:
 #!/bin/bash
 set -e
 
-VERSION=${1:-"1.0.0"}
+VERSION=${1:-"0.1.0"}
 PLATFORM=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
 
@@ -222,7 +222,7 @@ echo "Created json-plugin-${PLATFORM_ID}.rbp"
 
 ```powershell
 param(
-    [string]$Version = "1.0.0"
+    [string]$Version = "0.1.0"
 )
 
 $ErrorActionPreference = "Stop"

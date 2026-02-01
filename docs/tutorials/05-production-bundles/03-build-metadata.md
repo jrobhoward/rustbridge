@@ -24,21 +24,21 @@ By default, `rustbridge bundle create` automatically collects:
 ```bash
 rustbridge bundle create \
   --name json-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib linux-x86_64:target/release/libjson_plugin.so \
-  --output json-plugin-1.0.0.rbp
+  --output json-plugin-0.1.0.rbp
 ```
 
 ## View Build Metadata
 
 ```bash
-rustbridge bundle list --show-build json-plugin-1.0.0.rbp
+rustbridge bundle list --show-build json-plugin-0.1.0.rbp
 ```
 
 Or extract and inspect the manifest directly:
 
 ```bash
-unzip -p json-plugin-1.0.0.rbp manifest.json | jq '.build_info'
+unzip -p json-plugin-0.1.0.rbp manifest.json | jq '.build_info'
 ```
 
 ## Manifest Structure
@@ -56,7 +56,7 @@ The build information is stored in `manifest.json`:
     "git": {
       "commit": "a1b2c3d4e5f6789012345678901234567890abcd",
       "branch": "main",
-      "tag": "v1.0.0",
+      "tag": "v0.1.0",
       "dirty": false
     }
   }
@@ -70,10 +70,10 @@ For reproducible builds or privacy, skip metadata collection:
 ```bash
 rustbridge bundle create \
   --name json-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib linux-x86_64:target/release/libjson_plugin.so \
   --no-metadata \
-  --output json-plugin-1.0.0.rbp
+  --output json-plugin-0.1.0.rbp
 ```
 
 ## Git Information
@@ -97,7 +97,7 @@ If the current commit has a tag, it's included:
 {
   "git": {
     "commit": "a1b2c3d4...",
-    "tag": "v1.0.0"
+    "tag": "v0.1.0"
   }
 }
 ```
@@ -129,11 +129,11 @@ explicitly add it:
 ```bash
 rustbridge bundle create \
   --name json-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib linux-x86_64:target/release/libjson_plugin.so \
   --metadata repository=https://github.com/jrobhoward/rustbridge \
   --sign-key ~/.rustbridge/signing.key \
-  --output json-plugin-1.0.0.rbp
+  --output json-plugin-0.1.0.rbp
 ```
 
 ### Multiple Custom Fields
@@ -143,12 +143,12 @@ You can add any key/value pairs that are useful for your workflow:
 ```bash
 rustbridge bundle create \
   --name json-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib linux-x86_64:target/release/libjson_plugin.so \
   --metadata repository=https://github.com/jrobhoward/rustbridge \
   --metadata ci_job_id=12345 \
   --metadata pipeline=release \
-  --output json-plugin-1.0.0.rbp
+  --output json-plugin-0.1.0.rbp
 ```
 
 ### Custom Metadata in Manifest
@@ -176,7 +176,7 @@ Custom metadata appears in `build_info.custom`:
 ### Viewing Custom Metadata
 
 ```bash
-rustbridge bundle list --show-build json-plugin-1.0.0.rbp
+rustbridge bundle list --show-build json-plugin-0.1.0.rbp
 ```
 
 ```
@@ -234,7 +234,7 @@ Each library variant can have its own build metadata:
 
 ```java
 try (var loader = BundleLoader.builder()
-        .bundlePath("json-plugin-1.0.0.rbp")
+        .bundlePath("json-plugin-0.1.0.rbp")
         .verifySignatures(false)
         .build()) {
 
@@ -257,7 +257,7 @@ try (var loader = BundleLoader.builder()
 from rustbridge import BundleLoader
 
 loader = BundleLoader(verify_signatures=False)
-build_info = loader.get_build_info("json-plugin-1.0.0.rbp")
+build_info = loader.get_build_info("json-plugin-0.1.0.rbp")
 
 if build_info:
     print(f"Built at: {build_info.built_at}")
@@ -273,7 +273,7 @@ if build_info:
 Since bundles are ZIP archives, you can extract the manifest directly:
 
 ```bash
-unzip -p json-plugin-1.0.0.rbp manifest.json | jq '.build_info'
+unzip -p json-plugin-0.1.0.rbp manifest.json | jq '.build_info'
 ```
 
 ```json
@@ -308,18 +308,18 @@ The `--license` flag lets you include your plugin's own LICENSE file in the bund
 ```bash
 rustbridge bundle create \
   --name json-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib linux-x86_64:target/release/libjson_plugin.so \
   --license LICENSE \
   --metadata repository=https://github.com/jrobhoward/rustbridge \
   --sign-key ~/.rustbridge/signing.key \
-  --output json-plugin-1.0.0.rbp
+  --output json-plugin-0.1.0.rbp
 ```
 
 The license file is stored in `legal/LICENSE` within the bundle:
 
 ```
-json-plugin-1.0.0.rbp
+json-plugin-0.1.0.rbp
 ├── manifest.json
 ├── legal/
 │   └── LICENSE               ← Your plugin's license
@@ -338,7 +338,7 @@ The license file path is recorded in the manifest:
 {
   "plugin": {
     "name": "json-plugin",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "license": "MIT"
   },
   "license_file": "legal/LICENSE"
@@ -351,11 +351,11 @@ Since bundles are ZIP archives, you can extract the license file directly:
 
 ```bash
 # Extract the license file
-unzip -p json-plugin-1.0.0.rbp legal/LICENSE
+unzip -p json-plugin-0.1.0.rbp legal/LICENSE
 
 # Or check if it exists and extract
-unzip -l json-plugin-1.0.0.rbp | grep -q "legal/LICENSE" && \
-  unzip -p json-plugin-1.0.0.rbp legal/LICENSE
+unzip -l json-plugin-0.1.0.rbp | grep -q "legal/LICENSE" && \
+  unzip -p json-plugin-0.1.0.rbp legal/LICENSE
 ```
 
 #### Java
@@ -364,7 +364,7 @@ unzip -l json-plugin-1.0.0.rbp | grep -q "legal/LICENSE" && \
 import java.util.zip.ZipFile;
 import java.util.zip.ZipEntry;
 
-try (var zipFile = new ZipFile("json-plugin-1.0.0.rbp")) {
+try (var zipFile = new ZipFile("json-plugin-0.1.0.rbp")) {
     ZipEntry licenseEntry = zipFile.getEntry("legal/LICENSE");
     if (licenseEntry != null) {
         try (var stream = zipFile.getInputStream(licenseEntry)) {
@@ -380,7 +380,7 @@ try (var zipFile = new ZipFile("json-plugin-1.0.0.rbp")) {
 ```python
 import zipfile
 
-with zipfile.ZipFile("json-plugin-1.0.0.rbp", "r") as zf:
+with zipfile.ZipFile("json-plugin-0.1.0.rbp", "r") as zf:
     try:
         license_text = zf.read("legal/LICENSE").decode("utf-8")
         print(license_text)

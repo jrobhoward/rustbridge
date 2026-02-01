@@ -507,7 +507,7 @@ Update `Cargo.toml` to add the `image` crate:
 ```toml
 [package]
 name = "thumbnail-plugin"
-version = "1.0.0"
+version = "0.1.0"
 edition = "2024"
 
 [lib]
@@ -531,16 +531,16 @@ cargo build --release
 # Create a bundle
 rustbridge bundle create \
   --name thumbnail-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib linux-x86_64:target/release/libthumbnail_plugin.so \
-  --output thumbnail-plugin-1.0.0.rbp
+  --output thumbnail-plugin-0.1.0.rbp
 
 # Copy to each consumer directory
-cp thumbnail-plugin-1.0.0.rbp consumers/kotlin/
-cp thumbnail-plugin-1.0.0.rbp consumers/java-ffm/
-cp thumbnail-plugin-1.0.0.rbp consumers/java-jni/
-cp thumbnail-plugin-1.0.0.rbp consumers/csharp/
-cp thumbnail-plugin-1.0.0.rbp consumers/python/
+cp thumbnail-plugin-0.1.0.rbp consumers/kotlin/
+cp thumbnail-plugin-0.1.0.rbp consumers/java-ffm/
+cp thumbnail-plugin-0.1.0.rbp consumers/java-jni/
+cp thumbnail-plugin-0.1.0.rbp consumers/csharp/
+cp thumbnail-plugin-0.1.0.rbp consumers/python/
 ```
 
 > **Note**: Adjust the `--lib` platform identifier for your OS:

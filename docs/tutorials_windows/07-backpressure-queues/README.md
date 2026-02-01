@@ -67,15 +67,17 @@ cargo build --release
 # Create a bundle
 rustbridge bundle create `
   --name sync-demo `
-  --version 1.0.0 `
+  --version 0.1.0 `
   --lib windows-x86_64:target\release\sync_demo.dll `
-  --output sync-demo-1.0.0.rbp
+  --output sync-demo-0.1.0.rbp
 
 # Copy to each consumer directory
-Copy-Item sync-demo-1.0.0.rbp consumers\csharp\
-Copy-Item sync-demo-1.0.0.rbp consumers\java-jni\
-Copy-Item sync-demo-1.0.0.rbp consumers\python\
+Copy-Item sync-demo-0.1.0.rbp consumers\csharp\
+Copy-Item sync-demo-0.1.0.rbp consumers\java-jni\
+Copy-Item sync-demo-0.1.0.rbp consumers\python\
 ```
+
+> **Note**: The generated consumer code may reference a different bundle version (e.g., `0.1.0`). Update the bundle path in each consumer's source code to match the version you created, or create the bundle with the version the consumers expect.
 
 ## Sections
 

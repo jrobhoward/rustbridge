@@ -28,13 +28,13 @@ cargo build --release      # Release
 # Create bundle with both variants
 rustbridge bundle create \
   --name regex-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib linux-x86_64:target/release/libregex_plugin.so \
   --lib linux-x86_64:debug:target/debug/libregex_plugin.so \
-  --output regex-plugin-1.0.0.rbp
+  --output regex-plugin-0.1.0.rbp
 
 # Copy to Kotlin app
-cp regex-plugin-1.0.0.rbp ~/rustbridge-workspace/regex-kotlin-app/
+cp regex-plugin-0.1.0.rbp ~/rustbridge-workspace/regex-kotlin-app/
 ```
 
 > **Note**: Format is `PLATFORM:VARIANT:PATH`. If variant is omitted, it defaults to "release".
@@ -70,7 +70,7 @@ inline fun <reified T> Plugin.callTyped(
 }
 
 fun main(args: Array<String>) {
-    val bundlePath = "regex-plugin-1.0.0.rbp"
+    val bundlePath = "regex-plugin-0.1.0.rbp"
 
     println("=== Debug Build ===")
     runBenchmark(bundlePath, "debug")

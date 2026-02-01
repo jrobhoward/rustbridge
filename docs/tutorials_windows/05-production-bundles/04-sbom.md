@@ -35,7 +35,7 @@ cargo sbom --output-format cyclonedx > sbom.json
   "metadata": {
     "component": {
       "name": "json-plugin",
-      "version": "1.0.0",
+      "version": "0.1.0",
       "type": "library"
     }
   },
@@ -62,21 +62,21 @@ cargo sbom --output-format cyclonedx > sbom.json
 ```powershell
 rustbridge bundle create `
   --name json-plugin `
-  --version 1.0.0 `
+  --version 0.1.0 `
   --lib windows-x86_64:target\release\json_plugin.dll `
   --sbom sbom.json `
   --sign-key $env:USERPROFILE\.rustbridge\signing.key `
-  --output json-plugin-1.0.0.rbp
+  --output json-plugin-0.1.0.rbp
 ```
 
 ## View SBOM
 
 ```powershell
-rustbridge bundle list json-plugin-1.0.0.rbp
+rustbridge bundle list json-plugin-0.1.0.rbp
 ```
 
 ```
-json-plugin-1.0.0.rbp
+json-plugin-0.1.0.rbp
 ├── manifest.json
 ├── manifest.json.minisig
 ├── sbom.json                    ← SBOM file
@@ -89,7 +89,7 @@ json-plugin-1.0.0.rbp
 
 ```powershell
 # Extract SBOM
-rustbridge bundle extract json-plugin-1.0.0.rbp --file sbom.json --output .
+rustbridge bundle extract json-plugin-0.1.0.rbp --file sbom.json --output .
 
 # View with jq (if installed)
 Get-Content sbom.json | ConvertFrom-Json | ConvertTo-Json -Depth 10

@@ -41,7 +41,7 @@ var jsonOptions = new JsonSerializerOptions
     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
 };
 
-var bundlePath = "sync-demo-1.0.0.rbp";
+var bundlePath = "sync-demo-0.1.0.rbp";
 
 using var bundleLoader = BundleLoader.Create()
     .WithBundlePath(bundlePath)
@@ -239,7 +239,7 @@ using RustBridge;
 using RustBridge.Native;
 using SyncDemo;
 
-var bundlePath = "sync-demo-1.0.0.rbp";
+var bundlePath = "sync-demo-0.1.0.rbp";
 
 using var bundleLoader = BundleLoader.Create()
     .WithBundlePath(bundlePath)

@@ -143,7 +143,7 @@ target/
 Inside a bundle, libraries are organized by platform and variant:
 
 ```
-my-plugin-1.0.0.rbp
+my-plugin-0.1.0.rbp
 └── lib/
     ├── linux-x86_64/
     │   ├── release/

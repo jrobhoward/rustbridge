@@ -26,7 +26,7 @@ public class Main {
     private static final Gson gson = new Gson();
 
     public static void main(String[] args) throws Exception {
-        String bundlePath = "json-plugin-1.0.0.rbp";
+        String bundlePath = "json-plugin-0.1.0.rbp";
 
         // Load the bundle and extract the library for this platform
         var bundleLoader = BundleLoader.builder()
@@ -81,7 +81,7 @@ public class Main {
 Expected output:
 
 ```
-Loaded library from: /tmp/rustbridge-bundles/json-plugin/1.0.0/release/libjson_plugin.so
+Loaded library from: /tmp/rustbridge-bundles/json-plugin/0.1.0/release/libjson_plugin.so
 Is valid: true
 Prettified:
 {

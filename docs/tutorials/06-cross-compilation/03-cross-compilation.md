@@ -79,11 +79,11 @@ Bundle both libraries into a single signed `.rbp` file:
 ```bash
 rustbridge bundle create \
   --name json-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib linux-x86_64:target/release/libjson_plugin.so \
   --lib linux-aarch64:target/aarch64-unknown-linux-gnu/release/libjson_plugin.so \
   --sign-key ~/.rustbridge/signing.key \
-  --output json-plugin-1.0.0.rbp
+  --output json-plugin-0.1.0.rbp
 ```
 
 > **Note**: If you don't have a signing key, create one with `rustbridge keygen`.
@@ -91,11 +91,11 @@ rustbridge bundle create \
 Verify the bundle contains both platforms:
 
 ```bash
-rustbridge bundle list json-plugin-1.0.0.rbp
+rustbridge bundle list json-plugin-0.1.0.rbp
 ```
 
 ```
-json-plugin-1.0.0.rbp
+json-plugin-0.1.0.rbp
 ├── manifest.json
 └── lib/
     ├── linux-x86_64/
@@ -134,7 +134,7 @@ Build the fat JAR:
 ./gradlew shadowJar
 ```
 
-The JAR is at `build/libs/json-plugin-java-ffm-1.0.0-all.jar` (the name includes the project name and version).
+The JAR is at `build/libs/json-plugin-java-ffm-0.1.0-all.jar` (the name includes the project name and version).
 
 ## Step 6: Run Locally (x86_64)
 
@@ -145,8 +145,8 @@ cd ~/rustbridge-workspace/json-plugin
 
 # Run with the bundle
 java --enable-preview --enable-native-access=ALL-UNNAMED \
-  -jar consumers/java-ffm/build/libs/json-plugin-java-ffm-1.0.0-all.jar \
-  json-plugin-1.0.0.rbp
+  -jar consumers/java-ffm/build/libs/json-plugin-java-ffm-0.1.0-all.jar \
+  json-plugin-0.1.0.rbp
 ```
 
 > **Note**: In Java 21, `--enable-preview` is required (FFM is preview), and `--enable-native-access=ALL-UNNAMED`
@@ -159,8 +159,8 @@ The `BundleLoader` automatically extracts the correct library for your platform.
 Copy the two files to your Raspberry Pi:
 
 ```bash
-scp json-plugin-1.0.0.rbp pi@raspberrypi:~/
-scp consumers/java-ffm/build/libs/json-plugin-java-ffm-1.0.0-all.jar pi@raspberrypi:~/
+scp json-plugin-0.1.0.rbp pi@raspberrypi:~/
+scp consumers/java-ffm/build/libs/json-plugin-java-ffm-0.1.0-all.jar pi@raspberrypi:~/
 ```
 
 SSH into the Pi and run:
@@ -169,7 +169,7 @@ SSH into the Pi and run:
 ssh pi@raspberrypi
 cd ~
 java --enable-preview --enable-native-access=ALL-UNNAMED \
-  -jar json-plugin-java-ffm-1.0.0-all.jar json-plugin-1.0.0.rbp
+  -jar json-plugin-java-ffm-0.1.0-all.jar json-plugin-0.1.0.rbp
 ```
 
 The same JAR and `.rbp` file work on both platforms—the bundle loader extracts the ARM64 library automatically.

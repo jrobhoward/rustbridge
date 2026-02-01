@@ -31,7 +31,7 @@ pip install -e ~/rustbridge-workspace/rustbridge/rustbridge-python
 Copy the bundle and verify it works:
 
 ```bash
-cp ../../sync-demo-1.0.0.rbp .
+cp ../../sync-demo-0.1.0.rbp .
 python main.py
 ```
 
@@ -50,7 +50,7 @@ Look at `main.py`:
 import json
 from rustbridge.core import BundleLoader
 
-bundle_path = "sync-demo-1.0.0.rbp"
+bundle_path = "sync-demo-0.1.0.rbp"
 
 loader = BundleLoader(verify_signatures=False)
 with loader.load(bundle_path) as plugin:
@@ -274,7 +274,7 @@ def main() -> None:
 
     # Load the plugin from bundle
     loader = BundleLoader(verify_signatures=False)
-    plugin = loader.load("sync-demo-1.0.0.rbp")
+    plugin = loader.load("sync-demo-0.1.0.rbp")
 
     # Wrap with synchronized access (queue size = 5 for demo)
     with SynchronizedPlugin(plugin, max_queue_size=5) as sync_plugin:

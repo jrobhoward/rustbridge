@@ -43,20 +43,20 @@ cargo build --release
 # Create a signed bundle
 rustbridge bundle create `
   --name json-plugin `
-  --version 1.0.0 `
+  --version 0.1.0 `
   --lib windows-x86_64:target\release\json_plugin.dll `
   --sign-key $env:USERPROFILE\.rustbridge\signing.key `
-  --output json-plugin-1.0.0.rbp
+  --output json-plugin-0.1.0.rbp
 ```
 
 ## Verify Bundle Contents
 
 ```powershell
-rustbridge bundle list json-plugin-1.0.0.rbp
+rustbridge bundle list json-plugin-0.1.0.rbp
 ```
 
 ```
-json-plugin-1.0.0.rbp
+json-plugin-0.1.0.rbp
 ├── manifest.json
 ├── manifest.json.minisig        ← Signature file
 └── lib\
@@ -70,7 +70,7 @@ json-plugin-1.0.0.rbp
 
 ```powershell
 rustbridge bundle verify `
-  --bundle json-plugin-1.0.0.rbp `
+  --bundle json-plugin-0.1.0.rbp `
   --public-key $env:USERPROFILE\.rustbridge\signing.key.pub
 ```
 
@@ -89,7 +89,7 @@ In your consumer code:
 ```kotlin
 // Kotlin
 val bundleLoader = BundleLoader.builder()
-    .bundlePath("json-plugin-1.0.0.rbp")
+    .bundlePath("json-plugin-0.1.0.rbp")
     .verifySignatures(true)
     .publicKey(publicKeyPath)
     .build()
@@ -98,7 +98,7 @@ val bundleLoader = BundleLoader.builder()
 ```csharp
 // C#
 var bundleLoader = BundleLoader.Create()
-    .WithBundlePath("json-plugin-1.0.0.rbp")
+    .WithBundlePath("json-plugin-0.1.0.rbp")
     .WithSignatureVerification(true)
     .WithPublicKey(publicKeyPath)
     .Build();

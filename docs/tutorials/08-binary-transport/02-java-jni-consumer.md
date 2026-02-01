@@ -245,7 +245,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
         System.out.println("=== Binary Transport Demo (Java JNI) ===\n");
 
-        String bundlePath = "thumbnail-plugin-1.0.0.rbp";
+        String bundlePath = "thumbnail-plugin-0.1.0.rbp";
         String imagePath = "test-image.jpg";
 
         // Load the test image

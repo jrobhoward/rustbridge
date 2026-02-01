@@ -97,11 +97,11 @@ Use `--generate-schema` to auto-generate the JSON Schema:
 ```bash
 rustbridge bundle create \
   --name json-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib linux-x86_64:target/release/libjson_plugin.so \
   --generate-schema src/lib.rs:messages.json \
   --sign-key ~/.rustbridge/signing.key \
-  --output json-plugin-1.0.0.rbp
+  --output json-plugin-0.1.0.rbp
 ```
 
 The `--generate-schema` flag:
@@ -114,11 +114,11 @@ The `--generate-schema` flag:
 ## Verify Schema Inclusion
 
 ```bash
-rustbridge bundle list json-plugin-1.0.0.rbp
+rustbridge bundle list json-plugin-0.1.0.rbp
 ```
 
 ```
-json-plugin-1.0.0.rbp
+json-plugin-0.1.0.rbp
 ├── manifest.json
 ├── manifest.json.minisig
 ├── lib/
@@ -205,10 +205,10 @@ Consumers can extract schemas for tooling. Since `.rbp` bundles are ZIP archives
 
 ```bash
 # Extract just the schema file
-unzip -j json-plugin-1.0.0.rbp "schema/*" -d ./schemas/
+unzip -j json-plugin-0.1.0.rbp "schema/*" -d ./schemas/
 
 # Or extract everything
-unzip json-plugin-1.0.0.rbp -d ./extracted/
+unzip json-plugin-0.1.0.rbp -d ./extracted/
 ```
 
 Or programmatically:
@@ -217,7 +217,7 @@ Or programmatically:
 
 ```java
 try (var loader = BundleLoader.builder()
-        .bundlePath("json-plugin-1.0.0.rbp")
+        .bundlePath("json-plugin-0.1.0.rbp")
         .verifySignatures(false)  // Set true in production with public key
         .build()) {
 
@@ -235,10 +235,10 @@ try (var loader = BundleLoader.builder()
 from rustbridge import BundleLoader
 
 loader = BundleLoader(verify_signatures=False)  # Set True in production
-schema = loader.read_schema("json-plugin-1.0.0.rbp", "messages.json")
+schema = loader.read_schema("json-plugin-0.1.0.rbp", "messages.json")
 
 # Or extract to file
-schema_path = loader.extract_schema("json-plugin-1.0.0.rbp", "messages.json", "./schemas/")
+schema_path = loader.extract_schema("json-plugin-0.1.0.rbp", "messages.json", "./schemas/")
 ```
 
 ## Using Schemas for Validation
@@ -287,7 +287,7 @@ if (errors.isEmpty()) {
 import jsonschema
 import json
 
-bundle = BundleLoader("json-plugin-1.0.0.rbp")
+bundle = BundleLoader("json-plugin-0.1.0.rbp")
 schema = json.loads(bundle.get_schema("messages.json"))
 
 # Validate a request
