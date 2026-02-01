@@ -29,6 +29,7 @@ cc = "1.2"
 minisign = "0.8"
 rpassword = "7.4"
 tempfile = "3.24"
+dirs = "6.0"
 
 [dev-dependencies]
 

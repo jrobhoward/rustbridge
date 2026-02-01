@@ -11,6 +11,7 @@ use clap::{Parser, Subcommand};
 mod bundle;
 mod codegen;
 mod header_gen;
+mod install_jni;
 mod keygen;
 mod new;
 
@@ -90,6 +91,24 @@ enum Commands {
         #[command(subcommand)]
         action: BundleAction,
     },
+
+    /// Install the JNI bridge library to ~/.rustbridge/lib/
+    ///
+    /// The JNI bridge is required for Java 17+ users to load rustbridge plugins.
+    /// Once installed, use `--include-jni-bridge` with `bundle create` to include
+    /// it in your plugin bundles.
+    InstallJniBridge {
+        /// Path to a pre-built JNI bridge library (optional)
+        ///
+        /// If not provided, builds from the rustbridge workspace (must be run
+        /// from within the rustbridge repository).
+        #[arg(long)]
+        from: Option<String>,
+
+        /// Show installation status without installing
+        #[arg(long)]
+        status: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -120,6 +139,13 @@ enum BundleAction {
         ///   --jni-lib linux-x86_64:debug:target/debug/librustbridge_jni.so
         #[arg(long = "jni-lib", value_name = "PLATFORM[:VARIANT]:PATH")]
         jni_libraries: Vec<String>,
+
+        /// Include the installed JNI bridge for the current platform
+        ///
+        /// Uses the JNI bridge from ~/.rustbridge/lib/<version>/<platform>/.
+        /// Run `rustbridge install-jni-bridge` first to install it.
+        #[arg(long)]
+        include_jni_bridge: bool,
 
         /// Output bundle path (default: <name>-<version>.rbp)
         #[arg(short, long)]
@@ -285,12 +311,20 @@ fn main() -> anyhow::Result<()> {
         Commands::Keygen { output, force } => {
             keygen::run(output, force)?;
         }
+        Commands::InstallJniBridge { from, status } => {
+            if status {
+                install_jni::show_status()?;
+            } else {
+                install_jni::run(from)?;
+            }
+        }
         Commands::Bundle { action } => match action {
             BundleAction::Create {
                 name,
                 version,
                 libraries,
                 jni_libraries,
+                include_jni_bridge,
                 output,
                 schema,
                 sign_key,
@@ -403,6 +437,7 @@ fn main() -> anyhow::Result<()> {
                     &version,
                     &libs,
                     &jni_libs,
+                    include_jni_bridge,
                     output,
                     &schemas,
                     sign_key,
