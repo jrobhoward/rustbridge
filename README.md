@@ -172,7 +172,7 @@ Plugin plugin = BundleLoader.load("my-plugin-1.0.0.rbp");
 
 rustbridge is not yet published to package registries. Install from source to get started.
 
-📖 **[Full Installation Guide](docs/INSTALL.md)** — Set up your workspace, install the CLI, and configure host language libraries.
+📖 **[Full Installation Guide](https://github.com/jrobhoward/rustbridge/blob/main/docs/INSTALL.md)** — Set up your workspace, install the CLI, and configure host language libraries.
 
 **Quick start:**
 
@@ -191,7 +191,7 @@ cargo install --force --path crates/rustbridge-cli
 rustbridge --version
 ```
 
-See the [full guide](docs/INSTALL.md) for host language library setup (Java/Kotlin, C#, Python).
+See the [full guide](https://github.com/jrobhoward/rustbridge/blob/main/docs/INSTALL.md) for host language library setup (Java/Kotlin, C#, Python).
 
 ## Project Status
 
