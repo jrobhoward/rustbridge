@@ -76,8 +76,10 @@ inline fun <reified T> Plugin.callTyped(
 Now you can write:
 
 ```kotlin
+import com.rustbridge.BundleLoader
 import com.rustbridge.LogCallback
 import com.rustbridge.PluginConfig as RbPluginConfig
+import com.rustbridge.ffm.FfmPluginLoader
 
 fun main(args: Array<String>) {
     val bundlePath = "regex-plugin-0.1.0.rbp"
@@ -93,31 +95,37 @@ fun main(args: Array<String>) {
         .logLevel(LogLevel.INFO)
         .set("cache_size", pluginConfigData.cacheSize)
 
-    // Load plugin from bundle (extracts FFM and plugin library)
-    FfmPluginLoader.loadFromBundle(bundlePath, config, logCallback).use { plugin ->
-        // Type-safe request/response
-        val request = MatchRequest(
-            pattern = """\d{4}-\d{2}-\d{2}""",
-            text = "2024-01-15"
-        )
+    // Extract library from bundle and load plugin
+    BundleLoader.builder()
+        .bundlePath(bundlePath)
+        .verifySignatures(false)
+        .build().use { bundle ->
+            val libraryPath = bundle.extractLibrary()
+            FfmPluginLoader.load(libraryPath, config, logCallback).use { plugin ->
+                // Type-safe request/response
+                val request = MatchRequest(
+                    pattern = """\d{4}-\d{2}-\d{2}""",
+                    text = "2024-01-15"
+                )
 
-        val response = plugin.callTyped<MatchResponse>("match", request)
+                val response = plugin.callTyped<MatchResponse>("match", request)
 
-        println("Matches: ${response.matches}")
-        println("Cached: ${response.cached}")
+                println("Matches: ${response.matches}")
+                println("Cached: ${response.cached}")
 
-        // Make another call with the same pattern
-        val request2 = MatchRequest(
-            pattern = """\d{4}-\d{2}-\d{2}""",
-            text = "2024-12-25"
-        )
+                // Make another call with the same pattern
+                val request2 = MatchRequest(
+                    pattern = """\d{4}-\d{2}-\d{2}""",
+                    text = "2024-12-25"
+                )
 
-        val response2 = plugin.callTyped<MatchResponse>("match", request2)
+                val response2 = plugin.callTyped<MatchResponse>("match", request2)
 
-        println("\nSecond call:")
-        println("Matches: ${response2.matches}")
-        println("Cached: ${response2.cached}")  // Should be true!
-    }
+                println("\nSecond call:")
+                println("Matches: ${response2.matches}")
+                println("Cached: ${response2.cached}")  // Should be true!
+            }
+        }
 }
 ```
 
@@ -131,6 +139,7 @@ package com.example
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.rustbridge.BundleLoader
 import com.rustbridge.LogCallback
 import com.rustbridge.LogLevel
 import com.rustbridge.Plugin
@@ -180,33 +189,39 @@ fun main(args: Array<String>) {
         .logLevel(LogLevel.INFO)
         .set("cache_size", pluginConfigData.cacheSize)
 
-    // Load plugin from bundle (extracts FFM and plugin library)
-    FfmPluginLoader.loadFromBundle(bundlePath, config, logCallback).use { plugin ->
-        // Test some patterns
-        val patterns = listOf(
-            """\d+""" to "test123",           // Digits
-            """^[a-z]+$""" to "hello",        // Lowercase letters
-            """^\d{4}-\d{2}-\d{2}$""" to "2024-01-15",  // Date
-        )
+    // Extract library from bundle and load plugin
+    BundleLoader.builder()
+        .bundlePath(bundlePath)
+        .verifySignatures(false)
+        .build().use { bundle ->
+            val libraryPath = bundle.extractLibrary()
+            FfmPluginLoader.load(libraryPath, config, logCallback).use { plugin ->
+                // Test some patterns
+                val patterns = listOf(
+                    """\d+""" to "test123",           // Digits
+                    """^[a-z]+$""" to "hello",        // Lowercase letters
+                    """^\d{4}-\d{2}-\d{2}$""" to "2024-01-15",  // Date
+                )
 
-        println("\n=== Pattern Matching ===")
-        for ((pattern, text) in patterns) {
-            val request = MatchRequest(pattern, text)
-            val response = plugin.callTyped<MatchResponse>("match", request)
-            println("'$text' matches '$pattern': ${response.matches}")
+                println("\n=== Pattern Matching ===")
+                for ((pattern, text) in patterns) {
+                    val request = MatchRequest(pattern, text)
+                    val response = plugin.callTyped<MatchResponse>("match", request)
+                    println("'$text' matches '$pattern': ${response.matches}")
+                }
+
+                // Demonstrate caching
+                println("\n=== Cache Demo ===")
+                val datePattern = """\d{4}-\d{2}-\d{2}"""
+                val dates = listOf("2024-01-15", "2024-06-01", "2024-12-25")
+
+                for (date in dates) {
+                    val request = MatchRequest(datePattern, date)
+                    val response = plugin.callTyped<MatchResponse>("match", request)
+                    println("$date: matches=${response.matches}, cached=${response.cached}")
+                }
+            }
         }
-
-        // Demonstrate caching
-        println("\n=== Cache Demo ===")
-        val datePattern = """\d{4}-\d{2}-\d{2}"""
-        val dates = listOf("2024-01-15", "2024-06-01", "2024-12-25")
-
-        for (date in dates) {
-            val request = MatchRequest(datePattern, date)
-            val response = plugin.callTyped<MatchResponse>("match", request)
-            println("$date: matches=${response.matches}, cached=${response.cached}")
-        }
-    }
 }
 ```
 

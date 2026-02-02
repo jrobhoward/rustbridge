@@ -23,10 +23,12 @@ Update your Main.kt to pass a log callback when loading the plugin:
 ```kotlin
 package com.example
 
+import com.rustbridge.BundleLoader
 import com.rustbridge.LogCallback
 import com.rustbridge.LogLevel
 import com.rustbridge.PluginConfig
 import com.rustbridge.ffm.FfmPluginLoader
+import java.nio.file.Path
 
 fun main(args: Array<String>) {
     val bundlePath = "regex-plugin-0.1.0.rbp"
@@ -40,17 +42,23 @@ fun main(args: Array<String>) {
     val config = PluginConfig.defaults()
         .logLevel(LogLevel.DEBUG)
 
-    // Load plugin from bundle with config and callback
-    FfmPluginLoader.loadFromBundle(bundlePath, config, logCallback).use { plugin ->
-        // Make some calls - you'll see debug logs
-        val request1 = """{"pattern": "\\d+", "text": "test123"}"""
-        val response1 = plugin.call("match", request1)
-        println("Response: $response1\n")
+    // Extract library from bundle and load plugin with config and callback
+    BundleLoader.builder()
+        .bundlePath(bundlePath)
+        .verifySignatures(false)
+        .build().use { bundle ->
+            val libraryPath = bundle.extractLibrary()
+            FfmPluginLoader.load(libraryPath, config, logCallback).use { plugin ->
+                // Make some calls - you'll see debug logs
+                val request1 = """{"pattern": "\\d+", "text": "test123"}"""
+                val response1 = plugin.call("match", request1)
+                println("Response: $response1\n")
 
-        val request2 = """{"pattern": "\\d+", "text": "456"}"""
-        val response2 = plugin.call("match", request2)
-        println("Response: $response2\n")
-    }
+                val request2 = """{"pattern": "\\d+", "text": "456"}"""
+                val response2 = plugin.call("match", request2)
+                println("Response: $response2\n")
+            }
+        }
 }
 ```
 
@@ -131,9 +139,15 @@ val logCallback = LogCallback { level, target, message ->
     }
 }
 
-FfmPluginLoader.loadFromBundle(bundlePath, config, logCallback).use { plugin ->
-    // Now plugin logs go through SLF4J
-}
+BundleLoader.builder()
+    .bundlePath(bundlePath)
+    .verifySignatures(false)
+    .build().use { bundle ->
+        val libraryPath = bundle.extractLibrary()
+        FfmPluginLoader.load(libraryPath, config, logCallback).use { plugin ->
+            // Now plugin logs go through SLF4J
+        }
+    }
 ```
 
 Add SLF4J to `build.gradle.kts`:

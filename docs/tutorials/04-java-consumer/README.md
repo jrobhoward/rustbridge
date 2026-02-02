@@ -50,7 +50,7 @@ Handle plugin errors gracefully in Java.
 
 ## Prerequisites
 
-- **Java 22+** installed
+- Complete the [Install from Source](../../INSTALL.md) guide (including Java libraries)
 - Your json-plugin bundle from Chapter 3
 - Basic familiarity with Java and Gradle
 

@@ -9,25 +9,32 @@ Replace the contents of `src/main/kotlin/com/example/Main.kt`:
 ```kotlin
 package com.example
 
+import com.rustbridge.BundleLoader
 import com.rustbridge.ffm.FfmPluginLoader
 
 fun main(args: Array<String>) {
     // Path to your plugin bundle
     val bundlePath = "regex-plugin-0.1.0.rbp"
 
-    // Load plugin from bundle (extracts both FFM and plugin library)
-    FfmPluginLoader.loadFromBundle(bundlePath).use { plugin ->
-        // Make a raw JSON call
-        val requestJson = """{"pattern": "\\d+", "text": "test123"}"""
-        println("Request: $requestJson")
+    // Extract library from bundle and load plugin
+    BundleLoader.builder()
+        .bundlePath(bundlePath)
+        .verifySignatures(false)  // Set to true in production
+        .build().use { bundle ->
+            val libraryPath = bundle.extractLibrary()
+            FfmPluginLoader.load(libraryPath.toString()).use { plugin ->
+                // Make a raw JSON call
+                val requestJson = """{"pattern": "\\d+", "text": "test123"}"""
+                println("Request: $requestJson")
 
-        val responseJson = plugin.call("match", requestJson)
-        println("Response: $responseJson")
-    }
+                val responseJson = plugin.call("match", requestJson)
+                println("Response: $responseJson")
+            }
+        }
 }
 ```
 
-The `loadFromBundle()` method handles extracting both the FFM library and your plugin from the bundle, ensuring they're version-matched.
+The `BundleLoader` extracts the platform-specific library from the bundle, then `FfmPluginLoader.load()` loads it.
 
 ## Run the Application
 
@@ -44,28 +51,34 @@ Response: {"cached":false,"matches":true}
 
 ## Make Multiple Calls
 
-Let's see the cache in action. Replace the `loadFromBundle()` call:
+Let's see the cache in action. Update the plugin loading block:
 
 ```kotlin
-FfmPluginLoader.loadFromBundle(bundlePath).use { plugin ->
-    // First call - compiles the pattern
-    println("First call:")
-    var request = """{"pattern": "^\\d{4}-\\d{2}-\\d{2}$", "text": "2024-01-15"}"""
-    var response = plugin.call("match", request)
-    println("Response: $response")
+BundleLoader.builder()
+    .bundlePath(bundlePath)
+    .verifySignatures(false)
+    .build().use { bundle ->
+        val libraryPath = bundle.extractLibrary()
+        FfmPluginLoader.load(libraryPath.toString()).use { plugin ->
+            // First call - compiles the pattern
+            println("First call:")
+            var request = """{"pattern": "^\\d{4}-\\d{2}-\\d{2}$", "text": "2024-01-15"}"""
+            var response = plugin.call("match", request)
+            println("Response: $response")
 
-    // Second call - uses cached pattern
-    println("\nSecond call (same pattern):")
-    request = """{"pattern": "^\\d{4}-\\d{2}-\\d{2}$", "text": "2024-12-25"}"""
-    response = plugin.call("match", request)
-    println("Response: $response")
+            // Second call - uses cached pattern
+            println("\nSecond call (same pattern):")
+            request = """{"pattern": "^\\d{4}-\\d{2}-\\d{2}$", "text": "2024-12-25"}"""
+            response = plugin.call("match", request)
+            println("Response: $response")
 
-    // Third call - different pattern
-    println("\nThird call (different pattern):")
-    request = """{"pattern": "[a-z]+", "text": "hello"}"""
-    response = plugin.call("match", request)
-    println("Response: $response")
-}
+            // Third call - different pattern
+            println("\nThird call (different pattern):")
+            request = """{"pattern": "[a-z]+", "text": "hello"}"""
+            response = plugin.call("match", request)
+            println("Response: $response")
+        }
+    }
 ```
 
 Output:
@@ -118,12 +131,18 @@ val config = PluginConfig.defaults()
     .set("cache_size", 10)
 
 // Load plugin with config
-FfmPluginLoader.loadFromBundle(bundlePath, config).use { plugin ->
-    // Now make calls...
-    val request = """{"pattern": "\\d+", "text": "test123"}"""
-    val response = plugin.call("match", request)
-    println("Response: $response")
-}
+BundleLoader.builder()
+    .bundlePath(bundlePath)
+    .verifySignatures(false)
+    .build().use { bundle ->
+        val libraryPath = bundle.extractLibrary()
+        FfmPluginLoader.load(libraryPath.toString(), config).use { plugin ->
+            // Now make calls...
+            val request = """{"pattern": "\\d+", "text": "test123"}"""
+            val response = plugin.call("match", request)
+            println("Response: $response")
+        }
+    }
 ```
 
 ## What's Next?

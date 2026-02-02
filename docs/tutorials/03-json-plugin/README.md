@@ -41,9 +41,8 @@ Return meaningful errors when JSON is invalid.
 
 ## Prerequisites
 
+- Complete the [Install from Source](../../INSTALL.md) guide
 - Completed Chapter 1 (regex plugin) or familiarity with rustbridge basics
-- Rust 1.90+ installed
-- rustbridge CLI installed
 
 ## Time Estimate
 

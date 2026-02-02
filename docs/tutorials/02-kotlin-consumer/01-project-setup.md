@@ -51,16 +51,6 @@ Copy the bundle you created in Chapter 1:
 cp $RUSTBRIDGE_WORKSPACE/regex-plugin/regex-plugin-0.1.0.rbp .
 ```
 
-## Install rustbridge Java Libraries
-
-If you haven't already, install the Java libraries to Maven local:
-
-```bash
-cd $RUSTBRIDGE_WORKSPACE/rustbridge/rustbridge-java
-./gradlew publishToMavenLocal
-cd $RUSTBRIDGE_WORKSPACE/regex-kotlin-app/consumers/kotlin
-```
-
 ## Examine build.gradle.kts
 
 The template's `build.gradle.kts` includes:

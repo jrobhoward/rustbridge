@@ -18,7 +18,7 @@ In this chapter, you'll load your regex plugin from Kotlin, make type-safe calls
 │                       │                                                     │
 │                       ▼                                                     │
 │  ┌──────────────────────────────────────────────────────┐                   │
-│  │  FfmPluginLoader.loadFromBundle(path, config, log)   │                   │
+│  │  BundleLoader + FfmPluginLoader.load(path, config)   │                   │
 │  │  plugin.call("match", json) → json                   │                   │
 │  └──────────────────────────────────────────────────────┘                   │
 │                       │                                                     │
@@ -50,7 +50,7 @@ Compare debug vs release builds and measure cache effectiveness.
 
 ## Prerequisites
 
-- Java 21+ installed (LTS versions: 17, 21, or 25)
+- Complete the [Install from Source](../../INSTALL.md) guide (including Java/Kotlin libraries)
 - Your regex plugin bundle from Chapter 1
 - Basic familiarity with Kotlin/Gradle
 

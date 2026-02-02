@@ -1,6 +1,7 @@
 package com.example
 
-import com.rustbridge.jni.JniPluginLoader
+import com.rustbridge.BundleLoader
+import com.rustbridge.ffm.FfmPluginLoader
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 
@@ -24,15 +25,21 @@ fun main(args: Array<String>) {
     // Update this path to your .rbp bundle file
     val bundlePath = "{{bundle-path}}"
 
-    // Load plugin from bundle (handles JNI bridge extraction automatically)
-    JniPluginLoader.loadFromBundle(bundlePath).use { plugin ->
-        // Example: Call the "echo" message type
-        val response = plugin.callTyped<EchoResponse>(
-            "echo",
-            EchoRequest("Hello from Kotlin!")
-        )
+    // Extract library from bundle and load plugin
+    BundleLoader.builder()
+        .bundlePath(bundlePath)
+        .verifySignatures(false)  // Set to true in production with proper keys
+        .build().use { bundle ->
+            val libraryPath = bundle.extractLibrary()
+            FfmPluginLoader.load(libraryPath.toString()).use { plugin ->
+                // Example: Call the "echo" message type
+                val response = plugin.callTyped<EchoResponse>(
+                    "echo",
+                    EchoRequest("Hello from Kotlin!")
+                )
 
-        println("Response: ${response.message}")
-        println("Length: ${response.length}")
-    }
+                println("Response: ${response.message}")
+                println("Length: ${response.length}")
+            }
+        }
 }

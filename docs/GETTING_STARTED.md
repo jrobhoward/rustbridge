@@ -17,53 +17,17 @@ guide walks you through creating a plugin, packaging it, and running it from you
 
 ## Prerequisites
 
-**Before starting this guide**, complete the full [Install from Source](../README.md#install-from-source) section in the README:
+**Before starting this guide**, complete the [Install from Source](./INSTALL.md) guide:
 
-1. **Clone the repository** to a location of your choice
-2. **Install the rustbridge CLI**: `cargo install --force --path crates/rustbridge-cli`
-3. **Install host language libraries** for your target language(s) (Java/Kotlin, C#, or Python)
+1. Set up your workspace (`$RUSTBRIDGE_WORKSPACE`)
+2. Clone the repository and install the CLI
+3. Install host language libraries for your target language(s)
 
-After completing installation, verify:
-
-```bash
-rustbridge --version
-```
-
-You should see version output (e.g., `rustbridge 0.8.0`). If not, revisit the installation steps.
-
-### Environment Variable Setup
-
-To make commands easy to copy-paste, set up a workspace directory that will contain the rustbridge repository and your tutorial projects.
-
-**Linux/macOS** - Add to your `~/.bashrc`, `~/.zshrc`, or `~/.profile`:
+Verify your installation:
 
 ```bash
-export RUSTBRIDGE_WORKSPACE="$HOME/rustbridge-workspace"
+rustbridge --version  # Should show rustbridge 0.8.0 or later
 ```
-
-Then reload your shell (`source ~/.bashrc` or open a new terminal).
-
-**Windows** - Set in PowerShell (one-time):
-
-```powershell
-[Environment]::SetEnvironmentVariable("RUSTBRIDGE_WORKSPACE", "$HOME\rustbridge-workspace", "User")
-```
-
-Create the workspace and verify:
-
-```bash
-mkdir -p $RUSTBRIDGE_WORKSPACE
-echo $RUSTBRIDGE_WORKSPACE   # Should print your workspace path
-```
-
-Your rustbridge clone from the README installation should be at `$RUSTBRIDGE_WORKSPACE/rustbridge/`.
-
-### Requirements Summary
-
-- Rust 1.90+ installed
-- Basic familiarity with Rust
-- rustbridge CLI installed
-- Host language libraries installed (see README)
 
 ---
 

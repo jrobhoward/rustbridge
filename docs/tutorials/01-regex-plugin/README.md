@@ -39,8 +39,7 @@ Allow the host to configure cache size at initialization.
 
 ## Prerequisites
 
-- Rust 1.90+ installed
-- rustbridge CLI installed (`cargo install --path crates/rustbridge-cli`)
+- Complete the [Install from Source](../../INSTALL.md) guide
 - Basic familiarity with Rust
 
 ## Time Estimate
