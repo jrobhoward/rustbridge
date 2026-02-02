@@ -47,7 +47,7 @@ Edit `Cargo.toml`:
 ```toml
 [package]
 name = "calculator-plugin"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2024"
 
 [workspace]  # Standalone project (not part of a parent workspace)
@@ -57,12 +57,12 @@ crate-type = ["cdylib"]  # Required for FFI
 
 [dependencies]
 # rustbridge dependencies
-rustbridge-core = "0.5"
-rustbridge-transport = "0.5"
-rustbridge-ffi = "0.5"
-rustbridge-runtime = "0.5"
-rustbridge-logging = "0.5"
-rustbridge-macros = "0.5"
+rustbridge-core = "0.8"
+rustbridge-transport = "0.8"
+rustbridge-ffi = "0.8"
+rustbridge-runtime = "0.8"
+rustbridge-logging = "0.8"
+rustbridge-macros = "0.8"
 
 async-trait = "0.1"
 serde = { version = "1.0", features = ["derive"] }

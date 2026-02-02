@@ -5,10 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-- Tutorial: Consistently use version 0.1.0 for tutorial versions
-- Tutorial: Updated JNI examples to use `loadFromBundle()` pattern
-- Build: Added MPL-2.0 to allowed licenses in deny.toml (used by dirs crate)
+## [0.8.0] - 2026-02-01
 
 ### Removed
 - **BREAKING: Removed JNI transport layer** - Java minimum version now 21+ (FFM only)
@@ -22,11 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Java/Kotlin: Updated to Kotlin 2.3.0 and Gradle 9.3.1 for native Java 25 support
-  - Templates: kotlin, java-ffm, java-jni now use Gradle 9.3.1
+  - Templates: kotlin, java-ffm now use Gradle 9.3.1
   - rustbridge-kotlin uses Kotlin 2.3.0 (was 2.0.21)
   - Kotlin template uses Kotlin 2.3.0 (was 2.0.0)
-
-### Changed
 - Java: Added automatic Java 21 preview feature detection in Gradle builds
   - Build files now conditionally add `--enable-preview` only when Java 21 is detected
   - Same build files work seamlessly on Java 21 and Java 22+ without modification
@@ -35,16 +30,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - FFM now works with Java 21+
   - Java 21 requires `--enable-preview` flag (automatically handled by Gradle)
   - Removed all JNI references from documentation
+- Updated all version references from 0.7.0 to 0.8.0 across all languages and documentation
 
 ### Added
 - Tutorial: Chapter 8 - Binary Transport with image thumbnail generator plugin
-  - Java FFM, Java JNI, Kotlin, C#, and Python consumers demonstrating binary FFI
+  - Java FFM, Kotlin, C#, and Python consumers demonstrating binary FFI
   - Variable-length binary response handling (header + payload pattern)
 - Tutorial: Chapter 7 - Backpressure Queues for bounded queue flow control
-  - C#, Java/JNI, and Python implementations demonstrating blocking producers when queues are full
-
-### Changed
-- Updated all version references from 0.5.0/0.6.0 to 0.7.0 across documentation and templates
+  - C# and Python implementations demonstrating blocking producers when queues are full
+- Docs: C# troubleshooting section for MSBuild metadata file errors
+- Build: Added MPL-2.0 to allowed licenses in deny.toml (used by dirs crate)
 
 ## [0.7.0] - 2026-01-30
 
@@ -283,7 +278,8 @@ Initial public release.
 - No `.unwrap()` or `.expect()` in production code
 - Minisign signature verification for bundle integrity
 
-[Unreleased]: https://github.com/jrobhoward/rustbridge/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/jrobhoward/rustbridge/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/jrobhoward/rustbridge/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/jrobhoward/rustbridge/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/jrobhoward/rustbridge/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/jrobhoward/rustbridge/compare/v0.6.0...v0.6.1
