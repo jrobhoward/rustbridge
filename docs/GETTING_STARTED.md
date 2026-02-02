@@ -17,24 +17,53 @@ guide walks you through creating a plugin, packaging it, and running it from you
 
 ## Prerequisites
 
-Before starting, complete the installation steps in the [README](../README.md#install-from-source):
+**Before starting this guide**, complete the full [Install from Source](../README.md#install-from-source) section in the README:
 
-1. Clone the repository and install the CLI: `cargo install --force --path crates/rustbridge-cli`
-2. Install host language libraries for your target language(s)
+1. **Clone the repository** to a location of your choice
+2. **Install the rustbridge CLI**: `cargo install --force --path crates/rustbridge-cli`
+3. **Install host language libraries** for your target language(s) (Java/Kotlin, C#, or Python)
 
-Verify your installation:
+After completing installation, verify:
 
 ```bash
 rustbridge --version
 ```
 
-You should see version output (e.g., `rustbridge 0.7.0`). If not, revisit the installation steps.
+You should see version output (e.g., `rustbridge 0.8.0`). If not, revisit the installation steps.
 
-### Requirements
+### Environment Variable Setup
+
+To make commands easy to copy-paste, set up a workspace directory that will contain the rustbridge repository and your tutorial projects.
+
+**Linux/macOS** - Add to your `~/.bashrc`, `~/.zshrc`, or `~/.profile`:
+
+```bash
+export RUSTBRIDGE_WORKSPACE="$HOME/rustbridge-workspace"
+```
+
+Then reload your shell (`source ~/.bashrc` or open a new terminal).
+
+**Windows** - Set in PowerShell (one-time):
+
+```powershell
+[Environment]::SetEnvironmentVariable("RUSTBRIDGE_WORKSPACE", "$HOME\rustbridge-workspace", "User")
+```
+
+Create the workspace and verify:
+
+```bash
+mkdir -p $RUSTBRIDGE_WORKSPACE
+echo $RUSTBRIDGE_WORKSPACE   # Should print your workspace path
+```
+
+Your rustbridge clone from the README installation should be at `$RUSTBRIDGE_WORKSPACE/rustbridge/`.
+
+### Requirements Summary
 
 - Rust 1.90+ installed
 - Basic familiarity with Rust
-- rustbridge CLI installed (see above)
+- rustbridge CLI installed
+- Host language libraries installed (see README)
 
 ---
 
@@ -157,8 +186,8 @@ python3 -m venv .venv
 source .venv/bin/activate  # Linux/macOS
 # .venv\Scripts\activate   # Windows
 
-# Install rustbridge (adjust path to where you cloned the repo)
-pip install -e /path/to/rustbridge/rustbridge-python
+# Install rustbridge Python library
+pip install -e $RUSTBRIDGE_WORKSPACE/rustbridge/rustbridge-python
 
 python main.py
 ```

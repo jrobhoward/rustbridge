@@ -1,4 +1,4 @@
-# Chapter 4: Binary Transport
+# Chapter 8: Binary Transport
 
 In this chapter, you'll build an image thumbnail generator plugin that uses binary transport for efficient data transfer. Binary transport bypasses JSON serialization overhead, making it ideal for large payloads like images where base64 encoding would add ~33% size overhead.
 
@@ -511,7 +511,7 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-rustbridge = { version = "0.7.0" }
+rustbridge = { version = "0.8.0" }
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
 
 [profile.release]

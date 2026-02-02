@@ -16,7 +16,7 @@ Complete the [project setup](./README.md#project-setup) from the chapter introdu
 ## Verify the Generated Consumer
 
 ```bash
-cd ~/rustbridge-workspace/thumbnail-plugin/consumers/csharp
+cd $RUSTBRIDGE_WORKSPACE/thumbnail-plugin/consumers/csharp
 dotnet run
 ```
 
@@ -457,8 +457,8 @@ Update the `.csproj` file to enable unsafe code:
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="RustBridge.Core" Version="0.7.0" />
-    <PackageReference Include="RustBridge.Native" Version="0.7.0" />
+    <PackageReference Include="RustBridge.Core" Version="0.8.0" />
+    <PackageReference Include="RustBridge.Native" Version="0.8.0" />
   </ItemGroup>
 
 </Project>

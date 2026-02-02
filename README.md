@@ -177,23 +177,49 @@ rustbridge is not yet published to package registries. Install from source to ge
 - Rust 1.90+ installed
 - Java 21+ (for Java/Kotlin), .NET 8.0+ (for C#), or Python 3.10+
 
-### 1. Clone and Install the CLI
+### 1. Set Up Workspace
+
+Create a workspace directory for rustbridge and your projects.
+
+**Linux/macOS** - Add to your shell profile (`~/.bashrc`, `~/.zshrc`, or `~/.profile`):
 
 ```bash
+export RUSTBRIDGE_WORKSPACE="$HOME/rustbridge-workspace"
+```
+
+Then reload your shell and create the directory:
+
+```bash
+source ~/.bashrc  # or ~/.zshrc
+mkdir -p $RUSTBRIDGE_WORKSPACE
+```
+
+**Windows** - Set in PowerShell (one-time):
+
+```powershell
+[Environment]::SetEnvironmentVariable("RUSTBRIDGE_WORKSPACE", "$HOME\rustbridge-workspace", "User")
+```
+
+Then open a new terminal and create the directory.
+
+### 2. Clone and Install the CLI
+
+```bash
+cd $RUSTBRIDGE_WORKSPACE
 git clone https://github.com/jrobhoward/rustbridge.git
 cd rustbridge
 cargo install --force --path crates/rustbridge-cli
 rustbridge --version  # Verify installation
 ```
 
-### 2. Install Host Language Libraries
+### 3. Install Host Language Libraries
 
 Choose your target language(s):
 
 **Java/Kotlin** (build and publish to local Maven):
 
 ```bash
-cd rustbridge-java
+cd $RUSTBRIDGE_WORKSPACE/rustbridge/rustbridge-java
 ./gradlew publishToMavenLocal
 ```
 
@@ -204,14 +230,14 @@ repositories {
     mavenLocal()
 }
 dependencies {
-    implementation("com.rustbridge:rustbridge-ffm:0.7.0")  // Java 21+
+    implementation("com.rustbridge:rustbridge-ffm:0.8.0")  // Java 21+
 }
 ```
 
 **C#** (build and reference locally):
 
 ```bash
-cd rustbridge-csharp
+cd $RUSTBRIDGE_WORKSPACE/rustbridge/rustbridge-csharp
 dotnet build
 ```
 
@@ -220,7 +246,7 @@ Reference the built DLLs in your project, or use a local NuGet source.
 **Python** (install in development mode):
 
 ```bash
-cd rustbridge-python
+cd $RUSTBRIDGE_WORKSPACE/rustbridge/rustbridge-python
 pip install -e .
 ```
 

@@ -1,4 +1,4 @@
-# Chapter 3: Backpressure Queues
+# Chapter 7: Backpressure Queues
 
 In this chapter, you'll implement bounded queues with backpressure for plugin calls. This pattern lets you control
 memory usage and throttle producers when the plugin can't keep up—callers block when the queue is full rather than
@@ -297,4 +297,4 @@ These patterns can be adapted for other use cases like connection pooling or rat
 
 Continue to Chapter 4 to learn about binary transport for high-performance scenarios with large payloads.
 
-[Continue to Chapter 4: Binary Transport](../04-binary-transport/README.md)
+[Continue to Chapter 8: Binary Transport](../08-binary-transport/README.md)

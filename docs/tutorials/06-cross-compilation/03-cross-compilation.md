@@ -18,7 +18,7 @@ adjustments.
 You should have completed the json-plugin from earlier tutorials:
 
 ```
-~/rustbridge-workspace/json-plugin/
+$RUSTBRIDGE_WORKSPACE/json-plugin/
 ```
 
 ## Step 1: Build for Native x86_64
@@ -26,7 +26,7 @@ You should have completed the json-plugin from earlier tutorials:
 First, build the plugin for your local architecture:
 
 ```bash
-cd ~/rustbridge-workspace/json-plugin
+cd $RUSTBRIDGE_WORKSPACE/json-plugin
 cargo build --release
 ```
 
@@ -111,7 +111,7 @@ json-plugin-0.1.0.rbp
 Navigate to your Java consumer project and build a fat JAR with all dependencies:
 
 ```bash
-cd ~/rustbridge-workspace/json-plugin/consumers/java-ffm
+cd $RUSTBRIDGE_WORKSPACE/json-plugin/consumers/java-ffm
 ```
 
 Add the Shadow plugin to `build.gradle.kts` if not already present:
@@ -141,7 +141,7 @@ The JAR is at `build/libs/json-plugin-java-ffm-0.1.0-all.jar` (the name includes
 Test on your development machine:
 
 ```bash
-cd ~/rustbridge-workspace/json-plugin
+cd $RUSTBRIDGE_WORKSPACE/json-plugin
 
 # Run with the bundle
 java --enable-native-access=ALL-UNNAMED \
@@ -210,4 +210,4 @@ and run.
 
 ## What's Next?
 
-Continue to [Chapter 3: Backpressure Queues](../03-backpressure-queues/README.md) to learn how to implement bounded queues with flow control for C# and Python consumers.
+Continue to [Chapter 7: Backpressure Queues](../03-backpressure-queues/README.md) to learn how to implement bounded queues with flow control for C# and Python consumers.

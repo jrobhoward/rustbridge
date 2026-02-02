@@ -19,7 +19,7 @@ using [schemars](https://docs.rs/schemars).
 ### Step 1: Add the schemars Dependency
 
 ```bash
-cd ~/rustbridge-workspace/json-plugin
+cd $RUSTBRIDGE_WORKSPACE/json-plugin
 cargo add schemars
 ```
 

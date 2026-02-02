@@ -40,7 +40,7 @@ This creates `my-project.key` (secret) and `my-project.pub` (public).
 Use the `--sign-key` flag when creating bundles:
 
 ```bash
-cd ~/rustbridge-workspace/json-plugin
+cd $RUSTBRIDGE_WORKSPACE/json-plugin
 
 cargo build --release
 

@@ -16,7 +16,7 @@ Complete the [project setup](./README.md#project-setup) from the chapter introdu
 ## Set Up the Python Environment
 
 ```bash
-cd ~/rustbridge-workspace/thumbnail-plugin/consumers/python
+cd $RUSTBRIDGE_WORKSPACE/thumbnail-plugin/consumers/python
 python3 -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
@@ -25,7 +25,7 @@ pip install -r requirements.txt
 ## Install rustbridge Python Package
 
 ```bash
-pip install -e ~/rustbridge-workspace/rustbridge/rustbridge-python
+pip install -e $RUSTBRIDGE_WORKSPACE/rustbridge/rustbridge-python
 ```
 
 ## Verify the Generated Consumer

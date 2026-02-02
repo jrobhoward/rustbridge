@@ -19,7 +19,7 @@ The trade-off is needing access to each platform (physical, VM, or CI).
 
 ```bash
 # Build
-cd ~/rustbridge-workspace/json-plugin
+cd $RUSTBRIDGE_WORKSPACE/json-plugin
 cargo build --release
 
 # Create bundle

@@ -16,7 +16,7 @@ Complete the [project setup](./README.md#project-setup) from the chapter introdu
 The scaffolded C# consumer is in `consumers/csharp/`. Let's verify it works:
 
 ```bash
-cd ~/rustbridge-workspace/sync-demo/consumers/csharp
+cd $RUSTBRIDGE_WORKSPACE/sync-demo/consumers/csharp
 dotnet run
 ```
 

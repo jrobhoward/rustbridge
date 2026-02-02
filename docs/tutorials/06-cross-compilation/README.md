@@ -1,4 +1,4 @@
-# Chapter 2: Cross-Compilation
+# Chapter 6: Cross-Compilation
 
 In this chapter, you'll learn how to build multi-platform plugin bundles for Linux, macOS, and Windows.
 
@@ -66,4 +66,4 @@ This avoids cross-compilation complexity and uses native toolchains for best com
 
 ## Next Steps
 
-After completing this chapter, continue to [Chapter 3: Backpressure Queues](../03-backpressure-queues/README.md) to learn how to implement bounded queues with flow control for C# and Python consumers.
+After completing this chapter, continue to [Chapter 7: Backpressure Queues](../07-backpressure-queues/README.md) to learn how to implement bounded queues with flow control for C# and Python consumers.

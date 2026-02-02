@@ -1,4 +1,4 @@
-# Chapter 1: Production Bundles
+# Chapter 5: Production Bundles
 
 In this chapter, you'll learn how to create production-ready plugin bundles with code signing, schemas, build metadata,
 and Software Bill of Materials (SBOM).
@@ -63,5 +63,5 @@ Add Software Bill of Materials for dependency transparency.
 
 ## Next Steps
 
-After completing this chapter, continue to [Chapter 2: Cross-Compilation](../02-cross-compilation/README.md) to build
+After completing this chapter, continue to [Chapter 6: Cross-Compilation](../06-cross-compilation/README.md) to build
 multi-platform bundles for Linux, macOS, and Windows.

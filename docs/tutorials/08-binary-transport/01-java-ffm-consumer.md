@@ -18,14 +18,14 @@ Complete the [project setup](./README.md#project-setup) from the chapter introdu
 If you haven't already, install the Java libraries to Maven local:
 
 ```bash
-cd ~/rustbridge-workspace/rustbridge/rustbridge-java
+cd $RUSTBRIDGE_WORKSPACE/rustbridge/rustbridge-java
 ./gradlew publishToMavenLocal
 ```
 
 ## Verify the Generated Consumer
 
 ```bash
-cd ~/rustbridge-workspace/thumbnail-plugin/consumers/java-ffm
+cd $RUSTBRIDGE_WORKSPACE/thumbnail-plugin/consumers/java-ffm
 ./gradlew run
 ```
 
@@ -444,8 +444,8 @@ repositories {
 }
 
 dependencies {
-    implementation("com.rustbridge:rustbridge-core:0.7.0")
-    implementation("com.rustbridge:rustbridge-ffm:0.7.0")
+    implementation("com.rustbridge:rustbridge-core:0.8.0")
+    implementation("com.rustbridge:rustbridge-ffm:0.8.0")
     implementation("com.google.code.gson:gson:2.11.0")
 }
 
