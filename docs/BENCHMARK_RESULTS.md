@@ -1,472 +1,269 @@
 # RustBridge Benchmark Results
 
-**Updated:** 2026-01-25
-**Hardware:** AMD Ryzen Threadripper 1950X (16 cores) - Same CPU on both platforms
-**Plugin:** hello-plugin (release build)
+**Version:** 0.8.0
+**Updated:** 2026-02-01
 
-> **Note**: JNI support has been removed. Java integration now uses FFM exclusively (Java 21+).
-> JNI benchmark data is retained for historical reference only.
+## Executive Summary
 
-## Summary: Windows vs Linux
+RustBridge supports three host languages (C#, Java, Python) with two transport options (JSON and binary). This document provides benchmark data to help you make informed decisions, but **don't let raw numbers drive premature optimization**.
 
-| Language | Transport | Windows | Linux | Difference | Winner |
-|----------|-----------|---------|-------|-----------|--------|
-| **C#** | Binary | 326 ns | 268 ns | -17.8% | Linux ⭐ |
-| **C#** | JSON | 2.55 μs | 2.29 μs | -10.2% | Linux ⭐ |
-| **Java JNI** | Binary | 579 ns | 398 ns | -31.3% | Linux ⭐ |
-| **Java JNI** | JSON | 6.05 μs | 4.09 μs | -32.4% | Linux ⭐ |
-| **Java FFM** | Binary (zero-copy) | 667 ns | 511 ns | -23.4% | Linux ⭐ |
-| **Java FFM** | JSON | 3.26 μs | 2.44 μs | -25.2% | Linux ⭐ |
-| **Python** | Binary | 5.73 μs | 4.92 μs | -14.1% | Linux ⭐ |
-| **Python** | JSON | 26.7 μs | 25.5 μs | -4.4% | Linux ⭐ |
+### The Bottom Line
 
-**Key Findings:**
-- **Linux outperforms Windows** on virtually all metrics (4-32% faster)
-- Binary transport is **5-10x faster** than JSON across all languages and platforms
-- C# achieves the lowest absolute latency (268 ns binary on Linux, 326 ns on Windows)
-- Java JNI binary is strongest binary performer on Linux (398 ns)
-- Java FFM JSON outperforms JNI JSON on both platforms (~40% faster)
-- Python binary improved 3.2x after optimization (5.73 μs on Windows, 4.92 μs on Linux)
+| Transport | Best For | Trade-off |
+|-----------|----------|-----------|
+| **JSON** | Most applications | Easier debugging, flexible schemas, faster development |
+| **Binary** | High-frequency hot paths | 3-9x faster, but harder to debug and maintain |
+
+> **Recommendation:** Start with JSON. It's human-readable, easier to debug, and simpler to evolve. Only switch to binary for specific hot paths where profiling shows it matters. In most business applications, the difference between 300 ns and 2 μs is invisible to users but the difference in development time is very real.
 
 ---
 
-## C# Benchmarks (.NET 8.0)
+## Quick Reference
 
-### Transport Latency
+### All Platforms Summary
 
-**Windows (10.0.26100.7623, .NET 8.0.23)**
+| Platform | Language | Binary | JSON | Speedup |
+|----------|----------|--------|------|---------|
+| **macOS M1** | C# | 136 ns | 1.08 μs | 7.9x |
+| **macOS M1** | Java FFM | 384 ns | 1.28 μs | 3.3x |
+| **macOS M1** | Python | 1.94 μs | 8.7 μs | 4.5x |
+| **Linux x86** | C# | 259 ns | 2.38 μs | 9.2x |
+| **Linux x86** | Java FFM | 366 ns | 2.20 μs | 6.0x |
+| **Linux x86** | Python | 4.83 μs | 24.8 μs | 5.1x |
+| **Windows x86** | C# | 305 ns | 2.52 μs | 8.2x |
+| **Windows x86** | Java FFM | 667 ns | 3.26 μs | 4.9x |
+| **Windows x86** | Python | 5.66 μs | 27 μs | 4.8x |
 
-| Method | Mean | Error | StdDev | Ratio | Allocated |
-|--------|------|-------|--------|-------|-----------|
-| JSON transport | 2,552.5 ns | 5.53 ns | 4.90 ns | 1.00 | 688 B |
-| Binary transport | 326.0 ns | 0.50 ns | 0.44 ns | 0.13 | 40 B |
+### Key Observations
 
-**Linux (Ubuntu 24.04, .NET 8.0.22)**
-
-| Method | Mean | Error | StdDev | Ratio | Allocated |
-|--------|------|-------|--------|-------|-----------|
-| JSON transport | 2,290.0 ns | 3.99 ns | 3.54 ns | 1.00 | 688 B |
-| Binary transport | 268.1 ns | 0.50 ns | 0.44 ns | 0.12 | 40 B |
-
-**Comparison:**
-- Binary is **7.8x faster** than JSON on Windows, **8.5x faster** on Linux
-- **Linux binary is 17.8% faster** (326 ns → 268 ns)
-- **Linux JSON is 10.2% faster** (2.55 μs → 2.29 μs)
-- Both platforms show 17x less memory allocation for binary
-
-### Throughput (1000 ops/invoke)
-
-**Windows**
-
-| Method | Mean | Error | StdDev | Ratio | Allocated |
-|--------|------|-------|--------|-------|-----------|
-| JSON throughput | 2,544.0 ns | 7.56 ns | 7.07 ns | 1.00 | 696 B |
-| Binary throughput | 314.6 ns | 0.20 ns | 0.18 ns | 0.12 | 40 B |
-
-**Linux**
-
-| Method | Mean | Allocated |
-|--------|------|-----------|
-| JSON throughput | ~2,290 ns | 688 B |
-| Binary throughput | ~268 ns | 40 B |
-
-**Binary achieves 8.1x higher throughput on Windows, 8.5x on Linux.**
-
-### Concurrent (100 parallel tasks)
-
-**Windows**
-
-| Method | Mean | Error | StdDev | Ratio | Allocated |
-|--------|------|-------|--------|-------|-----------|
-| JSON concurrent | 122.63 μs | 0.749 μs | 0.664 μs | 1.00 | 83.91 KB |
-| Binary concurrent | 70.94 μs | 0.507 μs | 0.450 μs | 0.58 | 33.90 KB |
-
-**Binary concurrent calls complete in 58% of the time with 40% memory.**
+1. **Apple Silicon is fast** - M1 achieves the lowest latencies across all languages
+2. **Linux outperforms Windows** on x86 by 15-45% depending on workload
+3. **Binary is 3-9x faster** than JSON, but this rarely matters in practice
+4. **C# achieves lowest latency**, Java FFM is competitive, Python is adequate for most uses
 
 ---
 
-## Java JNI Benchmarks (JDK 21)
+## A Word on Premature Optimization
 
-### Transport Latency
+Binary transport is faster. That's undeniable. But consider what "faster" means in context:
 
-**Windows (JDK 21.0.9)**
+| Scenario | JSON Latency | Binary Latency | Actual Difference |
+|----------|--------------|----------------|-------------------|
+| Single API call | 2.5 μs | 300 ns | 2.2 μs saved |
+| 100 calls/second | 250 μs total | 30 μs total | 220 μs saved |
+| 10,000 calls/second | 25 ms total | 3 ms total | 22 ms saved |
 
-| Method | Mean | Error | StdDev |
-|--------|------|-------|--------|
-| jniJson | 6.053 μs | 0.308 μs | 0.017 μs |
-| jniBinary | 0.579 μs | 0.040 μs | 0.002 μs |
+**At 100 calls/second**, you save 220 microseconds. Your users will never notice.
 
-**Linux (JDK 21.0.10)**
+**At 10,000 calls/second**, you save 22 milliseconds. This might matter if it's on a critical path.
 
-| Method | Mean | Error | StdDev |
-|--------|------|-------|--------|
-| jniJson | 4.090 μs | 0.148 μs | 0.098 μs |
-| jniBinary | 0.398 μs | 0.010 μs | 0.007 μs |
+Meanwhile, binary transport requires:
+- Manually maintaining C struct layouts in multiple languages
+- Careful attention to padding, alignment, and endianness
+- More complex debugging (no human-readable payloads)
+- Tighter coupling between Rust and host language code
 
-**Comparison:**
-- Binary is **10.5x faster** than JSON on Windows, **10.3x on Linux**
-- **Linux binary is 31.3% faster** (579 ns → 398 ns)
-- **Linux JSON is 32.4% faster** (6.053 μs → 4.090 μs)
+**JSON gives you:**
+- Human-readable payloads for logging and debugging
+- Flexible schema evolution (add fields without breaking clients)
+- Simpler code that's easier to maintain
+- Faster development iteration
 
-### Throughput
+**Use binary transport when:**
+- Profiling shows the FFI boundary is a bottleneck
+- You're making >1,000 calls/second on a latency-critical path
+- The data schema is stable and unlikely to change
+- You have the engineering resources to maintain struct parity
 
-**Windows**
+**Use JSON transport when:**
+- You're building a new feature (start simple, optimize later)
+- Debugging or observability is important
+- Schema flexibility matters
+- Development velocity is more valuable than raw performance
 
-| Method | Throughput (ops/s) | Error |
-|--------|-------------------|-------|
-| jniBinaryThroughput | 1,759,411 | ±202,894 |
-| jniJsonThroughput | 166,694 | ±21,282 |
+---
 
-**Linux**
+## Platform Comparison
 
-| Method | Throughput (ops/s) | Error |
-|--------|-------------------|-------|
-| jniBinaryThroughput | 2,601,398 | ±37,706 |
-| jniJsonThroughput | 257,961 | ±8,501 |
+### By Operating System (x86-64)
 
-**Binary achieves 10.6x higher throughput on Windows, 10.1x on Linux.**
-**Linux throughput is 47.8% higher for binary, 54.7% higher for JSON.**
+Comparing Linux and Windows on identical hardware (AMD Ryzen Threadripper 1950X):
 
-### Concurrent Scaling
-
-**Windows**
-
-| Threads | Binary (ops/s) | JSON (ops/s) | Binary/JSON Ratio |
-|---------|----------------|--------------|-------------------|
-| 1 | 1,572,661 | 168,506 | 9.3x |
-| 4 | 2,420,161 | 592,009 | 4.1x |
-| 8 | 1,534,061 | 1,119,235 | 1.4x |
-
-**Linux**
-
-| Threads | Binary (ops/s) | JSON (ops/s) | Binary/JSON Ratio |
-|---------|----------------|--------------|-------------------|
-| 1 | 2,261,470 | 255,634 | 8.8x |
-| 4 | 1,503,628 | 791,058 | 1.9x |
-| 8 | 1,545,520 | 1,196,282 | 1.3x |
+| Language | Transport | Linux | Windows | Linux Advantage |
+|----------|-----------|-------|---------|-----------------|
+| C# | Binary | 259 ns | 305 ns | **15% faster** |
+| C# | JSON | 2.38 μs | 2.52 μs | **6% faster** |
+| Java FFM | Binary | 366 ns | 667 ns | **45% faster** |
+| Java FFM | JSON | 2.20 μs | 3.26 μs | **33% faster** |
+| Python | Binary | 4.83 μs | 5.66 μs | **15% faster** |
+| Python | JSON | 24.8 μs | 27 μs | **8% faster** |
 
 **Analysis:**
-- Single-threaded: Linux is **43.8% faster** for binary
-- Multi-threaded (4): Windows is **37.8% faster** for binary
-- At 8 threads: Performance is nearly identical (1% advantage Linux)
+- Linux consistently outperforms Windows across all languages
+- Java FFM shows the largest Linux advantage (33-45%)
+- For latency-sensitive deployments, prefer Linux
 
----
+### By Architecture (x86 vs ARM)
 
-## Java FFM Benchmarks (JDK 21)
+Comparing x86-64 (Linux, Threadripper) vs ARM64 (macOS, M1):
 
-### Transport Latency
-
-**Windows (JDK 21.0.9)**
-
-| Method | Mean | Error | StdDev |
-|--------|------|-------|--------|
-| ffmJson | 3.264 μs | 0.125 μs | 0.007 μs |
-| ffmBinary (MemorySegment) | 0.908 μs | 0.007 μs | 0.001 μs |
-| ffmBinaryBytes (byte[]) | 0.742 μs | 0.085 μs | 0.005 μs |
-| **ffmBinaryZeroCopy** | **0.667 μs** | 0.024 μs | 0.001 μs |
-
-**Linux (JDK 21.0.10)**
-
-| Method | Mean | Error | StdDev |
-|--------|------|-------|--------|
-| ffmJson | 2.442 μs | 0.040 μs | 0.027 μs |
-| ffmBinary (MemorySegment) | 0.624 μs | 0.016 μs | - |
-| ffmBinaryBytes (byte[]) | 0.551 μs | 0.005 μs | - |
-| **ffmBinaryZeroCopy** | **0.511 μs** | 0.005 μs | - |
-
-**Comparison:**
-- **Linux binary zero-copy is 23.4% faster** (667 ns → 511 ns)
-- **Linux JSON is 25.2% faster** (3.264 μs → 2.442 μs)
-- Zero-copy is **fastest method** on both platforms
-
-**Notes:**
-- `ffmBinaryZeroCopy` returns direct native memory reference (no copy)
-- `ffmBinaryBytes` returns a `byte[]` (copied to JVM heap)
-- `ffmBinary` returns a `MemorySegment` (copied to Arena-managed memory)
-
-### Throughput
-
-**Windows**
-
-| Method | Throughput (ops/s) | Error |
-|--------|-------------------|-------|
-| ffmBinaryThroughput | 1,349,179 | ±189,407 |
-| ffmJsonThroughput | 325,231 | ±11,194 |
-
-**Linux**
-
-| Method | Throughput (ops/s) | Error |
-|--------|-------------------|-------|
-| ffmBinaryThroughput | 1,828,411 | ±7,722 |
-| ffmJsonThroughput | 405,712 | ±4,895 |
-
-**Binary achieves 4.1x higher throughput on Windows, 4.5x on Linux.**
-**Linux throughput is 35.5% higher for binary, 24.7% higher for JSON.**
-
-### Concurrent Scaling
-
-**Windows**
-
-| Threads | Binary (ops/s) | JSON (ops/s) | Binary/JSON Ratio |
-|---------|----------------|--------------|-------------------|
-| 1 | 1,340,305 | 326,371 | 4.1x |
-| 4 | 1,817,613 | 835,024 | 2.2x |
-| 8 | 2,289,383 | 1,398,446 | 1.6x |
-
-**Linux**
-
-| Threads | Binary (ops/s) | JSON (ops/s) | Binary/JSON Ratio |
-|---------|----------------|--------------|-------------------|
-| 1 | 1,824,764 | 406,816 | 4.5x |
-| 4 | 1,930,779 | 958,152 | 2.0x |
-| 8 | 2,656,271 | 1,530,037 | 1.7x |
+| Language | Transport | x86 Linux | ARM macOS | ARM Advantage |
+|----------|-----------|-----------|-----------|---------------|
+| C# | Binary | 259 ns | 136 ns | **47% faster** |
+| C# | JSON | 2.38 μs | 1.08 μs | **55% faster** |
+| Java FFM | Binary | 366 ns | 384 ns | ~equal |
+| Java FFM | JSON | 2.20 μs | 1.28 μs | **42% faster** |
+| Python | Binary | 4.83 μs | 1.94 μs | **60% faster** |
+| Python | JSON | 24.8 μs | 8.7 μs | **65% faster** |
 
 **Analysis:**
-- **Linux consistently faster** across all thread counts (6-36%)
-- **Linux shows stronger scaling**: continues improving to 8 threads
-- Windows FFM: 1.3M → 2.3M ops/s (1→8 threads)
-- Linux FFM: 1.8M → 2.6M ops/s (1→8 threads)
+- Apple M1 significantly outperforms x86 for C# and Python
+- Java FFM binary is roughly equivalent; JSON is much faster on M1
+- M1's unified memory architecture benefits FFI-heavy workloads
+- Python sees the largest gains on ARM (60-65%)
 
 ---
 
-## Java: JNI vs FFM Comparison
+## Language Comparison
 
-**Windows**
+### C# (.NET 8.0)
 
-| Metric | JNI Binary | FFM Binary (zero-copy) | JNI JSON | FFM JSON |
-|--------|------------|------------------------|----------|----------|
-| Latency | 579 ns | 667 ns | 6.05 μs | 3.26 μs |
-| Throughput | 1.76M ops/s | 1.35M ops/s | 167K ops/s | 325K ops/s |
+C# consistently achieves the lowest latencies via P/Invoke's optimized struct marshaling.
 
-**Linux**
+| Platform | Binary | JSON | Memory (Binary) |
+|----------|--------|------|-----------------|
+| macOS M1 | 136 ns | 1.08 μs | 40 B |
+| Linux x86 | 259 ns | 2.38 μs | 40 B |
+| Windows x86 | 305 ns | 2.52 μs | 40 B |
 
-| Metric | JNI Binary | FFM Binary (zero-copy) | JNI JSON | FFM JSON |
-|--------|------------|------------------------|----------|----------|
-| Latency | 398 ns | 511 ns | 4.09 μs | 2.44 μs |
-| Throughput | 2.60M ops/s | 1.83M ops/s | 258K ops/s | 406K ops/s |
+**Throughput (ops/s):**
+| Platform | Binary | JSON |
+|----------|--------|------|
+| macOS M1 | 7.2M | 894K |
+| Linux x86 | 4.15M | 440K |
+| Windows x86 | 3.4M | 403K |
 
-**Analysis:**
+### Java FFM (Java 21+)
 
-**Windows:**
-- **Binary transport:** JNI is 13% faster than FFM (579 ns vs 667 ns)
-- **JSON transport:** FFM is 46% faster than JNI (3.26 μs vs 6.05 μs)
+Java FFM provides excellent performance without JNI complexity. JDK version significantly impacts performance.
 
-**Linux:**
-- **Binary transport:** JNI is 22% faster than FFM (398 ns vs 511 ns) - stronger advantage
-- **JSON transport:** FFM is 40% faster than JNI (2.44 μs vs 4.09 μs) - still strong
+| Platform | JDK | Binary | JSON |
+|----------|-----|--------|------|
+| macOS M1 | 22 | 384 ns | 1.28 μs |
+| Linux x86 | 25 | 366 ns | 2.20 μs |
+| Windows x86 | 21 | 667 ns | 3.26 μs |
 
-**Platform Insights:**
-- JNI binary advantage is more pronounced on Linux (22% vs 13%)
-- FFM JSON advantage is consistent on both platforms (~40-46%)
-- JNI has lower overhead for raw byte operations
-- FFM has better string handling, likely due to more efficient memory management
+**JDK Version Impact (Linux x86):**
+| JDK | Binary Latency | Notes |
+|-----|----------------|-------|
+| 21 (preview) | ~511 ns | Requires `--enable-preview` |
+| 22-24 (stable) | ~450 ns | FFM APIs stable |
+| 25 | 366 ns | Best performance |
 
----
+**Recommendation:** Use JDK 22+ for stable FFM APIs. JDK 25 provides measurable performance improvements.
 
-## Python Benchmarks
+### Python (3.10+)
 
-### Transport Latency
+Python has the highest latency due to interpreter overhead, but remains practical for many use cases.
 
-**Windows (Python 3.13.9)**
+| Platform | Binary | JSON |
+|----------|--------|------|
+| macOS M1 | 1.94 μs | 8.7 μs |
+| Linux x86 | 4.83 μs | 24.8 μs |
+| Windows x86 | 5.66 μs | 27 μs |
 
-| Test | Mean | StdDev | Ops/s |
-|------|------|--------|-------|
-| Binary (small) | 5.73 μs | 0.77 μs | 174,545 |
-| JSON (small math) | 26.70 μs | 7.58 μs | 37,450 |
-| JSON (small greet) | 27.63 μs | 7.22 μs | 36,192 |
-| JSON (small echo) | 31.59 μs | 35.96 μs | 31,655 |
-| JSON (medium ~1KB) | 205.99 μs | 13.24 μs | 4,855 |
-| JSON (large ~100KB) | 20,021 μs | 90.25 μs | 50 |
+**Throughput (ops/s):**
+| Platform | Binary | JSON |
+|----------|--------|------|
+| macOS M1 | 515K | 115K |
+| Linux x86 | 207K | 40K |
+| Windows x86 | 177K | 38K |
 
-**Linux (Python 3.12.3)**
-
-| Test | Mean | StdDev | Ops/s |
-|------|------|--------|-------|
-| Binary (small) | 4.92 μs | 0.47 μs | 203,083 |
-| JSON (small math) | 25.51 μs | 125.08 μs | 39,207 |
-| JSON (small greet) | 23.64 μs | 4.41 μs | 42,299 |
-| JSON (small echo) | 26.84 μs | 11.41 μs | 37,261 |
-| JSON (medium ~1KB) | 167.56 μs | 7.36 μs | 5,968 |
-| JSON (large ~100KB) | 15,862 μs | 159.95 μs | 63 |
-
-**Comparison:**
-- **Linux binary is 14.1% faster** (5.73 μs → 4.92 μs)
-- **Linux JSON is 4-21% faster** depending on payload
-- **Larger payloads show more advantage** on Linux (20.8% faster for 100KB)
-- Binary is **4.7-5.5x faster** than JSON on both platforms
-
-### Throughput & Lifecycle
-
-**Windows**
-
-| Test | Mean | Ops/s |
-|------|------|-------|
-| Sequential (100 calls) | 2,810 μs | 356 |
-| Concurrent (100 tasks) | 12,391 μs | 81 |
-| Load/unload cycle | 15,672 μs | 64 |
-
-**Linux**
-
-| Test | Mean | Ops/s |
-|------|------|-------|
-| Sequential (100 calls) | 2,374.93 μs | 421 |
-| Concurrent (100 tasks) | 8,465.83 μs | 118 |
-| Load/unload cycle | 12,095.28 μs | 83 |
-
-**Comparison:**
-- **Linux sequential is 15.5% faster**
-- **Linux concurrent is 31.7% faster** (largest advantage)
-- **Linux lifecycle is 22.8% faster**
+**Note:** Python performance varies significantly by platform. macOS M1 achieves 2-3x better performance than x86 platforms.
 
 ---
 
-## Cross-Language Comparison
+## Transport Comparison
 
-### Latency (Lower is Better)
+### Binary vs JSON Speedup by Language
 
-**Windows**
+| Language | macOS M1 | Linux x86 | Windows x86 |
+|----------|----------|-----------|-------------|
+| C# | 7.9x | 9.2x | 8.2x |
+| Java FFM | 3.3x | 6.0x | 4.9x |
+| Python | 4.5x | 5.1x | 4.8x |
 
-```
-Binary Transport:
-C#              ████ 326 ns
-Java JNI        ██████ 579 ns
-Java FFM        ███████ 667 ns (zero-copy)
-Python          ██████████████████████████████████████████████████ 5,729 ns
+### Memory Allocation (C#)
 
-JSON Transport:
-C#              █████████ 2,552 ns
-Java FFM        ████████████ 3,264 ns
-Java JNI        ██████████████████████ 6,053 ns
-Python          ████████████████████████████████████████████████████████████████████████████████████████████████ 26,702 ns
-```
+| Transport | Allocation per Call |
+|-----------|---------------------|
+| Binary | 40 B |
+| JSON | 688 B |
 
-**Linux**
+Binary allocates **17x less memory**, which matters for GC-sensitive applications.
 
-```
-Binary Transport:
-C#              ████ 268 ns
-Java JNI        █████ 398 ns
-Java FFM        ██████ 511 ns (zero-copy)
-Python          █████████████████████████████████████████████ 4,920 ns
+### When Binary Speedup Matters
 
-JSON Transport:
-C#              ██████████ 2,290 ns
-Java FFM        ████████████ 2,442 ns
-Java JNI        ████████████████ 4,090 ns
-Python          ██████████████████████████████████████████████████████████████ 25,510 ns
-```
-
-**Summary:**
-- **Linux achieves better latency across all languages** (4-32% faster)
-- **C# remains fastest** on both platforms
-- **Java JNI binary is 2nd fastest** on both platforms
-- **Ranking is consistent across platforms**, but Linux amplifies advantages
-
-### Why the Performance Differences?
-
-1. **C# P/Invoke** - Direct native interop with minimal overhead, struct marshaling is highly optimized
-2. **Java JNI** - Traditional native interface, excellent for binary data, higher overhead for strings
-3. **Java FFM** - Modern foreign function API, better string handling, some overhead for memory management
-4. **Python ctypes** - Interpreted language with dynamic typing adds significant overhead
-
-### Binary vs JSON Speedup
-
-| Language | Speedup Factor |
-|----------|---------------|
-| Java JNI | 10.5x |
-| C# | 7.8x |
-| Java FFM | 4.9x |
-| Python | 4.7x |
+| Calls/Second | Time Saved (JSON → Binary) | Verdict |
+|--------------|----------------------------|---------|
+| 10 | 22 μs/sec | Irrelevant |
+| 100 | 220 μs/sec | Irrelevant |
+| 1,000 | 2.2 ms/sec | Marginal |
+| 10,000 | 22 ms/sec | Consider binary |
+| 100,000 | 220 ms/sec | Use binary |
 
 ---
 
-## Recent Optimizations
+## Concurrent Scaling
 
-### Python Binary Transport (v0.1.0)
+### Java FFM (Linux x86, JDK 25)
 
-**Before:** 18.2 μs per call
-**After:** 5.73 μs per call
-**Improvement:** 3.2x faster
+| Threads | Binary (ops/s) | JSON (ops/s) |
+|---------|----------------|--------------|
+| 1 | 2.74M | 456K |
+| 4 | 2.37M | 1.06M |
+| 8 | 3.00M | 1.67M |
 
-**Change:** Eliminated double-copy in `call_raw()` by using `ctypes.addressof()` to pass the struct pointer directly instead of converting to bytes first.
+### C# Concurrent (100 parallel tasks)
 
-### Java FFM Zero-Copy (v0.1.0)
-
-**New method:** `callRawZeroCopy()` returns `RawResponse` wrapper with direct native memory access.
-
-| Method | Latency | Improvement |
-|--------|---------|-------------|
-| ffmBinary (segment) | 908 ns | baseline |
-| ffmBinaryBytes (byte[]) | 742 ns | 18% faster |
-| **ffmBinaryZeroCopy** | **667 ns** | **27% faster** |
+| Platform | Binary | JSON | Binary Advantage |
+|----------|--------|------|------------------|
+| macOS M1 | 37.8 μs | 141.2 μs | 73% faster |
+| Linux x86 | ~70 μs | ~125 μs | ~44% faster |
+| Windows x86 | 71.3 μs | 128.1 μs | 44% faster |
 
 ---
 
 ## Recommendations
 
-### When to Use Binary Transport
-
-- High-frequency calls (>10K ops/s needed)
-- Latency-sensitive paths (<1μs required)
-- Fixed-schema data with known layouts
-- Memory-constrained environments
-- **Linux deployment preferred** (4-35% faster than Windows)
-
-### When to Use JSON Transport
-
-- Flexibility over raw performance
-- Debugging/logging needs (human-readable)
-- Variable-schema data
-- Interoperability with external systems
-- **Performance is consistent across platforms**
-
 ### Language Selection
 
-| Use Case | Recommended | Windows Performance | Linux Performance |
-|----------|-------------|-------|----------|
-| Maximum binary performance | C# | 326 ns | 268 ns ⭐ |
-| Maximum JSON performance | C# or Java FFM | 2.55 μs / 3.26 μs | 2.29 μs / 2.44 μs ⭐ |
-| Cross-platform desktop | C# (.NET) | Good | Better ⭐ |
-| Enterprise/Android | Java FFM (Java 21+) | Good | Better ⭐ |
-| Legacy Java (8-20) | Java JNI | Baseline | 31% faster ⭐ |
-| Scripting/prototyping | Python | Baseline | 15-32% faster ⭐ |
+| Use Case | Recommended | Why |
+|----------|-------------|-----|
+| Maximum performance | C# (.NET 8+) | Lowest latency, excellent ARM support |
+| Enterprise/Server | Java FFM (JDK 22+) | Mature ecosystem, good performance |
+| Scripting/Automation | Python 3.10+ | Rapid development, adequate performance |
+| Cross-platform desktop | C# or Java | Both have excellent cross-platform support |
 
-### Java: JNI vs FFM Decision Guide
+### Platform Selection
 
-| Scenario | Recommendation | Windows | Linux |
-|----------|----------------|---------|-------|
-| Binary-heavy workload | JNI | 13% faster | **22% faster** ⭐ |
-| JSON-heavy workload | FFM | 46% faster | 40% faster |
-| Mixed workload | FFM | Better balance | Better balance |
-| Java 17-20 compatibility | JNI | Only option | Only option |
-| Future-proofing | FFM | Modern API | Modern API, Linux faster ⭐ |
+| Priority | Recommendation |
+|----------|----------------|
+| Lowest latency | macOS ARM64 (M1/M2/M3) |
+| Best x86 performance | Linux |
+| Windows required | Expect 15-45% higher latency than Linux |
 
-### Java FFM: Which Binary Method?
+### Transport Selection
 
-| Scenario | Recommended Method | Windows | Linux |
-|----------|-------------------|---------|-------|
-| Maximum performance | `callRawZeroCopy()` | 667 ns | 511 ns ⭐ |
-| Need byte[] for existing APIs | `callRawBytes()` | 742 ns | 551 ns ⭐ |
-| Need Arena lifetime management | `callRaw()` | 908 ns | 624 ns ⭐ |
-
-### Platform-Specific Guidance
-
-**Linux Deployment:**
-- ✅ **Expect 10-35% performance improvement** over Windows
-- Concurrent workloads show the largest advantage (~32%)
-- Java JNI binary is particularly strong (31% faster than Windows)
-- Worth considering for latency-sensitive applications
-
-**Windows Deployment:**
-- ✅ **Performance is acceptable** but expect 10-35% slower
-- Multi-threaded JNI binary scaling is slightly better (4-thread workloads)
-- All languages perform predictably
-- Suitable for business applications where platform diversity is required
-
-**Cross-Platform Applications:**
-- **Target Linux for deployment** if performance is critical
-- **Expect consistent ranking** (C# > Java JNI > Java FFM > Python) on both platforms
-- **Binary transport advantage** is consistent (5-10x faster than JSON)
+| Scenario | Use JSON | Use Binary |
+|----------|----------|------------|
+| New feature development | Yes | |
+| Debugging/troubleshooting | Yes | |
+| Schema likely to change | Yes | |
+| Calls < 1,000/sec | Yes | |
+| Proven hot path > 10,000/sec | | Yes |
+| Memory-constrained environment | | Yes |
+| Stable, well-defined schema | | Yes |
 
 ---
 
@@ -474,114 +271,66 @@ Python          █████████████████████�
 
 ### Prerequisites
 
-Build the Rust plugins in release mode:
-
 ```bash
-# Build the hello-plugin (required for all benchmarks)
 cargo build --release -p hello-plugin
-
-# Build the JNI library (required for Java JNI benchmarks)
-cargo build --release -p rustbridge-jni
 ```
 
 ### C# Benchmarks
 
 ```bash
 cd rustbridge-csharp
-
-# Transport latency benchmark
-dotnet run -c Release --project RustBridge.Benchmarks -- --filter "*TransportBenchmark*"
-
-# Throughput benchmark
-dotnet run -c Release --project RustBridge.Benchmarks -- --filter "*ThroughputBenchmark*"
-
-# Concurrent benchmark
-dotnet run -c Release --project RustBridge.Benchmarks -- --filter "*ConcurrentBenchmark*"
-
-# Run all benchmarks
-dotnet run -c Release --project RustBridge.Benchmarks
+dotnet run -c Release --project RustBridge.Benchmarks -- --filter "*"
 ```
 
-### Java Benchmarks (FFM + JNI)
-
-First, build the JMH benchmark jar:
+### Java Benchmarks
 
 ```bash
 cd rustbridge-java
 ./gradlew :rustbridge-benchmarks:jmhJar
+
+java --enable-native-access=ALL-UNNAMED \
+  -jar rustbridge-benchmarks/build/libs/rustbridge-benchmarks-0.8.0-jmh.jar \
+  -f 2 -wi 3 -i 5
 ```
 
-Run benchmarks with the JNI library path. The key is passing `-jvmArgs` so forked JVM processes also get the library path:
-
-```bash
-cd rustbridge-java
-
-# Full benchmarks (recommended settings from build.gradle.kts)
-java --enable-preview --enable-native-access=ALL-UNNAMED \
-  -jar rustbridge-benchmarks/build/libs/rustbridge-benchmarks-0.1.0-jmh.jar \
-  -jvmArgs "--enable-preview --enable-native-access=ALL-UNNAMED -Djava.library.path=/path/to/rustbridge/target/release"
-
-# Quick run with fewer iterations (for testing)
-java --enable-preview --enable-native-access=ALL-UNNAMED \
-  -jar rustbridge-benchmarks/build/libs/rustbridge-benchmarks-0.1.0-jmh.jar \
-  -f 1 -wi 2 -i 3 \
-  -jvmArgs "--enable-preview --enable-native-access=ALL-UNNAMED -Djava.library.path=/path/to/rustbridge/target/release"
-```
-
-**Important:** The `-jvmArgs` flag is critical for JNI benchmarks. JMH forks new JVM processes for each benchmark, and without `-jvmArgs`, those forked processes won't have the `java.library.path` set, causing JNI to fail silently (returning no-ops).
-
-On Windows, use forward slashes in the path:
-```bash
--Djava.library.path=C:/Users/yourname/git/rustbridge/target/release
-```
+Note: For Java 21, add `--enable-preview`.
 
 ### Python Benchmarks
 
 ```bash
 cd rustbridge-python
-
-# Install dependencies (first time only)
 pip install -e ".[dev]"
-
-# Run all benchmarks
-python -m pytest tests/test_benchmarks.py tests/test_binary_transport.py -v --benchmark-only
-
-# Run with specific columns
 python -m pytest tests/test_benchmarks.py tests/test_binary_transport.py -v \
   --benchmark-only --benchmark-columns=mean,stddev,ops
 ```
 
 ---
 
-## Test Environment
+## Test Environments
 
-### Windows
+### Linux (x86-64)
+- **OS:** Ubuntu 24.04 LTS (kernel 6.8.0-90-generic)
+- **CPU:** AMD Ryzen Threadripper 1950X (16 cores)
+- **Runtimes:** .NET 8.0.22, JDK 25.0.2 (Azul Zulu), Python 3.12.3
+
+### Windows (x86-64)
 - **OS:** Windows 11 (10.0.26100.7623)
-- **CPU:** AMD Ryzen Threadripper 1950X (16 logical cores)
-- **RAM:** Available
-- **Runtime Versions:**
-  - .NET SDK 8.0.417, Runtime 8.0.23
-  - JDK 21.0.9 (Eclipse Adoptium)
-  - Python 3.13.9
-- **Benchmark Tools:**
-  - BenchmarkDotNet v0.14.0
-  - JMH 1.37
-  - pytest-benchmark 5.2.3
+- **CPU:** AMD Ryzen Threadripper 1950X (16 cores)
+- **Runtimes:** .NET 8.0.23, JDK 21.0.9 (Eclipse Adoptium), Python 3.13.9
 
-### Linux
-- **OS:** Linux (Ubuntu 24.04 LTS, kernel 6.8.0-90-generic)
-- **CPU:** AMD Ryzen Threadripper 1950X (16 logical cores) - **Same hardware as Windows**
-- **RAM:** 62 GB available
-- **Runtime Versions:**
-  - .NET SDK 8.0.122, Runtime 8.0.22
-  - JDK 21.0.10 (Eclipse Temurin)
-  - Python 3.12.3
-- **Benchmark Tools:**
-  - BenchmarkDotNet v0.14.0
-  - JMH 1.37
-  - pytest-benchmark 5.2.3
+### macOS (ARM64)
+- **OS:** macOS 26.2
+- **CPU:** Apple M1 (8 cores: 4P + 4E)
+- **Runtimes:** .NET 8.0.23, JDK 22.0.2 (Azul Zulu), Python 3.10.19
 
-### Both Platforms
-- **Rust Plugin:** hello-plugin built with `--release`
-- **Hardware:** Identical CPU (AMD Ryzen Threadripper 1950X) enables fair platform comparison
-- **Note:** Linux JDK versions are newer (21.0.10 vs 21.0.9 on Windows)
+---
+
+## Historical Notes
+
+### Changes in v0.8.0
+- **JNI Removed:** Java integration now uses FFM exclusively (Java 21+)
+- **Simplified Setup:** No native library compilation required for Java
+- **Performance Improved:** JDK 25 FFM is 28% faster than JDK 21 preview
+
+### Archived Data
+Previous benchmark data including JNI comparisons is available in the git history.
