@@ -190,13 +190,13 @@ Here are the components planned for a 1.0 release:
 
 | Component         | Status                |
 |-------------------|-----------------------|
-| JSON Transport    | Approaching stability |
+| JSON Transport    | Stable                |
 | Plugin Lifecycle  | Stable                |
 | Bundle Format     | Stable                |
 | Java FFM Bindings | Stable                |
 | C# Bindings       | Stable                |
 | Python Bindings   | Stable                |
-| Binary Transport  | In development        |
+| Binary Transport  | Approaching stability |
 
 ## Contributing
 
