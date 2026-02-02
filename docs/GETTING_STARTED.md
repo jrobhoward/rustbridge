@@ -272,3 +272,16 @@ Your bundle doesn't include a library for your OS/architecture. Rebuild with the
 
 The C# template references rustbridge projects relative to where you cloned the repo. If paths don't match,
 update the `<ProjectReference>` paths in `RustBridgeConsumer.csproj`.
+
+### C#: Metadata file could not be found
+
+If you see errors like `Metadata file 'RustBridge.Core.dll' could not be found`, this typically occurs when
+RustBridge was previously built from a different path. Run `dotnet clean` in the `rustbridge-csharp/` directory,
+then rebuild your consumer:
+
+```bash
+cd $RUSTBRIDGE_WORKSPACE/rustbridge/rustbridge-csharp
+dotnet clean
+cd /path/to/your/consumer
+dotnet build
+```
