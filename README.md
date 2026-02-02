@@ -94,15 +94,6 @@ The fastest way to understand rustbridge is to build something:
 📖 **[Getting Started Guide](https://github.com/jrobhoward/rustbridge/blob/main/docs/GETTING_STARTED.md)** — Create your
 first plugin and call it from Java
 
-Or dive into the tutorials (more to come):
-
-| Tutorial                                                                                                       | What You'll Learn                                  |
-|----------------------------------------------------------------------------------------------------------------|----------------------------------------------------|
-| [Production Bundles](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/01-production-bundles/) | Code signing, schemas, SBOMs                       |
-| [Cross-Compilation](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/02-cross-compilation/)   | Building for multiple platforms                    |
-| [Backpressure Queues](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/03-backpressure-queues/) | Bounded queues, blocking callers, flow control     |
-| [Binary Transport](https://github.com/jrobhoward/rustbridge/blob/main/docs/tutorials/04-binary-transport/)       | High-performance binary FFI, image processing      |
-
 ## Quick Example
 
 **Rust plugin:**
@@ -162,11 +153,11 @@ Plugin plugin = BundleLoader.load("my-plugin-1.0.0.rbp");
 | Language | Version   | Guide                                                                                                               |
 |----------|-----------|---------------------------------------------------------------------------------------------------------------------|
 | Java     | 21+       | [docs/using-plugins/JAVA_FFM.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/JAVA_FFM.md) |
-| Kotlin   | 21+       | [docs/using-plugins/KOTLIN.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/KOTLIN.md)     |
+| Kotlin   | 2.0+      | [docs/using-plugins/KOTLIN.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/KOTLIN.md)     |
 | C#       | .NET 8.0+ | [docs/using-plugins/CSHARP.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/CSHARP.md)     |
 | Python   | 3.10+     | [docs/using-plugins/PYTHON.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/PYTHON.md)     |
 
-> **Note**: Java 21 users must add `--enable-preview` flag. Java 22+ is recommended.
+> **Note**: Java 21 users must add `--enable-preview` flag. It works, but Java 22+ is recommended.
 
 ## Install from Source
 

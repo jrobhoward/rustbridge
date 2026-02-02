@@ -8,7 +8,7 @@ This guide covers loading and using rustbridge plugins from your application. Ch
 |----------|-------|--------------|-------|
 | **Kotlin** | [KOTLIN.md](./KOTLIN.md) | Java 21+ | Idiomatic Kotlin with data classes |
 | **Java** | [JAVA_FFM.md](./JAVA_FFM.md) | Java 21+ | FFM-based loader |
-| **C#** | [CSHARP.md](./CSHARP.md) | .NET 6.0+ | P/Invoke-based loader |
+| **C#** | [CSHARP.md](./CSHARP.md) | .NET 8.0+ | P/Invoke-based loader |
 | **Python** | [PYTHON.md](./PYTHON.md) | Python 3.10+ | ctypes-based loader |
 
 ## Quick Start
