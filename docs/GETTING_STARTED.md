@@ -19,7 +19,7 @@ guide walks you through creating a plugin, packaging it, and running it from you
 
 **Before starting this guide**, complete the [Install from Source](./INSTALL.md) guide:
 
-1. Set up your workspace (`$RUSTBRIDGE_WORKSPACE`)
+1. Set up your workspace (`$RUSTBRIDGE_WORKSPACE` is used by this documentation so examples can easily be cut+paste)
 2. Clone the repository and install the CLI
 3. Install host language libraries for your target language(s)
 
@@ -73,37 +73,37 @@ Now use the `rustbridge` CLI to package your plugin as a portable `.rbp` file (r
 # Linux
 rustbridge bundle create \
   --name my-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib linux-x86_64:target/release/libmy_plugin.so \
-  --output my-plugin-1.0.0.rbp
+  --output my-plugin-0.1.0.rbp
 ```
 
 ```bash
 # macOS (Apple Silicon)
 rustbridge bundle create \
   --name my-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib darwin-aarch64:target/release/libmy_plugin.dylib \
-  --output my-plugin-1.0.0.rbp
+  --output my-plugin-0.1.0.rbp
 ```
 
 ```bash
 # Windows
 rustbridge bundle create \
   --name my-plugin \
-  --version 1.0.0 \
+  --version 0.1.0 \
   --lib windows-x86_64:target/release/my_plugin.dll \
-  --output my-plugin-1.0.0.rbp
+  --output my-plugin-0.1.0.rbp
 ```
 
 Verify:
 
 ```bash
-rustbridge bundle list my-plugin-1.0.0.rbp
+rustbridge bundle list my-plugin-0.1.0.rbp
 
 # additional/optional inspection
-unzip -l my-plugin-1.0.0.rbp
-unzip -p my-plugin-1.0.0.rbp manifest.json
+unzip -l my-plugin-0.1.0.rbp
+unzip -p my-plugin-0.1.0.rbp manifest.json
 ```
 
 ---
@@ -117,7 +117,7 @@ Pick your language below and run it.
 
 ```bash
 cd consumers/kotlin
-cp ../../my-plugin-1.0.0.rbp .
+cp ../../my-plugin-0.1.0.rbp .
 ./gradlew run
 ```
 
@@ -127,7 +127,7 @@ cp ../../my-plugin-1.0.0.rbp .
 
 ```bash
 cd consumers/java-ffm
-cp ../../my-plugin-1.0.0.rbp .
+cp ../../my-plugin-0.1.0.rbp .
 ./gradlew run
 ```
 
@@ -135,7 +135,7 @@ cp ../../my-plugin-1.0.0.rbp .
 
 ```bash
 cd consumers/csharp
-cp ../../my-plugin-1.0.0.rbp .
+cp ../../my-plugin-0.1.0.rbp .
 dotnet run
 ```
 
@@ -143,7 +143,7 @@ dotnet run
 
 ```bash
 cd consumers/python
-cp ../../my-plugin-1.0.0.rbp .
+cp ../../my-plugin-0.1.0.rbp .
 
 # Create and activate virtual environment
 python3 -m venv .venv
