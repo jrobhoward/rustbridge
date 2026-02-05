@@ -21,7 +21,7 @@ dependencies {
     implementation("com.rustbridge:rustbridge-ffm:0.8.0")
 
     // JSON serialization
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.2")
 
     testImplementation(kotlin("test"))
 }

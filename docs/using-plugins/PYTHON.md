@@ -413,3 +413,4 @@ python -m pytest tests/test_hello_plugin_integration.py -v
 - [../TRANSPORT.md](../TRANSPORT.md) - Transport layer details
 - [../MEMORY_MODEL.md](../MEMORY_MODEL.md) - Memory ownership
 - [../TESTING_PYTHON.md](../TESTING_PYTHON.md) - Python testing conventions
+- [../ERROR_HANDLING.md](../ERROR_HANDLING.md) - Error codes and handling patterns

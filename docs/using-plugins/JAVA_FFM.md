@@ -348,3 +348,4 @@ public class CalculatorExample {
 - [KOTLIN.md](./KOTLIN.md) - Kotlin-specific guide
 - [../TRANSPORT.md](../TRANSPORT.md) - Transport layer details
 - [../MEMORY_MODEL.md](../MEMORY_MODEL.md) - Memory ownership
+- [../ERROR_HANDLING.md](../ERROR_HANDLING.md) - Error codes and handling patterns

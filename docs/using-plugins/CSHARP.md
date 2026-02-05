@@ -391,3 +391,4 @@ Binary transport is **8.5x faster** than JSON on Linux.
 - [../TRANSPORT.md](../TRANSPORT.md) - Transport layer details
 - [../MEMORY_MODEL.md](../MEMORY_MODEL.md) - Memory ownership
 - [../BENCHMARK_RESULTS.md](../BENCHMARK_RESULTS.md) - Performance data
+- [../ERROR_HANDLING.md](../ERROR_HANDLING.md) - Error codes and handling patterns

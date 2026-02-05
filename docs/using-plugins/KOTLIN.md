@@ -34,7 +34,7 @@ dependencies {
     implementation("com.rustbridge:rustbridge-core:0.8.0")
     implementation("com.rustbridge:rustbridge-ffm:0.8.0")
     implementation("com.rustbridge:rustbridge-kotlin:0.8.0")  // Kotlin extensions
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.2")
 
     // Optional: for coroutine support
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
@@ -68,7 +68,8 @@ tasks.withType<JavaExec> {
 }
 ```
 
-> **Important**: The `--enable-native-access=ALL-UNNAMED` flag is required for FFM to call native code. Java 21 additionally requires `--enable-preview`. Without these flags, you'll get `IllegalCallerException`. 
+> **Important**: The `--enable-native-access=ALL-UNNAMED` flag is required for FFM to call native code. Java 21 additionally requires `--enable-preview`. Without these flags, you'll get `IllegalCallerException`.
+
 ## The rustbridge-kotlin Module
 
 The `rustbridge-kotlin` module provides idiomatic Kotlin extensions:
@@ -417,3 +418,4 @@ fun main() = runBlocking {
 - [JAVA_FFM.md](./JAVA_FFM.md) - Java FFM details
 - [../TRANSPORT.md](../TRANSPORT.md) - Transport layer details
 - [../MEMORY_MODEL.md](../MEMORY_MODEL.md) - Memory ownership
+- [../ERROR_HANDLING.md](../ERROR_HANDLING.md) - Error codes and handling patterns
