@@ -7,8 +7,8 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 readme = "../../README.md"
-keywords = ["ffi", "plugin", "interop", "async", "bindings"]
-categories = ["development-tools::ffi", "asynchronous"]
+keywords = ["ffi", "plugin", "interop", "stable-abi", "cdylib"]
+categories = ["development-tools::ffi", "api-bindings"]
 
 [dependencies]
 # Core rustbridge crates

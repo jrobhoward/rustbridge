@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 readme = "../../README.md"
-keywords = ["ffi", "plugin", "cli", "build-tool", "codegen"]
+keywords = ["ffi", "plugin", "cli", "scaffolding", "bundle"]
 categories = ["development-tools::ffi", "development-tools::build-utils", "command-line-utilities"]
 
 [[bin]]

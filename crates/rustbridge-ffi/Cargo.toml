@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 readme = "../../README.md"
-keywords = ["ffi", "plugin", "c-abi", "bindings", "interop"]
+keywords = ["ffi", "c-abi", "stable-abi", "cdylib", "bindings"]
 categories = ["development-tools::ffi", "api-bindings"]
 
 [dependencies]

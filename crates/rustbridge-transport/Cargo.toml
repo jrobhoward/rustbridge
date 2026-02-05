@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 readme = "../../README.md"
-keywords = ["ffi", "plugin", "interop", "json", "serialization"]
+keywords = ["ffi", "json", "serialization", "codec", "binary"]
 categories = ["development-tools::ffi", "encoding"]
 
 [dependencies]
