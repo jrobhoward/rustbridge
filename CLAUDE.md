@@ -28,12 +28,18 @@ cargo bench -p rustbridge-transport -- small_roundtrip             # Run specifi
 rustbridge bundle create --name my-plugin --version 1.0.0 \
   --lib linux-x86_64:target/release/libmyplugin.so --output plugin.rbp
 
+# Build native library (required before Java/C#/Python tests)
+cargo build --release -p hello-plugin                             # Example plugin
+# Output: target/release/libhello_plugin.so (Linux), .dylib (macOS), .dll (Windows)
+
 # Java/Kotlin (from rustbridge-java/)
-./gradlew build && ./gradlew test    # Linux/macOS
-gradlew.bat build && gradlew.bat test  # Windows
+./gradlew build && ./gradlew test                                 # Linux/macOS
+./gradlew test --tests "*PluginTest*"                             # Run tests matching pattern
+gradlew.bat build && gradlew.bat test                             # Windows
 
 # Python (from rustbridge-python/)
 source .venv/bin/activate && python -m pytest tests/ -v
+python -m pytest tests/test_log_level.py::test_log_level___debug___has_correct_value -v  # Single test
 ```
 
 ## Common Workflows
@@ -41,7 +47,7 @@ source .venv/bin/activate && python -m pytest tests/ -v
 1. **Making code changes**: Edit → `cargo fmt --all` → `cargo clippy --workspace --examples --tests -- -D warnings` → `cargo test -p <changed-crate>`
 2. **Before committing**: Run `./scripts/pre-commit.sh --smart` (tests only changed components)
 3. **Full validation**: Run `./scripts/pre-commit.sh` (required before PRs)
-4. **Cross-language changes**: If modifying FFI code in Rust, also run Java/C#/Python tests
+4. **Cross-language changes**: If modifying FFI code in Rust, rebuild native lib (`cargo build --release`), then run Java/C#/Python tests
 
 ## Version Requirements
 

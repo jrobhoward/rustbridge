@@ -7,13 +7,10 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0%2B-purple.svg)](https://dotnet.microsoft.com)
 [![Python](https://img.shields.io/badge/python-3.10%2B-green.svg)](https://www.python.org)
 
-> [!CAUTION]
-> **Beta Software** — This project is under active development and not yet recommended for production use.
-> - Bundle format (`.rbp`) should be stable, but may require additional extensions before the 1.0 release
-> - JSON transport is also approaching stability
-> - Binary transport is experimental
-> - Installed locally from source: Not yet published to package registries (Maven Central, NuGet, PyPI)
-> - API documentation is incomplete
+> [!NOTE]
+> **Approaching 1.0** — Core components (bundle format, JSON transport, language bindings) should be stable. It's not
+> yet published to package registries (e.g. Maven Central, NuGet, PyPI), so rustbridge consumer libraries must be
+> installed from source.
 
 **rustbridge** lets you write plugins in Rust that can be called from Java, Kotlin, C#, or Python—without dealing with
 the C ABI directly.
@@ -43,10 +40,13 @@ Calling Rust from other languages typically means writing C bindings. That means
 - **No error handling** (C has no exceptions or Result types)
 - **Manual serialization** of complex data structures
 
+One of your goals may be to work exclusively in memory safe languages, but in order to get from one language to the
+other, you'll need to cross _the C ABI Chasm_.
+
 ## A Solution
 
 With **rustbridge**, you can write a plugin once, and call it from various languages without needing to _cross the C ABI
-chasm_ yourself:
+chasm_ directly:
 
 ```mermaid
 flowchart LR
@@ -78,21 +78,60 @@ style safe_rust fill: #f5a623, stroke: #ff8c00,color: #000000
 style safe_host fill: #4a90d9,stroke: #2e6cb5, color: #ffffff
 ```
 
-rustbridge handles the messy bits for you. You write a simple Rust trait implementation, and rustbridge provides:
+rustbridge handles the messy bits. You get:
 
-- **Safe memory management** across the FFI boundary
-- **JSON serialization** for request/response data
-- **Structured error handling** with typed error codes
-- **Plugin lifecycle management** (startup, shutdown, health checks)
-- **Logging callbacks** that integrate with your host language
-- **Portable bundles** (`.rbp` files) that work on multiple platforms
+- **High-level JSON, native Rust speed** — Work with serde types, not raw pointers
+- **Stable C ABI** — Plugins work regardless of your Rust compiler version or optimization flags
+- **One plugin, many languages** — Same binary called from Java, Kotlin, C#, or Python
+- **Production-ready bundles** — Code signing, SBOM, checksums, multi-platform support
+- **Managed lifecycle** — Startup, shutdown, and logging callbacks built-in
 
-## Get Started
+## Project Status
 
-The fastest way to understand rustbridge is to build something:
+Components planned for a 1.0 release:
 
-📖 **[Getting Started Guide](https://github.com/jrobhoward/rustbridge/blob/main/docs/GETTING_STARTED.md)** — Create your
-first plugin and call it from Java
+| Component         | Status      |
+|-------------------|-------------|
+| JSON Transport    | Stable      |
+| Plugin Lifecycle  | Stable      |
+| Bundle Format     | Stable      |
+| Java FFM Bindings | Stable      |
+| C# Bindings       | Stable      |
+| Python Bindings   | Stable      |
+| Binary Transport  | Stable      |
+| Documentation     | In-progress |
+
+## The .rbp Bundle
+
+Plugins ship as `.rbp` bundles (portable ZIP files containing at a minimum: a manifest and one or more shared
+libraries).
+An `.rbp` bundle may also include:
+
+| Feature            | Description                                                    |
+|--------------------|----------------------------------------------------------------|
+| **Multi-platform** | Linux, macOS, Windows (x64 + ARM64) may be bundled in one file |
+| **Code signing**   | Minisign signatures for authenticity verification              |
+| **SBOM**           | CycloneDX and SPDX for supply chain transparency               |
+| **Variants**       | Release + debug builds, custom feature flags                   |
+| **Checksums**      | SHA256 verification of all binaries                            |
+| **Provenance**     | Git commit, CI job, build timestamp tracking                   |
+
+Create a bundle:
+
+```bash
+rustbridge bundle create \
+  --name my-plugin --version 1.0.0 \
+  --lib linux-x86_64:target/release/libmyplugin.so \
+  --lib darwin-aarch64:target/release/libmyplugin.dylib \
+  --lib windows-x86_64:target/release/myplugin.dll \
+  --output my-plugin-1.0.0.rbp
+```
+
+Load from any language; rustbridge will auto-detect the platform:
+
+```java
+Plugin plugin = BundleLoader.load("my-plugin-1.0.0.rbp");
+```
 
 ## Quick Example
 
@@ -126,27 +165,12 @@ try (Plugin plugin = FfmPluginLoader.load("libecho.so")) {
 }
 ```
 
-**Kotlin, C#, and Python** are just as simple. See the [language guides](#language-guides) below.
+## Get Started
 
-## The .rbp Bundle
+The fastest way to understand rustbridge is to build something:
 
-Plugins are distributed as `.rbp` bundles—portable ZIP files containing libraries for multiple platforms:
-
-```bash
-# Create a multi-platform bundle
-rustbridge bundle create \
-  --name my-plugin --version 1.0.0 \
-  --lib linux-x86_64:target/release/libmyplugin.so \
-  --lib darwin-aarch64:target/release/libmyplugin.dylib \
-  --lib windows-x86_64:target/release/myplugin.dll \
-  --output my-plugin-1.0.0.rbp
-```
-
-Load from any language—rustbridge auto-detects the platform:
-
-```java
-Plugin plugin = BundleLoader.load("my-plugin-1.0.0.rbp");
-```
+📖 **[Getting Started Guide](https://github.com/jrobhoward/rustbridge/blob/main/docs/GETTING_STARTED.md)** — Create your
+first plugin and call it from Java
 
 ## Language Guides
 
@@ -163,7 +187,8 @@ Plugin plugin = BundleLoader.load("my-plugin-1.0.0.rbp");
 
 rustbridge is not yet published to package registries. Install from source to get started.
 
-📖 **[Full Installation Guide](https://github.com/jrobhoward/rustbridge/blob/main/docs/INSTALL.md)** — Set up your workspace, install the CLI, and configure host language libraries.
+📖 **[Full Installation Guide](https://github.com/jrobhoward/rustbridge/blob/main/docs/INSTALL.md)** — Set up your
+workspace, install the CLI, and configure host language libraries.
 
 **Quick start:**
 
@@ -182,21 +207,8 @@ cargo install --force --path crates/rustbridge-cli
 rustbridge --version
 ```
 
-See the [full guide](https://github.com/jrobhoward/rustbridge/blob/main/docs/INSTALL.md) for host language library setup (Java/Kotlin, C#, Python).
-
-## Project Status
-
-Here are the components planned for a 1.0 release:
-
-| Component         | Status                |
-|-------------------|-----------------------|
-| JSON Transport    | Stable                |
-| Plugin Lifecycle  | Stable                |
-| Bundle Format     | Stable                |
-| Java FFM Bindings | Stable                |
-| C# Bindings       | Stable                |
-| Python Bindings   | Stable                |
-| Binary Transport  | Approaching stability |
+See the [full guide](https://github.com/jrobhoward/rustbridge/blob/main/docs/INSTALL.md) for host language library
+setup (Java/Kotlin, C#, Python).
 
 ## Contributing
 
