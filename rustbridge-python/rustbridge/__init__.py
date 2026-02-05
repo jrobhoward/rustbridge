@@ -47,7 +47,7 @@ from rustbridge.native.structures import FfiBuffer
 from rustbridge.native.native_plugin import NativePlugin
 from rustbridge.native.plugin_loader import NativePluginLoader
 
-__version__ = "0.8.0"
+__version__ = "0.8.1"
 
 __all__ = [
     # Core types

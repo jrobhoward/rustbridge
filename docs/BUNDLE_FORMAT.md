@@ -128,7 +128,7 @@ The `manifest.json` file describes the bundle contents:
   "license_file": "legal/LICENSE",
   "public_key": "RWTxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   "api": {
-    "min_rustbridge_version": "0.8.0",
+    "min_rustbridge_version": "0.8.1",
     "transports": ["json", "cstruct"],
     "messages": [...]
   },
@@ -548,7 +548,7 @@ The `api` section describes the plugin's message interface:
 ```json
 {
   "api": {
-    "min_rustbridge_version": "0.8.0",
+    "min_rustbridge_version": "0.8.1",
     "transports": ["json", "cstruct"],
     "messages": [
       {

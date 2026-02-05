@@ -67,8 +67,8 @@ repositories {
 }
 
 dependencies {
-    implementation("com.rustbridge:rustbridge-core:0.8.0")
-    implementation("com.rustbridge:rustbridge-ffm:0.8.0")
+    implementation("com.rustbridge:rustbridge-core:0.8.1")
+    implementation("com.rustbridge:rustbridge-ffm:0.8.1")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.2")
 }
 

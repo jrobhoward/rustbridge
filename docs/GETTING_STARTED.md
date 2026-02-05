@@ -26,7 +26,7 @@ guide walks you through creating a plugin, packaging it, and running it from you
 Verify your installation:
 
 ```bash
-rustbridge --version  # Should show rustbridge 0.8.0 or later
+rustbridge --version  # Should show rustbridge 0.8.1 or later
 ```
 
 ---

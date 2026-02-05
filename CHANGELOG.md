@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2026-02-04
+
+### Security
+- Updated `bytes` crate to 1.11.1 to fix integer overflow vulnerability (RUSTSEC-2026-0007)
+
+### Removed
+- Removed unimplemented async FFI stubs (`plugin_call_async`, `plugin_cancel_async`) from C API
+
+### Changed
+- Documentation: Fixed Jackson dependency version inconsistencies (standardized to 2.18.2)
+- Documentation: Added ERROR_HANDLING.md cross-references to language guides
+- Documentation: Fixed formatting issues in KOTLIN.md
+
 ## [0.8.0] - 2026-02-01
 
 ### Removed
@@ -278,7 +291,8 @@ Initial public release.
 - No `.unwrap()` or `.expect()` in production code
 - Minisign signature verification for bundle integrity
 
-[Unreleased]: https://github.com/jrobhoward/rustbridge/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/jrobhoward/rustbridge/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/jrobhoward/rustbridge/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/jrobhoward/rustbridge/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/jrobhoward/rustbridge/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/jrobhoward/rustbridge/compare/v0.6.1...v0.6.2

@@ -511,7 +511,7 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-rustbridge = { version = "0.8.0" }
+rustbridge = { version = "0.8.1" }
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
 
 [profile.release]
