@@ -108,9 +108,8 @@ pub use tracing;
 /// to expose the required FFI functions for the shared library.
 pub mod ffi_exports {
     pub use rustbridge_ffi::{
-        plugin_call, plugin_call_async, plugin_call_raw, plugin_cancel_async, plugin_free_buffer,
-        plugin_get_rejected_count, plugin_get_state, plugin_init, plugin_set_log_level,
-        plugin_shutdown, rb_response_free,
+        plugin_call, plugin_call_raw, plugin_free_buffer, plugin_get_rejected_count,
+        plugin_get_state, plugin_init, plugin_set_log_level, plugin_shutdown, rb_response_free,
     };
 }
 

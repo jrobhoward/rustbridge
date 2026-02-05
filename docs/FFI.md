@@ -34,8 +34,6 @@ These symbols provide additional functionality:
 | `plugin_get_rejected_count` | `fn(FfiPluginHandle) -> u64` | Get rejected request count |
 | `plugin_call_raw` | `fn(FfiPluginHandle, u32, *const u8, usize) -> RbResponse` | Binary transport call |
 | `rb_response_free` | `fn(*mut RbResponse)` | Free a binary response |
-| `plugin_call_async` | `fn(FfiPluginHandle, *const c_char, *const u8, usize, u64) -> FfiBuffer` | Async request (future) |
-| `plugin_cancel_async` | `fn(FfiPluginHandle, u64) -> bool` | Cancel async request (future) |
 
 ## Type Definitions
 
