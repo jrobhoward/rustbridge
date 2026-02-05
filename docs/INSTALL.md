@@ -96,3 +96,7 @@ rustbridge --version
 ```
 
 You should see version output (e.g., `rustbridge 0.8.0`).
+
+## What's Next?
+
+Now that you have rustbridge installed, continue to the [Getting Started Guide](./GETTING_STARTED.md) to build your first plugin.

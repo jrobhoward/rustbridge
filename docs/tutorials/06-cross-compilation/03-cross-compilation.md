@@ -210,4 +210,4 @@ and run.
 
 ## What's Next?
 
-Continue to [Chapter 7: Backpressure Queues](../03-backpressure-queues/README.md) to learn how to implement bounded queues with flow control for C# and Python consumers.
+Continue to [Chapter 7: Backpressure Queues](../07-backpressure-queues/README.md) to learn how to implement bounded queues with flow control for C# and Python consumers.

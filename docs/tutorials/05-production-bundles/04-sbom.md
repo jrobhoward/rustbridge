@@ -250,5 +250,5 @@ In this chapter, you've built a production-ready bundle with:
 
 ## Next Steps
 
-Continue to [Chapter 6: Cross-Compilation](../02-cross-compilation/README.md) to learn about building multi-platform
+Continue to [Chapter 6: Cross-Compilation](../06-cross-compilation/README.md) to learn about building multi-platform
 bundles for Linux, macOS, and Windows.
