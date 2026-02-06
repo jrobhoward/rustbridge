@@ -40,6 +40,7 @@ This directory contains the technical documentation for rustbridge.
 | [TESTING_KOTLIN.md](./TESTING_KOTLIN.md) | Kotlin testing conventions |
 | [TESTING_CSHARP.md](./TESTING_CSHARP.md) | C# testing conventions |
 | [TESTING_PYTHON.md](./TESTING_PYTHON.md) | Python testing conventions |
+| [TESTING_RUST_CONSUMER.md](./TESTING_RUST_CONSUMER.md) | Rust consumer testing conventions |
 
 ## Language-Specific Guides
 
@@ -51,7 +52,7 @@ This directory contains the technical documentation for rustbridge.
 | Kotlin | [KOTLIN.md](./using-plugins/KOTLIN.md) | Java 21+, Kotlin 2.0+ |
 | C# | [CSHARP.md](./using-plugins/CSHARP.md) | .NET 8.0+ |
 | Python | [PYTHON.md](./using-plugins/PYTHON.md) | Python 3.10+ |
-| Rust | [TESTING_RUST_CONSUMER.md](./TESTING_RUST_CONSUMER.md) | Rust 1.90+ |
+| Rust | [RUST.md](./using-plugins/RUST.md) | Rust 1.90+ |
 
 > **Rust consumers**: Use `cargo new` to create a standalone project and add `rustbridge-consumer` as a dependency.
 

@@ -180,8 +180,10 @@ first plugin and call it from Java
 | Kotlin   | 2.0+      | [docs/using-plugins/KOTLIN.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/KOTLIN.md)     |
 | C#       | .NET 8.0+ | [docs/using-plugins/CSHARP.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/CSHARP.md)     |
 | Python   | 3.10+     | [docs/using-plugins/PYTHON.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/PYTHON.md)     |
+| Rust     | 1.90+     | [docs/using-plugins/RUST.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/RUST.md)         |
 
 > **Note**: Java 21 users must add `--enable-preview` flag. It works, but Java 22+ is recommended.
+> **Note**: Rust consumers must be created as separate projects with `cargo new` to avoid workspace conflicts.
 
 ## Install from Source
 

@@ -10,7 +10,7 @@ This guide covers loading and using rustbridge plugins from your application. Ch
 | **Java** | [JAVA_FFM.md](./JAVA_FFM.md) | Java 21+ | FFM-based loader |
 | **C#** | [CSHARP.md](./CSHARP.md) | .NET 8.0+ | P/Invoke-based loader |
 | **Python** | [PYTHON.md](./PYTHON.md) | Python 3.10+ | ctypes-based loader |
-| **Rust** | [../TESTING_RUST_CONSUMER.md](../TESTING_RUST_CONSUMER.md) | Rust 1.90+ | `rustbridge-consumer` crate |
+| **Rust** | [RUST.md](./RUST.md) | Rust 1.90+ | `rustbridge-consumer` crate |
 
 > **Note**: Rust consumers use the `rustbridge-consumer` crate. Create a new project with `cargo new` and add `rustbridge-consumer` as a dependency. Unlike other languages, Rust consumers should be standalone projects to avoid Cargo workspace conflicts.
 
