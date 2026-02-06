@@ -332,37 +332,72 @@ If `on_stop()` doesn't complete within the timeout:
 
 **Make sure your cleanup logic completes quickly.**
 
-## Plugin Reload
+## Plugin Unloading and Reloading
 
-### What is Reload?
+> **Advanced topic.** Most applications should load a plugin once and keep it running for the lifetime of the process. If you need a different plugin version, restarting the process is the simplest and safest approach.
 
-Reload means:
-1. Shut down a running plugin (`plugin_shutdown()`)
-2. Optionally: Unload the dynamic library
+### Overview
+
+It is possible to unload and reload plugins dynamically at runtime. Nothing in rustbridge intentionally prevents or prohibits this -- you can shut down a plugin, drop the handle (which unloads the dynamic library), and load a fresh instance in the same process.
+
+However, **in practice this is generally not worth the risk or effort.** Dynamic unloading of shared libraries is an inherently fragile operation across all platforms and languages. Plugin developers must be mindful of issues that can occur when a library is unloaded:
+
+- **Global state left behind** -- static variables, thread-local storage, or registered callbacks from the unloaded library may leave dangling pointers.
+- **Background threads** -- if the plugin spawned threads that outlive the library, the process will crash when those threads return to code that has been unmapped.
+- **Third-party library state** -- dependencies used by the plugin may register global handlers (signal handlers, allocators, atexit callbacks) that cannot be reversed.
+- **OS-level caching** -- some dynamic linker implementations do not truly unload a library even when the last handle is closed, making reload of an updated binary unpredictable.
+
+**Recommendation:** Load a plugin and restart the process when a new version is needed. If you do pursue dynamic reload, test it thoroughly in your specific environment.
+
+### What Reload Means
+
+1. Shut down the running plugin (`plugin_shutdown()`)
+2. Drop the plugin handle (unloads the dynamic library)
 3. Load the plugin again (`plugin_init()`)
 4. Start it again
 
-This is useful for:
-- Updating plugin code without restarting the host application
-- Recovering from failed state
-- Switching configurations
+### Framework Guarantees
 
-### Reload Safety
+rustbridge itself cleans up all framework-managed state during shutdown:
 
-rustbridge **fully supports** plugin reload with these guarantees:
-
-✅ **Safe to reload:**
-- Plugin can be unloaded and reloaded any number of times
-- All functionality works correctly after reload
-- Resources are properly cleaned up between reloads
-- No memory leaks
+- The plugin handle is removed from the global handle manager
+- FFI log callbacks are deregistered
+- Binary message handlers are cleared (thread-local)
+- The tracing subscriber's reload handle persists (process-global, safe)
 
 ⚠️ **Known limitations:**
 - Log level persists across reloads (global state)
-- Logging infrastructure is shared if multiple plugins loaded
-- Tracing subscriber initialized once per process
+- Logging infrastructure is shared if multiple plugins are loaded
+- Tracing subscriber is initialized once per process
 
-### Reload Example (Java)
+These guarantees apply to the **framework's** state. The framework cannot protect against global state introduced by the **plugin itself** or its dependencies -- that is the plugin developer's responsibility.
+
+### Example: Unload and Reload (Rust)
+
+The `bundle_variant_tests.rs` integration test demonstrates unloading one variant and loading another:
+
+```rust
+// Load release variant, use it, shut down and drop
+let plugin = NativePluginLoader::load_bundle_variant_with_config(
+    bundle_path, "release", &config, None,
+)?;
+let response: IdentifyResponse = plugin.call_typed("identify", &IdentifyRequest {})?;
+assert_eq!(response.variant, "release");
+plugin.shutdown()?;
+drop(plugin);
+
+// Load debug variant from the same bundle
+let plugin = NativePluginLoader::load_bundle_variant_with_config(
+    bundle_path, "debug", &config, None,
+)?;
+let response: IdentifyResponse = plugin.call_typed("identify", &IdentifyRequest {})?;
+assert_eq!(response.variant, "debug");
+plugin.shutdown()?;
+```
+
+See [`crates/rustbridge-consumer/tests/bundle_variant_tests.rs`](../crates/rustbridge-consumer/tests/bundle_variant_tests.rs) for the full test, including parallel loading and log callback verification.
+
+### Example: Reload Cycle (Java)
 
 ```java
 // First load
@@ -373,41 +408,19 @@ try (Plugin plugin = FfmPluginLoader.load("libmyplugin.so")) {
 
 // Reload
 try (Plugin plugin2 = FfmPluginLoader.load("libmyplugin.so")) {
-    // Works perfectly - all functionality restored
     plugin2.call("operation", request);
 }
 ```
 
-### Reload Example (Kotlin)
+### Guidelines for Plugin Developers
 
-```kotlin
-// First load
-FfmPluginLoader.load("libmyplugin.so").use { plugin ->
-    plugin.call("operation", request)
-}
-// Clean shutdown
+If you intend to support dynamic reload in your plugin:
 
-// Reload
-FfmPluginLoader.load("libmyplugin.so").use { plugin ->
-    plugin.call("operation", request)  // Works!
-}
-```
-
-### Testing Reload
-
-Always test your plugin with reload cycles:
-
-```java
-@Test
-void reload___multiple_cycles___works() throws Exception {
-    for (int i = 0; i < 3; i++) {
-        try (Plugin plugin = FfmPluginLoader.load(PLUGIN_PATH)) {
-            String response = plugin.call("echo", "{\"message\": \"test\"}");
-            assertNotNull(response);
-        }
-    }
-}
-```
+1. **Avoid non-resettable global state.** Use plugin-scoped fields (`self.cache`, `self.pool`) instead of `static` variables. See [Global State Management](#global-state-management) below.
+2. **Cancel all background work in `on_stop`.** Abort spawned tasks and join threads before returning.
+3. **Close all resources in `on_stop`.** Database pools, file handles, HTTP clients -- take ownership and drop them.
+4. **Test reload cycles.** Load, call, shutdown, drop, then load again and verify the plugin works correctly.
+5. **Document whether your plugin supports reload.** Not all plugins need to.
 
 ## Global State Management
 

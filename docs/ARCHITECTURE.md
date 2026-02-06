@@ -898,10 +898,11 @@ rustbridge bundle extract my-plugin-1.0.0.rbp --output ./lib/
 
 ### Plugin Reload and Multiple Instances
 
-**Plugin Reload**: Fully Supported
-- Plugins can be loaded, shut down, and reloaded in the same process
-- All functionality works correctly after reload
-- Clean shutdown with proper resource cleanup
+**Plugin Reload**: Possible but Advanced
+- Nothing in rustbridge intentionally prevents or prohibits unloading and reloading plugins
+- The framework cleans up all framework-managed state during shutdown
+- However, dynamic library unloading is inherently fragile (global state, background threads, third-party library side effects)
+- **Recommendation:** Prefer restarting the process over dynamic reload. See [PLUGIN_LIFECYCLE.md](./PLUGIN_LIFECYCLE.md#plugin-unloading-and-reloading) for details
 
 **Multiple Plugin Instances**: Single Plugin Per Process Recommended
 
@@ -925,9 +926,9 @@ try (Plugin plugin = FfmPluginLoader.load("libmyplugin.so")) {
     plugin.setLogLevel(LogLevel.DEBUG);  // Works great!
 }
 
-// SUPPORTED: Reload in same process
+// POSSIBLE BUT ADVANCED: Reload in same process (see PLUGIN_LIFECYCLE.md)
 plugin.close();
-Plugin reloaded = FfmPluginLoader.load("libmyplugin.so");  // Works!
+Plugin reloaded = FfmPluginLoader.load("libmyplugin.so");  // Works, but test thoroughly
 
 // WORKS BUT SHARES LOGGING: Multiple plugins
 try (Plugin p1 = FfmPluginLoader.load("lib1.so");
@@ -944,7 +945,7 @@ try (Plugin p1 = FfmPluginLoader.load("lib1.so");
 The shared logging state is an intentional trade-off:
 - Simpler implementation for the common case (single plugin)
 - Better performance (no per-call overhead for scoped logging)
-- Reliable reload support (global state doesn't prevent reinitialization)
+- Reload is possible (global state doesn't prevent reinitialization)
 - Multi-plugin scenarios require awareness of shared state
 
 **Future Enhancement**: If multi-plugin with isolated logging becomes a requirement, we can implement per-handle logging state.
