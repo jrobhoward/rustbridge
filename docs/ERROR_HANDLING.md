@@ -11,9 +11,11 @@ This guide covers error handling best practices for rustbridge plugins, from Rus
 5. [Custom Errors](#custom-errors)
 6. [FFI Error Handling](#ffi-error-handling)
 7. [Java/Kotlin Error Handling](#javakotlin-error-handling)
-8. [Testing Error Scenarios](#testing-error-scenarios)
-9. [Best Practices](#best-practices)
-10. [Common Patterns](#common-patterns)
+8. [C# Error Handling](#c-error-handling)
+9. [Python Error Handling](#python-error-handling)
+10. [Testing Error Scenarios](#testing-error-scenarios)
+11. [Best Practices](#best-practices)
+12. [Common Patterns](#common-patterns)
 
 ## Overview
 
@@ -414,6 +416,142 @@ when (val result = plugin.callSafe("divide", request) { it }) {
     is PluginResult.Success -> println("Result: ${result.value}")
     is PluginResult.Error -> println("Error ${result.code}: ${result.message}")
 }
+```
+
+## C# Error Handling
+
+### PluginException
+
+Errors from Rust become `PluginException` in C#:
+
+```csharp
+using RustBridge.Core;
+using RustBridge.Native;
+
+using var plugin = NativePluginLoader.Load("libmyplugin.so");
+
+try
+{
+    string response = plugin.Call("divide", """{"dividend": 10, "divisor": 0}""");
+    Console.WriteLine(response);
+}
+catch (PluginException ex)
+{
+    Console.WriteLine($"Error code: {ex.ErrorCode}");
+    Console.WriteLine($"Message: {ex.Message}");
+
+    switch (ex.ErrorCode)
+    {
+        case 6:
+            Console.WriteLine("Unknown message type");
+            break;
+        case 7:
+            Console.WriteLine("Handler error");
+            break;
+        case 13:
+            Console.WriteLine("Too many concurrent requests");
+            break;
+        default:
+            Console.WriteLine($"Unexpected error ({ex.ErrorCode})");
+            break;
+    }
+}
+```
+
+### Disposal Safety
+
+After calling `Dispose()` (or exiting a `using` block), further calls throw `ObjectDisposedException` rather than `PluginException`:
+
+```csharp
+var plugin = NativePluginLoader.Load("libmyplugin.so");
+plugin.Dispose();
+
+try
+{
+    plugin.Call("echo", "{}");
+}
+catch (ObjectDisposedException)
+{
+    Console.WriteLine("Plugin already disposed");
+}
+```
+
+### Testing C# Error Paths
+
+```csharp
+using Xunit;
+
+public class ErrorHandlingTests
+{
+    [Fact]
+    public void Call___unknown_message_type___throws_PluginException()
+    {
+        using var plugin = NativePluginLoader.Load("libmyplugin.so");
+
+        var ex = Assert.Throws<PluginException>(
+            () => plugin.Call("nonexistent.type", "{}")
+        );
+
+        Assert.Equal(6, ex.ErrorCode);
+    }
+}
+```
+
+## Python Error Handling
+
+### PluginException
+
+Errors from Rust become `PluginException` in Python:
+
+```python
+from rustbridge.core import PluginException
+from rustbridge.native import NativePluginLoader
+
+plugin = NativePluginLoader.load("libmyplugin.so")
+
+try:
+    response = plugin.call("divide", '{"dividend": 10, "divisor": 0}')
+    print(response)
+except PluginException as e:
+    print(f"Error code: {e.error_code}")
+    print(f"Message: {e.message}")
+
+    match e.error_code:
+        case 6:
+            print("Unknown message type")
+        case 7:
+            print("Handler error")
+        case 13:
+            print("Too many concurrent requests")
+        case _:
+            print(f"Unexpected error ({e.error_code})")
+```
+
+### Context Manager for Cleanup
+
+Use the context manager to ensure the plugin is properly closed, even when errors occur:
+
+```python
+from rustbridge.native import NativePluginLoader
+
+with NativePluginLoader.load("libmyplugin.so") as plugin:
+    response = plugin.call("echo", '{"message": "Hello"}')
+    # plugin.close() called automatically on exit, even if an exception is raised
+```
+
+### Testing Python Error Paths
+
+```python
+import pytest
+from rustbridge.core import PluginException
+
+def test_call___unknown_message_type___raises_PluginException():
+    plugin = NativePluginLoader.load("libmyplugin.so")
+
+    with pytest.raises(PluginException, match="unknown message type"):
+        plugin.call("nonexistent.type", "{}")
+
+    plugin.close()
 ```
 
 ## Testing Error Scenarios

@@ -1,8 +1,60 @@
 # Packaging Plugins
 
-This guide covers advanced bundle operations: creating multi-platform bundles, combining bundles from CI builds, creating slimmed releases, and code signing.
+This guide covers bundle operations: packaging plugins for development and production, creating multi-platform bundles, combining CI builds, creating slimmed releases, and code signing.
 
-For creating a basic single-platform bundle, see [Creating Plugins](../creating-plugins/README.md).
+For a quick start, see [Getting Started](../GETTING_STARTED.md). For the full CLI reference, see [CLI.md](../CLI.md).
+
+## Which Command Should I Use?
+
+| Scenario | Command | Why |
+|----------|---------|-----|
+| **Day-to-day development** | `rustbridge pack --no-sign` | Auto-detects everything from `Cargo.toml` |
+| **Dev bundle (release + debug)** | `rustbridge pack --dev` | Includes both variants for testing |
+| **Promote dev to release** | `rustbridge promote <dev.rbp>` | Strips debug, signs for distribution |
+| **CI per-platform builds** | `rustbridge pack --no-sign` | One bundle per runner, combine later |
+| **Merge CI bundles** | `rustbridge bundle combine` | Merges per-platform bundles into one |
+| **Trim a multi-platform bundle** | `rustbridge bundle slim` | Keep only the platforms/variants you need |
+| **Full manual control** | `rustbridge bundle create` | Explicit platform/variant/path specification |
+
+## Quick Start: Pack and Promote
+
+Most plugin projects follow a two-step workflow:
+
+```bash
+# 1. Build your plugin
+cargo build --release
+
+# 2. Package it (auto-detects name, version, platform from Cargo.toml)
+rustbridge pack --no-sign
+# Output: target/bundle/my-plugin-0.1.0.rbp
+```
+
+For a dev/release pipeline:
+
+```bash
+# Build both variants
+cargo build --release && cargo build
+
+# Create dev bundle (both release and debug, unsigned)
+rustbridge pack --dev
+# Output: target/bundle/my-plugin-0.1.0-dev.rbp
+
+# Test locally with the dev bundle...
+
+# Promote to signed release (strips debug variant, signs)
+rustbridge promote target/bundle/my-plugin-0.1.0-dev.rbp
+# Output: target/bundle/my-plugin-0.1.0.rbp
+```
+
+### Cargo.toml Metadata
+
+Declare schema and header generation in `Cargo.toml` so `pack` includes them automatically:
+
+```toml
+[package.metadata.rustbridge]
+schema-source = "src/messages.rs:schema.json"
+header-source = "src/binary_messages.rs:messages.h"
+```
 
 ## Prerequisites
 
@@ -410,5 +462,8 @@ Store your signing key as a GitHub secret:
 
 ## Next Steps
 
-- **[Bundle Format Specification](../BUNDLE_FORMAT.md)** - Detailed format reference
+- **[CLI Reference](../CLI.md)** - Full command reference for all bundle operations
+- **[Bundle Format Specification](../BUNDLE_FORMAT.md)** - Detailed `.rbp` format reference
 - **[Using Plugins](../using-plugins/README.md)** - Load bundles from host languages
+- **[Tutorial 05: Production Bundles](../tutorials/05-production-bundles/README.md)** - Code signing, schemas, SBOMs
+- **[Tutorial 06: Cross-Compilation](../tutorials/06-cross-compilation/README.md)** - Multi-platform builds

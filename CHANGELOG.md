@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CLI**: `rustbridge new` now prints `rustbridge pack` as the bundling step instead of `rustbridge bundle create`
 - **Docs**: Tutorials and guides updated to recommend `rustbridge pack` for standard single-platform builds
 - **Docs**: Added CLI reference (`docs/CLI.md`) covering all commands: `new`, `pack`, `promote`, `bundle`, `keygen`, `generate-header`
+- **Docs**: Added C# and Python sections to `docs/ERROR_HANDLING.md` (PluginException, error codes, testing patterns)
+- **Docs**: Added pack/promote workflow guide and command decision table to `docs/packaging/README.md`
+- **Docs**: Added 1.0 release notes (`docs/RELEASE_NOTES_1.0.md`) with feature overview
 
 ### Added
 - **CLI**: `rustbridge pack` now warns when libraries appear older than source files, helping catch forgotten rebuilds

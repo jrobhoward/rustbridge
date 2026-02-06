@@ -6,6 +6,7 @@ This directory contains the technical documentation for rustbridge.
 
 | Document | Description |
 |----------|-------------|
+| [RELEASE_NOTES_1.0.md](./RELEASE_NOTES_1.0.md) | 1.0 release notes and feature overview |
 | [GETTING_STARTED.md](./GETTING_STARTED.md) | Quick start guide for new users |
 | [INSTALL.md](./INSTALL.md) | Installation instructions |
 | [CLI.md](./CLI.md) | CLI reference (`new`, `pack`, `promote`, `bundle`, `keygen`, `generate-header`) |
