@@ -1,18 +1,20 @@
 #![allow(non_snake_case)]
 
 use super::*;
+use crate::LogLevel;
 use test_case::test_case;
 
 // ============================================================================
 // Parameterized config JSON parsing tests
 // ============================================================================
 
-#[test_case(r#"{"log_level": "info"}"#, "info")]
-#[test_case(r#"{"log_level": "debug"}"#, "debug")]
-#[test_case(r#"{"log_level": "warn"}"#, "warn")]
-#[test_case(r#"{"log_level": "error"}"#, "error")]
-#[test_case(r#"{"log_level": "trace"}"#, "trace")]
-fn PluginConfig___log_level_json___parses_correctly(json: &str, expected_level: &str) {
+#[test_case(r#"{"log_level": "info"}"#, LogLevel::Info)]
+#[test_case(r#"{"log_level": "debug"}"#, LogLevel::Debug)]
+#[test_case(r#"{"log_level": "warn"}"#, LogLevel::Warn)]
+#[test_case(r#"{"log_level": "error"}"#, LogLevel::Error)]
+#[test_case(r#"{"log_level": "trace"}"#, LogLevel::Trace)]
+#[test_case(r#"{"log_level": "off"}"#, LogLevel::Off)]
+fn PluginConfig___log_level_json___parses_correctly(json: &str, expected_level: LogLevel) {
     let config = PluginConfig::from_json(json.as_bytes()).unwrap();
     assert_eq!(config.log_level, expected_level);
 }

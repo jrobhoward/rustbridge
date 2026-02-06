@@ -1,12 +1,13 @@
 #![allow(non_snake_case)]
 
 use super::*;
+use crate::LogLevel;
 
 #[test]
 fn PluginConfig___default___has_expected_values() {
     let config = PluginConfig::default();
 
-    assert_eq!(config.log_level, "info");
+    assert_eq!(config.log_level, LogLevel::Info);
     assert_eq!(config.max_concurrent_ops, 1000);
     assert_eq!(config.shutdown_timeout_ms, 5000);
     assert!(config.worker_threads.is_none());
@@ -18,7 +19,7 @@ fn PluginConfig___from_json___parses_log_level() {
 
     let config = PluginConfig::from_json(json.as_bytes()).unwrap();
 
-    assert_eq!(config.log_level, "debug");
+    assert_eq!(config.log_level, LogLevel::Debug);
 }
 
 #[test]
@@ -43,7 +44,7 @@ fn PluginConfig___from_json___parses_worker_threads() {
 fn PluginConfig___from_empty_bytes___returns_defaults() {
     let config = PluginConfig::from_json(&[]).unwrap();
 
-    assert_eq!(config.log_level, "info");
+    assert_eq!(config.log_level, LogLevel::Info);
     assert_eq!(config.max_concurrent_ops, 1000);
 }
 
@@ -200,7 +201,7 @@ fn from_json___deserializes_init_params() {
 
     let config = PluginConfig::from_json(json.as_bytes()).unwrap();
 
-    assert_eq!(config.log_level, "debug");
+    assert_eq!(config.log_level, LogLevel::Debug);
     assert_eq!(config.max_concurrent_ops, 500);
     assert!(config.init_params.is_some());
 

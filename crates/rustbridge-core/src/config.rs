@@ -1,5 +1,6 @@
 //! Plugin configuration types
 
+use crate::LogLevel;
 use serde::{Deserialize, Serialize};
 
 /// Plugin configuration passed during initialization
@@ -24,9 +25,9 @@ pub struct PluginConfig {
     #[serde(default)]
     pub worker_threads: Option<usize>,
 
-    /// Initial log level
-    #[serde(default = "default_log_level")]
-    pub log_level: String,
+    /// Initial log level (default: Info)
+    #[serde(default)]
+    pub log_level: LogLevel,
 
     /// Maximum concurrent async operations
     #[serde(default = "default_max_concurrent")]
@@ -35,10 +36,6 @@ pub struct PluginConfig {
     /// Shutdown timeout in milliseconds
     #[serde(default = "default_shutdown_timeout")]
     pub shutdown_timeout_ms: u64,
-}
-
-fn default_log_level() -> String {
-    "info".to_string()
 }
 
 fn default_max_concurrent() -> usize {
@@ -55,7 +52,7 @@ impl Default for PluginConfig {
             data: serde_json::Value::Null,
             init_params: None,
             worker_threads: None,
-            log_level: default_log_level(),
+            log_level: LogLevel::default(),
             max_concurrent_ops: default_max_concurrent(),
             shutdown_timeout_ms: default_shutdown_timeout(),
         }

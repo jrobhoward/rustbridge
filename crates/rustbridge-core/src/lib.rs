@@ -18,12 +18,16 @@ pub use lifecycle::LifecycleState;
 pub use plugin::{Plugin, PluginContext, PluginFactory};
 pub use request::{RequestContext, ResponseBuilder};
 
+use serde::{Deserialize, Serialize};
+
 /// Log levels for FFI callbacks
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
 pub enum LogLevel {
     Trace = 0,
     Debug = 1,
+    #[default]
     Info = 2,
     Warn = 3,
     Error = 4,

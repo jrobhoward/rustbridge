@@ -88,16 +88,7 @@ unsafe fn plugin_init_impl(
     LogCallbackManager::global().register_plugin(log_callback);
 
     // Set the log level from config BEFORE initializing logging
-    let log_level = match config.log_level.to_lowercase().as_str() {
-        "trace" => LogLevel::Trace,
-        "debug" => LogLevel::Debug,
-        "info" => LogLevel::Info,
-        "warn" => LogLevel::Warn,
-        "error" => LogLevel::Error,
-        "off" => LogLevel::Off,
-        _ => LogLevel::Info, // Default to Info for unknown values
-    };
-    LogCallbackManager::global().set_level(log_level);
+    LogCallbackManager::global().set_level(config.log_level);
 
     // Initialize logging with the configured level
     rustbridge_logging::init_logging();

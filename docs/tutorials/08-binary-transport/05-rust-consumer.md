@@ -464,7 +464,7 @@ let log_callback: LogCallbackFn = Arc::new(|level, target, message| {
 });
 
 let config = PluginConfig {
-    log_level: "debug".to_string(),
+    log_level: LogLevel::Debug,
     ..PluginConfig::default()
 };
 
