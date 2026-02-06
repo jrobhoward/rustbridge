@@ -5,6 +5,8 @@
 //! - `rustbridge generate-header` - Generate C headers from Rust structs
 //! - `rustbridge keygen` - Generate signing keys for bundles
 //! - `rustbridge bundle` - Create, inspect, or extract plugin bundles
+//! - `rustbridge pack` - Auto-detect and bundle a plugin from the current directory
+//! - `rustbridge promote` - Slim a dev bundle to a signed release bundle
 
 use clap::{Parser, Subcommand};
 
@@ -13,6 +15,8 @@ mod codegen;
 mod header_gen;
 mod keygen;
 mod new;
+mod pack;
+mod promote;
 
 #[derive(Parser)]
 #[command(name = "rustbridge")]
@@ -85,6 +89,49 @@ enum Commands {
     Bundle {
         #[command(subcommand)]
         action: BundleAction,
+    },
+
+    /// Auto-detect and bundle a plugin from the current directory
+    Pack {
+        /// Create a dev bundle (includes both release and debug libraries, unsigned)
+        #[arg(long)]
+        dev: bool,
+
+        /// Path to signing key (default: ~/.rustbridge/signing.key)
+        #[arg(long, value_name = "PATH")]
+        sign_key: Option<String>,
+
+        /// Do not sign the bundle
+        #[arg(long)]
+        no_sign: bool,
+
+        /// Auto-generate JSON Schema from Rust source file and embed in bundle (dev mode only)
+        /// Example: --schema-source src/messages.rs:schema.json
+        #[arg(long, value_name = "SOURCE:NAME")]
+        schema_source: Option<String>,
+
+        /// Auto-generate C header from Rust source file and embed in bundle (dev mode only)
+        /// Example: --header-source src/binary_messages.rs:messages.h
+        #[arg(long, value_name = "SOURCE:NAME")]
+        header_source: Option<String>,
+    },
+
+    /// Slim a dev bundle to a signed release bundle
+    Promote {
+        /// Input bundle path (typically a -dev.rbp bundle)
+        input: String,
+
+        /// Output bundle path (default: derived from input, strips -dev suffix)
+        #[arg(short, long)]
+        output: Option<String>,
+
+        /// Path to signing key (default: ~/.rustbridge/signing.key)
+        #[arg(long, value_name = "PATH")]
+        sign_key: Option<String>,
+
+        /// Do not sign the bundle
+        #[arg(long)]
+        no_sign: bool,
     },
 }
 
@@ -269,6 +316,23 @@ fn main() -> anyhow::Result<()> {
         }
         Commands::Keygen { output, force } => {
             keygen::run(output, force)?;
+        }
+        Commands::Pack {
+            dev,
+            sign_key,
+            no_sign,
+            schema_source,
+            header_source,
+        } => {
+            pack::run_pack(dev, sign_key, no_sign, schema_source, header_source)?;
+        }
+        Commands::Promote {
+            input,
+            output,
+            sign_key,
+            no_sign,
+        } => {
+            promote::run_promote(input, output, sign_key, no_sign)?;
         }
         Commands::Bundle { action } => match action {
             BundleAction::Create {
