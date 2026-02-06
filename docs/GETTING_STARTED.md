@@ -70,55 +70,25 @@ What we've done so far creates a standard shared library:
 
 ## Step 2: Create a Bundle
 
-Now use the `rustbridge` CLI to package your plugin as a portable `.rbp` file (run from your plugin directory):
-
-```bash
-# Linux
-rustbridge bundle create \
-  --name my-plugin \
-  --version 0.1.0 \
-  --lib linux-x86_64:target/release/libmy_plugin.so \
-  --output my-plugin-0.1.0.rbp
-```
-
-```bash
-# macOS (Apple Silicon)
-rustbridge bundle create \
-  --name my-plugin \
-  --version 0.1.0 \
-  --lib darwin-aarch64:target/release/libmy_plugin.dylib \
-  --output my-plugin-0.1.0.rbp
-```
-
-```bash
-# Windows
-rustbridge bundle create \
-  --name my-plugin \
-  --version 0.1.0 \
-  --lib windows-x86_64:target/release/my_plugin.dll \
-  --output my-plugin-0.1.0.rbp
-```
-
-Verify:
-
-```bash
-rustbridge bundle list my-plugin-0.1.0.rbp
-
-# additional/optional inspection
-unzip -l my-plugin-0.1.0.rbp
-unzip -p my-plugin-0.1.0.rbp manifest.json
-```
-
-### Shortcut: `rustbridge pack`
-
-If you're in your plugin directory, `rustbridge pack` auto-detects everything:
+From your plugin directory, use `rustbridge pack` to package it as a portable `.rbp` file:
 
 ```bash
 rustbridge pack --no-sign
 ```
 
-This reads name, version, and platform from your project and creates
-`target/bundle/<name>-<version>.rbp`. See the [Packaging Guide](./packaging/README.md) for details.
+This auto-detects the plugin name, version, platform, and library path from `Cargo.toml` and creates `target/bundle/<name>-<version>.rbp`.
+
+Verify:
+
+```bash
+rustbridge bundle list target/bundle/my-plugin-0.1.0.rbp
+
+# additional/optional inspection
+unzip -l target/bundle/my-plugin-0.1.0.rbp
+unzip -p target/bundle/my-plugin-0.1.0.rbp manifest.json
+```
+
+> **Tip**: For cross-compilation or CI pipelines where you need explicit control over platforms and flags, use `rustbridge bundle create` directly. See the [Packaging Guide](./packaging/README.md) for details.
 
 ---
 

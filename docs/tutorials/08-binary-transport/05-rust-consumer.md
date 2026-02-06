@@ -314,11 +314,7 @@ First, build the plugin and create the bundle if you haven't:
 ```bash
 cd $RUSTBRIDGE_WORKSPACE/thumbnail-plugin
 cargo build --release
-rustbridge bundle create \
-  --name thumbnail-plugin \
-  --version 0.1.0 \
-  --lib linux-x86_64:target/release/libthumbnail_plugin.so \
-  --output thumbnail-plugin-0.1.0.rbp
+rustbridge pack --no-sign
 ```
 
 Copy a test image to the consumer directory:

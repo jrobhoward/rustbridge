@@ -209,23 +209,13 @@ pub use rustbridge::ffi_exports::*;
 # Build the plugin
 cargo build --release
 
-# Create a bundle
-rustbridge bundle create \
-  --name sync-demo \
-  --version 0.1.0 \
-  --lib linux-x86_64:target/release/libsync_demo.so \
-  --output sync-demo-0.1.0.rbp
+# Create a bundle (auto-detects platform from Cargo.toml)
+rustbridge pack --no-sign
 
 # Copy to each consumer directory
-cp sync-demo-0.1.0.rbp consumers/csharp/
-cp sync-demo-0.1.0.rbp consumers/python/
+cp target/bundle/sync-demo-0.1.0.rbp consumers/csharp/
+cp target/bundle/sync-demo-0.1.0.rbp consumers/python/
 ```
-
-> **Note**: Adjust the `--lib` platform identifier for your OS:
-> - Linux: `linux-x86_64:target/release/libsync_demo.so`
-> - macOS (Intel): `darwin-x86_64:target/release/libsync_demo.dylib`
-> - macOS (Apple Silicon): `darwin-aarch64:target/release/libsync_demo.dylib`
-> - Windows: `windows-x86_64:target/release/sync_demo.dll`
 
 ## Sections
 

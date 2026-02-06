@@ -322,33 +322,15 @@ Build the release version and create a bundle for use in Chapter 4:
 
 ```bash
 cargo build --release
-
-# Linux
-rustbridge bundle create \
-  --name json-plugin \
-  --version 0.1.0 \
-  --lib linux-x86_64:target/release/libjson_plugin.so \
-  --output json-plugin-0.1.0.rbp
-
-# macOS (Apple Silicon)
-rustbridge bundle create \
-  --name json-plugin \
-  --version 0.1.0 \
-  --lib darwin-aarch64:target/release/libjson_plugin.dylib \
-  --output json-plugin-0.1.0.rbp
-
-# Windows
-rustbridge bundle create \
-  --name json-plugin \
-  --version 0.1.0 \
-  --lib windows-x86_64:target/release/json_plugin.dll \
-  --output json-plugin-0.1.0.rbp
+rustbridge pack --no-sign
 ```
+
+This creates `target/bundle/json-plugin-0.1.0.rbp` with the correct platform auto-detected.
 
 Verify the bundle:
 
 ```bash
-rustbridge bundle list json-plugin-0.1.0.rbp
+rustbridge bundle list target/bundle/json-plugin-0.1.0.rbp
 ```
 
 ## Summary

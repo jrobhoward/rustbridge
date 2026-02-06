@@ -92,41 +92,22 @@ cargo build --release
 
 ## Generate Schema During Bundle Creation
 
-Use `--generate-schema` to auto-generate the JSON Schema:
-
-```bash
-rustbridge bundle create \
-  --name json-plugin \
-  --version 0.1.0 \
-  --lib linux-x86_64:target/release/libjson_plugin.so \
-  --generate-schema src/lib.rs:messages.json \
-  --sign-key ~/.rustbridge/signing.key \
-  --output json-plugin-0.1.0.rbp
-```
-
-The `--generate-schema` flag:
-
-- Parses your Rust source file
-- Finds types with `#[derive(JsonSchema)]`
-- Generates a JSON Schema file
-- Embeds it in the bundle
-
-### Recommended: Declare in Cargo.toml
-
-Rather than passing `--generate-schema` every time, declare the schema source in your `Cargo.toml` so `rustbridge pack` picks it up automatically:
+Declare the schema source in your `Cargo.toml`:
 
 ```toml
 [package.metadata.rustbridge]
 schema-source = "src/lib.rs:messages.json"
 ```
 
-Then schema generation happens automatically:
+Then `rustbridge pack` auto-generates the schema and embeds it in the bundle:
 
 ```bash
 rustbridge pack --no-sign
 ```
 
-This is the recommended approach — it keeps the schema configuration with the project and avoids forgetting the flag during builds.
+This parses your Rust source file, finds types with `#[derive(JsonSchema)]`, generates a JSON Schema file, and embeds it in the bundle.
+
+> **Tip**: You can also pass `--generate-schema src/lib.rs:messages.json` to `rustbridge bundle create` for one-off builds without modifying `Cargo.toml`.
 
 ## Verify Schema Inclusion
 

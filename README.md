@@ -116,7 +116,13 @@ An `.rbp` bundle may also include:
 | **Checksums**      | SHA256 verification of all binaries                            |
 | **Provenance**     | Git commit, CI job, build timestamp tracking                   |
 
-Create a bundle:
+Create a bundle from your plugin directory:
+
+```bash
+rustbridge pack
+```
+
+Or use `rustbridge bundle create` for multi-platform bundles:
 
 ```bash
 rustbridge bundle create \

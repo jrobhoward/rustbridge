@@ -528,39 +528,21 @@ codegen-units = 1
 
 ## Build and Bundle
 
+Since `header-source` is declared in `Cargo.toml` above, `rustbridge pack` auto-generates the C header and includes it in the bundle:
+
 ```bash
 # Build the plugin
 cargo build --release
 
-# Create a bundle
-rustbridge bundle create \
-  --name thumbnail-plugin \
-  --version 0.1.0 \
-  --lib linux-x86_64:target/release/libthumbnail_plugin.so \
-  --output thumbnail-plugin-0.1.0.rbp
+# Create a bundle (auto-detects platform, generates header from Cargo.toml metadata)
+rustbridge pack --no-sign
 
 # Copy to each consumer directory
-cp thumbnail-plugin-0.1.0.rbp consumers/kotlin/
-cp thumbnail-plugin-0.1.0.rbp consumers/java-ffm/
-cp thumbnail-plugin-0.1.0.rbp consumers/csharp/
-cp thumbnail-plugin-0.1.0.rbp consumers/python/
+cp target/bundle/thumbnail-plugin-0.1.0.rbp consumers/kotlin/
+cp target/bundle/thumbnail-plugin-0.1.0.rbp consumers/java-ffm/
+cp target/bundle/thumbnail-plugin-0.1.0.rbp consumers/csharp/
+cp target/bundle/thumbnail-plugin-0.1.0.rbp consumers/python/
 ```
-
-### Recommended: Use `rustbridge pack`
-
-Since `header-source` is already declared in `Cargo.toml` above, `rustbridge pack` auto-generates the C header and includes it in the bundle:
-
-```bash
-rustbridge pack --no-sign
-```
-
-This is the recommended approach — it keeps the header configuration with the project and avoids forgetting flags during builds.
-
-> **Note**: Adjust the `--lib` platform identifier for your OS:
-> - Linux: `linux-x86_64:target/release/libthumbnail_plugin.so`
-> - macOS (Intel): `darwin-x86_64:target/release/libthumbnail_plugin.dylib`
-> - macOS (Apple Silicon): `darwin-aarch64:target/release/libthumbnail_plugin.dylib`
-> - Windows: `windows-x86_64:target/release/thumbnail_plugin.dll`
 
 ## Create a Test Image
 

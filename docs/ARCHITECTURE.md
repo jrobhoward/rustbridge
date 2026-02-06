@@ -860,7 +860,10 @@ rustbridge generate-header --input src/messages.rs --output include/messages.h
 # Generate minisign key pair
 rustbridge keygen --output keys/
 
-# Create bundle
+# Create bundle (single-platform, auto-detected)
+rustbridge pack
+
+# Or create a multi-platform bundle with explicit flags
 rustbridge bundle create \
     --name my-plugin \
     --version 1.0.0 \

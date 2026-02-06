@@ -37,20 +37,16 @@ This creates `my-project.key` (secret) and `my-project.pub` (public).
 
 ## Create a Signed Bundle
 
-Use the `--sign-key` flag when creating bundles:
+Use `rustbridge pack` with `--sign-key` to create a signed bundle:
 
 ```bash
 cd $RUSTBRIDGE_WORKSPACE/json-plugin
 
 cargo build --release
-
-rustbridge bundle create \
-  --name json-plugin \
-  --version 0.1.0 \
-  --lib linux-x86_64:target/release/libjson_plugin.so \
-  --sign-key ~/.rustbridge/signing.key \
-  --output json-plugin-0.1.0.rbp
+rustbridge pack --sign-key ~/.rustbridge/signing.key
 ```
+
+> **Note**: If your signing key is at `~/.rustbridge/signing.key` (the default location from `rustbridge keygen`), `rustbridge pack` uses it automatically — no `--sign-key` flag needed.
 
 You'll be prompted for the key password.
 

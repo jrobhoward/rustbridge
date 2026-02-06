@@ -223,45 +223,20 @@ This creates:
 
 ## Step 6: Create a Bundle
 
-Package your plugin as a `.rbp` bundle for distribution:
-
-```bash
-# Linux
-rustbridge bundle create \
-  --name calculator-plugin \
-  --version 0.1.0 \
-  --lib linux-x86_64:target/release/libcalculator_plugin.so \
-  --output calculator-plugin-0.1.0.rbp
-
-# macOS (Apple Silicon)
-rustbridge bundle create \
-  --name calculator-plugin \
-  --version 0.1.0 \
-  --lib darwin-aarch64:target/release/libcalculator_plugin.dylib \
-  --output calculator-plugin-0.1.0.rbp
-
-# Windows
-rustbridge bundle create \
-  --name calculator-plugin \
-  --version 0.1.0 \
-  --lib windows-x86_64:target/release/calculator_plugin.dll \
-  --output calculator-plugin-0.1.0.rbp
-```
-
-### Shortcut: `rustbridge pack`
-
-From your plugin directory:
+From your plugin directory, package it as a `.rbp` bundle for distribution:
 
 ```bash
 rustbridge pack --no-sign
 ```
 
-This auto-detects name, version, and platform from `Cargo.toml`. To auto-include schemas or headers, add:
+This auto-detects name, version, and platform from `Cargo.toml` and creates `target/bundle/calculator-plugin-0.1.0.rbp`. To auto-include schemas or headers, add to your `Cargo.toml`:
 
 ```toml
 [package.metadata.rustbridge]
 schema-source = "src/lib.rs:schema.json"
 ```
+
+> **Tip**: For cross-compilation or CI pipelines, use `rustbridge bundle create` with explicit flags. See the [Packaging Guide](../packaging/README.md).
 
 ### Verify the Bundle
 

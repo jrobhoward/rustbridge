@@ -13,7 +13,7 @@ Build metadata provides:
 
 ## Automatic Metadata Collection
 
-By default, `rustbridge bundle create` automatically collects:
+By default, `rustbridge pack` (and `rustbridge bundle create`) automatically collects:
 
 - Build timestamp
 - Host platform
@@ -22,11 +22,7 @@ By default, `rustbridge bundle create` automatically collects:
 - Git information (if in a git repository)
 
 ```bash
-rustbridge bundle create \
-  --name json-plugin \
-  --version 0.1.0 \
-  --lib linux-x86_64:target/release/libjson_plugin.so \
-  --output json-plugin-0.1.0.rbp
+rustbridge pack --no-sign
 ```
 
 ## View Build Metadata

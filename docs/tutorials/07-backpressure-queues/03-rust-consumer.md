@@ -367,11 +367,7 @@ First, build the plugin and create the bundle if you haven't:
 ```bash
 cd $RUSTBRIDGE_WORKSPACE/sync-demo
 cargo build --release
-rustbridge bundle create \
-  --name sync-demo \
-  --version 0.1.0 \
-  --lib linux-x86_64:target/release/libsync_demo.so \
-  --output sync-demo-0.1.0.rbp
+rustbridge pack --no-sign
 ```
 
 Then run the consumer:

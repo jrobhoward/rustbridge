@@ -342,16 +342,7 @@ fn print_next_steps(project_dir: &str, ctx: &TemplateContext, options: &NewOptio
     println!("Next steps:");
     println!("  cd {project_dir}");
     println!("  cargo build --release");
-
-    println!(
-        "  rustbridge bundle create --name {} --version 0.1.0 \\",
-        ctx.project_name
-    );
-    println!(
-        "    --lib linux-x86_64:target/release/lib{}.so \\",
-        ctx.package_name
-    );
-    println!("    --output {}", ctx.bundle_path);
+    println!("  rustbridge pack --no-sign");
 
     if options.kotlin {
         println!("\nKotlin consumer:");
