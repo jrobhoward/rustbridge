@@ -17,13 +17,13 @@ Use annotated tags for releases (includes tagger name, date, and message):
 
 ```bash
 # Create an annotated tag
-git tag -a v0.8.1 -m "Release v0.8.1"
+git tag -a v0.9.0 -m "Release v0.9.0"
 
 # Push the tag to remote
-git push origin v0.8.1
+git push origin v0.9.0
 
 # Or push branch and tag together
-git push origin main v0.8.1
+git push origin main v0.9.0
 
 # Or push all tags at once
 git push origin --tags

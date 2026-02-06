@@ -9,8 +9,8 @@
 #   4. debug + extended-info       -> staging/debug-extended/
 #
 # Bundles:
-#   variant-log-plugin-base-0.8.1.rbp       (release + debug, no features)
-#   variant-log-plugin-extended-0.8.1.rbp    (release + debug, extended-info)
+#   variant-log-plugin-base-0.9.0.rbp       (release + debug, no features)
+#   variant-log-plugin-extended-0.9.0.rbp    (release + debug, extended-info)
 #
 # Output: target/variant-test-bundles/
 #
@@ -40,7 +40,7 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
     LIB_NAME="libvariant_log_plugin.dylib"
 fi
 
-VERSION="0.8.1"
+VERSION="0.9.0"
 STAGING="target/variant-test-staging"
 OUTPUT="target/variant-test-bundles"
 CRATE="variant-log-plugin"

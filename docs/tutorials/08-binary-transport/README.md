@@ -513,7 +513,7 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-rustbridge = { version = "0.8.1" }
+rustbridge = { version = "0.9.0" }
 serde = { version = "1.0", features = ["derive"] }
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
 

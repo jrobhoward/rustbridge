@@ -176,7 +176,7 @@ cargo new my-consumer
 cd my-consumer
 
 # Add dependency to Cargo.toml
-# rustbridge-consumer = "0.8.1"
+# rustbridge-consumer = "0.9.0"
 
 # Build and run
 cargo build --release

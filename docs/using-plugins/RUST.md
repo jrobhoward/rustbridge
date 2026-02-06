@@ -26,7 +26,7 @@ Add `rustbridge-consumer` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rustbridge-consumer = "0.8"
+rustbridge-consumer = "0.9"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 ```
