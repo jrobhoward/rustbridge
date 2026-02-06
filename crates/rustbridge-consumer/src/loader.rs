@@ -13,7 +13,13 @@ use rustbridge_core::{LogLevel, PluginConfig};
 use std::ffi::c_char;
 use std::path::Path;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use tracing::debug;
+
+/// Monotonic counter to ensure each bundle extraction gets a unique directory.
+/// This prevents SIGBUS when multiple threads extract to the same path concurrently
+/// (one thread truncates the .so file while another has it mmap'd).
+static EXTRACT_INSTANCE: AtomicU64 = AtomicU64::new(0);
 
 /// Rust-friendly log callback type.
 ///
@@ -249,19 +255,95 @@ impl NativePluginLoader {
             ));
         }
 
-        // Create a temporary directory to extract the library
-        // We use a directory in the same location as the bundle for simplicity
+        // Each load gets a unique extraction directory to prevent SIGBUS from
+        // concurrent threads overwriting a file that another thread has mmap'd.
+        let instance_id = EXTRACT_INSTANCE.fetch_add(1, Ordering::Relaxed);
         let extract_dir = bundle_path
             .parent()
             .unwrap_or(Path::new("."))
             .join(".rustbridge-cache")
             .join(loader.manifest().plugin.name.as_str())
-            .join(loader.manifest().plugin.version.as_str());
+            .join(loader.manifest().plugin.version.as_str())
+            .join(instance_id.to_string());
 
         // Extract the library for the current platform
         let lib_path = loader.extract_library_for_current_platform(&extract_dir)?;
 
         debug!("Extracted library to: {}", lib_path.display());
+
+        // Load the extracted library
+        Self::load_with_config(lib_path, config, log_callback)
+    }
+
+    /// Load a specific variant from a bundle with custom configuration.
+    ///
+    /// Unlike `load_bundle_with_config` which always extracts the default (release) variant,
+    /// this method extracts the named variant (e.g., "debug", "release").
+    ///
+    /// # Arguments
+    ///
+    /// * `bundle_path` - Path to the .rbp bundle file
+    /// * `variant` - Variant name (e.g., "release", "debug")
+    /// * `config` - Plugin configuration
+    /// * `log_callback` - Optional callback to receive log messages
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let config = PluginConfig::default();
+    /// let plugin = NativePluginLoader::load_bundle_variant_with_config(
+    ///     "my-plugin-1.0.0.rbp",
+    ///     "debug",
+    ///     &config,
+    ///     None,
+    /// )?;
+    /// ```
+    pub fn load_bundle_variant_with_config<P: AsRef<Path>>(
+        bundle_path: P,
+        variant: &str,
+        config: &PluginConfig,
+        log_callback: Option<LogCallbackFn>,
+    ) -> ConsumerResult<NativePlugin> {
+        let bundle_path = bundle_path.as_ref();
+        debug!(
+            "Loading bundle variant '{}' from: {}",
+            variant,
+            bundle_path.display()
+        );
+
+        // Open and validate the bundle
+        let mut loader = BundleLoader::open(bundle_path)?;
+
+        // Check platform support
+        let platform = rustbridge_bundle::Platform::current().ok_or_else(|| {
+            ConsumerError::Bundle(rustbridge_bundle::BundleError::UnsupportedPlatform(
+                "Current platform is not supported".to_string(),
+            ))
+        })?;
+
+        if !loader.supports_current_platform() {
+            return Err(ConsumerError::Bundle(
+                rustbridge_bundle::BundleError::UnsupportedPlatform(
+                    "Current platform not supported by bundle".to_string(),
+                ),
+            ));
+        }
+
+        // Each load gets a unique extraction directory to prevent SIGBUS from
+        // concurrent threads overwriting a file that another thread has mmap'd.
+        let instance_id = EXTRACT_INSTANCE.fetch_add(1, Ordering::Relaxed);
+        let extract_dir = bundle_path
+            .parent()
+            .unwrap_or(Path::new("."))
+            .join(".rustbridge-cache")
+            .join(loader.manifest().plugin.name.as_str())
+            .join(loader.manifest().plugin.version.as_str())
+            .join(format!("{variant}-{instance_id}"));
+
+        // Extract the specified variant
+        let lib_path = loader.extract_library_variant(platform, variant, &extract_dir)?;
+
+        debug!("Extracted variant library to: {}", lib_path.display());
 
         // Load the extracted library
         Self::load_with_config(lib_path, config, log_callback)
@@ -363,14 +445,20 @@ impl NativePluginLoader {
         }
 
         // Determine extraction directory
+        // When no explicit dir is provided, each load gets a unique directory to
+        // prevent SIGBUS from concurrent threads overwriting a mmap'd file.
         let extract_dir_path: std::path::PathBuf = match extract_dir {
             Some(dir) => dir.as_ref().to_path_buf(),
-            None => bundle_path
-                .parent()
-                .unwrap_or(Path::new("."))
-                .join(".rustbridge-cache")
-                .join(loader.manifest().plugin.name.as_str())
-                .join(loader.manifest().plugin.version.as_str()),
+            None => {
+                let instance_id = EXTRACT_INSTANCE.fetch_add(1, Ordering::Relaxed);
+                bundle_path
+                    .parent()
+                    .unwrap_or(Path::new("."))
+                    .join(".rustbridge-cache")
+                    .join(loader.manifest().plugin.name.as_str())
+                    .join(loader.manifest().plugin.version.as_str())
+                    .join(instance_id.to_string())
+            }
         };
 
         // Extract with or without verification
@@ -486,6 +574,20 @@ mod tests {
     #[test]
     fn NativePluginLoader___load_bundle___nonexistent_bundle___returns_error() {
         let result = NativePluginLoader::load_bundle("/nonexistent/bundle.rbp");
+
+        assert!(result.is_err());
+        let err = result.err().unwrap();
+        assert!(matches!(err, ConsumerError::Bundle(_)));
+    }
+
+    #[test]
+    fn NativePluginLoader___load_bundle_variant___nonexistent_bundle___returns_error() {
+        let result = NativePluginLoader::load_bundle_variant_with_config(
+            "/nonexistent/bundle.rbp",
+            "debug",
+            &PluginConfig::default(),
+            None,
+        );
 
         assert!(result.is_err());
         let err = result.err().unwrap();

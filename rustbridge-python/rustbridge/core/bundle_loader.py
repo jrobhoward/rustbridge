@@ -122,6 +122,56 @@ class BundleLoader:
             shutil.rmtree(temp_dir, ignore_errors=True)
             raise
 
+    def load_variant_with_config(
+        self,
+        bundle_path: str | Path,
+        variant: str,
+        config: "PluginConfig",
+        log_callback: LogCallbackFn | None = None,
+    ) -> "NativePlugin":
+        """
+        Load a specific variant from .rbp bundle with configuration.
+
+        Unlike `load_with_config` which always extracts the default (release) variant,
+        this method extracts the named variant (e.g., "debug", "release").
+
+        Args:
+            bundle_path: Path to the .rbp bundle file.
+            variant: Variant name (e.g., "release", "debug").
+            config: Plugin configuration.
+            log_callback: Optional callback for log messages.
+
+        Returns:
+            The loaded NativePlugin.
+
+        Raises:
+            PluginException: If loading fails or variant not found.
+            FileNotFoundError: If bundle file doesn't exist.
+        """
+        from rustbridge.native.plugin_loader import NativePluginLoader
+
+        bundle_path = Path(bundle_path)
+        if not bundle_path.exists():
+            raise FileNotFoundError(f"Bundle not found: {bundle_path}")
+
+        # Include variant in the temp directory name to prevent cache collisions
+        temp_dir = tempfile.mkdtemp(
+            prefix=f"rustbridge-{variant}-", dir=tempfile.gettempdir()
+        )
+        try:
+            lib_path = self._extract_library_internal(
+                bundle_path, Path(temp_dir), fail_if_exists=False, variant=variant
+            )
+            return NativePluginLoader.load_with_config(
+                str(lib_path), config, log_callback
+            )
+        except Exception:
+            # Clean up temp directory on failure
+            import shutil
+
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            raise
+
     def extract_library_to_temp(self, bundle_path: str | Path) -> Path:
         """
         Extract and verify library from bundle to a unique temporary directory.

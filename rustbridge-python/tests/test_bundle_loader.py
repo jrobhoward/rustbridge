@@ -46,6 +46,16 @@ class TestBundleLoader:
         with pytest.raises(FileNotFoundError):
             loader.load("/nonexistent/path/bundle.rbp")
 
+    def test_load_variant_with_config___file_not_found___raises_file_not_found(self) -> None:
+        from rustbridge.core.plugin_config import PluginConfig
+
+        loader = BundleLoader(verify_signatures=False)
+
+        with pytest.raises(FileNotFoundError):
+            loader.load_variant_with_config(
+                "/nonexistent/path/bundle.rbp", "debug", PluginConfig.defaults()
+            )
+
 
 class TestBundleManifest:
     """Tests for BundleManifest parsing."""

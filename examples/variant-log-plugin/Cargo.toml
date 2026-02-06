@@ -1,0 +1,22 @@
+[package]
+name = "variant-log-plugin"
+description = "Example plugin that identifies its build variant for testing"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+extended-info = []
+
+[dependencies]
+rustbridge = { workspace = true }
+serde = { workspace = true }
+
+# Example plugin - explicitly configure lints (can't override workspace lints)
+# Allow unwrap/expect since examples should be simple and clear
+[lints.clippy]
+await_holding_lock = "deny"  # Still enforce lock safety

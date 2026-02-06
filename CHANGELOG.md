@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Rust Consumer**: `load_bundle_variant_with_config()` for loading specific variants (debug/release) from bundles
+- **Python**: `BundleLoader.load_variant_with_config()` for loading specific variants from bundles
+- **Example Plugin**: `variant-log-plugin` example that identifies its build variant for testing
+- **Integration Tests**: Bundle variant loading tests (serial, parallel, unload/reload, log callback verification)
+- **Build Script**: `scripts/build-variant-test-bundles.sh` for building 4 variant configurations into 2 bundles
+
+### Fixed
+- **Rust Consumer**: Fixed SIGBUS crash when multiple threads load plugins from bundles concurrently (extraction paths now unique per load)
+
+### Added
 - **Rust Consumer**: New `rustbridge-consumer` crate for loading plugins from Rust applications
   - Dynamic loading of shared libraries (.so, .dylib, .dll) and .rbp bundles
   - JSON transport via `call()` and `call_typed()` methods

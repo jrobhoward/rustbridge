@@ -12,6 +12,7 @@ members = [
     "crates/rustbridge-consumer",
     "crates/rustbridge-cli",
     "examples/hello-plugin",
+    "examples/variant-log-plugin",
 ]
 
 [workspace.package]
