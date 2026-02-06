@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Build Script**: `scripts/build-variant-test-bundles.sh` for building 4 variant configurations into 2 bundles
 
 ### Fixed
+- **CLI**: `rustbridge new` now prints correct bundle copy path (`target/bundle/`) in consumer next-steps output
+- **Docs**: Fixed bundle copy paths in Getting Started guide, Kotlin consumer tutorial (Ch2), and Java consumer tutorial (Ch4)
+- **Docs**: Fixed unused `PluginConfig` import in Getting Started Rust consumer example
+- **Docs**: Replaced non-existent docs.rs link for `rustbridge-consumer` with local Rust language guide link
+- **Docs**: Removed references to non-existent example implementations in tutorials README
 - **Rust Consumer**: Fixed SIGBUS crash when multiple threads load plugins from bundles concurrently (extraction paths now unique per load)
 
 ### Added

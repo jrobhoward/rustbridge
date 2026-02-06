@@ -347,28 +347,28 @@ fn print_next_steps(project_dir: &str, ctx: &TemplateContext, options: &NewOptio
     if options.kotlin {
         println!("\nKotlin consumer:");
         println!("  cd consumers/kotlin");
-        println!("  cp ../../{} .", ctx.bundle_path);
+        println!("  cp ../../target/bundle/{} .", ctx.bundle_path);
         println!("  ./gradlew run");
     }
 
     if options.java_ffm {
         println!("\nJava FFM consumer (requires Java 21+):");
         println!("  cd consumers/java-ffm");
-        println!("  cp ../../{} .", ctx.bundle_path);
+        println!("  cp ../../target/bundle/{} .", ctx.bundle_path);
         println!("  ./gradlew run");
     }
 
     if options.csharp {
         println!("\nC# consumer (requires .NET 8+):");
         println!("  cd consumers/csharp");
-        println!("  cp ../../{} .", ctx.bundle_path);
+        println!("  cp ../../target/bundle/{} .", ctx.bundle_path);
         println!("  dotnet run");
     }
 
     if options.python {
         println!("\nPython consumer:");
         println!("  cd consumers/python");
-        println!("  cp ../../{} .", ctx.bundle_path);
+        println!("  cp ../../target/bundle/{} .", ctx.bundle_path);
         println!("  pip install -r requirements.txt");
         println!("  python main.py");
     }

@@ -9,7 +9,7 @@ guide walks you through creating a plugin, packaging it, and running it from you
 │  (you write)    │     │  (portable ZIP)  │     │  (JVM/C#/Py)    │
 │                 │     │                  │     │                 │
 │  cargo build    │     │  rustbridge      │     │  plugin.call()  │
-│                 │     │  bundle create   │     │                 │
+│                 │     │  pack            │     │                 │
 └─────────────────┘     └──────────────────┘     └─────────────────┘
 ```
 
@@ -101,7 +101,7 @@ Pick your language below and run it.
 
 ```bash
 cd consumers/kotlin
-cp ../../my-plugin-0.1.0.rbp .
+cp ../../target/bundle/my-plugin-0.1.0.rbp .
 ./gradlew run
 ```
 
@@ -111,7 +111,7 @@ cp ../../my-plugin-0.1.0.rbp .
 
 ```bash
 cd consumers/java-ffm
-cp ../../my-plugin-0.1.0.rbp .
+cp ../../target/bundle/my-plugin-0.1.0.rbp .
 ./gradlew run
 ```
 
@@ -119,7 +119,7 @@ cp ../../my-plugin-0.1.0.rbp .
 
 ```bash
 cd consumers/csharp
-cp ../../my-plugin-0.1.0.rbp .
+cp ../../target/bundle/my-plugin-0.1.0.rbp .
 dotnet run
 ```
 
@@ -127,7 +127,7 @@ dotnet run
 
 ```bash
 cd consumers/python
-cp ../../my-plugin-0.1.0.rbp .
+cp ../../target/bundle/my-plugin-0.1.0.rbp .
 
 # Create and activate virtual environment
 python3 -m venv .venv
@@ -159,7 +159,7 @@ rustbridge-consumer = "0.8.1"
 Update `src/main.rs`:
 
 ```rust
-use rustbridge_consumer::{NativePluginLoader, PluginConfig};
+use rustbridge_consumer::NativePluginLoader;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
@@ -226,7 +226,7 @@ calculator with multiple message types:
 | Java       | [JAVA_FFM.md](./using-plugins/JAVA_FFM.md) (Java 21+)      |
 | C#         | [CSHARP.md](./using-plugins/CSHARP.md)                     |
 | Python     | [PYTHON.md](./using-plugins/PYTHON.md)                     |
-| Rust       | `rustbridge-consumer` crate ([docs.rs](https://docs.rs/rustbridge-consumer)) |
+| Rust       | [RUST.md](./using-plugins/RUST.md)                         |
 
 ### Learn More
 

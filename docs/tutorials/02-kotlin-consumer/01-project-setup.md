@@ -48,7 +48,7 @@ Copy the bundle you created in Chapter 1:
 
 ```bash
 # From consumers/kotlin/
-cp $RUSTBRIDGE_WORKSPACE/regex-plugin/regex-plugin-0.1.0.rbp .
+cp $RUSTBRIDGE_WORKSPACE/regex-plugin/target/bundle/regex-plugin-0.1.0.rbp .
 ```
 
 ## Examine build.gradle.kts

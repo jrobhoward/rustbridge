@@ -211,11 +211,9 @@ Build an image thumbnail generator using binary transport for efficient large pa
 
 ## Reference Implementations
 
-Completed examples are available for reference. If you get stuck, compare your code against these working implementations:
+If you get stuck, compare your code against this working implementation:
 
 - **Hello plugin**: [`examples/hello-plugin/`](../../examples/hello-plugin/)
-- **Regex plugin**: [`examples/regex-plugin/`](../../examples/regex-plugin/) *(if available)*
-- **JSON plugin**: [`examples/json-plugin/`](../../examples/json-plugin/) *(if available)*
 
 ## Choosing Your Path
 
