@@ -1,0 +1,37 @@
+[package]
+name = "rustbridge-consumer"
+description = "Rust consumer for rustbridge plugins"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+readme = "README.md"
+keywords = ["ffi", "plugin", "consumer", "dynamic-loading"]
+categories = ["development-tools::ffi", "api-bindings"]
+
+[dependencies]
+# Reuse existing crates
+rustbridge-core = { workspace = true }
+rustbridge-bundle = { workspace = true }
+rustbridge-transport = { workspace = true }
+
+# Dynamic loading
+libloading = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+# Utilities
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3.24"
+tokio = { workspace = true }
+
+[lints]
+workspace = true

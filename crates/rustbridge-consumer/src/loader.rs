@@ -1,0 +1,400 @@
+//! Plugin loader for dynamically loading rustbridge plugins.
+
+use crate::error::{ConsumerError, ConsumerResult};
+use crate::ffi_bindings::{
+    FfiPluginHandle, LogCallback, PluginCallFn, PluginCallRawFn, PluginCreateFn,
+    PluginFreeBufferFn, PluginGetRejectedCountFn, PluginGetStateFn, PluginInitFn,
+    PluginSetLogLevelFn, PluginShutdownFn, RbResponseFreeFn,
+};
+use crate::plugin::NativePlugin;
+use libloading::Library;
+use rustbridge_bundle::BundleLoader;
+use rustbridge_core::{LogLevel, PluginConfig};
+use std::ffi::c_char;
+use std::path::Path;
+use std::sync::Arc;
+use tracing::debug;
+
+/// Rust-friendly log callback type.
+///
+/// This callback receives log messages from the plugin.
+pub type LogCallbackFn = Arc<dyn Fn(LogLevel, &str, &str) + Send + Sync>;
+
+// Global log callback storage (one per thread).
+// This is needed because the FFI callback cannot capture state.
+thread_local! {
+    static LOG_CALLBACK: std::cell::RefCell<Option<LogCallbackFn>> = const { std::cell::RefCell::new(None) };
+}
+
+/// Set the thread-local log callback.
+fn set_log_callback(callback: Option<LogCallbackFn>) {
+    LOG_CALLBACK.with(|cb| {
+        *cb.borrow_mut() = callback;
+    });
+}
+
+/// FFI-compatible log callback that forwards to the Rust callback.
+unsafe extern "C" fn ffi_log_callback(level: u8, target: *const c_char, message: *const c_char) {
+    LOG_CALLBACK.with(|cb| {
+        if let Some(callback) = cb.borrow().as_ref() {
+            let log_level = LogLevel::from_u8(level);
+
+            // SAFETY: target and message are valid null-terminated C strings
+            let target_str = if target.is_null() {
+                ""
+            } else {
+                unsafe { std::ffi::CStr::from_ptr(target) }
+                    .to_str()
+                    .unwrap_or("")
+            };
+
+            let message_str = if message.is_null() {
+                ""
+            } else {
+                unsafe { std::ffi::CStr::from_ptr(message) }
+                    .to_str()
+                    .unwrap_or("")
+            };
+
+            callback(log_level, target_str, message_str);
+        }
+    });
+}
+
+/// Loader for native plugins.
+///
+/// Provides methods to load plugins from shared libraries or bundles.
+pub struct NativePluginLoader;
+
+impl NativePluginLoader {
+    /// Load a plugin from a shared library path.
+    ///
+    /// Uses default configuration and no log callback.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - Path to the shared library (.so, .dylib, or .dll)
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let plugin = NativePluginLoader::load("target/release/libmy_plugin.so")?;
+    /// ```
+    pub fn load<P: AsRef<Path>>(path: P) -> ConsumerResult<NativePlugin> {
+        Self::load_with_config(path, &PluginConfig::default(), None)
+    }
+
+    /// Load a plugin with custom configuration.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - Path to the shared library
+    /// * `config` - Plugin configuration
+    /// * `log_callback` - Optional callback to receive log messages
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let config = PluginConfig::default();
+    /// let log_callback: LogCallbackFn = Arc::new(|level, target, msg| {
+    ///     println!("[{level}] {target}: {msg}");
+    /// });
+    ///
+    /// let plugin = NativePluginLoader::load_with_config(
+    ///     "target/release/libmy_plugin.so",
+    ///     &config,
+    ///     Some(log_callback),
+    /// )?;
+    /// ```
+    pub fn load_with_config<P: AsRef<Path>>(
+        path: P,
+        config: &PluginConfig,
+        log_callback: Option<LogCallbackFn>,
+    ) -> ConsumerResult<NativePlugin> {
+        let path = path.as_ref();
+        debug!("Loading plugin from: {}", path.display());
+
+        // Load the shared library
+        // SAFETY: We're loading a shared library which requires unsafe
+        let library = unsafe { Library::new(path) }?;
+
+        // Load required symbols
+        let plugin_create: PluginCreateFn = unsafe { *library.get(b"plugin_create\0")? };
+        let plugin_init: PluginInitFn = unsafe { *library.get(b"plugin_init\0")? };
+        let plugin_call: PluginCallFn = unsafe { *library.get(b"plugin_call\0")? };
+        let plugin_shutdown: PluginShutdownFn = unsafe { *library.get(b"plugin_shutdown\0")? };
+        let plugin_get_state: PluginGetStateFn = unsafe { *library.get(b"plugin_get_state\0")? };
+        let plugin_get_rejected_count: PluginGetRejectedCountFn =
+            unsafe { *library.get(b"plugin_get_rejected_count\0")? };
+        let plugin_set_log_level: PluginSetLogLevelFn =
+            unsafe { *library.get(b"plugin_set_log_level\0")? };
+        let plugin_free_buffer: PluginFreeBufferFn =
+            unsafe { *library.get(b"plugin_free_buffer\0")? };
+
+        // Load optional binary transport symbols
+        let plugin_call_raw: Option<PluginCallRawFn> =
+            unsafe { library.get(b"plugin_call_raw\0").ok().map(|s| *s) };
+        let rb_response_free: Option<RbResponseFreeFn> =
+            unsafe { library.get(b"rb_response_free\0").ok().map(|s| *s) };
+
+        // Set up log callback if provided
+        set_log_callback(log_callback);
+        let ffi_callback: LogCallback = Some(ffi_log_callback);
+
+        // Create the plugin instance
+        // SAFETY: plugin_create returns a valid pointer or null
+        let plugin_ptr = unsafe { plugin_create() };
+        if plugin_ptr.is_null() {
+            return Err(ConsumerError::NullHandle);
+        }
+
+        // Serialize config to JSON
+        let config_json = serde_json::to_vec(config)?;
+
+        // Initialize the plugin
+        // SAFETY: plugin_ptr is valid, config_json is valid for its length
+        let handle: FfiPluginHandle = unsafe {
+            plugin_init(
+                plugin_ptr,
+                config_json.as_ptr(),
+                config_json.len(),
+                ffi_callback,
+            )
+        };
+
+        if handle.is_null() {
+            return Err(ConsumerError::NullHandle);
+        }
+
+        debug!("Plugin initialized with handle: {:?}", handle);
+
+        // SAFETY: All pointers are valid and came from the library
+        Ok(unsafe {
+            NativePlugin::new(
+                library,
+                handle,
+                plugin_call,
+                plugin_call_raw,
+                plugin_shutdown,
+                plugin_get_state,
+                plugin_get_rejected_count,
+                plugin_set_log_level,
+                plugin_free_buffer,
+                rb_response_free,
+            )
+        })
+    }
+
+    /// Load a plugin from a bundle file.
+    ///
+    /// Extracts the library for the current platform and loads it.
+    ///
+    /// # Arguments
+    ///
+    /// * `bundle_path` - Path to the .rbp bundle file
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let plugin = NativePluginLoader::load_bundle("my-plugin-1.0.0.rbp")?;
+    /// ```
+    pub fn load_bundle<P: AsRef<Path>>(bundle_path: P) -> ConsumerResult<NativePlugin> {
+        Self::load_bundle_with_config(bundle_path, &PluginConfig::default(), None)
+    }
+
+    /// Load a plugin from a bundle with custom configuration.
+    ///
+    /// # Arguments
+    ///
+    /// * `bundle_path` - Path to the .rbp bundle file
+    /// * `config` - Plugin configuration
+    /// * `log_callback` - Optional callback to receive log messages
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let config = PluginConfig::default();
+    /// let plugin = NativePluginLoader::load_bundle_with_config(
+    ///     "my-plugin-1.0.0.rbp",
+    ///     &config,
+    ///     None,
+    /// )?;
+    /// ```
+    pub fn load_bundle_with_config<P: AsRef<Path>>(
+        bundle_path: P,
+        config: &PluginConfig,
+        log_callback: Option<LogCallbackFn>,
+    ) -> ConsumerResult<NativePlugin> {
+        let bundle_path = bundle_path.as_ref();
+        debug!("Loading bundle from: {}", bundle_path.display());
+
+        // Open and validate the bundle
+        let mut loader = BundleLoader::open(bundle_path)?;
+
+        // Check platform support
+        if !loader.supports_current_platform() {
+            return Err(ConsumerError::Bundle(
+                rustbridge_bundle::BundleError::UnsupportedPlatform(
+                    "Current platform not supported by bundle".to_string(),
+                ),
+            ));
+        }
+
+        // Create a temporary directory to extract the library
+        // We use a directory in the same location as the bundle for simplicity
+        let extract_dir = bundle_path
+            .parent()
+            .unwrap_or(Path::new("."))
+            .join(".rustbridge-cache")
+            .join(loader.manifest().plugin.name.as_str())
+            .join(loader.manifest().plugin.version.as_str());
+
+        // Extract the library for the current platform
+        let lib_path = loader.extract_library_for_current_platform(&extract_dir)?;
+
+        debug!("Extracted library to: {}", lib_path.display());
+
+        // Load the extracted library
+        Self::load_with_config(lib_path, config, log_callback)
+    }
+
+    /// Load a plugin from a bundle to a specific extraction directory.
+    ///
+    /// This is useful when you want to control where the library is extracted.
+    ///
+    /// # Arguments
+    ///
+    /// * `bundle_path` - Path to the .rbp bundle file
+    /// * `extract_dir` - Directory to extract the library to
+    /// * `config` - Plugin configuration
+    /// * `log_callback` - Optional callback to receive log messages
+    pub fn load_bundle_to_dir<P: AsRef<Path>, Q: AsRef<Path>>(
+        bundle_path: P,
+        extract_dir: Q,
+        config: &PluginConfig,
+        log_callback: Option<LogCallbackFn>,
+    ) -> ConsumerResult<NativePlugin> {
+        let bundle_path = bundle_path.as_ref();
+        let extract_dir = extract_dir.as_ref();
+
+        debug!("Loading bundle from: {}", bundle_path.display());
+
+        // Open and validate the bundle
+        let mut loader = BundleLoader::open(bundle_path)?;
+
+        // Check platform support
+        if !loader.supports_current_platform() {
+            return Err(ConsumerError::Bundle(
+                rustbridge_bundle::BundleError::UnsupportedPlatform(
+                    "Current platform not supported by bundle".to_string(),
+                ),
+            ));
+        }
+
+        // Extract the library for the current platform
+        let lib_path = loader.extract_library_for_current_platform(extract_dir)?;
+
+        debug!("Extracted library to: {}", lib_path.display());
+
+        // Load the extracted library
+        Self::load_with_config(lib_path, config, log_callback)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(non_snake_case)]
+    #![allow(clippy::unwrap_used)]
+
+    use super::*;
+    use std::ffi::CString;
+
+    #[test]
+    fn NativePluginLoader___load___nonexistent_library___returns_error() {
+        let result = NativePluginLoader::load("/nonexistent/library.so");
+
+        assert!(result.is_err());
+        let err = result.err().unwrap();
+        assert!(matches!(err, ConsumerError::LibraryLoad(_)));
+    }
+
+    #[test]
+    fn NativePluginLoader___load_bundle___nonexistent_bundle___returns_error() {
+        let result = NativePluginLoader::load_bundle("/nonexistent/bundle.rbp");
+
+        assert!(result.is_err());
+        let err = result.err().unwrap();
+        assert!(matches!(err, ConsumerError::Bundle(_)));
+    }
+
+    #[test]
+    fn ffi_log_callback___no_callback_set___does_not_panic() {
+        // Clear any existing callback
+        set_log_callback(None);
+
+        // Create null-terminated C strings
+        let target = CString::new("test").unwrap();
+        let message = CString::new("test message").unwrap();
+
+        // This should not panic
+        unsafe {
+            ffi_log_callback(2, target.as_ptr(), message.as_ptr());
+        }
+    }
+
+    #[test]
+    fn ffi_log_callback___with_callback___invokes_callback() {
+        use std::sync::Arc;
+        use std::sync::atomic::{AtomicBool, Ordering};
+
+        let called = Arc::new(AtomicBool::new(false));
+        let called_clone = called.clone();
+
+        let callback: LogCallbackFn = Arc::new(move |level, target, message| {
+            assert_eq!(level, LogLevel::Info);
+            assert_eq!(target, "test");
+            assert_eq!(message, "test message");
+            called_clone.store(true, Ordering::SeqCst);
+        });
+
+        set_log_callback(Some(callback));
+
+        let target = CString::new("test").unwrap();
+        let message = CString::new("test message").unwrap();
+
+        unsafe {
+            ffi_log_callback(2, target.as_ptr(), message.as_ptr());
+        }
+
+        assert!(called.load(Ordering::SeqCst));
+
+        // Clean up
+        set_log_callback(None);
+    }
+
+    #[test]
+    fn ffi_log_callback___null_pointers___uses_empty_strings() {
+        use std::sync::Arc;
+        use std::sync::atomic::{AtomicBool, Ordering};
+
+        let called = Arc::new(AtomicBool::new(false));
+        let called_clone = called.clone();
+
+        let callback: LogCallbackFn = Arc::new(move |_level, target, message| {
+            assert_eq!(target, "");
+            assert_eq!(message, "");
+            called_clone.store(true, Ordering::SeqCst);
+        });
+
+        set_log_callback(Some(callback));
+
+        unsafe {
+            ffi_log_callback(2, std::ptr::null(), std::ptr::null());
+        }
+
+        assert!(called.load(Ordering::SeqCst));
+
+        // Clean up
+        set_log_callback(None);
+    }
+}

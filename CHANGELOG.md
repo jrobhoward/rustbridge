@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Rust Consumer**: New `rustbridge-consumer` crate for loading plugins from Rust applications
+  - Dynamic loading of shared libraries (.so, .dylib, .dll) and .rbp bundles
+  - JSON transport via `call()` and `call_typed()` methods
+  - Binary transport via `call_raw()` for high-performance paths
+  - Full lifecycle management (Installed, Starting, Active, Stopping, Stopped, Failed)
+  - Log callback integration for routing plugin logs to host
+  - Automatic plugin cleanup on drop
+
 ## [0.8.1] - 2026-02-04
 
 ### Security

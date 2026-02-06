@@ -9,6 +9,7 @@ members = [
     "crates/rustbridge-logging",
     "crates/rustbridge-macros",
     "crates/rustbridge-bundle",
+    "crates/rustbridge-consumer",
     "crates/rustbridge-cli",
     "examples/hello-plugin",
 ]
@@ -30,6 +31,10 @@ rustbridge-runtime = { path = "crates/rustbridge-runtime", version = "0.8.1" }
 rustbridge-logging = { path = "crates/rustbridge-logging", version = "0.8.1" }
 rustbridge-macros = { path = "crates/rustbridge-macros", version = "0.8.1" }
 rustbridge-bundle = { path = "crates/rustbridge-bundle", version = "0.8.1" }
+rustbridge-consumer = { path = "crates/rustbridge-consumer", version = "0.8.1" }
+
+# Dynamic loading
+libloading = "0.8"
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
