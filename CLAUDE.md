@@ -25,8 +25,11 @@ cargo test lifecycle___installed                                   # Run tests m
 cargo bench -p rustbridge-transport -- small_roundtrip             # Run specific benchmark
 
 # Bundle operations
+rustbridge pack                                                    # Auto-detect and bundle from current dir
+rustbridge pack --no-sign                                          # Bundle without signing
+rustbridge promote plugin-dev.rbp --key secret.key -o plugin.rbp  # Slim dev bundle to signed release
 rustbridge bundle create --name my-plugin --version 1.0.0 \
-  --lib linux-x86_64:target/release/libmyplugin.so --output plugin.rbp
+  --lib linux-x86_64:target/release/libmyplugin.so --output plugin.rbp  # Manual bundle creation
 
 # Build native library (required before Java/C#/Python tests)
 cargo build --release -p hello-plugin                             # Example plugin
@@ -73,7 +76,7 @@ Host Language → FFI Boundary → Async Runtime → Plugin Implementation → R
 - **Runtime** (`rustbridge-runtime`, `rustbridge-logging`): Tokio integration, tracing callbacks
 - **FFI** (`rustbridge-ffi`): C ABI exports, buffer management
 - **Consumer** (`rustbridge-consumer`): Rust host library for loading plugins
-- **Tooling** (`rustbridge-macros`, `rustbridge-cli`, `rustbridge-bundle`): Code generation, build tools, `.rbp` packaging
+- **Tooling** (`rustbridge-macros`, `rustbridge-cli`, `rustbridge-bundle`): Code generation, CLI (`new`, `pack`, `promote`, `bundle`, `keygen`, `generate-header`), `.rbp` packaging
 
 Memory follows "Rust allocates, host frees" pattern. See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for details.
 
@@ -185,6 +188,7 @@ See [docs/TESTING_RUST_CONSUMER.md](./docs/TESTING_RUST_CONSUMER.md) for Rust co
 ## Documentation
 
 - [docs/GETTING_STARTED.md](./docs/GETTING_STARTED.md) - Tutorial for creating your first plugin
+- [docs/CLI.md](./docs/CLI.md) - CLI reference (new, pack, promote, bundle, keygen, generate-header)
 - [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) - System architecture and design decisions
 - [docs/BUNDLE_FORMAT.md](./docs/BUNDLE_FORMAT.md) - .rbp bundle specification
 - [docs/TRANSPORT.md](./docs/TRANSPORT.md) - JSON and binary transport (binary is 7x faster)
