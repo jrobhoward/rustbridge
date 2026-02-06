@@ -12,7 +12,7 @@
 > yet published to package registries (e.g. Maven Central, NuGet, PyPI), so rustbridge consumer libraries must be
 > installed from source.
 
-**rustbridge** lets you write plugins in Rust that can be called from Java, Kotlin, C#, or Python—without dealing with
+**rustbridge** lets you write shared library plugins in Rust that can be called from Java, Kotlin, C#, Python, or another version of Rust —without dealing with
 the C ABI directly.
 
 ## The Problem
