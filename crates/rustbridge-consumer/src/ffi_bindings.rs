@@ -85,8 +85,15 @@ impl RbResponse {
 }
 
 /// Log callback type matching `rustbridge-ffi`.
-pub type LogCallback =
-    Option<unsafe extern "C" fn(level: u8, target: *const c_char, message: *const c_char)>;
+///
+/// # Parameters
+/// - `level`: Log level (0=Trace, 1=Debug, 2=Info, 3=Warn, 4=Error, 5=Off)
+/// - `target`: Log target (module path), null-terminated C string
+/// - `message`: Log message, pointer to UTF-8 bytes (NOT null-terminated)
+/// - `message_len`: Length of the message in bytes
+pub type LogCallback = Option<
+    unsafe extern "C" fn(level: u8, target: *const c_char, message: *const u8, message_len: usize),
+>;
 
 /// Opaque plugin handle.
 pub type FfiPluginHandle = *mut c_void;

@@ -34,12 +34,21 @@ fn set_log_callback(callback: Option<LogCallbackFn>) {
 }
 
 /// FFI-compatible log callback that forwards to the Rust callback.
-unsafe extern "C" fn ffi_log_callback(level: u8, target: *const c_char, message: *const c_char) {
+///
+/// # Safety
+/// - `target` must be a valid null-terminated C string or null
+/// - `message` must be valid for `message_len` bytes or null
+unsafe extern "C" fn ffi_log_callback(
+    level: u8,
+    target: *const c_char,
+    message: *const u8,
+    message_len: usize,
+) {
     LOG_CALLBACK.with(|cb| {
         if let Some(callback) = cb.borrow().as_ref() {
             let log_level = LogLevel::from_u8(level);
 
-            // SAFETY: target and message are valid null-terminated C strings
+            // SAFETY: target is a valid null-terminated C string
             let target_str = if target.is_null() {
                 ""
             } else {
@@ -48,12 +57,12 @@ unsafe extern "C" fn ffi_log_callback(level: u8, target: *const c_char, message:
                     .unwrap_or("")
             };
 
-            let message_str = if message.is_null() {
+            // SAFETY: message is valid for message_len bytes (NOT null-terminated)
+            let message_str = if message.is_null() || message_len == 0 {
                 ""
             } else {
-                unsafe { std::ffi::CStr::from_ptr(message) }
-                    .to_str()
-                    .unwrap_or("")
+                let bytes = unsafe { std::slice::from_raw_parts(message, message_len) };
+                std::str::from_utf8(bytes).unwrap_or("")
             };
 
             callback(log_level, target_str, message_str);
@@ -488,13 +497,13 @@ mod tests {
         // Clear any existing callback
         set_log_callback(None);
 
-        // Create null-terminated C strings
+        // Create target as null-terminated C string, message as bytes with length
         let target = CString::new("test").unwrap();
-        let message = CString::new("test message").unwrap();
+        let message = b"test message";
 
         // This should not panic
         unsafe {
-            ffi_log_callback(2, target.as_ptr(), message.as_ptr());
+            ffi_log_callback(2, target.as_ptr(), message.as_ptr(), message.len());
         }
     }
 
@@ -516,10 +525,10 @@ mod tests {
         set_log_callback(Some(callback));
 
         let target = CString::new("test").unwrap();
-        let message = CString::new("test message").unwrap();
+        let message = b"test message";
 
         unsafe {
-            ffi_log_callback(2, target.as_ptr(), message.as_ptr());
+            ffi_log_callback(2, target.as_ptr(), message.as_ptr(), message.len());
         }
 
         assert!(called.load(Ordering::SeqCst));
@@ -545,7 +554,7 @@ mod tests {
         set_log_callback(Some(callback));
 
         unsafe {
-            ffi_log_callback(2, std::ptr::null(), std::ptr::null());
+            ffi_log_callback(2, std::ptr::null(), std::ptr::null(), 0);
         }
 
         assert!(called.load(Ordering::SeqCst));
