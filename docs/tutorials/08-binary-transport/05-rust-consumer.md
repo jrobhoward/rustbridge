@@ -100,9 +100,9 @@ impl ThumbnailRequestHeader {
         }
     }
 
-    fn to_bytes(&self) -> [u8; Self::SIZE] {
+    fn to_bytes(self) -> [u8; Self::SIZE] {
         // SAFETY: ThumbnailRequestHeader is repr(C) with known layout
-        unsafe { std::mem::transmute(*self) }
+        unsafe { std::mem::transmute(self) }
     }
 }
 

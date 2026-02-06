@@ -512,6 +512,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 rustbridge = { version = "0.8.1" }
+serde = { version = "1.0", features = ["derive"] }
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
 
 [profile.release]
