@@ -48,9 +48,8 @@ C#, and Python.
 `--java-ffm`, `--csharp`, `--python`.
 > Or omit all flags for a Rust-only plugin.
 
-> **Note**: A Rust consumer (`--rust-consumer`) is available but intentionally excluded from `--all`. Having a Rust
-> project as a subdirectory of another Rust project causes Cargo workspace conflicts. Use `--rust-consumer` explicitly
-> only if you understand the implications, or create the Rust consumer as a separate standalone project.
+> **Note**: For Rust consumers, create a separate standalone project using `cargo new` and add `rustbridge-consumer`
+> as a dependency. This avoids Cargo workspace conflicts. See the [tutorials](./tutorials/README.md) for examples.
 
 > **Tip**: If you're a git user, at this point, you may want to run
 `git init && git add . && git commit -m "Initial plugin scaffold"`.
@@ -267,13 +266,11 @@ rustbridge new my-plugin --kotlin           # Rust + Kotlin consumer
 rustbridge new my-plugin --java-ffm         # Rust + Java FFM consumer
 rustbridge new my-plugin --csharp           # Rust + C# consumer
 rustbridge new my-plugin --python           # Rust + Python consumer
-rustbridge new my-plugin --rust-consumer    # Rust + Rust consumer (see note below)
-rustbridge new my-plugin --all              # Rust + all consumers (excludes Rust consumer)
+rustbridge new my-plugin --all              # Rust + all consumers
 ```
 
-> **Note**: The `--rust-consumer` flag is excluded from `--all` because placing a Rust project inside another Rust
-> project causes Cargo workspace conflicts. For Rust consumers, we recommend creating a separate standalone project
-> and adding `rustbridge-consumer` as a dependency.
+> **Note**: For Rust consumers, create a separate standalone project using `cargo new` and add `rustbridge-consumer`
+> as a dependency. This avoids Cargo workspace conflicts. See the [tutorials](./tutorials/README.md) for examples.
 
 | Template  | Description                       | Requirements |
 |-----------|-----------------------------------|--------------|

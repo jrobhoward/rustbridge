@@ -56,14 +56,6 @@ mod templates {
     pub const PYTHON_MAIN: &str = include_str!("../templates/python/main.py.tmpl");
     pub const PYTHON_REQUIREMENTS: &str = include_str!("../templates/python/requirements.txt");
     pub const PYTHON_GITIGNORE: &str = include_str!("../templates/python/.gitignore");
-
-    // Rust consumer templates
-    pub const RUST_CONSUMER_CARGO_TOML: &str =
-        include_str!("../templates/rust-consumer/Cargo.toml.tmpl");
-    pub const RUST_CONSUMER_MAIN: &str =
-        include_str!("../templates/rust-consumer/src/main.rs.tmpl");
-    pub const RUST_CONSUMER_GITIGNORE: &str = include_str!("../templates/rust-consumer/.gitignore");
-    pub const RUST_CONSUMER_README: &str = include_str!("../templates/rust-consumer/README.md");
 }
 
 // ============================================================================
@@ -113,13 +105,12 @@ pub struct NewOptions {
     pub java_ffm: bool,
     pub csharp: bool,
     pub python: bool,
-    pub rust_consumer: bool,
 }
 
 impl NewOptions {
     /// Returns true if any consumer language is selected
     fn has_consumers(&self) -> bool {
-        self.kotlin || self.java_ffm || self.csharp || self.python || self.rust_consumer
+        self.kotlin || self.java_ffm || self.csharp || self.python
     }
 }
 
@@ -159,9 +150,6 @@ pub fn run(name: &str, path: Option<String>, options: NewOptions) -> Result<()> 
         }
         if options.python {
             create_python_consumer(&consumers_dir, &ctx)?;
-        }
-        if options.rust_consumer {
-            create_rust_consumer(&consumers_dir, &ctx)?;
         }
     }
 
@@ -345,35 +333,6 @@ fn create_python_consumer(consumers_dir: &Path, ctx: &TemplateContext) -> Result
     Ok(())
 }
 
-fn create_rust_consumer(consumers_dir: &Path, ctx: &TemplateContext) -> Result<()> {
-    let rust_dir = consumers_dir.join("rust");
-    let src_dir = rust_dir.join("src");
-    fs::create_dir_all(&src_dir)?;
-
-    // Templated files
-    fs::write(
-        rust_dir.join("Cargo.toml"),
-        ctx.apply(templates::RUST_CONSUMER_CARGO_TOML),
-    )?;
-    fs::write(
-        src_dir.join("main.rs"),
-        ctx.apply(templates::RUST_CONSUMER_MAIN),
-    )?;
-    fs::write(
-        rust_dir.join("README.md"),
-        ctx.apply(templates::RUST_CONSUMER_README),
-    )?;
-
-    // Static files
-    fs::write(
-        rust_dir.join(".gitignore"),
-        templates::RUST_CONSUMER_GITIGNORE,
-    )?;
-
-    println!("  Created consumers/rust");
-    Ok(())
-}
-
 // ============================================================================
 // Next Steps
 // ============================================================================
@@ -421,15 +380,6 @@ fn print_next_steps(project_dir: &str, ctx: &TemplateContext, options: &NewOptio
         println!("  cp ../../{} .", ctx.bundle_path);
         println!("  pip install -r requirements.txt");
         println!("  python main.py");
-    }
-
-    if options.rust_consumer {
-        println!("\nRust consumer (note: best used as a standalone project):");
-        println!("  cd consumers/rust");
-        println!("  cp ../../{} .", ctx.bundle_path);
-        println!("  cargo run --release");
-        println!("  # Warning: Running cargo commands from the parent directory may cause");
-        println!("  # workspace conflicts. Always cd into consumers/rust first.");
     }
 }
 

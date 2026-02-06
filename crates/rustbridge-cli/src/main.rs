@@ -50,11 +50,7 @@ enum Commands {
         #[arg(long)]
         python: bool,
 
-        /// Also generate Rust consumer project (standalone, not included in --all)
-        #[arg(long)]
-        rust_consumer: bool,
-
-        /// Generate all consumer projects (Java, Kotlin, C#, Python - excludes Rust)
+        /// Generate all consumer projects (Java, Kotlin, C#, Python)
         #[arg(long)]
         all: bool,
     },
@@ -254,7 +250,6 @@ fn main() -> anyhow::Result<()> {
             java_ffm,
             csharp,
             python,
-            rust_consumer,
             all,
         } => {
             let options = new::NewOptions {
@@ -262,10 +257,6 @@ fn main() -> anyhow::Result<()> {
                 java_ffm: java_ffm || all,
                 csharp: csharp || all,
                 python: python || all,
-                // Rust consumer is intentionally excluded from --all because having
-                // a Rust project as a subdirectory of another Rust project causes
-                // Cargo workspace conflicts. Use --rust-consumer explicitly.
-                rust_consumer,
             };
             new::run(&name, path, options)?;
         }

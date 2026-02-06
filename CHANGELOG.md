@@ -16,7 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Log callback integration for routing plugin logs to host
   - Bundle signature verification via minisign Ed25519
   - Automatic plugin cleanup on drop
-- **CLI**: New `--rust-consumer` flag for `rustbridge new` command to generate Rust consumer projects
 - **Tutorial**: Rust consumer sections for Chapters 7 (Backpressure Queues) and 8 (Binary Transport)
 - **Bundle Loader**: Added `verify_manifest_signature()` and `extract_library_verified()` methods to `BundleLoader`
 

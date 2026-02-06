@@ -323,13 +323,13 @@ cargo build --release
 Copy a test image:
 
 ```bash
-cp ../test-image.jpg consumers/rust/
+cp test-image.jpg $RUSTBRIDGE_WORKSPACE/thumbnail-rust-consumer/
 ```
 
 Then run the consumer:
 
 ```bash
-cd consumers/rust
+cd $RUSTBRIDGE_WORKSPACE/thumbnail-rust-consumer
 cargo run --release
 ```
 

@@ -329,7 +329,7 @@ cargo build --release
 Then run the consumer:
 
 ```bash
-cd consumers/rust
+cd $RUSTBRIDGE_WORKSPACE/sync-demo-rust-consumer
 cargo run --release
 ```
 
