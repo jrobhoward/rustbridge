@@ -2,6 +2,10 @@
 
 This is a Rust consumer application for rustbridge plugins.
 
+> **Note**: Rust consumers should be standalone projects, not subdirectories of Rust plugins.
+> Placing a Rust project inside another Rust project causes Cargo workspace conflicts.
+> This is why `--rust-consumer` is excluded from `rustbridge new --all`.
+
 ## Prerequisites
 
 - Rust 1.90.0+

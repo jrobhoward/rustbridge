@@ -424,10 +424,12 @@ fn print_next_steps(project_dir: &str, ctx: &TemplateContext, options: &NewOptio
     }
 
     if options.rust_consumer {
-        println!("\nRust consumer:");
+        println!("\nRust consumer (note: best used as a standalone project):");
         println!("  cd consumers/rust");
         println!("  cp ../../{} .", ctx.bundle_path);
         println!("  cargo run --release");
+        println!("  # Warning: Running cargo commands from the parent directory may cause");
+        println!("  # workspace conflicts. Always cd into consumers/rust first.");
     }
 }
 

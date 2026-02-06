@@ -9,18 +9,17 @@ Complete the [project setup](./README.md#project-setup) from the chapter introdu
 1. Scaffold the project with `rustbridge new sync-demo --all`
 2. Add the sleep handler to `src/lib.rs`
 3. Build the plugin and create the bundle
-4. Have the `rustbridge-consumer` crate available
 
 ## Create a Rust Consumer Project
 
-Create a new Rust project for the consumer:
+Unlike other language consumers (which live under `consumers/`), the Rust consumer should be created as a
+**separate standalone project**. This avoids Cargo workspace conflicts that occur when placing a Rust
+project inside another Rust project.
 
 ```bash
-cd $RUSTBRIDGE_WORKSPACE/sync-demo
-mkdir -p consumers/rust
-cd consumers/rust
-
-cargo init --name sync-demo-consumer
+cd $RUSTBRIDGE_WORKSPACE
+cargo new sync-demo-rust-consumer
+cd sync-demo-rust-consumer
 ```
 
 ## Add Dependencies
@@ -230,13 +229,13 @@ unsafe impl Sync for SynchronizedPlugin {}
 fn main() -> ConsumerResult<()> {
     println!("=== Synchronized Plugin Demo (Rust) ===\n");
 
-    // Load the plugin
+    // Load the plugin (adjust path to your sync-demo plugin)
     let plugin_path = if cfg!(target_os = "linux") {
-        "../../target/release/libsync_demo.so"
+        "../sync-demo/target/release/libsync_demo.so"
     } else if cfg!(target_os = "macos") {
-        "../../target/release/libsync_demo.dylib"
+        "../sync-demo/target/release/libsync_demo.dylib"
     } else {
-        "../../target/release/sync_demo.dll"
+        "../sync-demo/target/release/sync_demo.dll"
     };
 
     let config = PluginConfig::default();

@@ -10,18 +10,17 @@ Complete the [project setup](./README.md#project-setup) from the chapter introdu
 2. Replace `src/lib.rs` with the thumbnail plugin implementation
 3. Add the `image` dependency to `Cargo.toml`
 4. Build the plugin and create the bundle
-5. Copy the bundle and a test image to `consumers/rust/`
 
 ## Create a Rust Consumer Project
 
-Create a new Rust project for the consumer:
+Unlike other language consumers (which live under `consumers/`), the Rust consumer should be created as a
+**separate standalone project**. This avoids Cargo workspace conflicts that occur when placing a Rust
+project inside another Rust project.
 
 ```bash
-cd $RUSTBRIDGE_WORKSPACE/thumbnail-plugin
-mkdir -p consumers/rust
-cd consumers/rust
-
-cargo init --name thumbnail-consumer
+cd $RUSTBRIDGE_WORKSPACE
+cargo new thumbnail-rust-consumer
+cd thumbnail-rust-consumer
 ```
 
 ## Add Dependencies
@@ -204,13 +203,13 @@ fn parse_response(data: &[u8]) -> Result<(ThumbnailResponseHeader, &[u8]), Strin
 fn main() -> ConsumerResult<()> {
     println!("=== Binary Transport Demo (Rust) ===\n");
 
-    // Paths
+    // Paths (adjust to your thumbnail-plugin location)
     let plugin_path = if cfg!(target_os = "linux") {
-        "../../target/release/libthumbnail_plugin.so"
+        "../thumbnail-plugin/target/release/libthumbnail_plugin.so"
     } else if cfg!(target_os = "macos") {
-        "../../target/release/libthumbnail_plugin.dylib"
+        "../thumbnail-plugin/target/release/libthumbnail_plugin.dylib"
     } else {
-        "../../target/release/thumbnail_plugin.dll"
+        "../thumbnail-plugin/target/release/thumbnail_plugin.dll"
     };
     let image_path = "test-image.jpg";
 
