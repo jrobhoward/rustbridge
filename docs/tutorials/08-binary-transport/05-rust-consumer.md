@@ -448,7 +448,7 @@ match plugin.call_raw(MSG_THUMBNAIL_CREATE, &request) {
 Capture plugin logs with a callback:
 
 ```rust
-use rustbridge_consumer::{LogCallbackFn, LogLevel, PluginConfig};
+use rustbridge_consumer::{LogCallbackFn, LogLevel, NativePluginLoader, PluginConfig};
 use std::sync::Arc;
 
 let log_callback: LogCallbackFn = Arc::new(|level, target, message| {
@@ -458,13 +458,19 @@ let log_callback: LogCallbackFn = Arc::new(|level, target, message| {
         LogLevel::Info => "INFO",
         LogLevel::Warn => "WARN",
         LogLevel::Error => "ERROR",
+        LogLevel::Off => return, // Don't log if level is Off
     };
     println!("[{level_str}] {target}: {message}");
 });
 
+let config = PluginConfig {
+    log_level: "debug".to_string(),
+    ..PluginConfig::default()
+};
+
 let plugin = NativePluginLoader::load_bundle_with_config(
     "thumbnail-plugin-0.1.0.rbp",
-    &PluginConfig::default().log_level(LogLevel::Debug),
+    &config,
     Some(log_callback),
 )?;
 ```
