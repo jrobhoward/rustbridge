@@ -161,6 +161,27 @@ python -m pytest tests/test_log_level.py -v         # Run tests matching pattern
 
 See [docs/TESTING_PYTHON.md](./docs/TESTING_PYTHON.md) for Python testing conventions.
 
+## Rust Consumer Integration
+
+The `rustbridge-consumer` crate allows Rust applications to load and call rustbridge plugins.
+
+**Note**: Rust consumers should be created as standalone projects with `cargo new` to avoid Cargo workspace conflicts. Do not use CLI scaffolding for Rust consumers.
+
+```bash
+# Create a Rust consumer project
+cargo new my-consumer
+cd my-consumer
+
+# Add dependency to Cargo.toml
+# rustbridge-consumer = "0.8.1"
+
+# Build and run
+cargo build --release
+cargo run
+```
+
+See [docs/TESTING_RUST_CONSUMER.md](./docs/TESTING_RUST_CONSUMER.md) for Rust consumer testing conventions.
+
 ## Documentation
 
 - [docs/GETTING_STARTED.md](./docs/GETTING_STARTED.md) - Tutorial for creating your first plugin

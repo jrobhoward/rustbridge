@@ -246,6 +246,60 @@ def call(self, type_tag: str, request: str) -> str:
         self._lib.plugin_free_buffer(ctypes.byref(buffer))
 ```
 
+### Rust (rustbridge-consumer)
+
+Rust consumers follow the same "plugin allocates, plugin frees" pattern as other languages. Even though both sides are Rust, **they have separate heaps** (the plugin is a shared library with its own allocator), so memory cannot be safely transferred across the FFI boundary.
+
+```mermaid
+sequenceDiagram
+    participant Consumer as Rust Consumer (Consumer Heap)
+    participant FFI as FFI Boundary
+    participant Plugin as Rust Plugin (Plugin Heap)
+
+    Consumer->>Consumer: request: String (owned)
+    Consumer->>FFI: CString::new(request)
+    Note over FFI: Temporary C string
+
+    FFI->>Plugin: plugin_call(handle, type_tag, request_ptr, len)
+    Plugin->>Plugin: Allocate response Vec on plugin heap
+    Plugin-->>FFI: FfiBuffer struct (pointer + length)
+
+    FFI->>Consumer: FfiBuffer (pointer to plugin heap)
+    Consumer->>Consumer: Copy data via serde_json::from_slice()
+    Note over Consumer: Data copied to consumer heap
+
+    Consumer->>FFI: plugin_free_buffer(&mut buffer)
+    FFI->>Plugin: Drop Vec on plugin heap
+    Plugin-->>FFI: Memory freed
+
+    Note over Consumer: Consumer's copy is independent
+```
+
+**Key Points:**
+- Plugin and consumer have **separate heaps** (shared library boundary)
+- Consumer **copies** data from FfiBuffer before freeing
+- `plugin_free_buffer` is called internally by `rustbridge-consumer`
+- The API hides this complexity - users get a `String` result
+
+**Code Example:**
+```rust
+use rustbridge_consumer::{NativePluginLoader, ConsumerResult};
+
+fn call_plugin() -> ConsumerResult<String> {
+    let plugin = NativePluginLoader::load_bundle("my-plugin.rbp")?;
+
+    let request = r#"{"message": "Hello"}"#;
+
+    // Internally: plugin allocates, consumer copies, plugin frees
+    // User sees: simple String return value
+    let response = plugin.call("echo", request)?;
+
+    Ok(response)
+}
+```
+
+**Why not transfer ownership?** Shared libraries can use different allocators than the host executable. Memory allocated by the plugin's allocator must be freed by the same allocator. Attempting to free plugin-allocated memory with the consumer's allocator would cause undefined behavior (heap corruption, crashes).
+
 ## Binary Transport Memory
 
 Binary transport follows similar patterns but with struct pointers.

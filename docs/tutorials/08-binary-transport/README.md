@@ -112,6 +112,8 @@ thumbnail-plugin/
     +-- python/                     # Python consumer
 ```
 
+> **Note**: Rust consumers are created separately using `cargo new` to avoid Cargo workspace conflicts. See Section 5 for details.
+
 ## Binary Message Types
 
 Binary messages use `#[repr(C)]` structs with fixed layouts. Let's define the thumbnail request and response types.

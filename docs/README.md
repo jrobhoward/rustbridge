@@ -51,6 +51,9 @@ This directory contains the technical documentation for rustbridge.
 | Kotlin | [KOTLIN.md](./using-plugins/KOTLIN.md) | Java 21+, Kotlin 2.0+ |
 | C# | [CSHARP.md](./using-plugins/CSHARP.md) | .NET 8.0+ |
 | Python | [PYTHON.md](./using-plugins/PYTHON.md) | Python 3.10+ |
+| Rust | [TESTING_RUST_CONSUMER.md](./TESTING_RUST_CONSUMER.md) | Rust 1.90+ |
+
+> **Rust consumers**: Use `cargo new` to create a standalone project and add `rustbridge-consumer` as a dependency.
 
 ## Tutorials
 

@@ -336,6 +336,65 @@ result = EchoResponseRaw.from_buffer_copy(response)
 print(f"Length: {result.length}")
 ```
 
+### Rust (rustbridge-consumer)
+
+```rust
+use rustbridge_consumer::{NativePluginLoader, ConsumerResult};
+
+/// Request header (matching plugin's #[repr(C)] struct)
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct EchoRequestRaw {
+    version: u8,
+    _reserved: [u8; 3],
+    message: [u8; 256],
+    message_len: u32,
+}
+
+/// Response header
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct EchoResponseRaw {
+    version: u8,
+    _reserved: [u8; 3],
+    message: [u8; 256],
+    message_len: u32,
+    length: u32,
+}
+
+const MSG_ECHO: u32 = 1;
+
+fn call_binary(plugin: &rustbridge_consumer::NativePlugin) -> ConsumerResult<()> {
+    // Build request
+    let mut request = EchoRequestRaw {
+        version: 1,
+        _reserved: [0; 3],
+        message: [0; 256],
+        message_len: 5,
+    };
+    request.message[..5].copy_from_slice(b"Hello");
+
+    // Serialize to bytes
+    let request_bytes: &[u8] = unsafe {
+        std::slice::from_raw_parts(
+            &request as *const _ as *const u8,
+            std::mem::size_of::<EchoRequestRaw>(),
+        )
+    };
+
+    // Call binary transport
+    let response = plugin.call_raw(MSG_ECHO, request_bytes)?;
+
+    // Parse response
+    let result: &EchoResponseRaw = unsafe {
+        &*(response.as_ptr() as *const EchoResponseRaw)
+    };
+    println!("Length: {}", result.length);
+
+    Ok(())
+}
+```
+
 ## Generating C Headers
 
 Use the CLI to generate C headers from Rust structs:

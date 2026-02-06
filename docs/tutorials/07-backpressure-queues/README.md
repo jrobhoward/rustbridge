@@ -85,6 +85,8 @@ sync-demo/
     └── python/                     # Python consumer
 ```
 
+> **Note**: Rust consumers are created separately using `cargo new` to avoid Cargo workspace conflicts. See Section 3 for details.
+
 ## Adding a Sleep Handler
 
 To demonstrate backpressure, we need a message handler that takes a configurable amount of time.
