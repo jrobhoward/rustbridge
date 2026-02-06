@@ -73,7 +73,7 @@ Create `src/main.rs`:
 //! Synchronized plugin demo - Rust consumer
 
 use crossbeam_channel::{bounded, Sender};
-use rustbridge_consumer::{ConsumerResult, NativePluginLoader, NativePlugin, PluginConfig};
+use rustbridge_consumer::{ConsumerError, ConsumerResult, NativePlugin, NativePluginLoader};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::sync::Arc;
 use std::thread::{self, JoinHandle};
@@ -101,6 +101,7 @@ struct SleepRequest {
 
 #[derive(Debug, Deserialize)]
 struct SleepResponse {
+    #[allow(dead_code)]
     slept_ms: u64,
 }
 
@@ -121,7 +122,7 @@ struct WorkItem {
 
 /// Thread-safe wrapper that serializes all plugin calls through a single worker thread.
 pub struct SynchronizedPlugin {
-    work_tx: Sender<WorkItem>,
+    work_tx: Option<Sender<WorkItem>>,
     worker_handle: Option<JoinHandle<()>>,
 }
 
@@ -132,7 +133,11 @@ impl SynchronizedPlugin {
     ///
     /// * `plugin` - The native plugin to wrap
     /// * `queue_size` - Maximum number of pending requests (enables backpressure)
-    pub fn new(plugin: NativePlugin, queue_size: usize) -> Self {
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the worker thread cannot be spawned.
+    pub fn new(plugin: NativePlugin, queue_size: usize) -> Result<Self, std::io::Error> {
         let (work_tx, work_rx) = bounded::<WorkItem>(queue_size);
 
         // Spawn worker thread
@@ -153,18 +158,17 @@ impl SynchronizedPlugin {
 
                 // When channel closes, shutdown plugin
                 let _ = plugin.shutdown();
-            })
-            .expect("Failed to spawn worker thread");
+            })?;
 
-        Self {
-            work_tx,
+        Ok(Self {
+            work_tx: Some(work_tx),
             worker_handle: Some(worker_handle),
-        }
+        })
     }
 
     /// Get the number of pending requests in the queue.
     pub fn pending_count(&self) -> usize {
-        self.work_tx.len()
+        self.work_tx.as_ref().map(|tx| tx.len()).unwrap_or(0)
     }
 
     /// Make a JSON call to the plugin.
@@ -182,6 +186,8 @@ impl SynchronizedPlugin {
 
         // This blocks if queue is full - backpressure!
         self.work_tx
+            .as_ref()
+            .ok_or_else(|| "Plugin shut down".to_string())?
             .send(work_item)
             .map_err(|_| "Plugin shut down".to_string())?;
 
@@ -209,7 +215,7 @@ impl SynchronizedPlugin {
 impl Drop for SynchronizedPlugin {
     fn drop(&mut self) {
         // Close the channel to signal shutdown
-        drop(std::mem::take(&mut self.work_tx));
+        drop(self.work_tx.take());
 
         // Wait for worker to finish
         if let Some(handle) = self.worker_handle.take() {
@@ -229,20 +235,12 @@ unsafe impl Sync for SynchronizedPlugin {}
 fn main() -> ConsumerResult<()> {
     println!("=== Synchronized Plugin Demo (Rust) ===\n");
 
-    // Load the plugin (adjust path to your sync-demo plugin)
-    let plugin_path = if cfg!(target_os = "linux") {
-        "../sync-demo/target/release/libsync_demo.so"
-    } else if cfg!(target_os = "macos") {
-        "../sync-demo/target/release/libsync_demo.dylib"
-    } else {
-        "../sync-demo/target/release/sync_demo.dll"
-    };
-
-    let config = PluginConfig::default();
-    let plugin = NativePluginLoader::load_with_config(plugin_path, &config, None)?;
+    // Load the plugin from bundle
+    let bundle_path = "../sync-demo/sync-demo-0.1.0.rbp";
+    let plugin = NativePluginLoader::load_bundle(bundle_path)?;
 
     // Wrap with synchronized access (queue size = 5 for demo)
-    let sync_plugin = Arc::new(SynchronizedPlugin::new(plugin, 5));
+    let sync_plugin = Arc::new(SynchronizedPlugin::new(plugin, 5)?);
 
     // Demo 1: Sequential calls
     println!("Demo 1: Sequential calls");
@@ -251,79 +249,129 @@ fn main() -> ConsumerResult<()> {
             .call_typed("echo", &EchoRequest {
                 message: format!("Message {i}"),
             })
-            .expect("Call failed");
+            .map_err(ConsumerError::InvalidResponse)?;
 
         println!("  Echo: {} (len={})", response.message, response.length);
     }
 
     // Demo 2: Concurrent calls showing serialization
     println!("\nDemo 2: Concurrent calls (observe serialization)");
+    run_concurrent_demo(&sync_plugin, 10, 100)?;
+
+    // Demo 3: Backpressure
+    println!("\nDemo 3: Backpressure (queue size = 5)");
+    run_backpressure_demo(&sync_plugin, 20, 50)?;
+
+    println!("\n=== Demo Complete ===");
+    Ok(())
+}
+
+fn run_concurrent_demo(
+    sync_plugin: &Arc<SynchronizedPlugin>,
+    thread_count: usize,
+    sleep_ms: u64,
+) -> ConsumerResult<()> {
     let start = Instant::now();
 
-    let handles: Vec<_> = (0..10)
+    let handles: Vec<_> = (0..thread_count)
         .map(|id| {
-            let plugin = Arc::clone(&sync_plugin);
-            thread::spawn(move || {
+            let plugin = Arc::clone(sync_plugin);
+            thread::spawn(move || -> Result<(), String> {
                 println!("  [{id}] Submitting (queue: {})", plugin.pending_count());
 
-                let _response: SleepResponse = plugin
-                    .call_typed("sleep", &SleepRequest { duration_ms: 100 })
-                    .expect("Call failed");
+                let _response: SleepResponse =
+                    plugin.call_typed("sleep", &SleepRequest { duration_ms: sleep_ms })?;
 
                 println!("  [{id}] Completed after {:?}", start.elapsed());
+                Ok(())
             })
         })
         .collect();
 
+    // Collect results from all threads
+    let mut errors = Vec::new();
     for handle in handles {
-        handle.join().expect("Thread panicked");
+        match handle.join() {
+            Ok(Ok(())) => {}
+            Ok(Err(e)) => errors.push(e),
+            Err(_) => errors.push("Thread panicked".to_string()),
+        }
+    }
+
+    if !errors.is_empty() {
+        return Err(ConsumerError::InvalidResponse(errors.join("; ")));
     }
 
     let total = start.elapsed();
     println!("\nTotal time: {total:?}");
-    println!("  (Expected ~1000ms for 10 x 100ms if serialized)");
+    println!(
+        "  (Expected ~{}ms for {} x {}ms if serialized)",
+        thread_count as u64 * sleep_ms,
+        thread_count,
+        sleep_ms
+    );
 
-    // Demo 3: Backpressure
-    println!("\nDemo 3: Backpressure (queue size = 5)");
+    Ok(())
+}
+
+fn run_backpressure_demo(
+    sync_plugin: &Arc<SynchronizedPlugin>,
+    thread_count: usize,
+    sleep_ms: u64,
+) -> ConsumerResult<()> {
     let start = Instant::now();
 
-    let handles: Vec<_> = (0..20)
+    let handles: Vec<_> = (0..thread_count)
         .map(|id| {
-            let plugin = Arc::clone(&sync_plugin);
-            thread::spawn(move || {
+            let plugin = Arc::clone(sync_plugin);
+            thread::spawn(move || -> Result<(), String> {
                 let submit_time = start.elapsed();
 
-                let _response: SleepResponse = plugin
-                    .call_typed("sleep", &SleepRequest { duration_ms: 50 })
-                    .expect("Call failed");
+                let _response: SleepResponse =
+                    plugin.call_typed("sleep", &SleepRequest { duration_ms: sleep_ms })?;
 
                 let complete_time = start.elapsed();
                 println!(
                     "  [{id:02}] Submit@{:?}, Complete@{:?}",
                     submit_time, complete_time
                 );
+                Ok(())
             })
         })
         .collect();
 
+    // Collect results from all threads
+    let mut errors = Vec::new();
     for handle in handles {
-        handle.join().expect("Thread panicked");
+        match handle.join() {
+            Ok(Ok(())) => {}
+            Ok(Err(e)) => errors.push(e),
+            Err(_) => errors.push("Thread panicked".to_string()),
+        }
+    }
+
+    if !errors.is_empty() {
+        return Err(ConsumerError::InvalidResponse(errors.join("; ")));
     }
 
     println!("\nTotal time: {:?}", start.elapsed());
 
-    println!("\n=== Demo Complete ===");
     Ok(())
 }
 ```
 
 ## Run the Demo
 
-First, build the plugin if you haven't:
+First, build the plugin and create the bundle if you haven't:
 
 ```bash
 cd $RUSTBRIDGE_WORKSPACE/sync-demo
 cargo build --release
+rustbridge bundle create \
+  --name sync-demo \
+  --version 0.1.0 \
+  --lib linux-x86_64:target/release/libsync_demo.so \
+  --output sync-demo-0.1.0.rbp
 ```
 
 Then run the consumer:
@@ -415,7 +463,7 @@ response_rx.recv()?
 impl Drop for SynchronizedPlugin {
     fn drop(&mut self) {
         // Close the channel to signal shutdown
-        drop(std::mem::take(&mut self.work_tx));
+        drop(self.work_tx.take());
 
         // Wait for worker to finish
         if let Some(handle) = self.worker_handle.take() {
@@ -440,25 +488,6 @@ match sync_plugin.call("invalid.tag", "{}") {
     Ok(response) => println!("Response: {response}"),
     Err(e) => println!("Error: {e}"),
 }
-```
-
-## Using with rustbridge-consumer
-
-This example loads the plugin directly from a shared library. You can also use bundle loading:
-
-```rust
-use rustbridge_consumer::{NativePluginLoader, PluginConfig};
-
-// Load from bundle with signature verification
-let plugin = NativePluginLoader::load_bundle_with_verification(
-    "sync-demo-0.1.0.rbp",
-    &PluginConfig::default(),
-    None,   // no log callback
-    true,   // verify signatures
-    None,   // use manifest's public key
-)?;
-
-let sync_plugin = Arc::new(SynchronizedPlugin::new(plugin, 100));
 ```
 
 ## What's Next?

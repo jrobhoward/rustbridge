@@ -44,7 +44,7 @@ Create the binary struct definitions matching the plugin. These mirror the Rust 
 ```rust
 //! thumbnail-consumer - Binary transport demo
 
-use rustbridge_consumer::{ConsumerResult, NativePluginLoader, PluginConfig};
+use rustbridge_consumer::{ConsumerError, ConsumerResult, NativePluginLoader};
 use std::fs;
 use std::io::Write;
 use std::time::Instant;
@@ -175,21 +175,25 @@ fn create_request(
 }
 
 /// Parse a thumbnail response.
-fn parse_response(data: &[u8]) -> Result<(ThumbnailResponseHeader, &[u8]), String> {
+fn parse_response(data: &[u8]) -> Result<(ThumbnailResponseHeader, &[u8]), ConsumerError> {
     let header = ThumbnailResponseHeader::from_bytes(data)
-        .ok_or_else(|| format!("Response too small: {} bytes", data.len()))?;
+        .ok_or_else(|| ConsumerError::InvalidResponse(format!(
+            "Response too small: {} bytes", data.len()
+        )))?;
 
     if header.version != ThumbnailResponseHeader::VERSION {
-        return Err(format!("Unsupported version: {}", header.version));
+        return Err(ConsumerError::InvalidResponse(format!(
+            "Unsupported version: {}", header.version
+        )));
     }
 
     let expected_size = ThumbnailResponseHeader::SIZE + header.payload_size as usize;
     if data.len() < expected_size {
-        return Err(format!(
+        return Err(ConsumerError::InvalidResponse(format!(
             "Response size mismatch: {} bytes, expected {}",
             data.len(),
             expected_size
-        ));
+        )));
     }
 
     let thumbnail_data = &data[ThumbnailResponseHeader::SIZE..expected_size];
@@ -203,28 +207,20 @@ fn parse_response(data: &[u8]) -> Result<(ThumbnailResponseHeader, &[u8]), Strin
 fn main() -> ConsumerResult<()> {
     println!("=== Binary Transport Demo (Rust) ===\n");
 
-    // Paths (adjust to your thumbnail-plugin location)
-    let plugin_path = if cfg!(target_os = "linux") {
-        "../thumbnail-plugin/target/release/libthumbnail_plugin.so"
-    } else if cfg!(target_os = "macos") {
-        "../thumbnail-plugin/target/release/libthumbnail_plugin.dylib"
-    } else {
-        "../thumbnail-plugin/target/release/thumbnail_plugin.dll"
-    };
+    // Load the plugin from bundle
+    let bundle_path = "../thumbnail-plugin/thumbnail-plugin-0.1.0.rbp";
     let image_path = "test-image.jpg";
 
     // Load the test image
-    let image_data = fs::read(image_path)
-        .map_err(|e| format!("Failed to load image {image_path}: {e}"))?;
+    let image_data = fs::read(image_path)?;
     println!("Loaded image: {} ({} bytes)\n", image_path, image_data.len());
 
     // Load the plugin
-    let config = PluginConfig::default();
-    let plugin = NativePluginLoader::load_with_config(plugin_path, &config, None)?;
+    let plugin = NativePluginLoader::load_bundle(bundle_path)?;
 
     // Check if binary transport is available
     if !plugin.has_binary_transport() {
-        return Err(rustbridge_consumer::ConsumerError::MissingSymbol(
+        return Err(ConsumerError::MissingSymbol(
             "Binary transport not available in this plugin".into(),
         ));
     }
@@ -313,14 +309,19 @@ fn main() -> ConsumerResult<()> {
 
 ## Run the Demo
 
-First, build the plugin if you haven't:
+First, build the plugin and create the bundle if you haven't:
 
 ```bash
 cd $RUSTBRIDGE_WORKSPACE/thumbnail-plugin
 cargo build --release
+rustbridge bundle create \
+  --name thumbnail-plugin \
+  --version 0.1.0 \
+  --lib linux-x86_64:target/release/libthumbnail_plugin.so \
+  --output thumbnail-plugin-0.1.0.rbp
 ```
 
-Copy a test image:
+Copy a test image to the consumer directory:
 
 ```bash
 cp test-image.jpg $RUSTBRIDGE_WORKSPACE/thumbnail-rust-consumer/
@@ -420,30 +421,6 @@ let response = plugin.call_raw(MSG_THUMBNAIL_CREATE, &request)?;
 
 Unlike the Java/C#/Python implementations that must call `freeBuffer()`, the Rust consumer receives an owned `Vec<u8>` that's automatically cleaned up.
 
-## Using with Bundle Loading
-
-Load from a bundle instead of a direct library path:
-
-```rust
-use rustbridge_consumer::{NativePluginLoader, PluginConfig};
-
-// Load from bundle
-let plugin = NativePluginLoader::load_bundle_with_config(
-    "thumbnail-plugin-0.1.0.rbp",
-    &PluginConfig::default(),
-    None,  // no log callback
-)?;
-
-// Or with signature verification
-let plugin = NativePluginLoader::load_bundle_with_verification(
-    "thumbnail-plugin-0.1.0.rbp",
-    &PluginConfig::default(),
-    None,   // no log callback
-    true,   // verify signatures
-    None,   // use manifest's public key
-)?;
-```
-
 ## Error Handling
 
 Handle binary transport errors:
@@ -471,7 +448,7 @@ match plugin.call_raw(MSG_THUMBNAIL_CREATE, &request) {
 Capture plugin logs with a callback:
 
 ```rust
-use rustbridge_consumer::{LogCallbackFn, LogLevel};
+use rustbridge_consumer::{LogCallbackFn, LogLevel, PluginConfig};
 use std::sync::Arc;
 
 let log_callback: LogCallbackFn = Arc::new(|level, target, message| {
@@ -485,9 +462,9 @@ let log_callback: LogCallbackFn = Arc::new(|level, target, message| {
     println!("[{level_str}] {target}: {message}");
 });
 
-let plugin = NativePluginLoader::load_with_config(
-    plugin_path,
-    &PluginConfig::builder().log_level(LogLevel::Debug).build(),
+let plugin = NativePluginLoader::load_bundle_with_config(
+    "thumbnail-plugin-0.1.0.rbp",
+    &PluginConfig::default().log_level(LogLevel::Debug),
     Some(log_callback),
 )?;
 ```
