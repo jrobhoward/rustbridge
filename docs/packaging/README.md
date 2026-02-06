@@ -223,6 +223,24 @@ rustbridge bundle create \
   --output my-plugin-1.0.0.rbp
 ```
 
+### Declare Schemas in Cargo.toml
+
+Instead of passing `--generate-schema` or `--generate-header` every time, declare them in your `Cargo.toml`:
+
+```toml
+[package.metadata.rustbridge]
+schema-source = "src/messages.rs:schema.json"
+header-source = "src/binary_messages.rs:messages.h"
+```
+
+Then `rustbridge pack` will auto-include them:
+
+```bash
+rustbridge pack --no-sign
+```
+
+CLI flags (`--schema-source`, `--header-source`) override the Cargo.toml values.
+
 ## Adding License Notices
 
 Include third-party license notices:

@@ -248,6 +248,21 @@ rustbridge bundle create \
   --output calculator-plugin-0.1.0.rbp
 ```
 
+### Shortcut: `rustbridge pack`
+
+From your plugin directory:
+
+```bash
+rustbridge pack --no-sign
+```
+
+This auto-detects name, version, and platform from `Cargo.toml`. To auto-include schemas or headers, add:
+
+```toml
+[package.metadata.rustbridge]
+schema-source = "src/lib.rs:schema.json"
+```
+
 ### Verify the Bundle
 
 ```bash

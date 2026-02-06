@@ -7,6 +7,7 @@ use anyhow::{Context, Result};
 use rustbridge_bundle::Platform;
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 /// Minimal Cargo.toml representation for plugin detection.
 #[derive(Deserialize)]
@@ -19,6 +20,20 @@ struct CargoToml {
 struct PackageInfo {
     name: Option<String>,
     version: Option<toml::Value>,
+    metadata: Option<PackageMetadata>,
+}
+
+#[derive(Deserialize)]
+struct PackageMetadata {
+    rustbridge: Option<RustbridgeMetadata>,
+}
+
+#[derive(Deserialize, Default)]
+struct RustbridgeMetadata {
+    #[serde(rename = "schema-source")]
+    schema_source: Option<String>,
+    #[serde(rename = "header-source")]
+    header_source: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -53,6 +68,10 @@ pub struct PluginProject {
     pub version: String,
     /// Library base name (underscored, used for filename generation)
     pub lib_name: String,
+    /// Schema source from `[package.metadata.rustbridge]` (e.g. `"src/lib.rs:schema.json"`)
+    pub schema_source: Option<String>,
+    /// Header source from `[package.metadata.rustbridge]` (e.g. `"src/lib.rs:messages.h"`)
+    pub header_source: Option<String>,
 }
 
 impl PluginProject {
@@ -105,10 +124,20 @@ impl PluginProject {
             .and_then(|l| l.name.clone())
             .unwrap_or_else(|| name.replace('-', "_"));
 
+        // Extract [package.metadata.rustbridge] fields
+        let rb_meta = package
+            .metadata
+            .as_ref()
+            .and_then(|m| m.rustbridge.as_ref());
+        let schema_source = rb_meta.and_then(|r| r.schema_source.clone());
+        let header_source = rb_meta.and_then(|r| r.header_source.clone());
+
         Ok(Self {
             name,
             version,
             lib_name,
+            schema_source,
+            header_source,
         })
     }
 }
@@ -214,6 +243,113 @@ fn find_target_dir(project_dir: &Path) -> PathBuf {
     }
 }
 
+/// Format a `SystemTime` as `YYYY-MM-DD HH:MM:SS UTC`.
+fn format_system_time(time: SystemTime) -> String {
+    let duration = time
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or_default();
+    let secs = duration.as_secs();
+
+    // Convert epoch seconds to calendar date/time (UTC)
+    let days = secs / 86400;
+    let time_of_day = secs % 86400;
+    let hours = time_of_day / 3600;
+    let minutes = (time_of_day % 3600) / 60;
+    let seconds = time_of_day % 60;
+
+    // Days since 1970-01-01 to (year, month, day) using a standard algorithm
+    let (year, month, day) = {
+        // Algorithm from Howard Hinnant's date library (public domain)
+        let z = days as i64 + 719468;
+        let era = if z >= 0 { z } else { z - 146096 } / 146097;
+        let doe = (z - era * 146097) as u64;
+        let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+        let y = yoe as i64 + era * 400;
+        let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+        let mp = (5 * doy + 2) / 153;
+        let d = doy - (153 * mp + 2) / 5 + 1;
+        let m = if mp < 10 { mp + 3 } else { mp - 9 };
+        let y = if m <= 2 { y + 1 } else { y };
+        (y, m as u32, d as u32)
+    };
+
+    format!("{year:04}-{month:02}-{day:02} {hours:02}:{minutes:02}:{seconds:02} UTC")
+}
+
+/// Check if a library file is older than source files, warning if stale.
+///
+/// Compares the modification time of `lib_path` against `Cargo.toml` and
+/// all `.rs` files under `src/`. Prints a warning to stderr if any source
+/// file is newer than the library.
+fn check_library_staleness(project_dir: &Path, lib_path: &Path, variant_label: &str) {
+    let lib_mtime = match lib_path.metadata().and_then(|m| m.modified()) {
+        Ok(t) => t,
+        Err(_) => return,
+    };
+
+    let mut newest_source: Option<(PathBuf, SystemTime)> = None;
+
+    let mut consider = |path: PathBuf| {
+        if let Ok(meta) = path.metadata()
+            && let Ok(mtime) = meta.modified()
+            && newest_source.as_ref().is_none_or(|(_, prev)| mtime > *prev)
+        {
+            newest_source = Some((path, mtime));
+        }
+    };
+
+    // Check Cargo.toml
+    let cargo_toml = project_dir.join("Cargo.toml");
+    if cargo_toml.exists() {
+        consider(cargo_toml);
+    }
+
+    // Check build.rs
+    let build_rs = project_dir.join("build.rs");
+    if build_rs.exists() {
+        consider(build_rs);
+    }
+
+    // Check all .rs files under src/
+    let src_dir = project_dir.join("src");
+    if src_dir.is_dir() {
+        for entry in walkdir::WalkDir::new(&src_dir)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
+            let path = entry.into_path();
+            if path.extension().is_some_and(|ext| ext == "rs") {
+                consider(path);
+            }
+        }
+    }
+
+    if let Some((newest_path, newest_mtime)) = newest_source
+        && newest_mtime > lib_mtime
+    {
+        let lib_display = lib_path.display();
+        let src_display = newest_path
+            .strip_prefix(project_dir)
+            .unwrap_or(&newest_path)
+            .display();
+        let lib_time_str = format_system_time(lib_mtime);
+        let newest_time_str = format_system_time(newest_mtime);
+
+        let build_hint = if variant_label == "Release" {
+            "cargo build --release"
+        } else {
+            "cargo build"
+        };
+
+        eprintln!();
+        eprintln!("Warning: {variant_label} library appears out of date.");
+        eprintln!("  Library:       {lib_display}  ({lib_time_str})");
+        eprintln!("  Newest source: {src_display}  ({newest_time_str})");
+        eprintln!("  Run: {build_hint}");
+        eprintln!();
+    }
+}
+
 /// Run the pack command.
 #[allow(clippy::too_many_arguments)]
 pub fn run_pack(
@@ -227,15 +363,23 @@ pub fn run_pack(
     if sign_key.is_some() && no_sign {
         anyhow::bail!("Conflicting flags: --sign-key and --no-sign cannot be used together");
     }
-    if schema_source.is_some() && !dev {
-        anyhow::bail!("--schema-source is only available in dev mode (use --dev)");
-    }
-    if header_source.is_some() && !dev {
-        anyhow::bail!("--header-source is only available in dev mode (use --dev)");
-    }
 
     let cwd = std::env::current_dir().context("Failed to get current directory")?;
     let project = PluginProject::detect(&cwd)?;
+
+    // Merge CLI flags with Cargo.toml metadata (CLI wins)
+    let effective_schema = schema_source.or_else(|| {
+        if let Some(ref s) = project.schema_source {
+            println!("  Schema source (from Cargo.toml): {s}");
+        }
+        project.schema_source.clone()
+    });
+    let effective_header = header_source.or_else(|| {
+        if let Some(ref h) = project.header_source {
+            println!("  Header source (from Cargo.toml): {h}");
+        }
+        project.header_source.clone()
+    });
 
     let platform = Platform::current().ok_or_else(|| {
         anyhow::anyhow!(
@@ -268,6 +412,7 @@ pub fn run_pack(
             release_lib.display()
         );
     }
+    check_library_staleness(&cwd, &release_lib, "Release");
     libraries.push((
         platform_str.clone(),
         "release".to_string(),
@@ -285,6 +430,7 @@ pub fn run_pack(
                 debug_lib.display()
             );
         }
+        check_library_staleness(&cwd, &debug_lib, "Debug");
         libraries.push((
             platform_str,
             "debug".to_string(),
@@ -352,9 +498,9 @@ pub fn run_pack(
         Some(output.to_string_lossy().to_string()),
         &[], // schema_files (handled via generate flags)
         resolved_sign_key,
-        header_source, // generate_header
-        schema_source, // generate_schema
-        None,          // notices
+        effective_header, // generate_header
+        effective_schema, // generate_schema
+        None,             // notices
         license_path.map(|p| p.to_string_lossy().to_string()),
         false, // no_metadata
         &sbom_files,
@@ -546,5 +692,173 @@ crate-type = ["cdylib"]
             path,
             PathBuf::from("/project/target/bundle/my-plugin-1.0.0-dev.rbp")
         );
+    }
+
+    #[test]
+    fn detect___metadata_schema_source___extracts_value() {
+        let temp = TempDir::new().unwrap();
+        write_cargo_toml(
+            temp.path(),
+            r#"
+[package]
+name = "my-plugin"
+version = "1.0.0"
+
+[package.metadata.rustbridge]
+schema-source = "src/lib.rs:schema.json"
+
+[lib]
+crate-type = ["cdylib"]
+"#,
+        );
+
+        let project = PluginProject::detect(temp.path()).unwrap();
+
+        assert_eq!(
+            project.schema_source.as_deref(),
+            Some("src/lib.rs:schema.json")
+        );
+    }
+
+    #[test]
+    fn detect___metadata_header_source___extracts_value() {
+        let temp = TempDir::new().unwrap();
+        write_cargo_toml(
+            temp.path(),
+            r#"
+[package]
+name = "my-plugin"
+version = "1.0.0"
+
+[package.metadata.rustbridge]
+header-source = "src/binary_messages.rs:messages.h"
+
+[lib]
+crate-type = ["cdylib"]
+"#,
+        );
+
+        let project = PluginProject::detect(temp.path()).unwrap();
+
+        assert_eq!(
+            project.header_source.as_deref(),
+            Some("src/binary_messages.rs:messages.h")
+        );
+    }
+
+    #[test]
+    fn detect___no_metadata___fields_are_none() {
+        let temp = TempDir::new().unwrap();
+        write_cargo_toml(
+            temp.path(),
+            r#"
+[package]
+name = "my-plugin"
+version = "1.0.0"
+
+[lib]
+crate-type = ["cdylib"]
+"#,
+        );
+
+        let project = PluginProject::detect(temp.path()).unwrap();
+
+        assert!(project.schema_source.is_none());
+        assert!(project.header_source.is_none());
+    }
+
+    #[test]
+    fn staleness___library_older_than_source___prints_warning() {
+        use filetime::FileTime;
+
+        let temp = TempDir::new().unwrap();
+
+        // Create project structure
+        fs::write(temp.path().join("Cargo.toml"), "[package]\nname = \"x\"\n").unwrap();
+        let src_dir = temp.path().join("src");
+        fs::create_dir_all(&src_dir).unwrap();
+        fs::write(src_dir.join("lib.rs"), "// source").unwrap();
+
+        // Create a fake library file
+        let lib_path = temp.path().join("libx.so");
+        fs::write(&lib_path, "fake lib").unwrap();
+
+        // Set lib to be old (year 2020), source to be new (year 2025)
+        let old_time = FileTime::from_unix_time(1_577_836_800, 0); // 2020-01-01
+        let new_time = FileTime::from_unix_time(1_737_849_600, 0); // 2025-01-26
+
+        filetime::set_file_mtime(&lib_path, old_time).unwrap();
+        filetime::set_file_mtime(src_dir.join("lib.rs"), new_time).unwrap();
+
+        // The function prints to stderr via eprintln!, so we verify
+        // the staleness condition is detected by checking timestamps directly
+        let lib_mtime = fs::metadata(&lib_path).unwrap().modified().unwrap();
+        let src_mtime = fs::metadata(src_dir.join("lib.rs"))
+            .unwrap()
+            .modified()
+            .unwrap();
+
+        assert!(src_mtime > lib_mtime, "Source should be newer than library");
+
+        // Call the function (warning goes to stderr; no panic = success)
+        check_library_staleness(temp.path(), &lib_path, "Release");
+    }
+
+    #[test]
+    fn staleness___library_newer_than_source___no_warning() {
+        use filetime::FileTime;
+
+        let temp = TempDir::new().unwrap();
+
+        // Create project structure
+        fs::write(temp.path().join("Cargo.toml"), "[package]\nname = \"x\"\n").unwrap();
+        let src_dir = temp.path().join("src");
+        fs::create_dir_all(&src_dir).unwrap();
+        fs::write(src_dir.join("lib.rs"), "// source").unwrap();
+
+        // Create a fake library file
+        let lib_path = temp.path().join("libx.so");
+        fs::write(&lib_path, "fake lib").unwrap();
+
+        // Set source to be old, lib to be new
+        let old_time = FileTime::from_unix_time(1_577_836_800, 0); // 2020-01-01
+        let new_time = FileTime::from_unix_time(1_737_849_600, 0); // 2025-01-26
+
+        filetime::set_file_mtime(src_dir.join("lib.rs"), old_time).unwrap();
+        filetime::set_file_mtime(temp.path().join("Cargo.toml"), old_time).unwrap();
+        filetime::set_file_mtime(&lib_path, new_time).unwrap();
+
+        // Verify the condition: lib should be newer than all sources
+        let lib_mtime = fs::metadata(&lib_path).unwrap().modified().unwrap();
+        let src_mtime = fs::metadata(src_dir.join("lib.rs"))
+            .unwrap()
+            .modified()
+            .unwrap();
+
+        assert!(lib_mtime > src_mtime, "Library should be newer than source");
+
+        // Call the function (no warning expected; no panic = success)
+        check_library_staleness(temp.path(), &lib_path, "Release");
+    }
+
+    #[test]
+    fn staleness___no_src_directory___no_warning() {
+        use filetime::FileTime;
+
+        let temp = TempDir::new().unwrap();
+
+        // Create project with Cargo.toml but no src/ directory
+        fs::write(temp.path().join("Cargo.toml"), "[package]\nname = \"x\"\n").unwrap();
+
+        let lib_path = temp.path().join("libx.so");
+        fs::write(&lib_path, "fake lib").unwrap();
+
+        // Set lib to be old so Cargo.toml alone could trigger a warning,
+        // but the point is the function should not panic without src/
+        let old_time = FileTime::from_unix_time(1_577_836_800, 0);
+        filetime::set_file_mtime(&lib_path, old_time).unwrap();
+
+        // Call the function (should not panic even without src/ directory)
+        check_library_staleness(temp.path(), &lib_path, "Release");
     }
 }

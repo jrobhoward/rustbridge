@@ -111,6 +111,21 @@ The `--generate-schema` flag:
 - Generates a JSON Schema file
 - Embeds it in the bundle
 
+### Alternative: Declare in Cargo.toml
+
+Add to your `Cargo.toml`:
+
+```toml
+[package.metadata.rustbridge]
+schema-source = "src/lib.rs:messages.json"
+```
+
+Then schema generation happens automatically with `rustbridge pack`:
+
+```bash
+rustbridge pack --no-sign
+```
+
 ## Verify Schema Inclusion
 
 ```bash

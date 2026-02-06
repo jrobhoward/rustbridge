@@ -17,3 +17,8 @@ serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
 tokio = { version = "1.35", features = ["rt", "macros"] }
+
+# Uncomment to auto-include schemas when running `rustbridge pack`:
+# [package.metadata.rustbridge]
+# schema-source = "src/lib.rs:schema.json"
+# header-source = "src/binary_messages.rs:messages.h"

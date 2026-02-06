@@ -542,6 +542,21 @@ cp thumbnail-plugin-0.1.0.rbp consumers/csharp/
 cp thumbnail-plugin-0.1.0.rbp consumers/python/
 ```
 
+### Alternative: Declare Header in Cargo.toml
+
+Add to your `Cargo.toml`:
+
+```toml
+[package.metadata.rustbridge]
+header-source = "src/lib.rs:messages.h"
+```
+
+Then:
+
+```bash
+rustbridge pack --no-sign
+```
+
 > **Note**: Adjust the `--lib` platform identifier for your OS:
 > - Linux: `linux-x86_64:target/release/libthumbnail_plugin.so`
 > - macOS (Intel): `darwin-x86_64:target/release/libthumbnail_plugin.dylib`

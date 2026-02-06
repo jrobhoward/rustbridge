@@ -30,8 +30,10 @@ minisign = "0.8"
 rpassword = "7.4"
 tempfile = "3.24"
 dirs = "6.0"
+walkdir = "2"
 
 [dev-dependencies]
+filetime = "0.2"
 
 # CLI binary - explicitly configure lints (can't override workspace lints)
 # Allow unwrap/expect since CLI binaries can panic with clear error messages

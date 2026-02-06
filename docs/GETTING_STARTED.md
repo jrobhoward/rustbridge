@@ -109,6 +109,17 @@ unzip -l my-plugin-0.1.0.rbp
 unzip -p my-plugin-0.1.0.rbp manifest.json
 ```
 
+### Shortcut: `rustbridge pack`
+
+If you're in your plugin directory, `rustbridge pack` auto-detects everything:
+
+```bash
+rustbridge pack --no-sign
+```
+
+This reads name, version, and platform from your project and creates
+`target/bundle/<name>-<version>.rbp`. See the [Packaging Guide](./packaging/README.md) for details.
+
 ---
 
 ## Step 3: Run from Your Language
