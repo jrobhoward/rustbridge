@@ -156,6 +156,53 @@ pip install -e $RUSTBRIDGE_WORKSPACE/rustbridge/rustbridge-python
 python main.py
 ```
 
+### Rust
+
+You can also call rustbridge plugins from other Rust applications using `rustbridge-consumer`:
+
+```bash
+cargo new my-consumer
+cd my-consumer
+```
+
+Add to `Cargo.toml`:
+
+```toml
+[dependencies]
+rustbridge-consumer = "0.8.1"
+```
+
+Update `src/main.rs`:
+
+```rust
+use rustbridge_consumer::{NativePluginLoader, PluginConfig};
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize)]
+struct EchoRequest { message: String }
+
+#[derive(Deserialize)]
+struct EchoResponse { message: String, length: usize }
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Load from bundle (or direct library path)
+    let plugin = NativePluginLoader::load_bundle("../my-plugin-0.1.0.rbp")?;
+
+    let response: EchoResponse = plugin.call_typed("echo", &EchoRequest {
+        message: "Hello from Rust!".to_string(),
+    })?;
+
+    println!("Response: {} (length: {})", response.message, response.length);
+    Ok(())
+}
+```
+
+Run it:
+
+```bash
+cargo run --release
+```
+
 ---
 
 ## What Just Happened?
@@ -195,6 +242,7 @@ calculator with multiple message types:
 | Java       | [JAVA_FFM.md](./using-plugins/JAVA_FFM.md) (Java 21+)      |
 | C#         | [CSHARP.md](./using-plugins/CSHARP.md)                     |
 | Python     | [PYTHON.md](./using-plugins/PYTHON.md)                     |
+| Rust       | `rustbridge-consumer` crate ([docs.rs](https://docs.rs/rustbridge-consumer)) |
 
 ### Learn More
 

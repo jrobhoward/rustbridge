@@ -8,6 +8,7 @@
 //!
 //! - **Dynamic Loading**: Load plugins at runtime without compile-time linking
 //! - **Bundle Support**: Load from `.rbp` bundles with automatic platform detection
+//! - **Signature Verification**: Verify minisign signatures on bundles
 //! - **JSON Transport**: Make calls using JSON serialization
 //! - **Binary Transport**: High-performance binary struct transport (7x faster)
 //! - **Lifecycle Management**: Full OSGI-inspired lifecycle state machine
@@ -40,6 +41,21 @@
 //!     "my-plugin-1.0.0.rbp",
 //!     &config,
 //!     None,
+//! )?;
+//! ```
+//!
+//! # Loading with Signature Verification
+//!
+//! ```ignore
+//! use rustbridge_consumer::{NativePluginLoader, PluginConfig};
+//!
+//! // Load with signature verification (recommended for production)
+//! let plugin = NativePluginLoader::load_bundle_with_verification(
+//!     "my-plugin-1.0.0.rbp",
+//!     &PluginConfig::default(),
+//!     None,   // no log callback
+//!     true,   // verify signatures
+//!     None,   // use manifest's public key
 //! )?;
 //! ```
 //!

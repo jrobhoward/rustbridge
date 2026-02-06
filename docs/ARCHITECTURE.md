@@ -4,7 +4,7 @@ This document describes the architecture of rustbridge, the design decisions mad
 
 ## Overview
 
-rustbridge is a framework for building Rust shared libraries callable from other programming languages (Java, Kotlin, C#, Python). It provides a high-level abstraction over the C ABI, handling:
+rustbridge is a framework for building Rust shared libraries callable from other programming languages (Java, Kotlin, C#, Python, and Rust). It provides a high-level abstraction over the C ABI, handling:
 
 - OSGI-like plugin lifecycle management
 - Mandatory async runtime (Tokio) for all plugin code
@@ -14,7 +14,7 @@ rustbridge is a framework for building Rust shared libraries callable from other
 
 ```mermaid
 flowchart TB
-    subgraph Host["Host Language (Java/Kotlin/C#/Python)"]
+    subgraph Host["Host Language (Java/Kotlin/C#/Python/Rust)"]
         HL[Host Application]
         LB[Language Bindings]
         BL[BundleLoader]
@@ -118,6 +118,7 @@ flowchart BT
 | **rustbridge-macros** | Code generation | `#[rustbridge_plugin]`, `#[derive(Message)]`, `rustbridge_entry!` |
 | **rustbridge-cli** | Build tooling | `new`, `bundle create/inspect/extract`, `keygen`, `generate-header` |
 | **rustbridge-bundle** | Bundle handling | `BundleBuilder`, `BundleLoader`, `Manifest`, minisign verification |
+| **rustbridge-consumer** | Rust consumer | `NativePluginLoader`, `NativePlugin`, bundle loading for Rust hosts |
 | **rustbridge** | Facade crate | Re-exports common types for plugin authors |
 
 ## Plugin Lifecycle
@@ -583,6 +584,37 @@ Uses `ctypes` for FFI:
 ```python
 with NativePluginLoader.load("libmyplugin.so") as plugin:
     response = plugin.call("echo", '{"message": "hello"}')
+```
+
+### Rust Integration (Consumer)
+
+Uses `libloading` for dynamic library loading:
+
+| Crate | Purpose |
+|-------|---------|
+| `rustbridge-consumer` | `NativePluginLoader`, `NativePlugin`, bundle loading |
+
+**Usage:**
+```rust
+use rustbridge_consumer::{NativePluginLoader, ConsumerResult};
+
+fn main() -> ConsumerResult<()> {
+    let plugin = NativePluginLoader::load("libmyplugin.so")?;
+    let response = plugin.call("echo", r#"{"message": "hello"}"#)?;
+    plugin.shutdown()?;
+    Ok(())
+}
+```
+
+Or with bundle loading and signature verification:
+```rust
+let plugin = NativePluginLoader::load_bundle_with_verification(
+    "myplugin-1.0.0.rbp",
+    &PluginConfig::default(),
+    None,   // log callback
+    true,   // verify signatures
+    None,   // use manifest's public key
+)?;
 ```
 
 ## Bundle Format (.rbp)

@@ -587,6 +587,10 @@ C# using unsafe structs and StructLayout for memory mapping.
 
 Python using ctypes for struct definitions and binary data handling.
 
+### [05: Rust Consumer](./05-rust-consumer.md)
+
+Rust using `rustbridge-consumer` for loading plugins from Rust applications.
+
 ## Prerequisites
 
 Before starting this chapter:

@@ -14,7 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Binary transport via `call_raw()` for high-performance paths
   - Full lifecycle management (Installed, Starting, Active, Stopping, Stopped, Failed)
   - Log callback integration for routing plugin logs to host
+  - Bundle signature verification via minisign Ed25519
   - Automatic plugin cleanup on drop
+- **CLI**: New `--rust-consumer` flag for `rustbridge new` command to generate Rust consumer projects
+- **Tutorial**: Rust consumer sections for Chapters 7 (Backpressure Queues) and 8 (Binary Transport)
+- **Bundle Loader**: Added `verify_manifest_signature()` and `extract_library_verified()` methods to `BundleLoader`
 
 ## [0.8.1] - 2026-02-04
 

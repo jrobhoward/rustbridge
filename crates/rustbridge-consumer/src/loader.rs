@@ -274,15 +274,77 @@ impl NativePluginLoader {
         config: &PluginConfig,
         log_callback: Option<LogCallbackFn>,
     ) -> ConsumerResult<NativePlugin> {
-        let bundle_path = bundle_path.as_ref();
-        let extract_dir = extract_dir.as_ref();
+        Self::load_bundle_verified(
+            bundle_path,
+            Some(extract_dir),
+            config,
+            log_callback,
+            false,
+            None,
+        )
+    }
 
+    /// Load a plugin from a bundle with signature verification.
+    ///
+    /// # Arguments
+    ///
+    /// * `bundle_path` - Path to the .rbp bundle file
+    /// * `config` - Plugin configuration
+    /// * `log_callback` - Optional callback to receive log messages
+    /// * `verify_signatures` - Whether to verify minisign signatures
+    /// * `public_key_override` - Optional public key to use instead of manifest's key
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// // Load with signature verification (recommended for production)
+    /// let plugin = NativePluginLoader::load_bundle_with_verification(
+    ///     "my-plugin-1.0.0.rbp",
+    ///     &PluginConfig::default(),
+    ///     None,
+    ///     true,  // verify signatures
+    ///     None,  // use manifest's public key
+    /// )?;
+    /// ```
+    pub fn load_bundle_with_verification<P: AsRef<Path>>(
+        bundle_path: P,
+        config: &PluginConfig,
+        log_callback: Option<LogCallbackFn>,
+        verify_signatures: bool,
+        public_key_override: Option<&str>,
+    ) -> ConsumerResult<NativePlugin> {
+        Self::load_bundle_verified(
+            bundle_path,
+            None::<&Path>,
+            config,
+            log_callback,
+            verify_signatures,
+            public_key_override,
+        )
+    }
+
+    /// Internal method to load a bundle with all options.
+    fn load_bundle_verified<P: AsRef<Path>, Q: AsRef<Path>>(
+        bundle_path: P,
+        extract_dir: Option<Q>,
+        config: &PluginConfig,
+        log_callback: Option<LogCallbackFn>,
+        verify_signatures: bool,
+        public_key_override: Option<&str>,
+    ) -> ConsumerResult<NativePlugin> {
+        let bundle_path = bundle_path.as_ref();
         debug!("Loading bundle from: {}", bundle_path.display());
 
         // Open and validate the bundle
         let mut loader = BundleLoader::open(bundle_path)?;
 
         // Check platform support
+        let platform = rustbridge_bundle::Platform::current().ok_or_else(|| {
+            ConsumerError::Bundle(rustbridge_bundle::BundleError::UnsupportedPlatform(
+                "Current platform is not supported".to_string(),
+            ))
+        })?;
+
         if !loader.supports_current_platform() {
             return Err(ConsumerError::Bundle(
                 rustbridge_bundle::BundleError::UnsupportedPlatform(
@@ -291,13 +353,107 @@ impl NativePluginLoader {
             ));
         }
 
-        // Extract the library for the current platform
-        let lib_path = loader.extract_library_for_current_platform(extract_dir)?;
+        // Determine extraction directory
+        let extract_dir_path: std::path::PathBuf = match extract_dir {
+            Some(dir) => dir.as_ref().to_path_buf(),
+            None => bundle_path
+                .parent()
+                .unwrap_or(Path::new("."))
+                .join(".rustbridge-cache")
+                .join(loader.manifest().plugin.name.as_str())
+                .join(loader.manifest().plugin.version.as_str()),
+        };
+
+        // Extract with or without verification
+        let lib_path = if verify_signatures {
+            loader.extract_library_verified(
+                platform,
+                &extract_dir_path,
+                true,
+                public_key_override,
+            )?
+        } else {
+            loader.extract_library_for_current_platform(&extract_dir_path)?
+        };
 
         debug!("Extracted library to: {}", lib_path.display());
 
         // Load the extracted library
         Self::load_with_config(lib_path, config, log_callback)
+    }
+
+    /// Load a plugin by name, searching standard library paths.
+    ///
+    /// Searches for the library in:
+    /// 1. Current directory
+    /// 2. `./target/release`
+    /// 3. `./target/debug`
+    /// 4. System library paths (LD_LIBRARY_PATH on Linux, etc.)
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Library name without prefix/suffix (e.g., "myplugin" finds "libmyplugin.so")
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// // Searches for libmyplugin.so (Linux), libmyplugin.dylib (macOS), myplugin.dll (Windows)
+    /// let plugin = NativePluginLoader::load_by_name("myplugin")?;
+    /// ```
+    pub fn load_by_name(name: &str) -> ConsumerResult<NativePlugin> {
+        Self::load_by_name_with_config(name, &PluginConfig::default(), None)
+    }
+
+    /// Load a plugin by name with custom configuration.
+    pub fn load_by_name_with_config(
+        name: &str,
+        config: &PluginConfig,
+        log_callback: Option<LogCallbackFn>,
+    ) -> ConsumerResult<NativePlugin> {
+        let lib_name = library_filename(name);
+
+        // Search paths
+        let search_paths = [
+            std::path::PathBuf::from("."),
+            std::path::PathBuf::from("./target/release"),
+            std::path::PathBuf::from("./target/debug"),
+        ];
+
+        for search_path in &search_paths {
+            let full_path = search_path.join(&lib_name);
+            if full_path.exists() {
+                debug!("Found library at: {}", full_path.display());
+                return Self::load_with_config(full_path, config, log_callback);
+            }
+        }
+
+        // Try loading directly (system library paths)
+        debug!("Attempting to load '{}' from system paths", lib_name);
+        Self::load_with_config(&lib_name, config, log_callback)
+    }
+}
+
+/// Get the platform-specific library filename for a given name.
+///
+/// - Linux: `lib{name}.so`
+/// - macOS: `lib{name}.dylib`
+/// - Windows: `{name}.dll`
+fn library_filename(name: &str) -> String {
+    #[cfg(target_os = "linux")]
+    {
+        format!("lib{name}.so")
+    }
+    #[cfg(target_os = "macos")]
+    {
+        format!("lib{name}.dylib")
+    }
+    #[cfg(target_os = "windows")]
+    {
+        format!("{name}.dll")
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+    {
+        format!("lib{name}.so")
     }
 }
 

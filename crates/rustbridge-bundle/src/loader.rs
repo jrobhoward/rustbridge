@@ -242,6 +242,220 @@ impl BundleLoader {
     pub fn has_file(&self, path: &str) -> bool {
         self.archive.index_for_name(path).is_some()
     }
+
+    /// Check if the bundle has signature files.
+    #[must_use]
+    pub fn has_signatures(&self) -> bool {
+        self.has_file("manifest.json.minisig")
+    }
+
+    /// Get the public key from the manifest.
+    #[must_use]
+    pub fn public_key(&self) -> Option<&str> {
+        self.manifest.public_key.as_deref()
+    }
+
+    /// Verify the manifest signature.
+    ///
+    /// Returns Ok(()) if verification succeeds, or an error if it fails.
+    /// If no public key is available, returns `BundleError::NoPublicKey`.
+    pub fn verify_manifest_signature(&mut self) -> BundleResult<()> {
+        self.verify_manifest_signature_with_key(None)
+    }
+
+    /// Verify the manifest signature with an optional key override.
+    ///
+    /// # Arguments
+    ///
+    /// * `public_key_override` - If provided, use this key instead of the manifest's key
+    pub fn verify_manifest_signature_with_key(
+        &mut self,
+        public_key_override: Option<&str>,
+    ) -> BundleResult<()> {
+        // Clone the public key to avoid borrow issues
+        let public_key = public_key_override
+            .map(String::from)
+            .or_else(|| self.manifest.public_key.clone())
+            .ok_or(BundleError::NoPublicKey)?;
+
+        // Read manifest data
+        let manifest_data = self.read_file(MANIFEST_FILE)?;
+
+        // Read signature
+        let sig_path = format!("{MANIFEST_FILE}.minisig");
+        let sig_data = self.read_file(&sig_path)?;
+        let signature = String::from_utf8(sig_data).map_err(|e| {
+            BundleError::SignatureVerificationFailed(format!("Invalid signature encoding: {e}"))
+        })?;
+
+        // Verify
+        verify_minisign_signature(&public_key, &manifest_data, &signature)
+    }
+
+    /// Verify a library signature.
+    ///
+    /// # Arguments
+    ///
+    /// * `library_path` - Path to the library within the bundle
+    /// * `library_data` - The library file contents
+    pub fn verify_library_signature(
+        &mut self,
+        library_path: &str,
+        library_data: &[u8],
+    ) -> BundleResult<()> {
+        self.verify_library_signature_with_key(library_path, library_data, None)
+    }
+
+    /// Verify a library signature with an optional key override.
+    pub fn verify_library_signature_with_key(
+        &mut self,
+        library_path: &str,
+        library_data: &[u8],
+        public_key_override: Option<&str>,
+    ) -> BundleResult<()> {
+        // Clone the public key to avoid borrow issues
+        let public_key = public_key_override
+            .map(String::from)
+            .or_else(|| self.manifest.public_key.clone())
+            .ok_or(BundleError::NoPublicKey)?;
+
+        // Read signature
+        let sig_path = format!("{library_path}.minisig");
+        let sig_data = self.read_file(&sig_path)?;
+        let signature = String::from_utf8(sig_data).map_err(|e| {
+            BundleError::SignatureVerificationFailed(format!("Invalid signature encoding: {e}"))
+        })?;
+
+        // Verify
+        verify_minisign_signature(&public_key, library_data, &signature)
+    }
+
+    /// Extract and verify a library for a platform.
+    ///
+    /// This method extracts the library and verifies both the checksum and signature.
+    ///
+    /// # Arguments
+    ///
+    /// * `platform` - Target platform
+    /// * `output_dir` - Directory to extract to
+    /// * `verify_signature` - Whether to verify the signature
+    /// * `public_key_override` - Optional public key override
+    pub fn extract_library_verified<P: AsRef<Path>>(
+        &mut self,
+        platform: Platform,
+        output_dir: P,
+        verify_signature: bool,
+        public_key_override: Option<&str>,
+    ) -> BundleResult<PathBuf> {
+        // Verify manifest signature first if requested
+        if verify_signature {
+            self.verify_manifest_signature_with_key(public_key_override)?;
+        }
+
+        let output_dir = output_dir.as_ref();
+
+        // Get platform info from manifest
+        let platform_info = self.manifest.get_platform(platform).ok_or_else(|| {
+            BundleError::UnsupportedPlatform(format!(
+                "Platform {} not found in bundle",
+                platform.as_str()
+            ))
+        })?;
+
+        // Get the release variant
+        let variant_info = platform_info
+            .release()
+            .ok_or_else(|| BundleError::VariantNotFound {
+                platform: platform.as_str().to_string(),
+                variant: "release".to_string(),
+            })?;
+
+        let library_path = variant_info.library.clone();
+        let expected_checksum = variant_info.checksum.clone();
+
+        // Read the library from the archive
+        let contents = self.read_file(&library_path)?;
+
+        // Verify checksum
+        if !verify_sha256(&contents, &expected_checksum) {
+            let actual = crate::builder::compute_sha256(&contents);
+            return Err(BundleError::ChecksumMismatch {
+                path: library_path,
+                expected: expected_checksum,
+                actual: format!("sha256:{actual}"),
+            });
+        }
+
+        // Verify library signature if requested
+        if verify_signature {
+            self.verify_library_signature_with_key(&library_path, &contents, public_key_override)?;
+        }
+
+        // Create output directory
+        fs::create_dir_all(output_dir)?;
+
+        // Determine output filename
+        let file_name = Path::new(&library_path)
+            .file_name()
+            .ok_or_else(|| BundleError::InvalidManifest("Invalid library path".to_string()))?;
+
+        let output_path = output_dir.join(file_name);
+
+        // Write the library file
+        fs::write(&output_path, &contents)?;
+
+        // Set executable permissions on Unix
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mut perms = fs::metadata(&output_path)?.permissions();
+            perms.set_mode(0o755);
+            fs::set_permissions(&output_path, perms)?;
+        }
+
+        Ok(output_path)
+    }
+}
+
+/// Verify a minisign signature.
+///
+/// Minisign format:
+/// - Public key: 2 bytes algorithm ID ("Ed") + 8 bytes key ID + 32 bytes Ed25519 key
+/// - Signature: 2 bytes algorithm ID + 8 bytes key ID + 64 bytes signature
+///   - "ED" (0x45, 0x44) = prehashed with BLAKE2b-512
+///   - "Ed" (0x45, 0x64) = legacy non-prehashed
+fn verify_minisign_signature(
+    public_key_base64: &str,
+    data: &[u8],
+    signature_content: &str,
+) -> BundleResult<()> {
+    use minisign::{PublicKey, SignatureBox};
+
+    // Parse public key
+    let public_key = PublicKey::from_base64(public_key_base64).map_err(|e| {
+        BundleError::SignatureVerificationFailed(format!("Invalid public key: {e}"))
+    })?;
+
+    // Parse signature (second line of the minisig file)
+    let signature_box = SignatureBox::from_string(signature_content).map_err(|e| {
+        BundleError::SignatureVerificationFailed(format!("Invalid signature format: {e}"))
+    })?;
+
+    // Verify - minisign::verify handles prehashing automatically
+    let mut data_reader = std::io::Cursor::new(data);
+    minisign::verify(
+        &public_key,
+        &signature_box,
+        &mut data_reader,
+        true,
+        false,
+        false,
+    )
+    .map_err(|e| {
+        BundleError::SignatureVerificationFailed(format!("Signature verification failed: {e}"))
+    })?;
+
+    Ok(())
 }
 
 #[cfg(test)]

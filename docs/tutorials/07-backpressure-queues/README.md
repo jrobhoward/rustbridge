@@ -237,6 +237,10 @@ Implement synchronized access in C# using `BlockingCollection<T>` and `Task`.
 
 Implement synchronized access in Python using `queue.Queue` and `concurrent.futures`.
 
+### [03: Rust Consumer](./03-rust-consumer.md)
+
+Implement synchronized access in Rust using `crossbeam-channel` and `std::thread`.
+
 ## Prerequisites
 
 Before starting this chapter:

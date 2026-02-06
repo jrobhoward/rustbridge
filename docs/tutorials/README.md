@@ -107,9 +107,9 @@ These tutorials progress from basic plugin development to advanced production to
 │                                                                             │
 │  Backpressure Queues (Chapter 7)       Binary Transport (Chapter 8)         │
 │  ───────────────────────────────       ────────────────────────────         │
-│  • C# and Python consumers             • Image thumbnail generator          │
+│  • C#, Python, Rust consumers          • Image thumbnail generator          │
 │  • Bounded queues for flow control     • C-compatible struct layouts        │
-│  • Block producers when queue full     • 7x faster than JSON for binaries   │
+│  • Block producers when queue full     • Java, Kotlin, C#, Python, Rust     │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -195,6 +195,7 @@ Implement bounded queues with backpressure for flow control in C# and Python.
 |---------|-------------------|
 | [01-csharp-consumer.md](./07-backpressure-queues/01-csharp-consumer.md) | C# with BlockingCollection and Task |
 | [02-python-consumer.md](./07-backpressure-queues/02-python-consumer.md) | Python with queue.Queue and concurrent.futures |
+| [03-rust-consumer.md](./07-backpressure-queues/03-rust-consumer.md) | Rust with crossbeam-channel and std::thread |
 
 #### [Chapter 8: Binary Transport](./08-binary-transport/README.md)
 
@@ -206,6 +207,7 @@ Build an image thumbnail generator using binary transport for efficient large pa
 | [02-kotlin-consumer.md](./08-binary-transport/02-kotlin-consumer.md) | Kotlin FFM with extension functions |
 | [03-csharp-consumer.md](./08-binary-transport/03-csharp-consumer.md) | C# with StructLayout and Marshal |
 | [04-python-consumer.md](./08-binary-transport/04-python-consumer.md) | Python with ctypes.Structure |
+| [05-rust-consumer.md](./08-binary-transport/05-rust-consumer.md) | Rust with rustbridge-consumer |
 
 ## Reference Implementations
 

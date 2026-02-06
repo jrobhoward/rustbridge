@@ -52,6 +52,14 @@ pub enum BundleError {
     /// Schema mismatch when combining bundles.
     #[error("Schema mismatch: {0}")]
     SchemaMismatch(String),
+
+    /// Signature verification failed.
+    #[error("Signature verification failed: {0}")]
+    SignatureVerificationFailed(String),
+
+    /// No public key available for verification.
+    #[error("No public key available for signature verification")]
+    NoPublicKey,
 }
 
 #[cfg(test)]

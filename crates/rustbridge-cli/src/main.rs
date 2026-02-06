@@ -50,6 +50,10 @@ enum Commands {
         #[arg(long)]
         python: bool,
 
+        /// Also generate Rust consumer project
+        #[arg(long)]
+        rust_consumer: bool,
+
         /// Generate all consumer projects
         #[arg(long)]
         all: bool,
@@ -250,6 +254,7 @@ fn main() -> anyhow::Result<()> {
             java_ffm,
             csharp,
             python,
+            rust_consumer,
             all,
         } => {
             let options = new::NewOptions {
@@ -257,6 +262,7 @@ fn main() -> anyhow::Result<()> {
                 java_ffm: java_ffm || all,
                 csharp: csharp || all,
                 python: python || all,
+                rust_consumer: rust_consumer || all,
             };
             new::run(&name, path, options)?;
         }

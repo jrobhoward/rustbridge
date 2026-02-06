@@ -72,6 +72,7 @@ Host Language → FFI Boundary → Async Runtime → Plugin Implementation → R
 - **Core** (`rustbridge-core`, `rustbridge-transport`): Traits, types, serialization
 - **Runtime** (`rustbridge-runtime`, `rustbridge-logging`): Tokio integration, tracing callbacks
 - **FFI** (`rustbridge-ffi`): C ABI exports, buffer management
+- **Consumer** (`rustbridge-consumer`): Rust host library for loading plugins
 - **Tooling** (`rustbridge-macros`, `rustbridge-cli`, `rustbridge-bundle`): Code generation, build tools, `.rbp` packaging
 
 Memory follows "Rust allocates, host frees" pattern. See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for details.
