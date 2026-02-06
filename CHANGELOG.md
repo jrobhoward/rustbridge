@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Rust Consumer**: `NativePlugin::state()` now returns `Stopped` after shutdown instead of `Failed` (handle was removed from FFI manager, causing state query to return unknown)
+
+### Changed
+- **CI**: Added .NET 8.0, Python 3.12, and consumer integration tests to the `validate` job
+- **CI**: Added clippy and consumer integration tests to the cross-platform `test-matrix` job
+- **Pre-commit**: Added Python test section and consumer integration tests to `pre-commit.sh` and `pre-commit.bat`
+
 ## [0.9.0] - 2026-02-06
 
 ### Changed

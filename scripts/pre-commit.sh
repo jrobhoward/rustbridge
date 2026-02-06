@@ -5,8 +5,10 @@
 # - Code formatting (cargo fmt)
 # - Security and license checks (cargo deny)
 # - Rust unit tests
+# - Consumer integration tests (Rust FFI round-trip)
 # - Java/Kotlin tests
 # - C# tests
+# - Python tests
 # - Integration tests (when available)
 #
 # Usage:
@@ -43,6 +45,7 @@ SMART_MODE=false
 RUN_RUST_TESTS=true
 RUN_JAVA_TESTS=true
 RUN_CSHARP_TESTS=true
+RUN_PYTHON_TESTS=true
 RUN_RUST_FMT=true
 RUN_CARGO_DENY=true
 
@@ -130,6 +133,7 @@ if [ "$SMART_MODE" = true ]; then
         RUST_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^(crates/|plugins/|Cargo\.(toml|lock)$|deny\.toml$|\.cargo/)' || true)
         JAVA_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^rustbridge-java/' || true)
         CSHARP_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^rustbridge-csharp/' || true)
+        PYTHON_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^rustbridge-python/' || true)
         SCRIPT_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^scripts/' || true)
         CONFIG_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^(\.github/|rust-toolchain|clippy\.toml$)' || true)
         DOCS_ONLY=$(echo "$ALL_CHANGES" | grep -vE '\.(md|txt)$' | head -1 || true)
@@ -141,12 +145,14 @@ if [ "$SMART_MODE" = true ]; then
             RUN_RUST_TESTS=true
             RUN_JAVA_TESTS=true
             RUN_CSHARP_TESTS=true
+            RUN_PYTHON_TESTS=true
         elif [ -z "$DOCS_ONLY" ]; then
             # Only docs changed
             print_info "Only documentation changed - skipping tests"
             RUN_RUST_TESTS=false
             RUN_JAVA_TESTS=false
             RUN_CSHARP_TESTS=false
+            RUN_PYTHON_TESTS=false
             RUN_CARGO_DENY=false
         else
             # Selective testing based on what changed
@@ -179,7 +185,16 @@ if [ "$SMART_MODE" = true ]; then
                 [ $(echo "$CSHARP_CHANGES" | wc -l) -gt 5 ] && echo "    ... and more"
             fi
 
-            # Special case: Rust FFI changes should trigger Java/C# tests
+            if [ -z "$PYTHON_CHANGES" ]; then
+                print_info "No Python changes detected - skipping Python tests"
+                RUN_PYTHON_TESTS=false
+            else
+                print_info "Python changes detected:"
+                echo "$PYTHON_CHANGES" | head -5 | sed 's/^/    /'
+                [ $(echo "$PYTHON_CHANGES" | wc -l) -gt 5 ] && echo "    ... and more"
+            fi
+
+            # Special case: Rust FFI changes should trigger Java/C#/Python tests
             # because Java/C# tests are integration tests that use the native lib
             if [ "$RUN_RUST_TESTS" = true ]; then
                 FFI_CHANGES=$(echo "$RUST_CHANGES" | grep -E '(ffi|plugin_|FfiBuffer)' || true)
@@ -192,12 +207,16 @@ if [ "$SMART_MODE" = true ]; then
                         print_warning "FFI changes detected - enabling C# tests for integration coverage"
                         RUN_CSHARP_TESTS=true
                     fi
+                    if [ "$RUN_PYTHON_TESTS" = false ]; then
+                        print_warning "FFI changes detected - enabling Python tests for integration coverage"
+                        RUN_PYTHON_TESTS=true
+                    fi
                 fi
             fi
         fi
 
         echo ""
-        print_info "Test plan: Rust=$RUN_RUST_TESTS, Java=$RUN_JAVA_TESTS, C#=$RUN_CSHARP_TESTS, Fmt=$RUN_RUST_FMT, Deny=$RUN_CARGO_DENY"
+        print_info "Test plan: Rust=$RUN_RUST_TESTS, Java=$RUN_JAVA_TESTS, C#=$RUN_CSHARP_TESTS, Python=$RUN_PYTHON_TESTS, Fmt=$RUN_RUST_FMT, Deny=$RUN_CARGO_DENY"
         echo ""
     fi
 fi
@@ -246,6 +265,15 @@ if [ "$RUN_CSHARP_TESTS" = true ] && [ -d "rustbridge-csharp" ]; then
         RUN_CSHARP_TESTS=false
     else
         print_success "dotnet found"
+    fi
+fi
+
+if [ "$RUN_PYTHON_TESTS" = true ] && [ -d "rustbridge-python" ]; then
+    if ! command_exists python3; then
+        print_warning "python3 not found. Python tests will be skipped."
+        RUN_PYTHON_TESTS=false
+    else
+        print_success "python3 found"
     fi
 fi
 
@@ -359,6 +387,24 @@ else
 fi
 
 # ============================================================================
+# 6b. Consumer Integration Tests (uses hello-plugin from step 6)
+# ============================================================================
+if [ "$RUN_RUST_TESTS" = true ]; then
+    print_header "Running Consumer Integration Tests"
+
+    if ! cargo test -p rustbridge-consumer -- --ignored; then
+        print_error "Consumer integration tests failed!"
+        exit 1
+    fi
+    print_success "All consumer integration tests passed"
+
+    echo ""
+else
+    print_info "Skipping consumer integration tests (no Rust changes)"
+    echo ""
+fi
+
+# ============================================================================
 # 7. Java/Kotlin Tests
 # ============================================================================
 if [ "$RUN_JAVA_TESTS" = true ] && [ -d "rustbridge-java" ] && [ -f "rustbridge-java/gradlew" ] && command_exists java; then
@@ -409,6 +455,41 @@ elif [ "$RUN_CSHARP_TESTS" = false ]; then
     echo ""
 else
     print_info "Skipping C# tests (not available)"
+    echo ""
+fi
+
+# ============================================================================
+# 9. Python Tests
+# ============================================================================
+if [ "$RUN_PYTHON_TESTS" = true ] && [ -d "rustbridge-python" ] && command_exists python3; then
+    print_header "Running Python Tests"
+
+    cd rustbridge-python
+
+    # Create or reuse virtual environment
+    if [ ! -d ".venv" ]; then
+        python3 -m venv .venv
+    fi
+    source .venv/bin/activate
+
+    # Install dependencies (quiet to reduce noise)
+    pip install -q -e ".[dev]"
+
+    if ! python -m pytest tests/ -v; then
+        print_error "Python tests failed!"
+        deactivate
+        exit 1
+    fi
+    print_success "All Python tests passed"
+
+    deactivate
+    cd "$PROJECT_ROOT"
+    echo ""
+elif [ "$RUN_PYTHON_TESTS" = false ]; then
+    print_info "Skipping Python tests (no Python changes)"
+    echo ""
+else
+    print_info "Skipping Python tests (not available)"
     echo ""
 fi
 

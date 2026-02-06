@@ -223,7 +223,14 @@ impl NativePlugin {
 
     /// Get the current lifecycle state of the plugin.
     pub fn state(&self) -> LifecycleState {
-        // SAFETY: handle is valid
+        // After shutdown, the FFI handle is removed from the manager,
+        // so plugin_get_state would return 255 (unknown/Failed).
+        // Return Stopped directly since we know shutdown completed.
+        if self.shutdown.load(Ordering::SeqCst) {
+            return LifecycleState::Stopped;
+        }
+
+        // SAFETY: handle is valid (not yet shut down)
         let state_code = unsafe { (self.get_state_fn)(self.handle) };
         state_from_u8(state_code)
     }

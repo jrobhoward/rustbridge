@@ -154,6 +154,22 @@ echo [OK] hello-plugin built successfully
 echo.
 
 REM ============================================================================
+REM 6b. Consumer Integration Tests (uses hello-plugin from step 6)
+REM ============================================================================
+echo ===================================================
+echo Running Consumer Integration Tests
+echo ===================================================
+
+cargo test -p rustbridge-consumer -- --ignored
+if errorlevel 1 (
+    echo.
+    echo [ERROR] Consumer integration tests failed!
+    exit /b 1
+)
+echo [OK] All consumer integration tests passed
+echo.
+
+REM ============================================================================
 REM 7. Java/Kotlin Tests
 REM ============================================================================
 if exist "rustbridge-java\gradlew.bat" (
@@ -217,7 +233,47 @@ if errorlevel 1 (
 )
 
 REM ============================================================================
-REM 9. Clippy (skip in fast mode)
+REM 9. Python Tests
+REM ============================================================================
+where python >nul 2>&1
+if errorlevel 1 (
+    echo [INFO] Skipping Python tests (python not found)
+    echo.
+) else (
+    if exist "rustbridge-python\pyproject.toml" (
+        echo ===================================================
+        echo Running Python Tests
+        echo ===================================================
+
+        pushd rustbridge-python
+
+        if not exist ".venv" (
+            python -m venv .venv
+        )
+        call .venv\Scripts\activate.bat
+
+        pip install -q -e ".[dev]"
+
+        python -m pytest tests/ -v
+        if errorlevel 1 (
+            call deactivate
+            popd
+            echo.
+            echo [ERROR] Python tests failed!
+            exit /b 1
+        )
+        call deactivate
+        popd
+        echo [OK] All Python tests passed
+        echo.
+    ) else (
+        echo [INFO] Skipping Python tests (pyproject.toml not found)
+        echo.
+    )
+)
+
+REM ============================================================================
+REM 10. Clippy (skip in fast mode)
 REM ============================================================================
 if "%FAST_MODE%"=="1" (
     echo [INFO] Skipping clippy checks (--fast mode)

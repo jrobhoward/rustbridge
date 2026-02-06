@@ -50,6 +50,24 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
+      - name: Set up .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache Python virtual environment
+        uses: actions/cache@v4
+        with:
+          path: rustbridge-python/.venv
+          key: ${{ runner.os }}-python-${{ hashFiles('rustbridge-python/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-python-
+
       - name: Run pre-commit validation
         run: |
           chmod +x scripts/pre-commit.sh
@@ -64,6 +82,7 @@ jobs:
             target/nextest/**/*.xml
             rustbridge-java/**/build/test-results/**/*.xml
             rustbridge-java/**/build/reports/tests/**
+            rustbridge-csharp/**/TestResults/**
           retention-days: 7
 
   # Test on multiple platforms
@@ -81,6 +100,8 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
@@ -92,6 +113,12 @@ jobs:
 
       - name: Build examples
         run: cargo build --release -p hello-plugin
+
+      - name: Run consumer integration tests
+        run: cargo test -p rustbridge-consumer -- --ignored
+
+      - name: Run clippy
+        run: cargo clippy --workspace --examples --tests -- -D warnings
 
   # Check for dependency issues and security advisories
   security:
