@@ -71,6 +71,7 @@ struct SmallRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct SmallResponse {
     value: String,
     ttl_seconds: u32,
@@ -132,7 +133,10 @@ fn NativePluginLoader___load_with_config___applies_log_level() {
         return;
     }
 
-    let config = PluginConfig::builder().log_level(LogLevel::Debug).build();
+    let config = PluginConfig {
+        log_level: LogLevel::Debug,
+        ..PluginConfig::default()
+    };
 
     let plugin = NativePluginLoader::load_with_config(hello_plugin_path(), &config, None).unwrap();
 
@@ -155,7 +159,10 @@ fn NativePluginLoader___load_with_config___with_log_callback___receives_logs() {
             log_count_clone.fetch_add(1, Ordering::SeqCst);
         });
 
-    let config = PluginConfig::builder().log_level(LogLevel::Debug).build();
+    let config = PluginConfig {
+        log_level: LogLevel::Debug,
+        ..PluginConfig::default()
+    };
 
     let plugin =
         NativePluginLoader::load_with_config(hello_plugin_path(), &config, Some(callback)).unwrap();

@@ -327,9 +327,14 @@ impl Drop for NativePlugin {
     }
 }
 
-// NativePlugin is Send because it owns all its data and the library is thread-safe
-// The FFI functions are designed to be called from any thread
+// NativePlugin is Send because it owns all its data and the library is thread-safe.
+// The FFI functions are designed to be called from any thread.
 unsafe impl Send for NativePlugin {}
+
+// NativePlugin is Sync because the FFI calls are thread-safe.
+// The plugin's internal state uses proper synchronization (Arc<RwLock>, DashMap, etc.)
+// and all function pointers are constant after initialization.
+unsafe impl Sync for NativePlugin {}
 
 /// Convert a u8 state code to LifecycleState.
 fn state_from_u8(code: u8) -> LifecycleState {
