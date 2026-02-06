@@ -8,6 +8,13 @@ use rustbridge_bundle::{BundleBuilder, BundleLoader, Manifest, Platform};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
+use yansi::{Condition, Paint, Style};
+
+/// Yellow bold style for warnings, active only when stderr is a terminal.
+static WARN: Style = Style::new()
+    .yellow()
+    .bold()
+    .whenever(Condition::STDERR_IS_TTY);
 
 /// Create a new bundle from libraries.
 #[allow(clippy::too_many_arguments)]
@@ -240,7 +247,7 @@ pub fn combine(
             );
             match schema_mismatch_mode {
                 "error" => anyhow::bail!("{msg}"),
-                "warn" => eprintln!("Warning: {msg}"),
+                "warn" => eprintln!("{} {msg}", "Warning:".paint(WARN)),
                 "ignore" => {}
                 _ => anyhow::bail!("Invalid schema-mismatch mode: {schema_mismatch_mode}"),
             }

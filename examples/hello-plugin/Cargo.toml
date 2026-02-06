@@ -17,6 +17,11 @@ uuid = { workspace = true }
 # code that references ::serde:: directly
 serde = { workspace = true }
 
+# Declare schema and header sources so `rustbridge pack` auto-generates them.
+[package.metadata.rustbridge]
+schema-source = "src/lib.rs:schema.json"
+header-source = "src/binary_messages.rs:messages.h"
+
 # Example plugin - explicitly configure lints (can't override workspace lints)
 # Allow unwrap/expect since examples should be simple and clear
 [lints.clippy]

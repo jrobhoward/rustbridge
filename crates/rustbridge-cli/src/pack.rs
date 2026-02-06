@@ -8,6 +8,13 @@ use rustbridge_bundle::Platform;
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
+use yansi::{Condition, Paint, Style};
+
+/// Yellow bold style for warnings, active only when stderr is a terminal.
+static WARN: Style = Style::new()
+    .yellow()
+    .bold()
+    .whenever(Condition::STDERR_IS_TTY);
 
 /// Minimal Cargo.toml representation for plugin detection.
 #[derive(Deserialize)]
@@ -341,8 +348,9 @@ fn check_library_staleness(project_dir: &Path, lib_path: &Path, variant_label: &
             "cargo build"
         };
 
+        let header = format!("Warning: {variant_label} library appears out of date.");
         eprintln!();
-        eprintln!("Warning: {variant_label} library appears out of date.");
+        eprintln!("{}", header.paint(WARN));
         eprintln!("  Library:       {lib_display}  ({lib_time_str})");
         eprintln!("  Newest source: {src_display}  ({newest_time_str})");
         eprintln!("  Run: {build_hint}");
@@ -471,8 +479,9 @@ pub fn run_pack(
                     Some(default_key.to_string_lossy().to_string())
                 } else {
                     eprintln!(
-                        "Warning: No signing key found at {}. Bundle will not be signed. \
+                        "{} No signing key found at {}. Bundle will not be signed. \
                          Use 'rustbridge keygen' to generate a key.",
+                        "Warning:".paint(WARN),
                         default_key.display()
                     );
                     None

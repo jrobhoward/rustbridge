@@ -517,6 +517,10 @@ rustbridge = { version = "0.8.1" }
 serde = { version = "1.0", features = ["derive"] }
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
 
+# Auto-generate a C header from binary message structs when running `rustbridge pack`
+[package.metadata.rustbridge]
+header-source = "src/lib.rs:messages.h"
+
 [profile.release]
 lto = true
 codegen-units = 1
@@ -542,20 +546,15 @@ cp thumbnail-plugin-0.1.0.rbp consumers/csharp/
 cp thumbnail-plugin-0.1.0.rbp consumers/python/
 ```
 
-### Alternative: Declare Header in Cargo.toml
+### Recommended: Use `rustbridge pack`
 
-Add to your `Cargo.toml`:
-
-```toml
-[package.metadata.rustbridge]
-header-source = "src/lib.rs:messages.h"
-```
-
-Then:
+Since `header-source` is already declared in `Cargo.toml` above, `rustbridge pack` auto-generates the C header and includes it in the bundle:
 
 ```bash
 rustbridge pack --no-sign
 ```
+
+This is the recommended approach — it keeps the header configuration with the project and avoids forgetting flags during builds.
 
 > **Note**: Adjust the `--lib` platform identifier for your OS:
 > - Linux: `linux-x86_64:target/release/libthumbnail_plugin.so`

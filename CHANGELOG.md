@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **CLI**: `rustbridge pack` now warns when libraries appear older than source files, helping catch forgotten rebuilds
+- **CLI**: Colored warnings (yellow/bold) for all CLI commands via `yansi` — signing key missing, staleness, schema mismatch
 - **CLI**: `rustbridge pack` command to auto-detect plugin project and create bundles from `Cargo.toml` metadata
 - **CLI**: `rustbridge promote` command to slim a dev bundle to a signed release bundle
 - **Rust Consumer**: `load_bundle_variant_with_config()` for loading specific variants (debug/release) from bundles

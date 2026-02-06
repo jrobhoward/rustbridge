@@ -6,6 +6,13 @@
 use anyhow::{Context, Result};
 use rustbridge_bundle::Platform;
 use std::path::{Path, PathBuf};
+use yansi::{Condition, Paint, Style};
+
+/// Yellow bold style for warnings, active only when stderr is a terminal.
+static WARN: Style = Style::new()
+    .yellow()
+    .bold()
+    .whenever(Condition::STDERR_IS_TTY);
 
 /// Derive the output path for a promoted bundle.
 ///
@@ -78,8 +85,9 @@ pub fn run_promote(
                     Some(default_key.to_string_lossy().to_string())
                 } else {
                     eprintln!(
-                        "Warning: No signing key found at {}. Bundle will not be signed. \
+                        "{} No signing key found at {}. Bundle will not be signed. \
                          Use 'rustbridge keygen' to generate a key.",
+                        "Warning:".paint(WARN),
                         default_key.display()
                     );
                     None
