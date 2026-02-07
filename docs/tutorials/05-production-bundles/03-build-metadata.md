@@ -48,7 +48,7 @@ The build information is stored in `manifest.json`:
     "built_at": "2025-01-30T14:32:00Z",
     "host": "x86_64-unknown-linux-gnu",
     "compiler": "rustc 1.90.0",
-    "rustbridge_version": "0.9.0",
+    "rustbridge_version": "0.9.1",
     "git": {
       "commit": "a1b2c3d4e5f6789012345678901234567890abcd",
       "branch": "main",
@@ -278,7 +278,7 @@ unzip -p json-plugin-0.1.0.rbp manifest.json | jq '.build_info'
   "built_at": "2025-01-30T14:32:00Z",
   "host": "x86_64-unknown-linux-gnu",
   "compiler": "rustc 1.90.0",
-  "rustbridge_version": "0.9.0",
+  "rustbridge_version": "0.9.1",
   "git": {
     "commit": "a1b2c3d4e5f6789012345678901234567890abcd",
     "branch": "main",

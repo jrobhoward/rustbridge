@@ -43,14 +43,14 @@ fn base_bundle_path() -> PathBuf {
     workspace_root()
         .join("target")
         .join("variant-test-bundles")
-        .join("variant-log-plugin-base-0.9.0.rbp")
+        .join("variant-log-plugin-base-0.9.1.rbp")
 }
 
 fn extended_bundle_path() -> PathBuf {
     workspace_root()
         .join("target")
         .join("variant-test-bundles")
-        .join("variant-log-plugin-extended-0.9.0.rbp")
+        .join("variant-log-plugin-extended-0.9.1.rbp")
 }
 
 fn bundles_available() -> bool {

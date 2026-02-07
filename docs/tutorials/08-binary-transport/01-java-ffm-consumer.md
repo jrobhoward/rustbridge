@@ -444,8 +444,8 @@ repositories {
 }
 
 dependencies {
-    implementation("com.rustbridge:rustbridge-core:0.9.0")
-    implementation("com.rustbridge:rustbridge-ffm:0.9.0")
+    implementation("com.rustbridge:rustbridge-core:0.9.1")
+    implementation("com.rustbridge:rustbridge-ffm:0.9.1")
     implementation("com.google.code.gson:gson:2.11.0")
 }
 

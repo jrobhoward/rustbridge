@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-02-06
+
+### Added
+- **Docs**: Added v0.9 release notes (`docs/RELEASE_NOTES_0.9.md`) for This Week in Rust announcement
+
 ### Fixed
 - **Rust Consumer**: `NativePlugin::state()` now returns `Stopped` after shutdown instead of `Failed` (handle was removed from FFI manager, causing state query to return unknown)
 
@@ -342,7 +347,8 @@ Initial public release.
 - No `.unwrap()` or `.expect()` in production code
 - Minisign signature verification for bundle integrity
 
-[Unreleased]: https://github.com/jrobhoward/rustbridge/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/jrobhoward/rustbridge/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/jrobhoward/rustbridge/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/jrobhoward/rustbridge/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/jrobhoward/rustbridge/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/jrobhoward/rustbridge/compare/v0.7.0...v0.8.0

@@ -47,7 +47,7 @@ Edit `Cargo.toml`:
 ```toml
 [package]
 name = "calculator-plugin"
-version = "0.9.0"
+version = "0.9.1"
 edition = "2024"
 
 [workspace]  # Standalone project (not part of a parent workspace)

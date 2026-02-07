@@ -63,7 +63,7 @@ repositories {
     mavenLocal()
 }
 dependencies {
-    implementation("com.rustbridge:rustbridge-ffm:0.9.0")  // Java 21+
+    implementation("com.rustbridge:rustbridge-ffm:0.9.1")  // Java 21+
 }
 ```
 
@@ -95,7 +95,7 @@ After completing the steps above, verify:
 rustbridge --version
 ```
 
-You should see version output (e.g., `rustbridge 0.9.0`).
+You should see version output (e.g., `rustbridge 0.9.1`).
 
 ## What's Next?
 

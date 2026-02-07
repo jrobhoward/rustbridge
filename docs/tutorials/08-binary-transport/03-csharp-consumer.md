@@ -457,8 +457,8 @@ Update the `.csproj` file to enable unsafe code:
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="RustBridge.Core" Version="0.9.0" />
-    <PackageReference Include="RustBridge.Native" Version="0.9.0" />
+    <PackageReference Include="RustBridge.Core" Version="0.9.1" />
+    <PackageReference Include="RustBridge.Native" Version="0.9.1" />
   </ItemGroup>
 
 </Project>
