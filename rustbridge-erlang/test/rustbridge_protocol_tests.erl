@@ -101,37 +101,43 @@ encode_load_bundle___with_verify___produces_valid_json_test() ->
 %% ---------------------------------------------------------------------------
 
 decode_message___ok_response___returns_ok_tuple_test() ->
-    Json = iolist_to_binary(json:encode(#{
-        <<"type">> => <<"response">>,
-        <<"id">> => 1,
-        <<"status">> => <<"ok">>,
-        <<"data">> => <<"active">>
-    })),
+    Json = iolist_to_binary(
+        json:encode(#{
+            <<"type">> => <<"response">>,
+            <<"id">> => 1,
+            <<"status">> => <<"ok">>,
+            <<"data">> => <<"active">>
+        })
+    ),
 
     Result = rustbridge_protocol:decode_message(Json),
 
     ?assertEqual({response, 1, {ok, <<"active">>}}, Result).
 
 decode_message___error_response___returns_error_tuple_test() ->
-    Json = iolist_to_binary(json:encode(#{
-        <<"type">> => <<"response">>,
-        <<"id">> => 2,
-        <<"status">> => <<"error">>,
-        <<"error_code">> => 6,
-        <<"error_message">> => <<"unknown message type">>
-    })),
+    Json = iolist_to_binary(
+        json:encode(#{
+            <<"type">> => <<"response">>,
+            <<"id">> => 2,
+            <<"status">> => <<"error">>,
+            <<"error_code">> => 6,
+            <<"error_message">> => <<"unknown message type">>
+        })
+    ),
 
     Result = rustbridge_protocol:decode_message(Json),
 
     ?assertEqual({response, 2, {error, {6, <<"unknown message type">>}}}, Result).
 
 decode_message___log_message___returns_log_entry_test() ->
-    Json = iolist_to_binary(json:encode(#{
-        <<"type">> => <<"log">>,
-        <<"level">> => 2,
-        <<"target">> => <<"hello_plugin">>,
-        <<"message">> => <<"starting up">>
-    })),
+    Json = iolist_to_binary(
+        json:encode(#{
+            <<"type">> => <<"log">>,
+            <<"level">> => 2,
+            <<"target">> => <<"hello_plugin">>,
+            <<"message">> => <<"starting up">>
+        })
+    ),
 
     {log, Entry} = rustbridge_protocol:decode_message(Json),
 
@@ -140,11 +146,13 @@ decode_message___log_message___returns_log_entry_test() ->
     ?assertEqual(<<"starting up">>, Entry#log_entry.message).
 
 decode_message___ok_response_with_null_data___returns_null_test() ->
-    Json = iolist_to_binary(json:encode(#{
-        <<"type">> => <<"response">>,
-        <<"id">> => 3,
-        <<"status">> => <<"ok">>
-    })),
+    Json = iolist_to_binary(
+        json:encode(#{
+            <<"type">> => <<"response">>,
+            <<"id">> => 3,
+            <<"status">> => <<"ok">>
+        })
+    ),
 
     Result = rustbridge_protocol:decode_message(Json),
 

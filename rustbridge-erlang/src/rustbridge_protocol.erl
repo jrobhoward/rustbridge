@@ -36,14 +36,16 @@ encode_load_bundle(Id, Path, ConfigMap, Opts) ->
         <<"path">> => to_binary(Path),
         <<"config">> => ConfigMap
     },
-    Cmd1 = case maps:get(verify_signatures, Opts, undefined) of
-        undefined -> Cmd0;
-        V -> Cmd0#{<<"verify_signatures">> => V}
-    end,
-    Cmd2 = case maps:get(public_key, Opts, undefined) of
-        undefined -> Cmd1;
-        K -> Cmd1#{<<"public_key">> => to_binary(K)}
-    end,
+    Cmd1 =
+        case maps:get(verify_signatures, Opts, undefined) of
+            undefined -> Cmd0;
+            V -> Cmd0#{<<"verify_signatures">> => V}
+        end,
+    Cmd2 =
+        case maps:get(public_key, Opts, undefined) of
+            undefined -> Cmd1;
+            K -> Cmd1#{<<"public_key">> => to_binary(K)}
+        end,
     iolist_to_binary(json:encode(Cmd2)).
 
 -spec encode_call(non_neg_integer(), type_tag(), binary()) -> binary().
@@ -104,8 +106,8 @@ encode_shutdown(Id) ->
 %% ---------------------------------------------------------------------------
 
 -spec decode_message(binary()) ->
-    {response, non_neg_integer(), {ok, term()} | {error, {integer(), binary()}}} |
-    {log, #log_entry{}}.
+    {response, non_neg_integer(), {ok, term()} | {error, {integer(), binary()}}}
+    | {log, #log_entry{}}.
 decode_message(JsonBin) ->
     Map = json:decode(JsonBin),
     case maps:get(<<"type">>, Map) of
@@ -138,5 +140,5 @@ decode_log(Map) ->
     {log, #log_entry{level = Level, target = Target, message = Message}}.
 
 to_binary(V) when is_binary(V) -> V;
-to_binary(V) when is_list(V)   -> list_to_binary(V);
-to_binary(V) when is_atom(V)   -> atom_to_binary(V, utf8).
+to_binary(V) when is_list(V) -> list_to_binary(V);
+to_binary(V) when is_atom(V) -> atom_to_binary(V, utf8).

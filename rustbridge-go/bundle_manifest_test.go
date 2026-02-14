@@ -232,7 +232,7 @@ func TestPlatformInfo___ListVariants___ReturnsVariantNames(t *testing.T) {
 	}
 }
 
-func TestPlatformInfo___ListVariants___NoVariants___ReturnsRelease(t *testing.T) {
+func TestPlatformInfo___ListVariantsEmpty___ReturnsRelease(t *testing.T) {
 	p := &PlatformInfo{Library: "lib.so", Checksum: "sha256:abc"}
 
 	result := p.ListVariants()

@@ -72,7 +72,7 @@ func createTestBundle(t *testing.T, libContent []byte, platform string) string {
 	return tmpFile
 }
 
-func TestCurrentPlatform___ReturnsValidFormat(t *testing.T) {
+func TestCurrentPlatform___Default___ReturnsValidFormat(t *testing.T) {
 	platform := CurrentPlatform()
 
 	parts := strings.SplitN(platform, "-", 2)

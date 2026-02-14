@@ -12,7 +12,7 @@ init([]) ->
     {ok, {SupFlags, []}}.
 
 %% @doc Start a named plugin under the supervisor.
--spec start_plugin(atom(), string(), #{}  | tuple()) -> {ok, pid()} | {error, term()}.
+-spec start_plugin(atom(), string(), #{} | tuple()) -> {ok, pid()} | {error, term()}.
 start_plugin(Name, Path, Config) ->
     start_plugin(Name, Path, Config, #{}).
 

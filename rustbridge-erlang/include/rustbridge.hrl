@@ -2,17 +2,17 @@
 -define(RUSTBRIDGE_HRL, true).
 
 -record(plugin_config, {
-    log_level = info         :: rustbridge_log:level(),
-    worker_threads           :: pos_integer() | undefined,
+    log_level = info :: rustbridge_log:level(),
+    worker_threads :: pos_integer() | undefined,
     max_concurrent_ops = 1000 :: non_neg_integer(),
     shutdown_timeout_ms = 5000 :: non_neg_integer(),
-    data = #{}               :: map(),
-    init_params              :: map() | undefined
+    data = #{} :: map(),
+    init_params :: map() | undefined
 }).
 
 -record(log_entry, {
-    level   :: rustbridge_log:level(),
-    target  :: binary(),
+    level :: rustbridge_log:level(),
+    target :: binary(),
     message :: binary()
 }).
 

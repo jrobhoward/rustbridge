@@ -3,8 +3,13 @@
 -include("rustbridge.hrl").
 
 %% CT callbacks
--export([all/0, init_per_suite/1, end_per_suite/1,
-         init_per_testcase/2, end_per_testcase/2]).
+-export([
+    all/0,
+    init_per_suite/1,
+    end_per_suite/1,
+    init_per_testcase/2,
+    end_per_testcase/2
+]).
 
 %% Test cases
 -export([
@@ -48,11 +53,12 @@ init_per_suite(Config) ->
     RebarProjectRoot = find_rebar_root(PrivDir),
     WorkspaceRoot = filename:dirname(RebarProjectRoot),
 
-    LibName = case os:type() of
-        {unix, darwin} -> "libhello_plugin.dylib";
-        {unix, _}      -> "libhello_plugin.so";
-        {win32, _}     -> "hello_plugin.dll"
-    end,
+    LibName =
+        case os:type() of
+            {unix, darwin} -> "libhello_plugin.dylib";
+            {unix, _} -> "libhello_plugin.so";
+            {win32, _} -> "hello_plugin.dll"
+        end,
     LibPath = filename:join([WorkspaceRoot, "target", "release", LibName]),
 
     case filelib:is_file(LibPath) of
@@ -65,12 +71,13 @@ init_per_suite(Config) ->
 %% Walk up the directory tree until we find rebar.config.
 find_rebar_root(Dir) ->
     case filelib:is_file(filename:join(Dir, "rebar.config")) of
-        true -> Dir;
+        true ->
+            Dir;
         false ->
             Parent = filename:dirname(Dir),
             case Parent of
                 Dir -> error({rebar_config_not_found, Dir});
-                _   -> find_rebar_root(Parent)
+                _ -> find_rebar_root(Parent)
             end
     end.
 
@@ -86,10 +93,13 @@ init_per_testcase(log_callback___receives_log_messages, Config) ->
         ok
     end,
     PluginConfig = #{<<"log_level">> => <<"trace">>},
-    {ok, Pid} = rustbridge_plugin:start_link(test_log_plugin, LibPath, PluginConfig,
-                                              #{log_handler => LogHandler}),
+    {ok, Pid} = rustbridge_plugin:start_link(
+        test_log_plugin,
+        LibPath,
+        PluginConfig,
+        #{log_handler => LogHandler}
+    ),
     [{plugin, Pid} | Config];
-
 init_per_testcase(_TestCase, Config) ->
     LibPath = ?config(lib_path, Config),
     {ok, Pid} = rustbridge_plugin:start_link(LibPath, #{}),
@@ -117,7 +127,9 @@ plugin___default_config___is_active(Config) ->
 call___echo_message___returns_response(Config) ->
     Plugin = ?config(plugin, Config),
 
-    {ok, Response} = rustbridge_plugin:call(Plugin, <<"echo">>, <<"{\"message\": \"Hello from Erlang!\"}">>),
+    {ok, Response} = rustbridge_plugin:call(
+        Plugin, <<"echo">>, <<"{\"message\": \"Hello from Erlang!\"}">>
+    ),
 
     Map = json:decode(Response),
     <<"Hello from Erlang!">> = maps:get(<<"message">>, Map),
@@ -136,8 +148,11 @@ call___greet___returns_greeting(Config) ->
 call___user_create___returns_user_id(Config) ->
     Plugin = ?config(plugin, Config),
 
-    {ok, Response} = rustbridge_plugin:call(Plugin, <<"user.create">>,
-        <<"{\"username\": \"erlang_user\", \"email\": \"erl@example.com\"}">>),
+    {ok, Response} = rustbridge_plugin:call(
+        Plugin,
+        <<"user.create">>,
+        <<"{\"username\": \"erlang_user\", \"email\": \"erl@example.com\"}">>
+    ),
 
     Map = json:decode(Response),
     UserId = maps:get(<<"user_id">>, Map),
@@ -155,7 +170,7 @@ call___math_add___returns_sum(Config) ->
 call___unknown_type___returns_error_code_6(Config) ->
     Plugin = ?config(plugin, Config),
 
-    {error, {6, _Message}} = rustbridge_plugin:call(Plugin, <<"nonexistent">>, <<"{}">>,  10000).
+    {error, {6, _Message}} = rustbridge_plugin:call(Plugin, <<"nonexistent">>, <<"{}">>, 10000).
 
 get_state___after_load___returns_active(Config) ->
     Plugin = ?config(plugin, Config),
@@ -187,23 +202,41 @@ concurrent_calls___multiple_processes___all_succeed(Config) ->
     Self = self(),
     NumProcs = 10,
 
-    Pids = [spawn_link(fun() ->
-        Result = rustbridge_plugin:call(Plugin, <<"echo">>,
-            <<"{\"message\": \"concurrent\"}">>, 10000),
-        Self ! {done, self(), Result}
-    end) || _ <- lists:seq(1, NumProcs)],
+    Pids = [
+        spawn_link(fun() ->
+            Result = rustbridge_plugin:call(
+                Plugin,
+                <<"echo">>,
+                <<"{\"message\": \"concurrent\"}">>,
+                10000
+            ),
+            Self ! {done, self(), Result}
+        end)
+     || _ <- lists:seq(1, NumProcs)
+    ],
 
-    Results = [receive {done, Pid, R} -> R after 15000 -> timeout end || Pid <- Pids],
+    Results = [
+        receive
+            {done, Pid, R} -> R
+        after 15000 -> timeout
+        end
+     || Pid <- Pids
+    ],
 
-    lists:foreach(fun(Result) ->
-        {ok, _} = Result
-    end, Results).
+    lists:foreach(
+        fun(Result) ->
+            {ok, _} = Result
+        end,
+        Results
+    ).
 
 log_callback___receives_log_messages(Config) ->
     Plugin = ?config(plugin, Config),
 
     %% Make a call that triggers logging
-    {ok, _} = rustbridge_plugin:call(Plugin, <<"echo">>, <<"{\"message\": \"trigger log\"}">>, 10000),
+    {ok, _} = rustbridge_plugin:call(
+        Plugin, <<"echo">>, <<"{\"message\": \"trigger log\"}">>, 10000
+    ),
 
     %% Give a moment for log messages to arrive
     timer:sleep(100),

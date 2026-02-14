@@ -15,7 +15,7 @@ import (
 
 // BundleLoader extracts and verifies .rbp plugin bundles.
 type BundleLoader struct {
-	verifySignatures bool
+	verifySignatures  bool
 	publicKeyOverride string
 }
 

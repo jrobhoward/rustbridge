@@ -26,10 +26,10 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2]).
 
 -record(state, {
-    port         :: port() | undefined,
-    next_id = 1  :: pos_integer(),
+    port :: port() | undefined,
+    next_id = 1 :: pos_integer(),
     pending = #{} :: #{pos_integer() => {pid(), reference()}},
-    log_handler  :: fun((#log_entry{}) -> ok) | undefined
+    log_handler :: fun((#log_entry{}) -> ok) | undefined
 }).
 
 %% ---------------------------------------------------------------------------
@@ -98,7 +98,8 @@ get_state(PluginRef) ->
     case gen_server:call(PluginRef, get_state) of
         {ok, StateBin} when is_binary(StateBin) ->
             {ok, binary_to_existing_atom(StateBin, utf8)};
-        {error, _} = Err -> Err
+        {error, _} = Err ->
+            Err
     end.
 
 %% @doc Get the number of requests rejected due to concurrency limits.
@@ -136,21 +137,26 @@ init({path, Path, Config, Opts}) ->
     ConfigMap = to_config_map(Config),
     Port = open_driver_port(),
     State = #state{port = Port, log_handler = LogHandler},
-    case send_and_wait(State, fun(Id) -> rustbridge_protocol:encode_load(Id, Path, ConfigMap) end) of
+    case
+        send_and_wait(State, fun(Id) -> rustbridge_protocol:encode_load(Id, Path, ConfigMap) end)
+    of
         {ok, _Data, State1} ->
             {ok, State1};
         {error, Reason, _State1} ->
             port_close(Port),
             {stop, Reason}
     end;
-
 init({bundle, BundlePath, Config, Opts}) ->
     LogHandler = maps:get(log_handler, Opts, undefined),
     ConfigMap = to_config_map(Config),
     BundleOpts = maps:with([verify_signatures, public_key], Opts),
     Port = open_driver_port(),
     State = #state{port = Port, log_handler = LogHandler},
-    case send_and_wait(State, fun(Id) -> rustbridge_protocol:encode_load_bundle(Id, BundlePath, ConfigMap, BundleOpts) end) of
+    case
+        send_and_wait(State, fun(Id) ->
+            rustbridge_protocol:encode_load_bundle(Id, BundlePath, ConfigMap, BundleOpts)
+        end)
+    of
         {ok, _Data, State1} ->
             {ok, State1};
         {error, Reason, _State1} ->
@@ -164,28 +170,24 @@ handle_call({call, TypeTag, Request}, From, State) ->
     send_to_port(State1#state.port, Frame),
     State2 = add_pending(State1, Id, From),
     {noreply, State2};
-
 handle_call({call_raw, MessageId, Data}, From, State) ->
     {Id, State1} = next_id(State),
     Frame = rustbridge_protocol:encode_call_raw(Id, MessageId, Data),
     send_to_port(State1#state.port, Frame),
     State2 = add_pending(State1, Id, From),
     {noreply, State2};
-
 handle_call(get_state, From, State) ->
     {Id, State1} = next_id(State),
     Frame = rustbridge_protocol:encode_get_state(Id),
     send_to_port(State1#state.port, Frame),
     State2 = add_pending(State1, Id, From),
     {noreply, State2};
-
 handle_call(get_rejected_count, From, State) ->
     {Id, State1} = next_id(State),
     Frame = rustbridge_protocol:encode_get_rejected_count(Id),
     send_to_port(State1#state.port, Frame),
     State2 = add_pending(State1, Id, From),
     {noreply, State2};
-
 handle_call({set_log_level, Level}, From, State) ->
     {Id, State1} = next_id(State),
     LevelCode = rustbridge_log:to_code(Level),
@@ -193,7 +195,6 @@ handle_call({set_log_level, Level}, From, State) ->
     send_to_port(State1#state.port, Frame),
     State2 = add_pending(State1, Id, From),
     {noreply, State2};
-
 handle_call(shutdown, From, State) ->
     {Id, State1} = next_id(State),
     Frame = rustbridge_protocol:encode_shutdown(Id),
@@ -213,12 +214,10 @@ handle_info({Port, {data, Data}}, #state{port = Port} = State) ->
             handle_log(State, LogEntry),
             {noreply, State}
     end;
-
 handle_info({Port, {exit_status, _Code}}, #state{port = Port} = State) ->
     %% Port driver crashed - fail all pending callers
     State1 = fail_all_pending(State, {error, port_crashed}),
     {stop, port_crashed, State1#state{port = undefined}};
-
 handle_info(_Info, State) ->
     {noreply, State}.
 
@@ -235,8 +234,10 @@ terminate(_Reason, #state{port = Port}) ->
 
 open_driver_port() ->
     DriverPath = driver_path(),
-    open_port({spawn_executable, DriverPath},
-              [{packet, 4}, binary, exit_status, use_stdio]).
+    open_port(
+        {spawn_executable, DriverPath},
+        [{packet, 4}, binary, exit_status, use_stdio]
+    ).
 
 driver_path() ->
     PrivDir = code:priv_dir(rustbridge),
@@ -306,7 +307,9 @@ wait_for_response(State, Id) ->
         {error, init_timeout, State}
     end.
 
-handle_log(#state{log_handler = undefined}, #log_entry{level = Level, target = Target, message = Message}) ->
+handle_log(#state{log_handler = undefined}, #log_entry{
+    level = Level, target = Target, message = Message
+}) ->
     %% Default: route to OTP logger
     LoggerLevel = rustbridge_log:to_logger_level(Level),
     logger:log(LoggerLevel, Message, #{domain => [rustbridge], target => Target});

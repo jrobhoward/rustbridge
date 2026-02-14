@@ -9,10 +9,10 @@
 -spec to_code(level()) -> 0..5.
 to_code(trace) -> 0;
 to_code(debug) -> 1;
-to_code(info)  -> 2;
-to_code(warn)  -> 3;
+to_code(info) -> 2;
+to_code(warn) -> 3;
 to_code(error) -> 4;
-to_code(off)   -> 5.
+to_code(off) -> 5.
 
 %% @doc Convert an FFI code to a log level atom.
 -spec from_code(non_neg_integer()) -> level().
@@ -29,7 +29,7 @@ from_code(_) -> off.
 -spec to_logger_level(level()) -> logger:level().
 to_logger_level(trace) -> debug;
 to_logger_level(debug) -> debug;
-to_logger_level(info)  -> info;
-to_logger_level(warn)  -> warning;
+to_logger_level(info) -> info;
+to_logger_level(warn) -> warning;
 to_logger_level(error) -> error;
-to_logger_level(off)   -> error.
+to_logger_level(off) -> error.

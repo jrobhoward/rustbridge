@@ -1,14 +1,14 @@
-{application, rustbridge,
- [{description, "Erlang consumer for rustbridge plugins"},
-  {vsn, "0.9.1"},
-  {registered, []},
-  {mod, {rustbridge_app, []}},
-  {applications,
-   [kernel,
-    stdlib
-   ]},
-  {env, []},
-  {modules, []},
-  {licenses, ["MIT", "Apache-2.0"]},
-  {links, []}
- ]}.
+{application, rustbridge, [
+    {description, "Erlang consumer for rustbridge plugins"},
+    {vsn, "0.9.1"},
+    {registered, []},
+    {mod, {rustbridge_app, []}},
+    {applications, [
+        kernel,
+        stdlib
+    ]},
+    {env, []},
+    {modules, []},
+    {licenses, ["MIT", "Apache-2.0"]},
+    {links, []}
+]}.

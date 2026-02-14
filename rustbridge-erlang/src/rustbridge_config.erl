@@ -25,10 +25,11 @@ to_json_map(#plugin_config{
         <<"shutdown_timeout_ms">> => ShutdownTimeout,
         <<"data">> => Data
     },
-    WithThreads = case WorkerThreads of
-        undefined -> Base;
-        N -> Base#{<<"worker_threads">> => N}
-    end,
+    WithThreads =
+        case WorkerThreads of
+            undefined -> Base;
+            N -> Base#{<<"worker_threads">> => N}
+        end,
     case InitParams of
         undefined -> WithThreads;
         Params -> WithThreads#{<<"init_params">> => Params}
