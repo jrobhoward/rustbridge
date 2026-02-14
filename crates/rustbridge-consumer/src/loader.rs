@@ -26,17 +26,16 @@ static EXTRACT_INSTANCE: AtomicU64 = AtomicU64::new(0);
 /// This callback receives log messages from the plugin.
 pub type LogCallbackFn = Arc<dyn Fn(LogLevel, &str, &str) + Send + Sync>;
 
-// Global log callback storage (one per thread).
-// This is needed because the FFI callback cannot capture state.
-thread_local! {
-    static LOG_CALLBACK: std::cell::RefCell<Option<LogCallbackFn>> = const { std::cell::RefCell::new(None) };
-}
+// Global log callback storage.
+// Uses a RwLock so the FFI callback can read from any thread while
+// set_log_callback writes only during plugin load/unload.
+static LOG_CALLBACK: std::sync::RwLock<Option<LogCallbackFn>> = std::sync::RwLock::new(None);
 
-/// Set the thread-local log callback.
+/// Set the global log callback.
 fn set_log_callback(callback: Option<LogCallbackFn>) {
-    LOG_CALLBACK.with(|cb| {
-        *cb.borrow_mut() = callback;
-    });
+    if let Ok(mut guard) = LOG_CALLBACK.write() {
+        *guard = callback;
+    }
 }
 
 /// FFI-compatible log callback that forwards to the Rust callback.
@@ -50,30 +49,29 @@ unsafe extern "C" fn ffi_log_callback(
     message: *const u8,
     message_len: usize,
 ) {
-    LOG_CALLBACK.with(|cb| {
-        if let Some(callback) = cb.borrow().as_ref() {
-            let log_level = LogLevel::from_u8(level);
+    let callback = LOG_CALLBACK.read().ok().and_then(|guard| guard.clone());
+    if let Some(callback) = callback {
+        let log_level = LogLevel::from_u8(level);
 
-            // SAFETY: target is a valid null-terminated C string
-            let target_str = if target.is_null() {
-                ""
-            } else {
-                unsafe { std::ffi::CStr::from_ptr(target) }
-                    .to_str()
-                    .unwrap_or("")
-            };
+        // SAFETY: target is a valid null-terminated C string
+        let target_str = if target.is_null() {
+            ""
+        } else {
+            unsafe { std::ffi::CStr::from_ptr(target) }
+                .to_str()
+                .unwrap_or("")
+        };
 
-            // SAFETY: message is valid for message_len bytes (NOT null-terminated)
-            let message_str = if message.is_null() || message_len == 0 {
-                ""
-            } else {
-                let bytes = unsafe { std::slice::from_raw_parts(message, message_len) };
-                std::str::from_utf8(bytes).unwrap_or("")
-            };
+        // SAFETY: message is valid for message_len bytes (NOT null-terminated)
+        let message_str = if message.is_null() || message_len == 0 {
+            ""
+        } else {
+            let bytes = unsafe { std::slice::from_raw_parts(message, message_len) };
+            std::str::from_utf8(bytes).unwrap_or("")
+        };
 
-            callback(log_level, target_str, message_str);
-        }
-    });
+        callback(log_level, target_str, message_str);
+    }
 }
 
 /// Loader for native plugins.
@@ -152,8 +150,13 @@ impl NativePluginLoader {
         let rb_response_free: Option<RbResponseFreeFn> =
             unsafe { library.get(b"rb_response_free\0").ok().map(|s| *s) };
 
-        // Set up log callback if provided
-        set_log_callback(log_callback);
+        // Set up log callback if provided.
+        // Only update the global when a real callback is given — loading a
+        // plugin without a callback must not clobber an existing one, since
+        // the FFI layer uses a single global callback for all instances.
+        if log_callback.is_some() {
+            set_log_callback(log_callback);
+        }
         let ffi_callback: LogCallback = Some(ffi_log_callback);
 
         // Create the plugin instance
