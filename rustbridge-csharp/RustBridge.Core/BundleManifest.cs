@@ -68,6 +68,54 @@ public class BundleManifest
     public BridgeInfo? Bridges { get; set; }
 
     /// <summary>
+    /// Get the effective build info for a platform/variant (v1.1).
+    /// Variant-level overrides top-level.
+    /// </summary>
+    /// <param name="platform">Platform string (e.g., "linux-x86_64").</param>
+    /// <param name="variant">Variant name (e.g., "release").</param>
+    /// <returns>Effective build info, or null if neither set.</returns>
+    public BuildInfo? GetEffectiveBuildInfo(string platform, string variant)
+    {
+        if (Platforms != null && Platforms.TryGetValue(platform, out var pi)
+            && pi.Variants != null && pi.Variants.TryGetValue(variant, out var vi)
+            && vi.BuildInfoData != null)
+        {
+            return vi.BuildInfoData;
+        }
+        return BuildInfoData;
+    }
+
+    /// <summary>
+    /// Get the effective SBOM for a platform/variant (v1.1).
+    /// Variant-level overrides top-level.
+    /// </summary>
+    public Sbom? GetEffectiveSbom(string platform, string variant)
+    {
+        if (Platforms != null && Platforms.TryGetValue(platform, out var pi)
+            && pi.Variants != null && pi.Variants.TryGetValue(variant, out var vi)
+            && vi.SbomData != null)
+        {
+            return vi.SbomData;
+        }
+        return SbomData;
+    }
+
+    /// <summary>
+    /// Get the effective schemas for a platform/variant (v1.1).
+    /// Variant-level overrides top-level.
+    /// </summary>
+    public Dictionary<string, SchemaInfo> GetEffectiveSchemas(string platform, string variant)
+    {
+        if (Platforms != null && Platforms.TryGetValue(platform, out var pi)
+            && pi.Variants != null && pi.Variants.TryGetValue(variant, out var vi)
+            && vi.Schemas != null && vi.Schemas.Count > 0)
+        {
+            return vi.Schemas;
+        }
+        return Schemas ?? new Dictionary<string, SchemaInfo>();
+    }
+
+    /// <summary>
     /// Plugin metadata information.
     /// </summary>
     public class PluginInfo
@@ -113,6 +161,30 @@ public class BundleManifest
         /// </summary>
         [JsonPropertyName("build")]
         public object? Build { get; set; }
+
+        /// <summary>
+        /// Variant-level build info (v1.1, overrides top-level).
+        /// </summary>
+        [JsonPropertyName("build_info")]
+        public BuildInfo? BuildInfoData { get; set; }
+
+        /// <summary>
+        /// Variant-level SBOM paths (v1.1, overrides top-level).
+        /// </summary>
+        [JsonPropertyName("sbom")]
+        public Sbom? SbomData { get; set; }
+
+        /// <summary>
+        /// Variant-level schema checksum (v1.1, overrides top-level).
+        /// </summary>
+        [JsonPropertyName("schema_checksum")]
+        public string? SchemaChecksum { get; set; }
+
+        /// <summary>
+        /// Variant-level schemas (v1.1, overrides top-level).
+        /// </summary>
+        [JsonPropertyName("schemas")]
+        public Dictionary<string, SchemaInfo>? Schemas { get; set; }
     }
 
     /// <summary>

@@ -229,6 +229,10 @@ mod manifest_edge_cases {
                 library: "lib/test.so".to_string(),
                 checksum: "sha256:abc123".to_string(),
                 build: None,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
         variants.insert(
@@ -237,6 +241,10 @@ mod manifest_edge_cases {
                 library: "lib/test.so".to_string(),
                 checksum: "sha256:abc123".to_string(),
                 build: None,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
         manifest
@@ -264,6 +272,10 @@ mod manifest_edge_cases {
                 library: "lib/test.so".to_string(),
                 checksum: "sha256:abc123".to_string(),
                 build: None,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
         variants.insert(
@@ -272,6 +284,10 @@ mod manifest_edge_cases {
                 library: "lib/test.so".to_string(),
                 checksum: "sha256:abc123".to_string(),
                 build: None,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
         manifest
@@ -294,6 +310,10 @@ mod manifest_edge_cases {
                 library: "lib/test.so".to_string(),
                 checksum: "sha256:abc123".to_string(),
                 build: None,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
         variants.insert(
@@ -302,6 +322,10 @@ mod manifest_edge_cases {
                 library: "lib/test.so".to_string(),
                 checksum: "sha256:abc123".to_string(),
                 build: None,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
         manifest
@@ -324,6 +348,10 @@ mod manifest_edge_cases {
                 // Non-hex chars after sha256: prefix - format check only validates prefix
                 checksum: "sha256:gggggggg".to_string(),
                 build: None,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
         manifest
@@ -346,6 +374,10 @@ mod manifest_edge_cases {
                 library: "lib/test.so".to_string(),
                 checksum: "SHA256:abc123".to_string(), // Uppercase prefix
                 build: None,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
         manifest
@@ -368,6 +400,10 @@ mod manifest_edge_cases {
                 library: "lib/test.so".to_string(),
                 checksum: "sha256:sha256:abc123".to_string(),
                 build: None,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
         manifest
@@ -390,6 +426,10 @@ mod manifest_edge_cases {
                 library: "lib/test.so".to_string(),
                 checksum: "sha256:abc123".to_string(),
                 build: None,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
         variants.insert(
@@ -398,6 +438,10 @@ mod manifest_edge_cases {
                 library: "lib/test.so".to_string(),
                 checksum: "sha256:abc123".to_string(),
                 build: None,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
         manifest

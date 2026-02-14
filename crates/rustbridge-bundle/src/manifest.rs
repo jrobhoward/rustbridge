@@ -4,7 +4,7 @@
 //! and available API messages. Supports multi-variant builds (release, debug, etc.)
 //! with the `release` variant being mandatory and the implicit default.
 
-use crate::{BUNDLE_VERSION, BundleError, BundleResult, Platform};
+use crate::{BUNDLE_VERSION, BUNDLE_VERSION_1_1, BundleError, BundleResult, Platform};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -102,6 +102,10 @@ impl PlatformInfo {
                 library,
                 checksum,
                 build: None,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
         Self { variants }
@@ -147,6 +151,9 @@ impl PlatformInfo {
 ///
 /// Each variant represents a different build configuration (release, debug, etc.)
 /// of the same plugin for a specific platform.
+///
+/// In bundle format v1.1, variants may carry their own `build_info`, `sbom`,
+/// `schema_checksum`, and `schemas` that override the top-level manifest values.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VariantInfo {
     /// Relative path to the library within the bundle.
@@ -166,6 +173,23 @@ pub struct VariantInfo {
     /// - `go_tags`: ["production"] (for Go)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub build: Option<serde_json::Value>,
+
+    // --- v1.1 variant-level metadata (overrides top-level when present) ---
+    /// Build information specific to this variant (v1.1).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub build_info: Option<BuildInfo>,
+
+    /// SBOM paths specific to this variant (v1.1).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sbom: Option<Sbom>,
+
+    /// Schema checksum specific to this variant (v1.1).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub schema_checksum: Option<String>,
+
+    /// Schema files specific to this variant (v1.1).
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub schemas: HashMap<String, SchemaInfo>,
 }
 
 /// Build information (all fields optional).
@@ -321,6 +345,10 @@ impl Manifest {
                     library: library_path.to_string(),
                     checksum: format!("sha256:{checksum}"),
                     build: None,
+                    build_info: None,
+                    sbom: None,
+                    schema_checksum: None,
+                    schemas: HashMap::new(),
                 },
             );
         } else {
@@ -358,6 +386,10 @@ impl Manifest {
                 library: library_path.to_string(),
                 checksum: format!("sha256:{checksum}"),
                 build,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
     }
@@ -488,6 +520,71 @@ impl Manifest {
             .collect()
     }
 
+    /// Get the effective build info for a platform/variant, with variant-level overriding top-level.
+    #[must_use]
+    pub fn get_effective_build_info(&self, platform: &str, variant: &str) -> Option<&BuildInfo> {
+        if let Some(platform_info) = self.platforms.get(platform)
+            && let Some(variant_info) = platform_info.variants.get(variant)
+            && let Some(ref bi) = variant_info.build_info
+        {
+            return Some(bi);
+        }
+        self.build_info.as_ref()
+    }
+
+    /// Get the effective SBOM for a platform/variant, with variant-level overriding top-level.
+    #[must_use]
+    pub fn get_effective_sbom(&self, platform: &str, variant: &str) -> Option<&Sbom> {
+        if let Some(platform_info) = self.platforms.get(platform)
+            && let Some(variant_info) = platform_info.variants.get(variant)
+            && let Some(ref s) = variant_info.sbom
+        {
+            return Some(s);
+        }
+        self.sbom.as_ref()
+    }
+
+    /// Get the effective schema checksum for a platform/variant, with variant-level overriding top-level.
+    #[must_use]
+    pub fn get_effective_schema_checksum(&self, platform: &str, variant: &str) -> Option<&str> {
+        if let Some(platform_info) = self.platforms.get(platform)
+            && let Some(variant_info) = platform_info.variants.get(variant)
+            && let Some(ref sc) = variant_info.schema_checksum
+        {
+            return Some(sc.as_str());
+        }
+        self.schema_checksum.as_deref()
+    }
+
+    /// Get the effective schemas for a platform/variant, with variant-level overriding top-level.
+    #[must_use]
+    pub fn get_effective_schemas(
+        &self,
+        platform: &str,
+        variant: &str,
+    ) -> &HashMap<String, SchemaInfo> {
+        if let Some(platform_info) = self.platforms.get(platform)
+            && let Some(variant_info) = platform_info.variants.get(variant)
+            && !variant_info.schemas.is_empty()
+        {
+            return &variant_info.schemas;
+        }
+        &self.schemas
+    }
+
+    /// Check if any variant in the manifest has variant-level metadata set.
+    #[must_use]
+    pub fn has_variant_level_metadata(&self) -> bool {
+        self.platforms.values().any(|p| {
+            p.variants.values().any(|v| {
+                v.build_info.is_some()
+                    || v.sbom.is_some()
+                    || v.schema_checksum.is_some()
+                    || !v.schemas.is_empty()
+            })
+        })
+    }
+
     /// Validate the manifest.
     pub fn validate(&self) -> BundleResult<()> {
         // Check bundle version
@@ -495,6 +592,13 @@ impl Manifest {
             return Err(BundleError::InvalidManifest(
                 "bundle_version is required".to_string(),
             ));
+        }
+
+        if self.bundle_version != BUNDLE_VERSION && self.bundle_version != BUNDLE_VERSION_1_1 {
+            return Err(BundleError::InvalidManifest(format!(
+                "unsupported bundle_version '{}' (expected '{}' or '{}')",
+                self.bundle_version, BUNDLE_VERSION, BUNDLE_VERSION_1_1,
+            )));
         }
 
         // Check plugin name
@@ -673,6 +777,10 @@ mod tests {
                 library: "lib/test.so".to_string(),
                 checksum: "abc123".to_string(), // Missing "sha256:" prefix
                 build: None,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
         manifest
@@ -710,6 +818,10 @@ mod tests {
                 library: "".to_string(),
                 checksum: "sha256:abc123".to_string(),
                 build: None,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
         manifest
@@ -737,6 +849,10 @@ mod tests {
                 library: "lib/test.so".to_string(),
                 checksum: "".to_string(),
                 build: None,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
         manifest
@@ -764,6 +880,10 @@ mod tests {
                 library: "lib/test.so".to_string(),
                 checksum: "sha256:abc123".to_string(),
                 build: None,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
         manifest
@@ -791,6 +911,10 @@ mod tests {
                 library: "lib/test.so".to_string(),
                 checksum: "sha256:abc123".to_string(),
                 build: None,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
         variants.insert(
@@ -799,6 +923,10 @@ mod tests {
                 library: "lib/test.so".to_string(),
                 checksum: "sha256:abc123".to_string(),
                 build: None,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
         manifest
@@ -1139,6 +1267,10 @@ mod tests {
                 library: "lib/debug.so".to_string(),
                 checksum: "sha256:def".to_string(),
                 build: None,
+                build_info: None,
+                sbom: None,
+                schema_checksum: None,
+                schemas: HashMap::new(),
             },
         );
 
@@ -1146,5 +1278,231 @@ mod tests {
         assert_eq!(names.len(), 2);
         assert!(names.contains(&"release"));
         assert!(names.contains(&"debug"));
+    }
+
+    // ========================================================================
+    // v1.1 variant-level metadata tests
+    // ========================================================================
+
+    #[test]
+    fn Manifest___validate___accepts_version_1_1() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.bundle_version = "1.1".to_string();
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+
+        assert!(manifest.validate().is_ok());
+    }
+
+    #[test]
+    fn Manifest___validate___rejects_unknown_version() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.bundle_version = "2.0".to_string();
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+
+        let result = manifest.validate();
+
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("unsupported bundle_version")
+        );
+    }
+
+    #[test]
+    fn Manifest___json_roundtrip___preserves_variant_level_build_info() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.bundle_version = "1.1".to_string();
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+
+        let platform_info = manifest.platforms.get_mut("linux-x86_64").unwrap();
+        let release = platform_info.variants.get_mut("release").unwrap();
+        release.build_info = Some(BuildInfo {
+            built_by: Some("Linux CI".to_string()),
+            host: Some("x86_64-unknown-linux-gnu".to_string()),
+            ..Default::default()
+        });
+
+        let json = manifest.to_json().unwrap();
+        let parsed = Manifest::from_json(&json).unwrap();
+
+        let vi = parsed
+            .get_variant(Platform::LinuxX86_64, Some("release"))
+            .unwrap();
+        let bi = vi.build_info.as_ref().unwrap();
+        assert_eq!(bi.built_by, Some("Linux CI".to_string()));
+        assert_eq!(bi.host, Some("x86_64-unknown-linux-gnu".to_string()));
+    }
+
+    #[test]
+    fn Manifest___json_roundtrip___preserves_variant_level_sbom() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.bundle_version = "1.1".to_string();
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+
+        let platform_info = manifest.platforms.get_mut("linux-x86_64").unwrap();
+        let release = platform_info.variants.get_mut("release").unwrap();
+        release.sbom = Some(Sbom {
+            cyclonedx: Some("sbom/linux.cdx.json".to_string()),
+            spdx: None,
+        });
+
+        let json = manifest.to_json().unwrap();
+        let parsed = Manifest::from_json(&json).unwrap();
+
+        let vi = parsed
+            .get_variant(Platform::LinuxX86_64, Some("release"))
+            .unwrap();
+        let sbom = vi.sbom.as_ref().unwrap();
+        assert_eq!(sbom.cyclonedx, Some("sbom/linux.cdx.json".to_string()));
+    }
+
+    #[test]
+    fn Manifest___json_roundtrip___preserves_variant_level_schema_checksum() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.bundle_version = "1.1".to_string();
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+
+        let platform_info = manifest.platforms.get_mut("linux-x86_64").unwrap();
+        let release = platform_info.variants.get_mut("release").unwrap();
+        release.schema_checksum = Some("sha256:variant_checksum".to_string());
+
+        let json = manifest.to_json().unwrap();
+        let parsed = Manifest::from_json(&json).unwrap();
+
+        let vi = parsed
+            .get_variant(Platform::LinuxX86_64, Some("release"))
+            .unwrap();
+        assert_eq!(
+            vi.schema_checksum,
+            Some("sha256:variant_checksum".to_string())
+        );
+    }
+
+    #[test]
+    fn Manifest___json_roundtrip___preserves_variant_level_schemas() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.bundle_version = "1.1".to_string();
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+
+        let platform_info = manifest.platforms.get_mut("linux-x86_64").unwrap();
+        let release = platform_info.variants.get_mut("release").unwrap();
+        release.schemas.insert(
+            "messages.h".to_string(),
+            SchemaInfo {
+                path: "schema/messages.h".to_string(),
+                format: "c-header".to_string(),
+                checksum: "sha256:abc".to_string(),
+                description: None,
+            },
+        );
+
+        let json = manifest.to_json().unwrap();
+        let parsed = Manifest::from_json(&json).unwrap();
+
+        let vi = parsed
+            .get_variant(Platform::LinuxX86_64, Some("release"))
+            .unwrap();
+        assert_eq!(vi.schemas.len(), 1);
+        assert!(vi.schemas.contains_key("messages.h"));
+    }
+
+    #[test]
+    fn get_effective_build_info___variant_overrides_top_level() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+        manifest.set_build_info(BuildInfo {
+            built_by: Some("top-level".to_string()),
+            ..Default::default()
+        });
+
+        let platform_info = manifest.platforms.get_mut("linux-x86_64").unwrap();
+        let release = platform_info.variants.get_mut("release").unwrap();
+        release.build_info = Some(BuildInfo {
+            built_by: Some("variant-level".to_string()),
+            ..Default::default()
+        });
+
+        let effective = manifest
+            .get_effective_build_info("linux-x86_64", "release")
+            .unwrap();
+        assert_eq!(effective.built_by, Some("variant-level".to_string()));
+    }
+
+    #[test]
+    fn get_effective_build_info___falls_back_to_top_level() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+        manifest.set_build_info(BuildInfo {
+            built_by: Some("top-level".to_string()),
+            ..Default::default()
+        });
+
+        let effective = manifest
+            .get_effective_build_info("linux-x86_64", "release")
+            .unwrap();
+        assert_eq!(effective.built_by, Some("top-level".to_string()));
+    }
+
+    #[test]
+    fn get_effective_build_info___returns_none_when_neither_set() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+
+        assert!(
+            manifest
+                .get_effective_build_info("linux-x86_64", "release")
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn has_variant_level_metadata___true_when_build_info_set() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+
+        let platform_info = manifest.platforms.get_mut("linux-x86_64").unwrap();
+        let release = platform_info.variants.get_mut("release").unwrap();
+        release.build_info = Some(BuildInfo::default());
+
+        assert!(manifest.has_variant_level_metadata());
+    }
+
+    #[test]
+    fn has_variant_level_metadata___false_when_no_variant_metadata() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/test.so", "hash");
+
+        assert!(!manifest.has_variant_level_metadata());
+    }
+
+    #[test]
+    fn Manifest___from_json___v10_without_new_fields___backward_compat() {
+        let json = r#"{
+            "bundle_version": "1.0",
+            "plugin": { "name": "test", "version": "1.0.0" },
+            "platforms": {
+                "linux-x86_64": {
+                    "variants": {
+                        "release": {
+                            "library": "lib/linux-x86_64/release/libtest.so",
+                            "checksum": "sha256:abc123"
+                        }
+                    }
+                }
+            }
+        }"#;
+
+        let manifest = Manifest::from_json(json).unwrap();
+
+        assert_eq!(manifest.bundle_version, "1.0");
+        let vi = manifest
+            .get_variant(Platform::LinuxX86_64, Some("release"))
+            .unwrap();
+        assert!(vi.build_info.is_none());
+        assert!(vi.sbom.is_none());
+        assert!(vi.schema_checksum.is_none());
+        assert!(vi.schemas.is_empty());
     }
 }

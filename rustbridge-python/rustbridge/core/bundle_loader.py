@@ -384,7 +384,7 @@ class BundleLoader:
 
     def get_build_info(self, bundle_path: str | Path) -> BuildInfo | None:
         """
-        Get build info from the manifest (v2.0+ bundles only).
+        Get top-level build info from the manifest.
 
         Args:
             bundle_path: Path to the .rbp bundle file.
@@ -394,6 +394,29 @@ class BundleLoader:
         """
         manifest = self.get_manifest(bundle_path)
         return manifest.build_info
+
+    def get_effective_build_info(
+        self,
+        bundle_path: str | Path,
+        platform: str | None = None,
+        variant: str = "release",
+    ) -> BuildInfo | None:
+        """
+        Get effective build info for a platform/variant (v1.1).
+
+        Variant-level overrides top-level.
+
+        Args:
+            bundle_path: Path to the .rbp bundle file.
+            platform: Platform string. Defaults to current platform.
+            variant: Variant name (e.g., "release").
+
+        Returns:
+            Effective BuildInfo, or None if neither set.
+        """
+        manifest = self.get_manifest(bundle_path)
+        platform = platform or self.get_current_platform()
+        return manifest.get_effective_build_info(platform, variant)
 
     def has_jni_bridge(self, bundle_path: str | Path) -> bool:
         """

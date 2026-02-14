@@ -13,7 +13,7 @@ A `.rbp` file is a ZIP archive containing:
 - Optional Software Bill of Materials (SBOM)
 - Optional bridge libraries
 
-**Bundle Version**: 1.0
+**Bundle Version**: 1.0 / 1.1
 
 ## Archive Structure
 
@@ -164,6 +164,10 @@ Each variant contains:
 | `library` | Yes | Relative path to the library within the bundle |
 | `checksum` | Yes | SHA256 checksum (format: `sha256:hexdigest`) |
 | `build` | No | Build metadata (flexible JSON object) |
+| `build_info` | No | Variant-level build info (v1.1, overrides top-level) |
+| `sbom` | No | Variant-level SBOM paths (v1.1, overrides top-level) |
+| `schema_checksum` | No | Variant-level schema checksum (v1.1, overrides top-level) |
+| `schemas` | No | Variant-level schema files (v1.1, overrides top-level) |
 
 ### Build Metadata (Flexible Schema)
 
@@ -801,6 +805,81 @@ go build -buildmode=c-shared -o libmyplugin.so
 # Create ZIP archive with correct structure
 ```
 
+## Bundle Version 1.1: Variant-Level Metadata
+
+Version 1.1 extends each variant with optional `build_info`, `sbom`, `schema_checksum`, and `schemas` fields. These override the corresponding top-level manifest values when present.
+
+### When is v1.1 Used?
+
+Version 1.1 is set automatically by `rustbridge bundle combine` when combining bundles from different build environments. Each source bundle's build provenance flows to its variants, since no single build produced the combined artifact.
+
+Single-build bundles created by `rustbridge pack` remain v1.0.
+
+### Resolution Rules
+
+When a loader needs `build_info` (or `sbom`, `schemas`, `schema_checksum`) for a specific platform/variant:
+
+1. Check the variant's own `build_info` field
+2. If absent, fall back to the top-level manifest `build_info`
+3. If both are absent, return `None`/`null`
+
+### Example: Combined Bundle Manifest
+
+```json
+{
+  "bundle_version": "1.1",
+  "plugin": {
+    "name": "my-plugin",
+    "version": "1.0.0"
+  },
+  "platforms": {
+    "linux-x86_64": {
+      "variants": {
+        "release": {
+          "library": "lib/linux-x86_64/release/libmyplugin.so",
+          "checksum": "sha256:abc123...",
+          "build_info": {
+            "built_by": "GitHub Actions (Linux runner)",
+            "built_at": "2026-02-14T10:00:00Z",
+            "host": "x86_64-unknown-linux-gnu",
+            "compiler": "rustc 1.90.0",
+            "git": {
+              "commit": "a1b2c3d4",
+              "branch": "main"
+            }
+          }
+        }
+      }
+    },
+    "darwin-aarch64": {
+      "variants": {
+        "release": {
+          "library": "lib/darwin-aarch64/release/libmyplugin.dylib",
+          "checksum": "sha256:def456...",
+          "build_info": {
+            "built_by": "GitHub Actions (macOS runner)",
+            "built_at": "2026-02-14T10:05:00Z",
+            "host": "aarch64-apple-darwin",
+            "compiler": "rustc 1.90.0",
+            "git": {
+              "commit": "a1b2c3d4",
+              "branch": "main"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Note: The top-level `build_info` is absent in combined bundles because no single build produced the combined artifact.
+
+### Backward Compatibility
+
+- v1.0 bundles are fully compatible: the new variant fields are absent, so loaders always fall back to top-level values.
+- Older loaders that don't understand v1.1 will ignore the new variant fields (per the forward compatibility rule below), but will reject `bundle_version: "1.1"` if they validate strictly. Updated loaders accept both "1.0" and "1.1".
+
 ## Version Compatibility
 
 ### Bundle Format Versions
@@ -808,11 +887,12 @@ go build -buildmode=c-shared -o libmyplugin.so
 | Version | Changes | Min rustbridge |
 |---------|---------|----------------|
 | 1.0 | Multi-variant support, build_info, SBOM, schema_checksum | 0.2.0 |
+| 1.1 | Variant-level build_info, sbom, schema_checksum, schemas | 0.9.2 |
 
 ### Forward Compatibility
 
 - Bundle loaders SHOULD ignore unknown fields in the manifest
-- Bundle loaders MUST reject bundles with unsupported `bundle_version`
+- Bundle loaders MUST accept both `"1.0"` and `"1.1"` as valid `bundle_version` values
 - Bundle loaders SHOULD warn about `min_rustbridge_version` mismatches
 
 ## Related Documentation

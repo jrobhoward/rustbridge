@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Bundle**: v1.1 format with variant-level `build_info`, `sbom`, `schema_checksum`, and `schemas` for per-platform build provenance in combined bundles
+- **Bundle**: `combine` CLI now propagates source bundle build metadata to each variant; `slim` preserves variant-level metadata
+- **Bundle**: `list --build --variants` displays variant-level build info
+- **Bundle**: Resolution methods (`get_effective_build_info`, etc.) in Java, C#, and Python loaders
 - **Erlang**: Erlang/OTP consumer via Port-based architecture (`rustbridge-erlang/` OTP application + `rustbridge-port-driver` Rust binary)
 - **Erlang**: JSON and binary transport, log forwarding to OTP `logger`, bundle loading with signature verification
 - **Erlang**: EUnit and Common Test suites with full integration tests against hello-plugin

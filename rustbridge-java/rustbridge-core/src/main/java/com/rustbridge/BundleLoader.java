@@ -209,12 +209,24 @@ public class BundleLoader implements AutoCloseable {
     }
 
     /**
-     * Get build info from the manifest (v2.0+ bundles only).
+     * Get top-level build info from the manifest.
      *
      * @return build info, or null if not present
      */
     public @Nullable BundleManifest.BuildInfo getBuildInfo() {
         return manifest.buildInfo;
+    }
+
+    /**
+     * Get the effective build info for a platform/variant (v1.1).
+     * Variant-level overrides top-level.
+     *
+     * @param platform platform string (e.g., "linux-x86_64")
+     * @param variant  variant name (e.g., "release")
+     * @return effective build info, or null if neither set
+     */
+    public @Nullable BundleManifest.BuildInfo getBuildInfo(@NotNull String platform, @NotNull String variant) {
+        return manifest.getEffectiveBuildInfo(platform, variant);
     }
 
     /**
@@ -661,14 +673,22 @@ public class BundleLoader implements AutoCloseable {
         /**
          * Variant-specific library information.
          *
-         * @param library  path to the library file within the bundle
-         * @param checksum SHA256 checksum of the library
-         * @param build    optional build metadata (profile, opt_level, features, etc.)
+         * @param library         path to the library file within the bundle
+         * @param checksum        SHA256 checksum of the library
+         * @param build           optional build metadata (profile, opt_level, features, etc.)
+         * @param buildInfo       variant-level build info (v1.1, overrides top-level)
+         * @param sbom            variant-level SBOM paths (v1.1, overrides top-level)
+         * @param schemaChecksum  variant-level schema checksum (v1.1, overrides top-level)
+         * @param schemas         variant-level schemas (v1.1, overrides top-level)
          */
         public record VariantInfo(
                 String library,
                 String checksum,
-                Object build
+                Object build,
+                @JsonProperty("build_info") BuildInfo buildInfo,
+                Sbom sbom,
+                @JsonProperty("schema_checksum") String schemaChecksum,
+                Map<String, SchemaInfo> schemas
         ) {}
 
         /**
@@ -796,6 +816,69 @@ public class BundleLoader implements AutoCloseable {
                 String cyclonedx,
                 String spdx
         ) {}
+
+        /**
+         * Get the effective build info for a platform/variant (v1.1).
+         * Variant-level overrides top-level.
+         *
+         * @param platform platform string (e.g., "linux-x86_64")
+         * @param variant  variant name (e.g., "release")
+         * @return effective build info, or null if neither set
+         */
+        public BuildInfo getEffectiveBuildInfo(String platform, String variant) {
+            if (platforms != null) {
+                PlatformInfo pi = platforms.get(platform);
+                if (pi != null && pi.variants() != null) {
+                    VariantInfo vi = pi.variants().get(variant);
+                    if (vi != null && vi.buildInfo() != null) {
+                        return vi.buildInfo();
+                    }
+                }
+            }
+            return buildInfo;
+        }
+
+        /**
+         * Get the effective SBOM for a platform/variant (v1.1).
+         * Variant-level overrides top-level.
+         *
+         * @param platform platform string (e.g., "linux-x86_64")
+         * @param variant  variant name (e.g., "release")
+         * @return effective SBOM, or null if neither set
+         */
+        public Sbom getEffectiveSbom(String platform, String variant) {
+            if (platforms != null) {
+                PlatformInfo pi = platforms.get(platform);
+                if (pi != null && pi.variants() != null) {
+                    VariantInfo vi = pi.variants().get(variant);
+                    if (vi != null && vi.sbom() != null) {
+                        return vi.sbom();
+                    }
+                }
+            }
+            return sbom;
+        }
+
+        /**
+         * Get the effective schemas for a platform/variant (v1.1).
+         * Variant-level overrides top-level.
+         *
+         * @param platform platform string (e.g., "linux-x86_64")
+         * @param variant  variant name (e.g., "release")
+         * @return effective schemas map
+         */
+        public Map<String, SchemaInfo> getEffectiveSchemas(String platform, String variant) {
+            if (platforms != null) {
+                PlatformInfo pi = platforms.get(platform);
+                if (pi != null && pi.variants() != null) {
+                    VariantInfo vi = pi.variants().get(variant);
+                    if (vi != null && vi.schemas() != null && !vi.schemas().isEmpty()) {
+                        return vi.schemas();
+                    }
+                }
+            }
+            return schemas != null ? schemas : new HashMap<>();
+        }
 
     }
 }

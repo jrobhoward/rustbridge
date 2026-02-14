@@ -188,9 +188,21 @@ public sealed class BundleLoader : IDisposable
     }
 
     /// <summary>
-    /// Get build info from the manifest (v2.0+ bundles only).
+    /// Get top-level build info from the manifest.
     /// </summary>
     public BundleManifest.BuildInfo? BuildInfo => Manifest.BuildInfoData;
+
+    /// <summary>
+    /// Get the effective build info for a platform/variant (v1.1).
+    /// Variant-level overrides top-level.
+    /// </summary>
+    /// <param name="platform">Platform string (e.g., "linux-x86_64").</param>
+    /// <param name="variant">Variant name (e.g., "release").</param>
+    /// <returns>Effective build info, or null if neither set.</returns>
+    public BundleManifest.BuildInfo? GetBuildInfo(string platform, string variant)
+    {
+        return Manifest.GetEffectiveBuildInfo(platform, variant);
+    }
 
     /// <summary>
     /// Check if the bundle includes a JNI bridge library.

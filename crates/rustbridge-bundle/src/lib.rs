@@ -62,5 +62,8 @@ pub const BUNDLE_EXTENSION: &str = "rbp";
 /// Current bundle format version.
 pub const BUNDLE_VERSION: &str = "1.0";
 
+/// Bundle format version 1.1 (variant-level metadata).
+pub const BUNDLE_VERSION_1_1: &str = "1.1";
+
 /// Manifest file name within the bundle.
 pub const MANIFEST_FILE: &str = "manifest.json";

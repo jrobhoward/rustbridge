@@ -22,6 +22,18 @@ class VariantInfo:
     build: Any | None = None
     """Optional build metadata (profile, opt_level, features, etc.)."""
 
+    build_info: BuildInfo | None = None
+    """Variant-level build info (v1.1, overrides top-level)."""
+
+    sbom: Sbom | None = None
+    """Variant-level SBOM paths (v1.1, overrides top-level)."""
+
+    schema_checksum: str | None = None
+    """Variant-level schema checksum (v1.1, overrides top-level)."""
+
+    schemas: dict[str, SchemaInfo] = field(default_factory=dict)
+    """Variant-level schemas (v1.1, overrides top-level)."""
+
 
 @dataclass
 class PlatformInfo:
@@ -219,6 +231,67 @@ class BundleManifest:
 
         return cls.from_dict(data)
 
+    @staticmethod
+    def _parse_build_info(data: dict[str, Any] | None) -> BuildInfo | None:
+        """Parse a BuildInfo from a dictionary."""
+        if not data:
+            return None
+        git_info: GitInfo | None = None
+        git_data = data.get("git")
+        if git_data:
+            git_info = GitInfo(
+                commit=git_data.get("commit"),
+                branch=git_data.get("branch"),
+                tag=git_data.get("tag"),
+                dirty=git_data.get("dirty"),
+            )
+        return BuildInfo(
+            built_by=data.get("built_by"),
+            built_at=data.get("built_at"),
+            host=data.get("host"),
+            compiler=data.get("compiler"),
+            rustbridge_version=data.get("rustbridge_version"),
+            git=git_info,
+        )
+
+    @staticmethod
+    def _parse_sbom(data: dict[str, Any] | None) -> Sbom | None:
+        """Parse an Sbom from a dictionary."""
+        if not data:
+            return None
+        return Sbom(
+            cyclonedx=data.get("cyclonedx"),
+            spdx=data.get("spdx"),
+        )
+
+    @staticmethod
+    def _parse_schemas(data: dict[str, Any] | None) -> dict[str, SchemaInfo]:
+        """Parse schemas from a dictionary."""
+        if not data:
+            return {}
+        schemas: dict[str, SchemaInfo] = {}
+        for schema_name, schema_value in data.items():
+            schemas[schema_name] = SchemaInfo(
+                path=schema_value.get("path", ""),
+                checksum=schema_value.get("checksum", ""),
+                format=schema_value.get("format"),
+                description=schema_value.get("description"),
+            )
+        return schemas
+
+    @classmethod
+    def _parse_variant(cls, variant_value: dict[str, Any]) -> VariantInfo:
+        """Parse a VariantInfo from a dictionary, including v1.1 fields."""
+        return VariantInfo(
+            library=variant_value.get("library", ""),
+            checksum=variant_value.get("checksum", ""),
+            build=variant_value.get("build"),
+            build_info=cls._parse_build_info(variant_value.get("build_info")),
+            sbom=cls._parse_sbom(variant_value.get("sbom")),
+            schema_checksum=variant_value.get("schema_checksum"),
+            schemas=cls._parse_schemas(variant_value.get("schemas")),
+        )
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> BundleManifest:
         """
@@ -250,15 +323,11 @@ class BundleManifest:
         platforms_data = data.get("platforms", {})
         platforms: dict[str, PlatformInfo] = {}
         for platform_key, platform_value in platforms_data.items():
-            # Parse variants if present (v2.0+)
+            # Parse variants if present (v2.0+), including v1.1 fields
             variants: dict[str, VariantInfo] = {}
             variants_data = platform_value.get("variants", {})
             for variant_name, variant_value in variants_data.items():
-                variants[variant_name] = VariantInfo(
-                    library=variant_value.get("library", ""),
-                    checksum=variant_value.get("checksum", ""),
-                    build=variant_value.get("build"),
-                )
+                variants[variant_name] = cls._parse_variant(variant_value)
 
             platforms[platform_key] = PlatformInfo(
                 library=platform_value.get("library", ""),
@@ -280,46 +349,13 @@ class BundleManifest:
             )
 
         # Parse schemas
-        schemas: dict[str, SchemaInfo] = {}
-        schemas_data = data.get("schemas", {})
-        for schema_name, schema_value in schemas_data.items():
-            schemas[schema_name] = SchemaInfo(
-                path=schema_value.get("path", ""),
-                checksum=schema_value.get("checksum", ""),
-                format=schema_value.get("format"),
-                description=schema_value.get("description"),
-            )
+        schemas = cls._parse_schemas(data.get("schemas"))
 
         # Parse build info
-        build_info: BuildInfo | None = None
-        build_info_data = data.get("build_info")
-        if build_info_data:
-            git_info: GitInfo | None = None
-            git_data = build_info_data.get("git")
-            if git_data:
-                git_info = GitInfo(
-                    commit=git_data.get("commit"),
-                    branch=git_data.get("branch"),
-                    tag=git_data.get("tag"),
-                    dirty=git_data.get("dirty"),
-                )
-            build_info = BuildInfo(
-                built_by=build_info_data.get("built_by"),
-                built_at=build_info_data.get("built_at"),
-                host=build_info_data.get("host"),
-                compiler=build_info_data.get("compiler"),
-                rustbridge_version=build_info_data.get("rustbridge_version"),
-                git=git_info,
-            )
+        build_info = cls._parse_build_info(data.get("build_info"))
 
         # Parse SBOM
-        sbom: Sbom | None = None
-        sbom_data = data.get("sbom")
-        if sbom_data:
-            sbom = Sbom(
-                cyclonedx=sbom_data.get("cyclonedx"),
-                spdx=sbom_data.get("spdx"),
-            )
+        sbom = cls._parse_sbom(data.get("sbom"))
 
         # Parse bridges
         bridges: BridgeInfo | None = None
@@ -332,11 +368,7 @@ class BundleManifest:
                 variants: dict[str, VariantInfo] = {}
                 variants_data = platform_value.get("variants", {})
                 for variant_name, variant_value in variants_data.items():
-                    variants[variant_name] = VariantInfo(
-                        library=variant_value.get("library", ""),
-                        checksum=variant_value.get("checksum", ""),
-                        build=variant_value.get("build"),
-                    )
+                    variants[variant_name] = cls._parse_variant(variant_value)
 
                 jni_platforms[platform_key] = PlatformInfo(
                     library=platform_value.get("library", ""),
@@ -360,6 +392,69 @@ class BundleManifest:
             notices=data.get("notices"),
             bridges=bridges,
         )
+
+    def get_effective_build_info(
+        self, platform: str, variant: str = "release"
+    ) -> BuildInfo | None:
+        """Get effective build info for a platform/variant (v1.1).
+
+        Variant-level overrides top-level.
+
+        Args:
+            platform: Platform string (e.g., "linux-x86_64").
+            variant: Variant name (e.g., "release").
+
+        Returns:
+            Effective BuildInfo, or None if neither set.
+        """
+        pi = self.platforms.get(platform)
+        if pi and pi.variants:
+            vi = pi.variants.get(variant)
+            if vi and vi.build_info is not None:
+                return vi.build_info
+        return self.build_info
+
+    def get_effective_sbom(
+        self, platform: str, variant: str = "release"
+    ) -> Sbom | None:
+        """Get effective SBOM for a platform/variant (v1.1).
+
+        Variant-level overrides top-level.
+
+        Args:
+            platform: Platform string (e.g., "linux-x86_64").
+            variant: Variant name (e.g., "release").
+
+        Returns:
+            Effective Sbom, or None if neither set.
+        """
+        pi = self.platforms.get(platform)
+        if pi and pi.variants:
+            vi = pi.variants.get(variant)
+            if vi and vi.sbom is not None:
+                return vi.sbom
+        return self.sbom
+
+    def get_effective_schemas(
+        self, platform: str, variant: str = "release"
+    ) -> dict[str, SchemaInfo]:
+        """Get effective schemas for a platform/variant (v1.1).
+
+        Variant-level overrides top-level.
+
+        Args:
+            platform: Platform string (e.g., "linux-x86_64").
+            variant: Variant name (e.g., "release").
+
+        Returns:
+            Effective schemas dictionary.
+        """
+        pi = self.platforms.get(platform)
+        if pi and pi.variants:
+            vi = pi.variants.get(variant)
+            if vi and vi.schemas:
+                return vi.schemas
+        return self.schemas
 
     def get_platform(self, platform: str) -> PlatformInfo | None:
         """

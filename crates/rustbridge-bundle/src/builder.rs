@@ -415,6 +415,81 @@ impl BundleBuilder {
         Ok(())
     }
 
+    /// Set variant-level build info (v1.1).
+    ///
+    /// The variant must already exist for the given platform.
+    pub fn set_variant_build_info(
+        &mut self,
+        platform: Platform,
+        variant: &str,
+        build_info: crate::BuildInfo,
+    ) -> BundleResult<()> {
+        let variant_info = self.get_variant_mut(platform, variant)?;
+        variant_info.build_info = Some(build_info);
+        Ok(())
+    }
+
+    /// Set variant-level SBOM (v1.1).
+    pub fn set_variant_sbom(
+        &mut self,
+        platform: Platform,
+        variant: &str,
+        sbom: crate::Sbom,
+    ) -> BundleResult<()> {
+        let variant_info = self.get_variant_mut(platform, variant)?;
+        variant_info.sbom = Some(sbom);
+        Ok(())
+    }
+
+    /// Set variant-level schema checksum (v1.1).
+    pub fn set_variant_schema_checksum(
+        &mut self,
+        platform: Platform,
+        variant: &str,
+        checksum: String,
+    ) -> BundleResult<()> {
+        let variant_info = self.get_variant_mut(platform, variant)?;
+        variant_info.schema_checksum = Some(checksum);
+        Ok(())
+    }
+
+    /// Set variant-level schemas (v1.1).
+    pub fn set_variant_schemas(
+        &mut self,
+        platform: Platform,
+        variant: &str,
+        schemas: std::collections::HashMap<String, crate::SchemaInfo>,
+    ) -> BundleResult<()> {
+        let variant_info = self.get_variant_mut(platform, variant)?;
+        variant_info.schemas = schemas;
+        Ok(())
+    }
+
+    /// Get a mutable reference to a specific variant.
+    fn get_variant_mut(
+        &mut self,
+        platform: Platform,
+        variant: &str,
+    ) -> BundleResult<&mut crate::VariantInfo> {
+        let platform_info = self
+            .manifest
+            .platforms
+            .get_mut(platform.as_str())
+            .ok_or_else(|| {
+                BundleError::UnsupportedPlatform(format!(
+                    "Platform {} not in manifest",
+                    platform.as_str()
+                ))
+            })?;
+        platform_info
+            .variants
+            .get_mut(variant)
+            .ok_or_else(|| BundleError::VariantNotFound {
+                platform: platform.as_str().to_string(),
+                variant: variant.to_string(),
+            })
+    }
+
     /// Get the current manifest (for inspection).
     #[must_use]
     pub fn manifest(&self) -> &Manifest {

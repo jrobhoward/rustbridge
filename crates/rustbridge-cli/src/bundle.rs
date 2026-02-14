@@ -287,6 +287,10 @@ pub fn combine(
         checksum: String,
         build: Option<serde_json::Value>,
         bundle_idx: usize,
+        // v1.1: variant-level metadata resolved from source bundle
+        source_build_info: Option<rustbridge_bundle::BuildInfo>,
+        source_sbom: Option<rustbridge_bundle::Sbom>,
+        source_schema_checksum: Option<String>,
     }
 
     let mut library_entries: Vec<LibraryEntry> = Vec::new();
@@ -296,6 +300,17 @@ pub fn combine(
 
         for (platform_str, platform_info) in &manifest.platforms {
             for (variant_name, variant_info) in &platform_info.variants {
+                // Resolve effective metadata per-variant (variant-level if present, else source's top-level)
+                let source_build_info = manifest
+                    .get_effective_build_info(platform_str, variant_name)
+                    .cloned();
+                let source_sbom = manifest
+                    .get_effective_sbom(platform_str, variant_name)
+                    .cloned();
+                let source_schema_checksum = manifest
+                    .get_effective_schema_checksum(platform_str, variant_name)
+                    .map(String::from);
+
                 library_entries.push(LibraryEntry {
                     platform_str: platform_str.clone(),
                     variant_name: variant_name.clone(),
@@ -303,6 +318,9 @@ pub fn combine(
                     checksum: variant_info.checksum.clone(),
                     build: variant_info.build.clone(),
                     bundle_idx,
+                    source_build_info,
+                    source_sbom,
+                    source_schema_checksum,
                 });
             }
         }
@@ -340,8 +358,9 @@ pub fn combine(
         builder = builder.add_bytes(&archive_path, lib_contents);
 
         // Update manifest
+        let platform = Platform::parse(&entry.platform_str).unwrap();
         builder.manifest_mut().add_platform_variant(
-            Platform::parse(&entry.platform_str).unwrap(),
+            platform,
             &entry.variant_name,
             &archive_path,
             entry
@@ -350,6 +369,23 @@ pub fn combine(
                 .unwrap_or(&entry.checksum),
             entry.build,
         );
+
+        // Set variant-level metadata (v1.1)
+        if let Some(bi) = entry.source_build_info {
+            builder
+                .set_variant_build_info(platform, &entry.variant_name, bi)
+                .ok();
+        }
+        if let Some(sbom) = entry.source_sbom {
+            builder
+                .set_variant_sbom(platform, &entry.variant_name, sbom)
+                .ok();
+        }
+        if let Some(sc) = entry.source_schema_checksum {
+            builder
+                .set_variant_schema_checksum(platform, &entry.variant_name, sc)
+                .ok();
+        }
 
         // Track as added
         added_platforms
@@ -391,6 +427,11 @@ pub fn combine(
         }
     }
 
+    // Upgrade to v1.1 if any variant has variant-level metadata
+    if builder.manifest().has_variant_level_metadata() {
+        builder.manifest_mut().bundle_version = rustbridge_bundle::BUNDLE_VERSION_1_1.to_string();
+    }
+
     // Write the combined bundle
     builder
         .write(output_path)
@@ -426,9 +467,22 @@ pub fn slim(
     manifest.plugin.license = source_manifest.plugin.license.clone();
     manifest.plugin.repository = source_manifest.plugin.repository.clone();
 
+    // Preserve source bundle_version (don't downgrade "1.1" to "1.0")
+    manifest.bundle_version = source_manifest.bundle_version.clone();
+
     // Copy schema checksum if present
     if let Some(checksum) = source_manifest.get_schema_checksum() {
         manifest.set_schema_checksum(checksum.to_string());
+    }
+
+    // Copy top-level build_info if present
+    if let Some(bi) = source_manifest.get_build_info() {
+        manifest.set_build_info(bi.clone());
+    }
+
+    // Copy top-level SBOM if present
+    if let Some(sbom) = source_manifest.get_sbom() {
+        manifest.set_sbom(sbom.clone());
     }
 
     let mut builder = BundleBuilder::new(manifest);
@@ -469,8 +523,9 @@ pub fn slim(
             builder = builder.add_bytes(&archive_path, lib_contents);
 
             // Update manifest
+            let platform = Platform::parse(platform_str).unwrap();
             builder.manifest_mut().add_platform_variant(
-                Platform::parse(platform_str).unwrap(),
+                platform,
                 variant_name,
                 &archive_path,
                 variant_info
@@ -479,6 +534,28 @@ pub fn slim(
                     .unwrap_or(&variant_info.checksum),
                 variant_info.build.clone(),
             );
+
+            // Propagate variant-level metadata (v1.1)
+            if let Some(bi) = &variant_info.build_info {
+                builder
+                    .set_variant_build_info(platform, variant_name, bi.clone())
+                    .ok();
+            }
+            if let Some(sbom) = &variant_info.sbom {
+                builder
+                    .set_variant_sbom(platform, variant_name, sbom.clone())
+                    .ok();
+            }
+            if let Some(sc) = &variant_info.schema_checksum {
+                builder
+                    .set_variant_schema_checksum(platform, variant_name, sc.clone())
+                    .ok();
+            }
+            if !variant_info.schemas.is_empty() {
+                builder
+                    .set_variant_schemas(platform, variant_name, variant_info.schemas.clone())
+                    .ok();
+            }
 
             println!("  Included: {platform_str}:{variant_name}");
         }
@@ -590,6 +667,27 @@ pub fn list(bundle_path: &str, show_build: bool, show_variants: bool) -> Result<
                 println!("      Checksum: {}", variant_info.checksum);
                 if let Some(build) = &variant_info.build {
                     println!("      Build: {}", build);
+                }
+                if show_build && let Some(bi) = &variant_info.build_info {
+                    println!("      Build Info:");
+                    if let Some(built_by) = &bi.built_by {
+                        println!("        Built by: {built_by}");
+                    }
+                    if let Some(built_at) = &bi.built_at {
+                        println!("        Built at: {built_at}");
+                    }
+                    if let Some(host) = &bi.host {
+                        println!("        Host: {host}");
+                    }
+                    if let Some(compiler) = &bi.compiler {
+                        println!("        Compiler: {compiler}");
+                    }
+                    if let Some(git) = &bi.git {
+                        println!("        Git commit: {}", git.commit);
+                        if let Some(branch) = &git.branch {
+                            println!("        Git branch: {branch}");
+                        }
+                    }
                 }
             }
         } else {

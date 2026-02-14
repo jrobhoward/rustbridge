@@ -179,16 +179,28 @@ impl BundleLoader {
             .unwrap_or(false)
     }
 
-    /// Get the build info from the manifest.
+    /// Get the top-level build info from the manifest.
     #[must_use]
     pub fn build_info(&self) -> Option<&crate::BuildInfo> {
         self.manifest.get_build_info()
     }
 
-    /// Get the SBOM info from the manifest.
+    /// Get the top-level SBOM info from the manifest.
     #[must_use]
     pub fn sbom(&self) -> Option<&crate::Sbom> {
         self.manifest.get_sbom()
+    }
+
+    /// Get the effective build info for a platform/variant (variant-level overrides top-level).
+    #[must_use]
+    pub fn effective_build_info(&self, platform: &str, variant: &str) -> Option<&crate::BuildInfo> {
+        self.manifest.get_effective_build_info(platform, variant)
+    }
+
+    /// Get the effective SBOM for a platform/variant (variant-level overrides top-level).
+    #[must_use]
+    pub fn effective_sbom(&self, platform: &str, variant: &str) -> Option<&crate::Sbom> {
+        self.manifest.get_effective_sbom(platform, variant)
     }
 
     /// Extract the library for the current platform to a directory.
