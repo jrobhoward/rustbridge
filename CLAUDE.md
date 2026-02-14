@@ -164,6 +164,23 @@ python -m pytest tests/test_log_level.py -v         # Run tests matching pattern
 
 See [docs/TESTING_PYTHON.md](./docs/TESTING_PYTHON.md) for Python testing conventions.
 
+## Go Integration
+
+**Requires Go 1.21+ and a C compiler (for CGo).**
+
+The `rustbridge-go/` directory is a Go module that loads plugins via CGo + dlopen for direct in-process FFI calls.
+
+```bash
+# Go development (from rustbridge-go/)
+go test -v ./...                                    # Run all tests (requires hello-plugin)
+go test -run 'Test(LogLevel|Config|ResponseEnvelope)' ./...  # Unit tests only (no plugin)
+go test -bench=. -benchmem ./...                    # Run benchmarks
+make test                                           # Build plugin + run tests
+make bench                                          # Build plugin + run benchmarks
+```
+
+See [docs/TESTING_GO.md](./docs/TESTING_GO.md) for Go testing conventions.
+
 ## Rust Consumer Integration
 
 The `rustbridge-consumer` crate allows Rust applications to load and call rustbridge plugins.

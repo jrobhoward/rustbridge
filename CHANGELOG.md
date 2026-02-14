@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Go**: Go consumer via CGo + dlopen for direct in-process FFI (`rustbridge-go/` Go module)
+- **Go**: JSON transport via `Call()` and `CallTyped()`, binary transport via `CallRaw()`
+- **Go**: Log callback integration with `log/slog` adapter (`SlogLogHandler`)
+- **Go**: Functional options config pattern (`WithLogLevel`, `WithWorkerThreads`, etc.)
+- **Go**: Integration tests and benchmarks against hello-plugin
+- **Docs**: Go testing conventions (`docs/TESTING_GO.md`)
+
+### Changed
+- **Pre-commit**: Added Go change detection and `go test ./...` step to `pre-commit.sh`
+
 ## [0.9.1] - 2026-02-06
 
 ### Added
