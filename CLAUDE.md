@@ -171,7 +171,7 @@ See [docs/TESTING_PYTHON.md](./docs/TESTING_PYTHON.md) for Python testing conven
 
 The `rustbridge-erlang/` directory is an OTP application that communicates with plugins via an Erlang Port. A Rust binary (`rustbridge-port-driver`) bridges stdin/stdout to the plugin FFI.
 
-The `crates/rustbridge-port-driver/` crate is the Rust port driver binary.
+The `rustbridge-erlang/port-driver/` crate is the Rust port driver binary (outside the Cargo workspace for isolation).
 
 ```bash
 # Erlang development (from rustbridge-erlang/)
@@ -182,6 +182,23 @@ rebar3 ct --verbose                                 # Verbose integration tests
 ```
 
 See [docs/TESTING_ERLANG.md](./docs/TESTING_ERLANG.md) for Erlang testing conventions.
+
+## Go Integration
+
+**Requires Go 1.21+ and a C compiler (for CGo).**
+
+The `rustbridge-go/` directory is a Go module that loads plugins via CGo + dlopen for direct in-process FFI calls.
+
+```bash
+# Go development (from rustbridge-go/)
+go test -v ./...                                    # Run all tests (requires hello-plugin)
+go test -run 'Test(LogLevel|Config|ResponseEnvelope)' ./...  # Unit tests only (no plugin)
+go test -bench=. -benchmem ./...                    # Run benchmarks
+make test                                           # Build plugin + run tests
+make bench                                          # Build plugin + run benchmarks
+```
+
+See [docs/TESTING_GO.md](./docs/TESTING_GO.md) for Go testing conventions.
 
 ## Rust Consumer Integration
 
