@@ -131,11 +131,13 @@ jobs:
         run: cargo build --release -p hello-plugin
 
       - name: Run consumer integration tests
-        run: cargo test -p rustbridge-consumer -- --ignored
-        env:
-          LD_LIBRARY_PATH: ${{ github.workspace }}/target/release
-          DYLD_LIBRARY_PATH: ${{ github.workspace }}/target/release
-          PATH: ${{ github.workspace }}/target/release;${{ env.PATH }}
+        shell: bash
+        run: |
+          LIB_DIR="${GITHUB_WORKSPACE}/target/release"
+          export LD_LIBRARY_PATH="${LIB_DIR}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          export DYLD_LIBRARY_PATH="${LIB_DIR}${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
+          export PATH="${LIB_DIR}${PATH:+:$PATH}"
+          cargo test -p rustbridge-consumer -- --ignored
 
       - name: Run clippy
         run: cargo clippy --workspace --examples --tests -- -D warnings
