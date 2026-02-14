@@ -512,12 +512,27 @@ impl NativePluginLoader {
     ) -> ConsumerResult<NativePlugin> {
         let lib_name = library_filename(name);
 
-        // Search paths
-        let search_paths = [
+        // Search paths relative to CWD
+        let mut search_paths = vec![
             std::path::PathBuf::from("."),
             std::path::PathBuf::from("./target/release"),
             std::path::PathBuf::from("./target/debug"),
         ];
+
+        // During `cargo test`, CARGO_MANIFEST_DIR points to the crate root.
+        // Walk up to find the workspace target directory so load_by_name works
+        // regardless of which crate's tests are running.
+        if let Ok(manifest_dir) = std::env::var("CARGO_MANIFEST_DIR") {
+            let manifest_path = std::path::PathBuf::from(manifest_dir);
+            for ancestor in manifest_path.ancestors().skip(1) {
+                let release = ancestor.join("target").join("release");
+                if release.is_dir() {
+                    search_paths.push(release);
+                    search_paths.push(ancestor.join("target").join("debug"));
+                    break;
+                }
+            }
+        }
 
         for search_path in &search_paths {
             let full_path = search_path.join(&lib_name);
