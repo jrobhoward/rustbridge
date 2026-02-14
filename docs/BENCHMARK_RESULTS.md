@@ -5,7 +5,7 @@
 
 ## Executive Summary
 
-RustBridge supports three host languages (C#, Java, Python) with two transport options (JSON and binary). This document provides benchmark data to help you make informed decisions, but **don't let raw numbers drive premature optimization**.
+RustBridge supports four host languages (C#, Java, Go, Python) with two transport options (JSON and binary). This document provides benchmark data to help you make informed decisions, but **don't let raw numbers drive premature optimization**.
 
 ### The Bottom Line
 
@@ -29,6 +29,7 @@ RustBridge supports three host languages (C#, Java, Python) with two transport o
 | **macOS M1** | Python | 1.94 μs | 8.7 μs | 4.5x |
 | **Linux x86** | C# | 259 ns | 2.38 μs | 9.2x |
 | **Linux x86** | Java FFM | 366 ns | 2.20 μs | 6.0x |
+| **Linux x86** | Go (CGo) | 909 ns | 5.61 μs | 6.2x |
 | **Linux x86** | Python | 4.83 μs | 24.8 μs | 5.1x |
 | **Windows x86** | C# | 305 ns | 2.52 μs | 8.2x |
 | **Windows x86** | Java FFM | 667 ns | 3.26 μs | 4.9x |
@@ -39,7 +40,7 @@ RustBridge supports three host languages (C#, Java, Python) with two transport o
 1. **Apple Silicon is fast** - M1 achieves the lowest latencies across all languages
 2. **Linux outperforms Windows** on x86 by 15-45% depending on workload
 3. **Binary is 3-9x faster** than JSON, but this rarely matters in practice
-4. **C# achieves lowest latency**, Java FFM is competitive, Python is adequate for most uses
+4. **C# achieves lowest latency**, Java FFM is competitive, Go sits between Java and Python, Python is adequate for most uses
 
 ---
 
@@ -95,8 +96,12 @@ Comparing Linux and Windows on identical hardware (AMD Ryzen Threadripper 1950X)
 | C# | JSON | 2.38 μs | 2.52 μs | **6% faster** |
 | Java FFM | Binary | 366 ns | 667 ns | **45% faster** |
 | Java FFM | JSON | 2.20 μs | 3.26 μs | **33% faster** |
+| Go (CGo) | Binary | 909 ns | — | Linux only* |
+| Go (CGo) | JSON | 5.61 μs | — | Linux only* |
 | Python | Binary | 4.83 μs | 5.66 μs | **15% faster** |
 | Python | JSON | 24.8 μs | 27 μs | **8% faster** |
+
+\* Go benchmarks have only been run on Linux so far.
 
 **Analysis:**
 - Linux consistently outperforms Windows across all languages
@@ -113,6 +118,8 @@ Comparing x86-64 (Linux, Threadripper) vs ARM64 (macOS, M1):
 | C# | JSON | 2.38 μs | 1.08 μs | **55% faster** |
 | Java FFM | Binary | 366 ns | 384 ns | ~equal |
 | Java FFM | JSON | 2.20 μs | 1.28 μs | **42% faster** |
+| Go (CGo) | Binary | 909 ns | — | — |
+| Go (CGo) | JSON | 5.61 μs | — | — |
 | Python | Binary | 4.83 μs | 1.94 μs | **60% faster** |
 | Python | JSON | 24.8 μs | 8.7 μs | **65% faster** |
 
@@ -162,6 +169,27 @@ Java FFM provides excellent performance without JNI complexity. JDK version sign
 
 **Recommendation:** Use JDK 22+ for stable FFM APIs. JDK 25 provides measurable performance improvements.
 
+### Go (1.21+)
+
+Go uses CGo with dlopen/dlsym for direct in-process FFI calls. CGo overhead (~100 ns per call) places Go between Java FFM and Python. Binary transport avoids JSON marshaling and achieves sub-microsecond latency.
+
+| Platform | Binary | JSON | Memory (Binary) | Memory (JSON) |
+|----------|--------|------|-----------------|----------------|
+| Linux x86 | 909 ns | 5.61 μs | 104 B (2 allocs) | 512 B (11 allocs) |
+
+**Throughput (ops/s):**
+| Platform | Binary | JSON |
+|----------|--------|------|
+| Linux x86 | 1.10M | 178K |
+
+**Payload Size Impact:**
+| Payload | Latency | Memory |
+|---------|---------|--------|
+| Small (~30 B) | 5.61 μs | 512 B |
+| Medium (~1 KB) | 19.8 μs | 3,792 B |
+
+**Note:** Go's CGo boundary adds ~100 ns overhead per call compared to pure C FFI. The 11 allocations per JSON call come from string conversions, response envelope parsing, and Go heap copies. Binary transport reduces this to 2 allocations (response buffer copy + slice header).
+
 ### Python (3.10+)
 
 Python has the highest latency due to interpreter overhead, but remains practical for many use cases.
@@ -191,16 +219,17 @@ Python has the highest latency due to interpreter overhead, but remains practica
 |----------|----------|-----------|-------------|
 | C# | 7.9x | 9.2x | 8.2x |
 | Java FFM | 3.3x | 6.0x | 4.9x |
+| Go (CGo) | — | 6.2x | — |
 | Python | 4.5x | 5.1x | 4.8x |
 
-### Memory Allocation (C#)
+### Memory Allocation
 
-| Transport | Allocation per Call |
-|-----------|---------------------|
-| Binary | 40 B |
-| JSON | 688 B |
+| Language | Binary (per call) | JSON (per call) | Binary Savings |
+|----------|-------------------|-----------------|----------------|
+| C# | 40 B | 688 B | **17x less** |
+| Go | 104 B (2 allocs) | 512 B (11 allocs) | **5x less** |
 
-Binary allocates **17x less memory**, which matters for GC-sensitive applications.
+Lower allocations reduce GC pressure, which matters for latency-sensitive applications.
 
 ### When Binary Speedup Matters
 
@@ -224,6 +253,15 @@ Binary allocates **17x less memory**, which matters for GC-sensitive application
 | 4 | 2.37M | 1.06M |
 | 8 | 3.00M | 1.67M |
 
+### Go (Linux x86, 16 cores)
+
+| Benchmark | Latency (per op) | Throughput |
+|-----------|------------------|------------|
+| Sequential JSON | 5.61 μs | 178K ops/s |
+| Concurrent JSON (GOMAXPROCS=16) | 882 ns/op | 1.13M ops/s |
+
+Go's concurrent performance scales well with goroutines — concurrent throughput is **6.4x** higher than sequential, demonstrating effective use of the Rust plugin's thread-safe design.
+
 ### C# Concurrent (100 parallel tasks)
 
 | Platform | Binary | JSON | Binary Advantage |
@@ -242,6 +280,7 @@ Binary allocates **17x less memory**, which matters for GC-sensitive application
 |----------|-------------|-----|
 | Maximum performance | C# (.NET 8+) | Lowest latency, excellent ARM support |
 | Enterprise/Server | Java FFM (JDK 22+) | Mature ecosystem, good performance |
+| Systems/Infrastructure | Go 1.21+ | Low latency, excellent concurrency, single binary deployment |
 | Scripting/Automation | Python 3.10+ | Rapid development, adequate performance |
 | Cross-platform desktop | C# or Java | Both have excellent cross-platform support |
 
@@ -295,6 +334,13 @@ java --enable-native-access=ALL-UNNAMED \
 
 Note: For Java 21, add `--enable-preview`.
 
+### Go Benchmarks
+
+```bash
+cd rustbridge-go
+go test -bench=. -benchmem -count=3 ./...
+```
+
 ### Python Benchmarks
 
 ```bash
@@ -311,7 +357,7 @@ python -m pytest tests/test_benchmarks.py tests/test_binary_transport.py -v \
 ### Linux (x86-64)
 - **OS:** Ubuntu 24.04 LTS (kernel 6.8.0-90-generic)
 - **CPU:** AMD Ryzen Threadripper 1950X (16 cores)
-- **Runtimes:** .NET 8.0.22, JDK 25.0.2 (Azul Zulu), Python 3.12.3
+- **Runtimes:** .NET 8.0.22, JDK 25.0.2 (Azul Zulu), Go 1.25.6, Python 3.12.3
 
 ### Windows (x86-64)
 - **OS:** Windows 11 (10.0.26100.7623)
