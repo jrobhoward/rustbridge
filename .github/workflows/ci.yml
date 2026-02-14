@@ -71,6 +71,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-python-
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: rustbridge-go/go.sum
+
+      - name: Set up Erlang/OTP and rebar3
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: '27'
+          rebar3-version: '3.24'
+
       - name: Run pre-commit validation
         run: |
           chmod +x scripts/pre-commit.sh
@@ -86,6 +98,7 @@ jobs:
             rustbridge-java/**/build/test-results/**/*.xml
             rustbridge-java/**/build/reports/tests/**
             rustbridge-csharp/**/TestResults/**
+            rustbridge-erlang/_build/test/logs/**
           retention-days: 7
 
   # Test on multiple platforms
