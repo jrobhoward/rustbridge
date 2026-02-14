@@ -26,7 +26,7 @@ guide walks you through creating a plugin, packaging it, and running it from you
 Verify your installation:
 
 ```bash
-rustbridge --version  # Should show rustbridge 0.9.1 or later
+rustbridge --version  # Should show rustbridge 0.10.0 or later
 ```
 
 ---
@@ -153,7 +153,7 @@ Add to `Cargo.toml`:
 
 ```toml
 [dependencies]
-rustbridge-consumer = "0.9.1"
+rustbridge-consumer = "0.10.0"
 ```
 
 Update `src/main.rs`:

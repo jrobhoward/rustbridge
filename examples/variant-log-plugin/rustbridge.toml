@@ -1,6 +1,6 @@
 [plugin]
 name = "variant-log-plugin"
-version = "0.9.1"
+version = "0.10.0"
 description = "Example plugin that identifies its build variant for testing"
 authors = ["rustbridge team"]
 

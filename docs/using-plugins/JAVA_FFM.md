@@ -18,8 +18,8 @@ This guide walks you through using rustbridge plugins from Java using the Foreig
 
 ```kotlin
 dependencies {
-    implementation("com.rustbridge:rustbridge-core:0.9.1")
-    implementation("com.rustbridge:rustbridge-ffm:0.9.1")
+    implementation("com.rustbridge:rustbridge-core:0.10.0")
+    implementation("com.rustbridge:rustbridge-ffm:0.10.0")
 }
 ```
 
@@ -27,8 +27,8 @@ dependencies {
 
 ```groovy
 dependencies {
-    implementation 'com.rustbridge:rustbridge-core:0.9.1'
-    implementation 'com.rustbridge:rustbridge-ffm:0.9.1'
+    implementation 'com.rustbridge:rustbridge-core:0.10.0'
+    implementation 'com.rustbridge:rustbridge-ffm:0.10.0'
 }
 ```
 
@@ -39,12 +39,12 @@ dependencies {
     <dependency>
         <groupId>com.rustbridge</groupId>
         <artifactId>rustbridge-core</artifactId>
-        <version>0.9.1</version>
+        <version>0.10.0</version>
     </dependency>
     <dependency>
         <groupId>com.rustbridge</groupId>
         <artifactId>rustbridge-ffm</artifactId>
-        <version>0.9.1</version>
+        <version>0.10.0</version>
     </dependency>
 </dependencies>
 ```
