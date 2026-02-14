@@ -60,6 +60,7 @@ python -m pytest tests/test_log_level.py::test_log_level___debug___has_correct_v
 | Java | 21+ (22+ recommended) |
 | .NET | 8.0+ |
 | Python | 3.10+ |
+| Go | 1.21+ |
 | Erlang/OTP | 27+ |
 
 **Note**: Java 21 requires `--enable-preview` flag in addition to `--enable-native-access=ALL-UNNAMED`. Java 22+ only needs `--enable-native-access=ALL-UNNAMED`.
@@ -104,7 +105,7 @@ The workspace enforces `await_holding_lock = "deny"` to catch async violations a
 
 ## Testing Conventions
 
-See [docs/TESTING.md](./docs/TESTING.md), [docs/TESTING_KOTLIN.md](./docs/TESTING_KOTLIN.md), [docs/TESTING_JAVA.md](./docs/TESTING_JAVA.md), [docs/TESTING_CSHARP.md](./docs/TESTING_CSHARP.md).
+See [docs/TESTING.md](./docs/TESTING.md), [docs/TESTING_KOTLIN.md](./docs/TESTING_KOTLIN.md), [docs/TESTING_JAVA.md](./docs/TESTING_JAVA.md), [docs/TESTING_CSHARP.md](./docs/TESTING_CSHARP.md), [docs/TESTING_GO.md](./docs/TESTING_GO.md), [docs/TESTING_ERLANG.md](./docs/TESTING_ERLANG.md).
 
 **Key conventions:**
 - Test naming: `subjectUnderTest___condition___expectedResult` (triple underscores)

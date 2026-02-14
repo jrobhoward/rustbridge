@@ -300,6 +300,65 @@ fn call_plugin() -> ConsumerResult<String> {
 
 **Why not transfer ownership?** Shared libraries can use different allocators than the host executable. Memory allocated by the plugin's allocator must be freed by the same allocator. Attempting to free plugin-allocated memory with the consumer's allocator would cause undefined behavior (heap corruption, crashes).
 
+### Go (CGo)
+
+Go uses CGo with dlopen/dlsym. Data is copied across the CGo boundary; Go's garbage collector manages Go heap memory while Rust manages native heap memory.
+
+```mermaid
+sequenceDiagram
+    participant Go as Go (Go Heap)
+    participant CGo as CGo Boundary
+    participant Rust as Rust (Native Heap)
+
+    Go->>Go: request := json.Marshal(data)
+    Go->>CGo: C.plugin_call(handle, type_tag, request_ptr, len)
+    CGo->>Rust: FFI call
+    Rust->>Rust: Allocate response Vec
+    Rust-->>CGo: FfiBuffer struct
+    CGo->>Go: Copy response to Go []byte
+    Go->>CGo: C.plugin_free_buffer(&buffer)
+    CGo->>Rust: Drop Vec
+    Rust-->>CGo: Memory freed
+    Note over Go: Go []byte now independent
+```
+
+**Key Points:**
+- CGo copies data across the Go/C boundary automatically
+- Go GC manages all Go heap allocations
+- `plugin_free_buffer` called via deferred cleanup in `Call()`
+- Plugin implements `io.Closer` for resource cleanup
+- Thread-safe: internal RWMutex protects concurrent goroutine access
+
+### Erlang (Port)
+
+Erlang uses a **Port-based architecture** with no shared memory. The plugin runs in a separate OS process; data is serialized as JSON and sent via stdin/stdout pipes with `{packet, 4}` framing.
+
+```mermaid
+sequenceDiagram
+    participant BEAM as Erlang (BEAM Heap)
+    participant Port as Erlang Port (pipe)
+    participant Driver as Port Driver (Rust)
+    participant Plugin as Rust Plugin
+
+    BEAM->>BEAM: Encode request as JSON binary
+    BEAM->>Port: port_command(Port, LengthPrefixedJSON)
+    Port->>Driver: stdin pipe (4-byte length + JSON)
+    Driver->>Plugin: plugin_call(handle, type_tag, request)
+    Plugin->>Plugin: Process request
+    Plugin-->>Driver: FfiBuffer response
+    Driver->>Driver: JSON encode response
+    Driver-->>Port: stdout pipe (4-byte length + JSON)
+    Port-->>BEAM: {Port, {data, ResponseJSON}}
+    BEAM->>BEAM: Decode JSON to Erlang term
+```
+
+**Key Points:**
+- No shared memory between Erlang and Rust — complete process isolation
+- Each side manages its own heap independently (BEAM heap vs native heap)
+- Data serialized as JSON over pipes; no pointer sharing
+- Plugin crash does not take down the BEAM VM
+- Binary transport data is base64-encoded within the JSON wire protocol
+
 ## Binary Transport Memory
 
 Binary transport follows similar patterns but with struct pointers.

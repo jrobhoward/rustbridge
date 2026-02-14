@@ -5,3 +5,4 @@ erl_crash.dump
 *.beam
 *.ez
 priv/rustbridge-port-driver
+port-driver/target/

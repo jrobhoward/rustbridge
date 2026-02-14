@@ -4,7 +4,7 @@ This document describes the architecture of rustbridge, the design decisions mad
 
 ## Overview
 
-rustbridge is a framework for building Rust shared libraries callable from other programming languages (Java, Kotlin, C#, Python, and Rust). It provides a high-level abstraction over the C ABI, handling:
+rustbridge is a framework for building Rust shared libraries callable from other programming languages (Java, Kotlin, C#, Python, Go, Erlang, and Rust). It provides a high-level abstraction over the C ABI, handling:
 
 - OSGI-like plugin lifecycle management
 - Mandatory async runtime (Tokio) for all plugin code
@@ -61,6 +61,8 @@ flowchart TB
 | Java (FFM) | 21+ (22+ recommended) |
 | .NET | 8.0+ |
 | Python | 3.10+ |
+| Go | 1.21+ (Tier 2) |
+| Erlang/OTP | 27+ (Tier 2) |
 
 ## Crate Architecture
 
@@ -616,6 +618,56 @@ let plugin = NativePluginLoader::load_bundle_with_verification(
     None,   // use manifest's public key
 )?;
 ```
+
+### Go Integration (1.21+)
+
+Uses CGo with dlopen/dlsym for direct in-process FFI:
+
+| Module | Purpose |
+|--------|---------|
+| `rustbridge-go` | Go module with `Plugin`, `Load()`, `Call()`, `CallRaw()` |
+
+**Usage:**
+```go
+plugin, err := rustbridge.Load("libmyplugin.so")
+if err != nil {
+    log.Fatal(err)
+}
+defer plugin.Close()
+
+response, err := plugin.Call("echo", `{"message": "hello"}`)
+```
+
+Go provides goroutine-safe concurrent access (internal RWMutex), functional options configuration, and `log/slog` adapter for log callbacks.
+
+### Erlang Integration (OTP 27+)
+
+Uses a **Port-based architecture** — the plugin runs in a separate OS process and communicates via stdin/stdout with JSON wire protocol. This provides crash isolation (a plugin crash doesn't take down the BEAM VM) and natural OTP supervision.
+
+| Module | Purpose |
+|--------|---------|
+| `rustbridge_plugin` | gen_server wrapping Port communication |
+| `rustbridge_sup` | OTP supervisor for plugin processes |
+| `rustbridge-port-driver` | Rust binary bridging Port I/O to FFI |
+
+**Usage:**
+```erlang
+{ok, Plugin} = rustbridge_plugin:start_link("/path/to/libmyplugin.so",
+    #plugin_config{log_level = info}),
+{ok, Response} = rustbridge_plugin:call(Plugin, <<"echo">>, <<"{\"message\": \"hello\"}">>),
+rustbridge_plugin:shutdown(Plugin).
+```
+
+## Language Support Tiers
+
+| Tier | Languages | Support Level |
+|------|-----------|---------------|
+| **Tier 1** | Java, C#, Python | Full support, tested on Linux/macOS/Windows, prioritized for bug fixes |
+| **Tier 2** | Go, Erlang | Expected to work, tested on Linux, community contributions welcome, lower priority for bug fixes |
+
+**Tier 1** languages have complete CI coverage across all supported platforms, published integration tests, and are the primary focus for new features and bug fixes.
+
+**Tier 2** languages are expected to work and have documentation and tests, but not all OS + language permutations have been validated. Bug reports are welcome; fixes may be community-driven.
 
 ## Bundle Format (.rbp)
 

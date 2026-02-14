@@ -42,6 +42,8 @@ This directory contains the technical documentation for rustbridge.
 | [TESTING_KOTLIN.md](./TESTING_KOTLIN.md) | Kotlin testing conventions |
 | [TESTING_CSHARP.md](./TESTING_CSHARP.md) | C# testing conventions |
 | [TESTING_PYTHON.md](./TESTING_PYTHON.md) | Python testing conventions |
+| [TESTING_GO.md](./TESTING_GO.md) | Go testing conventions |
+| [TESTING_ERLANG.md](./TESTING_ERLANG.md) | Erlang testing conventions |
 | [TESTING_RUST_CONSUMER.md](./TESTING_RUST_CONSUMER.md) | Rust consumer testing conventions |
 
 ## Language-Specific Guides
@@ -55,6 +57,8 @@ This directory contains the technical documentation for rustbridge.
 | C# | [CSHARP.md](./using-plugins/CSHARP.md) | .NET 8.0+ |
 | Python | [PYTHON.md](./using-plugins/PYTHON.md) | Python 3.10+ |
 | Rust | [RUST.md](./using-plugins/RUST.md) | Rust 1.90+ |
+| Go | [GO.md](./using-plugins/GO.md) | Go 1.21+ (Tier 2) |
+| Erlang | [ERLANG.md](./using-plugins/ERLANG.md) | Erlang/OTP 27+ (Tier 2) |
 
 > **Rust consumers**: Use `cargo new` to create a standalone project and add `rustbridge-consumer` as a dependency.
 
@@ -87,3 +91,5 @@ Step-by-step tutorials for common tasks:
 | Java | 21+ (22+ recommended for FFM) |
 | .NET | 8.0+ |
 | Python | 3.10+ |
+| Go | 1.21+ (Tier 2) |
+| Erlang/OTP | 27+ (Tier 2) |

@@ -227,6 +227,8 @@ calculator with multiple message types:
 | C#         | [CSHARP.md](./using-plugins/CSHARP.md)                     |
 | Python     | [PYTHON.md](./using-plugins/PYTHON.md)                     |
 | Rust       | [RUST.md](./using-plugins/RUST.md)                         |
+| Go         | [GO.md](./using-plugins/GO.md) (Tier 2)                   |
+| Erlang     | [ERLANG.md](./using-plugins/ERLANG.md) (Tier 2)           |
 
 ### Learn More
 

@@ -223,6 +223,8 @@ fn handle_echo_raw(_handle: &PluginHandle, request: &[u8]) -> PluginResult<Vec<u
 
 ## Language-Specific Usage
 
+All in-process FFI languages (Java, C#, Python, Go, Rust) use JSON and binary transport directly. Erlang uses a Port-based architecture where JSON is the wire protocol between Erlang and the port driver process; binary transport data is base64-encoded within the JSON wire protocol.
+
 ### Java FFM (Java 21+)
 
 ```java

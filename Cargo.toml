@@ -1,5 +1,8 @@
 [workspace]
 resolver = "2"
+exclude = [
+    "rustbridge-erlang/port-driver",
+]
 members = [
     "crates/rustbridge",
     "crates/rustbridge-core",
@@ -11,7 +14,6 @@ members = [
     "crates/rustbridge-bundle",
     "crates/rustbridge-consumer",
     "crates/rustbridge-cli",
-    "crates/rustbridge-port-driver",
     "examples/hello-plugin",
     "examples/variant-log-plugin",
 ]

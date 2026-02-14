@@ -11,8 +11,11 @@ This guide covers loading and using rustbridge plugins from your application. Ch
 | **C#** | [CSHARP.md](./CSHARP.md) | .NET 8.0+ | P/Invoke-based loader |
 | **Python** | [PYTHON.md](./PYTHON.md) | Python 3.10+ | ctypes-based loader |
 | **Rust** | [RUST.md](./RUST.md) | Rust 1.90+ | `rustbridge-consumer` crate |
+| **Go** | [GO.md](./GO.md) | Go 1.21+ | CGo + dlopen (Tier 2) |
+| **Erlang** | [ERLANG.md](./ERLANG.md) | Erlang/OTP 27+ | Port-based architecture (Tier 2) |
 
 > **Note**: Rust consumers use the `rustbridge-consumer` crate. Create a new project with `cargo new` and add `rustbridge-consumer` as a dependency. Unlike other languages, Rust consumers should be standalone projects to avoid Cargo workspace conflicts.
+> **Note**: Go and Erlang are **Tier 2** languages — expected to work, tested on Linux, community contributions welcome.
 
 ## Quick Start
 
@@ -80,6 +83,30 @@ let response = plugin.call("echo", r#"{"message": "Hello"}"#)?;
 println!("{}", response);
 
 plugin.shutdown()?;
+```
+
+### Example (Go)
+
+```go
+plugin, err := rustbridge.Load("target/release/libmyplugin.so")
+if err != nil {
+    log.Fatal(err)
+}
+defer plugin.Close()
+
+response, err := plugin.Call("echo", `{"message": "Hello"}`)
+fmt.Println(response)
+```
+
+### Example (Erlang)
+
+```erlang
+{ok, Plugin} = rustbridge_plugin:start_link(
+    "/path/to/libmyplugin.so",
+    rustbridge_config:defaults()),
+{ok, Response} = rustbridge_plugin:call(Plugin, <<"echo">>, <<"{\"message\": \"Hello\"}">>),
+io:format("~s~n", [Response]),
+rustbridge_plugin:shutdown(Plugin).
 ```
 
 ## Core Concepts

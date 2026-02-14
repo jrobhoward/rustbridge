@@ -554,6 +554,122 @@ def test_call___unknown_message_type___raises_PluginException():
     plugin.close()
 ```
 
+## Go Error Handling
+
+### PluginError
+
+Errors from Rust become `*PluginError` in Go:
+
+```go
+import rustbridge "github.com/jrobhoward/rustbridge-go"
+
+plugin, err := rustbridge.Load("libmyplugin.so")
+if err != nil {
+    log.Fatal(err)
+}
+defer plugin.Close()
+
+response, err := plugin.Call("divide", `{"dividend": 10, "divisor": 0}`)
+if err != nil {
+    if pe, ok := rustbridge.IsPluginError(err); ok {
+        fmt.Printf("Plugin error %d: %s\n", pe.Code, pe.Message)
+
+        switch pe.Code {
+        case rustbridge.ErrorCodeUnknownMessageType:
+            fmt.Println("Invalid operation")
+        case rustbridge.ErrorCodeInternal:
+            fmt.Println("Internal plugin error")
+        case rustbridge.ErrorCodeConcurrencyLimit:
+            fmt.Println("Too busy, retry later")
+        default:
+            fmt.Printf("Unexpected error code: %d\n", pe.Code)
+        }
+    } else {
+        fmt.Printf("Non-plugin error: %v\n", err)
+    }
+}
+```
+
+### ErrorCode Constants
+
+Go provides typed `ErrorCode` constants matching the Rust error codes:
+
+| Constant | Code | Description |
+|----------|------|-------------|
+| `ErrorCodeSuccess` | 0 | Operation succeeded |
+| `ErrorCodeUnknownMessageType` | 6 | Unrecognized type_tag |
+| `ErrorCodeInternal` | 9 | Internal plugin error |
+| `ErrorCodePanic` | 11 | Rust code panicked |
+| `ErrorCodeTransportError` | 13 | Binary transport not supported |
+
+### Testing Go Error Paths
+
+```go
+func TestCall___unknownType___returnsPluginError(t *testing.T) {
+    plugin, err := rustbridge.Load(pluginPath)
+    require.NoError(t, err)
+    defer plugin.Close()
+
+    _, err = plugin.Call("nonexistent.type", "{}")
+
+    pe, ok := rustbridge.IsPluginError(err)
+    require.True(t, ok)
+    assert.Equal(t, rustbridge.ErrorCodeUnknownMessageType, pe.Code)
+}
+```
+
+## Erlang Error Handling
+
+### Error Tuples
+
+Errors from Rust are returned as `{error, {Code, Message}}` tuples:
+
+```erlang
+case rustbridge_plugin:call(Plugin, <<"divide">>, <<"{\"dividend\": 10, \"divisor\": 0}">>) of
+    {ok, Response} ->
+        io:format("Result: ~s~n", [Response]);
+    {error, {Code, Message}} ->
+        io:format("Error ~p: ~s~n", [Code, Message]),
+        case Code of
+            6 -> io:format("Unknown message type~n");
+            7 -> io:format("Handler error~n");
+            13 -> io:format("Too many concurrent requests~n");
+            _ -> io:format("Unexpected error~n")
+        end
+end.
+```
+
+### Pattern Matching
+
+Erlang's pattern matching makes error handling natural:
+
+```erlang
+handle_plugin_call(Plugin, TypeTag, Request) ->
+    case rustbridge_plugin:call(Plugin, TypeTag, Request) of
+        {ok, Response} ->
+            {ok, jsx:decode(Response)};
+        {error, {6, _}} ->
+            {error, unknown_message_type};
+        {error, {7, Msg}} ->
+            {error, {handler_error, Msg}};
+        {error, {_Code, Msg}} ->
+            {error, {plugin_error, Msg}}
+    end.
+```
+
+### Testing Erlang Error Paths
+
+```erlang
+call___unknown_message_type___returns_error_tuple_test() ->
+    {ok, Plugin} = rustbridge_plugin:start_link(PluginPath,
+        rustbridge_config:defaults()),
+
+    Result = rustbridge_plugin:call(Plugin, <<"nonexistent.type">>, <<"{}">>),
+
+    ?assertMatch({error, {6, _}}, Result),
+    rustbridge_plugin:stop(Plugin).
+```
+
 ## Testing Error Scenarios
 
 ### Testing Rust Error Paths

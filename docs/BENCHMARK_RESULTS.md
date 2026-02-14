@@ -1,7 +1,7 @@
 # RustBridge Benchmark Results
 
 **Version:** 0.9.1
-**Updated:** 2026-02-01
+**Updated:** 2026-02-13
 
 ## Executive Summary
 
@@ -29,7 +29,7 @@ RustBridge supports five host languages (C#, Java, Go, Python, Erlang) with two 
 | **macOS M1** | Python | 1.94 μs | 8.7 μs | 4.5x |
 | **Linux x86** | C# | 259 ns | 2.38 μs | 9.2x |
 | **Linux x86** | Java FFM | 366 ns | 2.20 μs | 6.0x |
-| **Linux x86** | Go (CGo) | 909 ns | 5.61 μs | 6.2x |
+| **Linux x86** | Go (CGo) | 862 ns | 5.68 μs | 6.6x |
 | **Linux x86** | Python | 4.83 μs | 24.8 μs | 5.1x |
 | **Linux x86** | Erlang (Port) | 25.6 μs | 36.7 μs | 1.4x |
 | **Windows x86** | C# | 305 ns | 2.52 μs | 8.2x |
@@ -98,8 +98,8 @@ Comparing Linux and Windows on identical hardware (AMD Ryzen Threadripper 1950X)
 | C# | JSON | 2.38 μs | 2.52 μs | **6% faster** |
 | Java FFM | Binary | 366 ns | 667 ns | **45% faster** |
 | Java FFM | JSON | 2.20 μs | 3.26 μs | **33% faster** |
-| Go (CGo) | Binary | 909 ns | — | Linux only* |
-| Go (CGo) | JSON | 5.61 μs | — | Linux only* |
+| Go (CGo) | Binary | 862 ns | — | Linux only* |
+| Go (CGo) | JSON | 5.68 μs | — | Linux only* |
 | Python | Binary | 4.83 μs | 5.66 μs | **15% faster** |
 | Python | JSON | 24.8 μs | 27 μs | **8% faster** |
 
@@ -120,8 +120,8 @@ Comparing x86-64 (Linux, Threadripper) vs ARM64 (macOS, M1):
 | C# | JSON | 2.38 μs | 1.08 μs | **55% faster** |
 | Java FFM | Binary | 366 ns | 384 ns | ~equal |
 | Java FFM | JSON | 2.20 μs | 1.28 μs | **42% faster** |
-| Go (CGo) | Binary | 909 ns | — | — |
-| Go (CGo) | JSON | 5.61 μs | — | — |
+| Go (CGo) | Binary | 862 ns | — | — |
+| Go (CGo) | JSON | 5.68 μs | — | — |
 | Python | Binary | 4.83 μs | 1.94 μs | **60% faster** |
 | Python | JSON | 24.8 μs | 8.7 μs | **65% faster** |
 
@@ -177,18 +177,18 @@ Go uses CGo with dlopen/dlsym for direct in-process FFI calls. CGo overhead (~10
 
 | Platform | Binary | JSON | Memory (Binary) | Memory (JSON) |
 |----------|--------|------|-----------------|----------------|
-| Linux x86 | 909 ns | 5.61 μs | 104 B (2 allocs) | 512 B (11 allocs) |
+| Linux x86 | 862 ns | 5.68 μs | 104 B (2 allocs) | 512 B (11 allocs) |
 
 **Throughput (ops/s):**
 | Platform | Binary | JSON |
 |----------|--------|------|
-| Linux x86 | 1.10M | 178K |
+| Linux x86 | 1.16M | 176K |
 
 **Payload Size Impact:**
 | Payload | Latency | Memory |
 |---------|---------|--------|
-| Small (~30 B) | 5.61 μs | 512 B |
-| Medium (~1 KB) | 19.8 μs | 3,792 B |
+| Small (~30 B) | 5.68 μs | 512 B |
+| Medium (~1 KB) | 19.6 μs | 3,792 B |
 
 **Note:** Go's CGo boundary adds ~100 ns overhead per call compared to pure C FFI. The 11 allocations per JSON call come from string conversions, response envelope parsing, and Go heap copies. Binary transport reduces this to 2 allocations (response buffer copy + slice header).
 
@@ -251,7 +251,7 @@ This is a deliberate trade-off: the Port approach gives crash isolation (a plugi
 |----------|----------|-----------|-------------|
 | C# | 7.9x | 9.2x | 8.2x |
 | Java FFM | 3.3x | 6.0x | 4.9x |
-| Go (CGo) | — | 6.2x | — |
+| Go (CGo) | — | 6.6x | — |
 | Python | 4.5x | 5.1x | 4.8x |
 | Erlang (Port) | — | 1.4x | — |
 
@@ -290,10 +290,10 @@ Lower allocations reduce GC pressure, which matters for latency-sensitive applic
 
 | Benchmark | Latency (per op) | Throughput |
 |-----------|------------------|------------|
-| Sequential JSON | 5.61 μs | 178K ops/s |
-| Concurrent JSON (GOMAXPROCS=16) | 882 ns/op | 1.13M ops/s |
+| Sequential JSON | 5.68 μs | 176K ops/s |
+| Concurrent JSON (GOMAXPROCS=16) | 1.07 μs/op | 939K ops/s |
 
-Go's concurrent performance scales well with goroutines — concurrent throughput is **6.4x** higher than sequential, demonstrating effective use of the Rust plugin's thread-safe design.
+Go's concurrent performance scales well with goroutines — concurrent throughput is **5.3x** higher than sequential, demonstrating effective use of the Rust plugin's thread-safe design.
 
 ### C# Concurrent (100 parallel tasks)
 
@@ -400,7 +400,7 @@ Results are printed in the Common Test log output. The port driver and hello-plu
 ### Linux (x86-64)
 - **OS:** Ubuntu 24.04 LTS (kernel 6.8.0-90-generic)
 - **CPU:** AMD Ryzen Threadripper 1950X (16 cores)
-- **Runtimes:** .NET 8.0.22, JDK 25.0.2 (Azul Zulu), Go 1.25.6, Python 3.12.3
+- **Runtimes:** .NET 8.0.22, JDK 25.0.2 (Azul Zulu), Go 1.25.6, Python 3.12.3, Erlang/OTP 27
 
 ### Windows (x86-64)
 - **OS:** Windows 11 (10.0.26100.7623)

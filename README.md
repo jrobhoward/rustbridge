@@ -6,14 +6,15 @@
 [![Java](https://img.shields.io/badge/java-21%2B-red.svg)](https://openjdk.org)
 [![.NET](https://img.shields.io/badge/.NET-8.0%2B-purple.svg)](https://dotnet.microsoft.com)
 [![Python](https://img.shields.io/badge/python-3.10%2B-green.svg)](https://www.python.org)
+[![Go](https://img.shields.io/badge/go-1.21%2B_(tier--2)-lightblue.svg)](https://go.dev)
+[![Erlang](https://img.shields.io/badge/erlang%2FOTP-27%2B_(tier--2)-lightblue.svg)](https://www.erlang.org)
 
 > [!NOTE]
 > **Approaching 1.0** — Core components (bundle format, JSON transport, language bindings) should be stable. It's not
 > yet published to package registries (e.g. Maven Central, NuGet, PyPI), so rustbridge consumer libraries must be
 > installed from source.
 
-**rustbridge** lets you write shared library plugins in Rust that can be called from Java, Kotlin, C#, Python, or another version of Rust —without dealing with
-the C ABI directly.
+**rustbridge** lets you write shared library plugins in Rust that can be called from Java, Kotlin, C#, Python, Go, Erlang, or another version of Rust — without dealing with the C ABI directly.
 
 ## The Problem
 
@@ -82,7 +83,7 @@ rustbridge handles the messy bits. You get:
 
 - **High-level JSON, native Rust speed** — Work with serde types, not raw pointers
 - **Stable C ABI** — Plugins work regardless of your Rust compiler version or optimization flags
-- **One plugin, many languages** — Same binary called from Java, Kotlin, C#, or Python
+- **One plugin, many languages** — Same binary called from Java, Kotlin, C#, Python, Go, or Erlang
 - **Production-ready bundles** — Code signing, SBOM, checksums, multi-platform support
 - **Managed lifecycle** — Startup, shutdown, and logging callbacks built-in
 
@@ -187,9 +188,12 @@ first plugin and call it from Java
 | C#       | .NET 8.0+ | [docs/using-plugins/CSHARP.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/CSHARP.md)     |
 | Python   | 3.10+     | [docs/using-plugins/PYTHON.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/PYTHON.md)     |
 | Rust     | 1.90+     | [docs/using-plugins/RUST.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/RUST.md)         |
+| Go       | 1.21+     | [docs/using-plugins/GO.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/GO.md) (Tier 2)    |
+| Erlang   | OTP 27+   | [docs/using-plugins/ERLANG.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/using-plugins/ERLANG.md) (Tier 2) |
 
 > **Note**: Java 21 users must add `--enable-preview` flag. It works, but Java 22+ is recommended.
 > **Note**: Rust consumers must be created as separate projects with `cargo new` to avoid workspace conflicts.
+> **Note**: Go and Erlang are **Tier 2** — expected to work, tested on Linux, but not all OS permutations validated. See [Architecture](https://github.com/jrobhoward/rustbridge/blob/main/docs/ARCHITECTURE.md#language-support-tiers) for tier definitions.
 
 ## Install from Source
 

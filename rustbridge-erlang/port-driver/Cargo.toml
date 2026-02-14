@@ -1,0 +1,27 @@
+[package]
+name = "rustbridge-port-driver"
+description = "Erlang port driver for rustbridge plugins"
+version = "0.9.1"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/jrobhoward/rustbridge"
+rust-version = "1.90"
+
+[[bin]]
+name = "rustbridge-port-driver"
+path = "src/main.rs"
+
+[dependencies]
+rustbridge-consumer = { path = "../../crates/rustbridge-consumer" }
+rustbridge-core = { path = "../../crates/rustbridge-core" }
+
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+
+base64 = "0.22"
+
+[lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+await_holding_lock = "deny"
