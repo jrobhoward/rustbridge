@@ -77,7 +77,10 @@ pub fn create(
         let temp_dir = tempfile::tempdir().context("Failed to create temp directory")?;
         let temp_header = temp_dir.path().join(header_name);
 
-        crate::header_gen::run(source_file, temp_header.to_str().unwrap(), false)
+        let temp_header_str = temp_header
+            .to_str()
+            .context("Temp header path is not valid UTF-8")?;
+        crate::header_gen::run(source_file, temp_header_str, false)
             .with_context(|| format!("Failed to generate C header from {source_file}"))?;
 
         // Add the generated header to the bundle
@@ -336,7 +339,7 @@ pub fn combine(
                 "Duplicate platform/variant: {}:{} (in {} and {})",
                 entry.platform_str,
                 entry.variant_name,
-                variants.get(&entry.variant_name).unwrap(),
+                variants[&entry.variant_name],
                 bundle_paths[entry.bundle_idx]
             );
         }
@@ -347,7 +350,7 @@ pub fn combine(
         // Determine archive path in combined bundle
         let file_name = Path::new(&entry.library_path)
             .file_name()
-            .unwrap()
+            .with_context(|| format!("No file name in library path: {}", entry.library_path))?
             .to_string_lossy();
         let archive_path = format!(
             "lib/{}/{}/{}",
@@ -358,7 +361,8 @@ pub fn combine(
         builder = builder.add_bytes(&archive_path, lib_contents);
 
         // Update manifest
-        let platform = Platform::parse(&entry.platform_str).unwrap();
+        let platform = Platform::parse(&entry.platform_str)
+            .with_context(|| format!("Unknown platform: {}", entry.platform_str))?;
         builder.manifest_mut().add_platform_variant(
             platform,
             &entry.variant_name,
@@ -510,14 +514,15 @@ pub fn slim(
             let lib_contents = loader.read_file(&variant_info.library)?;
             let file_name = Path::new(&variant_info.library)
                 .file_name()
-                .unwrap()
+                .with_context(|| format!("No file name in library path: {}", variant_info.library))?
                 .to_string_lossy();
             let archive_path = format!("lib/{platform_str}/{variant_name}/{file_name}");
 
             builder = builder.add_bytes(&archive_path, lib_contents);
 
             // Update manifest
-            let platform = Platform::parse(platform_str).unwrap();
+            let platform = Platform::parse(platform_str)
+                .with_context(|| format!("Unknown platform: {platform_str}"))?;
             builder.manifest_mut().add_platform_variant(
                 platform,
                 variant_name,
@@ -841,7 +846,7 @@ fn chrono_lite_now() -> String {
 
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
+        .unwrap_or_default()
         .as_secs();
 
     // Simple conversion - not perfectly accurate but good enough for timestamps

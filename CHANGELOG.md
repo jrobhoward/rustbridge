@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Erlang**: `terminate/2` sends best-effort shutdown command before closing port
 - **Erlang**: Added `handle_call` catch-all to prevent gen_server crash on unknown requests
 - **Rust CLI**: `bundle combine`/`slim` now propagate errors from variant metadata setters instead of silently discarding with `.ok()`
+- **Rust CLI**: Replace all production `unwrap()` calls in bundle operations with proper error handling
 - **Java/C#/Python**: Added missing `BuildInfo.custom` field and `getEffectiveSchemaChecksum` method
 - **Java/C#/Python**: Fixed stale `(v2.0+)` comments to `(v1.0+)`
 - **Docs**: Updated Go error code tables in `ERROR_HANDLING.md` and `GO.md` to match corrected constants
