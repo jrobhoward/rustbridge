@@ -16,6 +16,7 @@
     call_raw/3,
     call_raw/4,
     get_state/1,
+    get_rejected_count/1,
     set_log_level/2,
     shutdown/1,
     stop/1
@@ -100,6 +101,11 @@ get_state(PluginRef) ->
         {error, _} = Err -> Err
     end.
 
+%% @doc Get the number of requests rejected due to concurrency limits.
+-spec get_rejected_count(plugin_ref()) -> {ok, non_neg_integer()} | {error, term()}.
+get_rejected_count(PluginRef) ->
+    gen_server:call(PluginRef, get_rejected_count).
+
 %% @doc Set the plugin log level.
 -spec set_log_level(plugin_ref(), rustbridge_log:level()) -> ok | {error, term()}.
 set_log_level(PluginRef, Level) ->
@@ -169,6 +175,13 @@ handle_call({call_raw, MessageId, Data}, From, State) ->
 handle_call(get_state, From, State) ->
     {Id, State1} = next_id(State),
     Frame = rustbridge_protocol:encode_get_state(Id),
+    send_to_port(State1#state.port, Frame),
+    State2 = add_pending(State1, Id, From),
+    {noreply, State2};
+
+handle_call(get_rejected_count, From, State) ->
+    {Id, State1} = next_id(State),
+    Frame = rustbridge_protocol:encode_get_rejected_count(Id),
     send_to_port(State1#state.port, Frame),
     State2 = add_pending(State1, Id, From),
     {noreply, State2};

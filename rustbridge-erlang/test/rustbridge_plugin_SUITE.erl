@@ -15,6 +15,7 @@
     call___math_add___returns_sum/1,
     call___unknown_type___returns_error_code_6/1,
     get_state___after_load___returns_active/1,
+    get_rejected_count___default_config___returns_zero/1,
     shutdown___explicit___state_becomes_stopped/1,
     set_log_level___changes_level___returns_ok/1,
     concurrent_calls___multiple_processes___all_succeed/1,
@@ -30,6 +31,7 @@ all() ->
         call___math_add___returns_sum,
         call___unknown_type___returns_error_code_6,
         get_state___after_load___returns_active,
+        get_rejected_count___default_config___returns_zero,
         shutdown___explicit___state_becomes_stopped,
         set_log_level___changes_level___returns_ok,
         concurrent_calls___multiple_processes___all_succeed,
@@ -159,6 +161,13 @@ get_state___after_load___returns_active(Config) ->
     Plugin = ?config(plugin, Config),
 
     {ok, active} = rustbridge_plugin:get_state(Plugin).
+
+get_rejected_count___default_config___returns_zero(Config) ->
+    Plugin = ?config(plugin, Config),
+
+    {ok, Count} = rustbridge_plugin:get_rejected_count(Plugin),
+
+    0 = Count.
 
 shutdown___explicit___state_becomes_stopped(Config) ->
     Plugin = ?config(plugin, Config),

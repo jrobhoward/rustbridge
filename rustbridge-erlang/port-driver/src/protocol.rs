@@ -51,6 +51,10 @@ pub enum Command {
     #[serde(rename = "get_state")]
     GetState { id: u64 },
 
+    /// Get the number of requests rejected due to concurrency limits.
+    #[serde(rename = "get_rejected_count")]
+    GetRejectedCount { id: u64 },
+
     /// Set the plugin log level.
     #[serde(rename = "set_log_level")]
     SetLogLevel { id: u64, level: u8 },
@@ -69,6 +73,7 @@ impl Command {
             | Command::Call { id, .. }
             | Command::CallRaw { id, .. }
             | Command::GetState { id }
+            | Command::GetRejectedCount { id }
             | Command::SetLogLevel { id, .. }
             | Command::Shutdown { id } => *id,
         }
@@ -207,6 +212,16 @@ mod tests {
 
         assert_eq!(cmd.id(), 6);
         assert!(matches!(cmd, Command::SetLogLevel { level: 3, .. }));
+    }
+
+    #[test]
+    fn Command___get_rejected_count___deserializes_correctly() {
+        let json = r#"{"type": "get_rejected_count", "id": 9}"#;
+
+        let cmd: Command = serde_json::from_str(json).unwrap();
+
+        assert_eq!(cmd.id(), 9);
+        assert!(matches!(cmd, Command::GetRejectedCount { .. }));
     }
 
     #[test]

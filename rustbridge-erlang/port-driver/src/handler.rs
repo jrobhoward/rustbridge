@@ -55,6 +55,7 @@ impl Handler {
                 data,
             } => self.handle_call_raw(id, message_id, &data),
             Command::GetState { id } => self.handle_get_state(id),
+            Command::GetRejectedCount { id } => self.handle_get_rejected_count(id),
             Command::SetLogLevel { id, level } => self.handle_set_log_level(id, level),
             Command::Shutdown { id } => self.handle_shutdown(id),
         }
@@ -152,6 +153,14 @@ impl Handler {
         Ok(Response::ok(id, serde_json::Value::String(state_str)))
     }
 
+    fn handle_get_rejected_count(&mut self, id: u64) -> Result<Response, PortError> {
+        let plugin = self.plugin.as_ref().ok_or(PortError::PluginNotLoaded)?;
+
+        let count = plugin.rejected_request_count();
+
+        Ok(Response::ok(id, serde_json::json!(count)))
+    }
+
     fn handle_set_log_level(&mut self, id: u64, level: u8) -> Result<Response, PortError> {
         let plugin = self.plugin.as_ref().ok_or(PortError::PluginNotLoaded)?;
 
@@ -219,6 +228,17 @@ mod tests {
     fn dispatch___get_state_without_load___returns_plugin_not_loaded() {
         let mut handler = make_handler();
         let cmd = Command::GetState { id: 1 };
+
+        let resp = handler.dispatch(cmd);
+
+        assert_eq!(resp.status, "error");
+        assert_eq!(resp.error_code, Some(201));
+    }
+
+    #[test]
+    fn dispatch___get_rejected_count_without_load___returns_plugin_not_loaded() {
+        let mut handler = make_handler();
+        let cmd = Command::GetRejectedCount { id: 1 };
 
         let resp = handler.dispatch(cmd);
 

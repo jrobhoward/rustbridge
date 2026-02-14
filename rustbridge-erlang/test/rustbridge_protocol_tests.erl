@@ -70,6 +70,14 @@ encode_set_log_level___basic___produces_valid_json_test() ->
     ?assertEqual(7, maps:get(<<"id">>, Map)),
     ?assertEqual(3, maps:get(<<"level">>, Map)).
 
+encode_get_rejected_count___basic___produces_valid_json_test() ->
+    Bin = rustbridge_protocol:encode_get_rejected_count(10),
+
+    Map = json:decode(Bin),
+
+    ?assertEqual(<<"get_rejected_count">>, maps:get(<<"type">>, Map)),
+    ?assertEqual(10, maps:get(<<"id">>, Map)).
+
 encode_shutdown___basic___produces_valid_json_test() ->
     Bin = rustbridge_protocol:encode_shutdown(8),
 

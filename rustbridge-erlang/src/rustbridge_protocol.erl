@@ -8,6 +8,7 @@
     encode_call/3,
     encode_call_raw/3,
     encode_get_state/1,
+    encode_get_rejected_count/1,
     encode_set_log_level/2,
     encode_shutdown/1,
     decode_message/1
@@ -69,6 +70,14 @@ encode_call_raw(Id, MessageId, Data) ->
 encode_get_state(Id) ->
     Cmd = #{
         <<"type">> => <<"get_state">>,
+        <<"id">> => Id
+    },
+    iolist_to_binary(json:encode(Cmd)).
+
+-spec encode_get_rejected_count(non_neg_integer()) -> binary().
+encode_get_rejected_count(Id) ->
+    Cmd = #{
+        <<"type">> => <<"get_rejected_count">>,
         <<"id">> => Id
     },
     iolist_to_binary(json:encode(Cmd)).

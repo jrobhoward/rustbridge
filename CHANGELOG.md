@@ -15,11 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Erlang**: Erlang/OTP consumer via Port-based architecture (`rustbridge-erlang/` OTP application + `rustbridge-port-driver` Rust binary)
 - **Erlang**: JSON and binary transport, log forwarding to OTP `logger`, bundle loading with signature verification
 - **Erlang**: EUnit and Common Test suites with full integration tests against hello-plugin
+- **Erlang**: Rejected request count API (`get_rejected_count/1`) for concurrency limit monitoring
 - **Erlang**: Benchmark suite (`rustbridge_bench_SUITE`) measuring JSON, binary, and concurrent call latency
 - **Go**: Go consumer via CGo + dlopen for direct in-process FFI (`rustbridge-go/` Go module)
 - **Go**: JSON transport via `Call()` and `CallTyped()`, binary transport via `CallRaw()`
 - **Go**: Log callback integration with `log/slog` adapter (`SlogLogHandler`)
 - **Go**: Functional options config pattern (`WithLogLevel`, `WithWorkerThreads`, etc.)
+- **Go**: Bundle loading (`.rbp`) with SHA256 checksum verification and minisign signature verification
 - **Go**: Integration tests and benchmarks against hello-plugin
 - **Docs**: Erlang testing conventions (`docs/TESTING_ERLANG.md`)
 - **Docs**: Go testing conventions (`docs/TESTING_GO.md`)
