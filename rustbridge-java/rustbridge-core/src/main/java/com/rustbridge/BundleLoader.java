@@ -642,14 +642,14 @@ public class BundleLoader implements AutoCloseable {
         public Map<String, SchemaInfo> schemas; // Schema files in the bundle
 
         @JsonProperty("build_info")
-        public BuildInfo buildInfo; // Build metadata (v2.0+)
+        public BuildInfo buildInfo; // Build metadata (v1.0+)
 
-        public Sbom sbom; // SBOM information (v2.0+)
+        public Sbom sbom; // SBOM information (v1.0+)
 
         @JsonProperty("schema_checksum")
-        public String schemaChecksum; // Combined schema checksum for validation (v2.0+)
+        public String schemaChecksum; // Combined schema checksum for validation (v1.0+)
 
-        public String notices; // Path to license notices file in bundle (v2.0+)
+        public String notices; // Path to license notices file in bundle (v1.0+)
 
         /**
          * Plugin metadata information.
@@ -694,9 +694,9 @@ public class BundleLoader implements AutoCloseable {
         /**
          * Platform-specific library information with variant support.
          *
-         * <p>For v2.0 bundles, variants contain the actual library info.
-         * For v1.0 bundles (and v2.0 backward compat), library/checksum
-         * are populated directly.
+         * <p>Variants contain the actual library info.
+         * For backward compatibility, library/checksum
+         * are also populated directly at the platform level.
          *
          * @param library        path to the library file (backward compat / default variant)
          * @param checksum       SHA256 checksum of the library (backward compat / default variant)
@@ -796,6 +796,7 @@ public class BundleLoader implements AutoCloseable {
          * @param compiler          compiler version (e.g., "rustc 1.90.0")
          * @param rustbridgeVersion rustbridge CLI version
          * @param git               git repository info
+         * @param custom            custom key-value metadata
          */
         public record BuildInfo(
                 @JsonProperty("built_by") String builtBy,
@@ -803,7 +804,8 @@ public class BundleLoader implements AutoCloseable {
                 String host,
                 String compiler,
                 @JsonProperty("rustbridge_version") String rustbridgeVersion,
-                GitInfo git
+                GitInfo git,
+                Map<String, String> custom
         ) {}
 
         /**
@@ -816,6 +818,27 @@ public class BundleLoader implements AutoCloseable {
                 String cyclonedx,
                 String spdx
         ) {}
+
+        /**
+         * Get the effective schema checksum for a platform/variant (v1.1).
+         * Variant-level overrides top-level.
+         *
+         * @param platform platform string (e.g., "linux-x86_64")
+         * @param variant  variant name (e.g., "release")
+         * @return effective schema checksum, or empty if neither set
+         */
+        public Optional<String> getEffectiveSchemaChecksum(String platform, String variant) {
+            if (platforms != null) {
+                PlatformInfo pi = platforms.get(platform);
+                if (pi != null && pi.variants() != null) {
+                    VariantInfo vi = pi.variants().get(variant);
+                    if (vi != null && vi.schemaChecksum() != null) {
+                        return Optional.of(vi.schemaChecksum());
+                    }
+                }
+            }
+            return Optional.ofNullable(schemaChecksum);
+        }
 
         /**
          * Get the effective build info for a platform/variant (v1.1).

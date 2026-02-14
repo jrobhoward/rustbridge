@@ -31,6 +31,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tests**: Go rejected request count stress test (`WithMaxConcurrentOps(1)`)
 - **Tests**: Erlang bundle loading integration test (`load_bundle___hello_plugin___is_active`)
 
+### Fixed
+- **Go**: Error code constant names now match Rust `PluginError::error_code()` mapping (previously misnamed)
+- **Go**: `BundleLoader.Load()` no longer leaks temp directory on success
+- **Go**: TOCTOU race in `Call()`/`CallRaw()` — read lock now held across FFI calls
+- **Go**: `HasBinaryTransport()` now holds mutex; `IsPluginError()` uses `errors.As` for wrapped errors
+- **Go**: Added missing v1.1 manifest fields (`BuildInfo`, `Sbom`, `Schemas`, etc.) and `GetEffective*` methods
+- **Erlang**: `decode_message/1` no longer crashes on malformed JSON — returns `{error, ...}` tuple
+- **Erlang**: `get_state/1` uses `binary_to_atom/2` instead of `binary_to_existing_atom/2` to avoid `badarg`
+- **Erlang**: `terminate/2` sends best-effort shutdown command before closing port
+- **Erlang**: Added `handle_call` catch-all to prevent gen_server crash on unknown requests
+- **Rust CLI**: `bundle combine`/`slim` now propagate errors from variant metadata setters instead of silently discarding with `.ok()`
+- **Java/C#/Python**: Added missing `BuildInfo.custom` field and `getEffectiveSchemaChecksum` method
+- **Java/C#/Python**: Fixed stale `(v2.0+)` comments to `(v1.0+)`
+- **Docs**: Updated Go error code tables in `ERROR_HANDLING.md` and `GO.md` to match corrected constants
+- **Docs**: Added Go/Erlang sections to error handling ToC, `get_rejected_count` to Erlang monitoring docs
+- **Docs**: Updated `BUNDLE_FORMAT.md` to reflect v1.1 support; added Go/Erlang pointer to `GETTING_STARTED.md`
+
 ### Changed
 - **Pre-commit**: Added Erlang and Go change detection and test steps to `pre-commit.sh`
 

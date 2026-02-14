@@ -44,3 +44,6 @@ to_logger_level___warn___maps_to_warning_test() ->
 
 to_logger_level___error___maps_to_error_test() ->
     ?assertEqual(error, rustbridge_log:to_logger_level(error)).
+
+to_logger_level___off___returns_error_test() ->
+    ?assertEqual(error, rustbridge_log:to_logger_level(off)).

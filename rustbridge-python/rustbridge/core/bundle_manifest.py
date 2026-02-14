@@ -49,7 +49,7 @@ class PlatformInfo:
     """The default variant name (usually "release")."""
 
     variants: dict[str, VariantInfo] = field(default_factory=dict)
-    """Map of variant name to VariantInfo (v2.0+)."""
+    """Map of variant name to VariantInfo (v1.0+)."""
 
     def get_library(self, variant: str) -> str:
         """Get the effective library path for a variant."""
@@ -142,6 +142,9 @@ class BuildInfo:
     git: GitInfo | None = None
     """Git repository info."""
 
+    custom: dict[str, str] | None = None
+    """Custom key-value metadata."""
+
 
 @dataclass
 class Sbom:
@@ -196,16 +199,16 @@ class BundleManifest:
     """Schema files in the bundle."""
 
     build_info: BuildInfo | None = None
-    """Build metadata (v2.0+)."""
+    """Build metadata (v1.0+)."""
 
     sbom: Sbom | None = None
-    """SBOM information (v2.0+)."""
+    """SBOM information (v1.0+)."""
 
     schema_checksum: str | None = None
-    """Combined schema checksum for validation (v2.0+)."""
+    """Combined schema checksum for validation (v1.0+)."""
 
     notices: str | None = None
-    """Path to license notices file in bundle (v2.0+)."""
+    """Path to license notices file in bundle (v1.0+)."""
 
     bridges: BridgeInfo | None = None
     """Bridge libraries bundled with the plugin (e.g., JNI bridge)."""
@@ -245,6 +248,10 @@ class BundleManifest:
                 tag=git_data.get("tag"),
                 dirty=git_data.get("dirty"),
             )
+        custom_data = data.get("custom")
+        custom: dict[str, str] | None = None
+        if custom_data and isinstance(custom_data, dict):
+            custom = {str(k): str(v) for k, v in custom_data.items()}
         return BuildInfo(
             built_by=data.get("built_by"),
             built_at=data.get("built_at"),
@@ -252,6 +259,7 @@ class BundleManifest:
             compiler=data.get("compiler"),
             rustbridge_version=data.get("rustbridge_version"),
             git=git_info,
+            custom=custom,
         )
 
     @staticmethod
@@ -323,7 +331,7 @@ class BundleManifest:
         platforms_data = data.get("platforms", {})
         platforms: dict[str, PlatformInfo] = {}
         for platform_key, platform_value in platforms_data.items():
-            # Parse variants if present (v2.0+), including v1.1 fields
+            # Parse variants if present, including v1.1 fields
             variants: dict[str, VariantInfo] = {}
             variants_data = platform_value.get("variants", {})
             for variant_name, variant_value in variants_data.items():
@@ -413,6 +421,27 @@ class BundleManifest:
             if vi and vi.build_info is not None:
                 return vi.build_info
         return self.build_info
+
+    def get_effective_schema_checksum(
+        self, platform: str, variant: str = "release"
+    ) -> str | None:
+        """Get effective schema checksum for a platform/variant (v1.1).
+
+        Variant-level overrides top-level.
+
+        Args:
+            platform: Platform string (e.g., "linux-x86_64").
+            variant: Variant name (e.g., "release").
+
+        Returns:
+            Effective schema checksum, or None if neither set.
+        """
+        pi = self.platforms.get(platform)
+        if pi and pi.variants:
+            vi = pi.variants.get(variant)
+            if vi and vi.schema_checksum is not None:
+                return vi.schema_checksum
+        return self.schema_checksum
 
     def get_effective_sbom(
         self, platform: str, variant: str = "release"

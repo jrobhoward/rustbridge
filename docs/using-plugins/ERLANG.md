@@ -255,6 +255,10 @@ io:format("Completed ~B/~B calls~n", [OkCount, length(Results)]).
 {ok, State} = rustbridge_plugin:get_state(Plugin),
 %% Possible states: installed | starting | active | stopping | stopped | failed
 
+%% Check rejected request count
+{ok, Count} = rustbridge_plugin:get_rejected_count(Plugin),
+io:format("Rejected requests: ~p~n", [Count]).
+
 %% Monitor the plugin process (standard OTP)
 Ref = monitor(process, Plugin),
 receive {'DOWN', Ref, process, Plugin, Reason} ->

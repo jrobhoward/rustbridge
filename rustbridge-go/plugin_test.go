@@ -6,6 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"unsafe"
 )
 
 func TestLoad___DefaultConfig___StateIsActive(t *testing.T) {
@@ -276,5 +277,39 @@ func TestHasBinaryTransport___HelloPlugin___ReturnsTrue(t *testing.T) {
 
 	if !plugin.HasBinaryTransport() {
 		t.Error("HasBinaryTransport() = false, want true")
+	}
+}
+
+func TestCallRaw___AfterClose___ReturnsError(t *testing.T) {
+	path := findHelloPlugin(t)
+	plugin, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+	plugin.Close()
+
+	req := NewSmallRequest("test_key", 0)
+	_, err = plugin.CallRaw(MsgBenchSmall, unsafe.Pointer(&req), int(unsafe.Sizeof(req)))
+
+	if err == nil {
+		t.Fatal("expected error after Close")
+	}
+}
+
+func TestClose___CalledTwice___ReturnsNilSecondTime(t *testing.T) {
+	path := findHelloPlugin(t)
+	plugin, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+
+	err1 := plugin.Close()
+	err2 := plugin.Close()
+
+	if err1 != nil {
+		t.Errorf("first Close() returned error: %v", err1)
+	}
+	if err2 != nil {
+		t.Errorf("second Close() returned error: %v", err2)
 	}
 }

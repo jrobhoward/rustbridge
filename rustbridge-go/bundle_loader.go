@@ -75,6 +75,7 @@ func (bl *BundleLoader) Load(bundlePath string, pluginOpts ...Option) (*Plugin, 
 		return nil, err
 	}
 
+	plugin.cleanupDir = tmpDir
 	return plugin, nil
 }
 

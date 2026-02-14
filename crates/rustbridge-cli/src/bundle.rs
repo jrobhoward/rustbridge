@@ -372,19 +372,13 @@ pub fn combine(
 
         // Set variant-level metadata (v1.1)
         if let Some(bi) = entry.source_build_info {
-            builder
-                .set_variant_build_info(platform, &entry.variant_name, bi)
-                .ok();
+            builder.set_variant_build_info(platform, &entry.variant_name, bi)?;
         }
         if let Some(sbom) = entry.source_sbom {
-            builder
-                .set_variant_sbom(platform, &entry.variant_name, sbom)
-                .ok();
+            builder.set_variant_sbom(platform, &entry.variant_name, sbom)?;
         }
         if let Some(sc) = entry.source_schema_checksum {
-            builder
-                .set_variant_schema_checksum(platform, &entry.variant_name, sc)
-                .ok();
+            builder.set_variant_schema_checksum(platform, &entry.variant_name, sc)?;
         }
 
         // Track as added
@@ -537,24 +531,20 @@ pub fn slim(
 
             // Propagate variant-level metadata (v1.1)
             if let Some(bi) = &variant_info.build_info {
-                builder
-                    .set_variant_build_info(platform, variant_name, bi.clone())
-                    .ok();
+                builder.set_variant_build_info(platform, variant_name, bi.clone())?;
             }
             if let Some(sbom) = &variant_info.sbom {
-                builder
-                    .set_variant_sbom(platform, variant_name, sbom.clone())
-                    .ok();
+                builder.set_variant_sbom(platform, variant_name, sbom.clone())?;
             }
             if let Some(sc) = &variant_info.schema_checksum {
-                builder
-                    .set_variant_schema_checksum(platform, variant_name, sc.clone())
-                    .ok();
+                builder.set_variant_schema_checksum(platform, variant_name, sc.clone())?;
             }
             if !variant_info.schemas.is_empty() {
-                builder
-                    .set_variant_schemas(platform, variant_name, variant_info.schemas.clone())
-                    .ok();
+                builder.set_variant_schemas(
+                    platform,
+                    variant_name,
+                    variant_info.schemas.clone(),
+                )?;
             }
 
             println!("  Included: {platform_str}:{variant_name}");

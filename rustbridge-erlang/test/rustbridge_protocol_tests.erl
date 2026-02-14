@@ -157,3 +157,15 @@ decode_message___ok_response_with_null_data___returns_null_test() ->
     Result = rustbridge_protocol:decode_message(Json),
 
     ?assertEqual({response, 3, {ok, null}}, Result).
+
+decode_message___unknown_message_type___returns_error_test() ->
+    Json = iolist_to_binary(
+        json:encode(#{
+            <<"type">> => <<"unknown_type">>,
+            <<"id">> => 4
+        })
+    ),
+
+    Result = rustbridge_protocol:decode_message(Json),
+
+    ?assertMatch({error, {unknown_message_type, <<"unknown_type">>}}, Result).

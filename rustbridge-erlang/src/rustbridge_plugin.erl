@@ -97,7 +97,7 @@ call_raw(PluginRef, MessageId, Data, Timeout) ->
 get_state(PluginRef) ->
     case gen_server:call(PluginRef, get_state) of
         {ok, StateBin} when is_binary(StateBin) ->
-            {ok, binary_to_existing_atom(StateBin, utf8)};
+            {ok, binary_to_atom(StateBin, utf8)};
         {error, _} = Err ->
             Err
     end.
@@ -200,7 +200,9 @@ handle_call(shutdown, From, State) ->
     Frame = rustbridge_protocol:encode_shutdown(Id),
     send_to_port(State1#state.port, Frame),
     State2 = add_pending(State1, Id, From),
-    {noreply, State2}.
+    {noreply, State2};
+handle_call(_Request, _From, State) ->
+    {reply, {error, unknown_request}, State}.
 
 handle_cast(_Msg, State) ->
     {noreply, State}.
@@ -212,6 +214,9 @@ handle_info({Port, {data, Data}}, #state{port = Port} = State) ->
             {noreply, State1};
         {log, LogEntry} ->
             handle_log(State, LogEntry),
+            {noreply, State};
+        {error, Reason} ->
+            logger:warning("rustbridge: failed to decode port message: ~p", [Reason]),
             {noreply, State}
     end;
 handle_info({Port, {exit_status, _Code}}, #state{port = Port} = State) ->
@@ -223,8 +228,14 @@ handle_info(_Info, State) ->
 
 terminate(_Reason, #state{port = undefined}) ->
     ok;
-terminate(_Reason, #state{port = Port}) ->
-    %% Try to send shutdown, but don't wait for response
+terminate(_Reason, #state{port = Port, next_id = NextId}) ->
+    %% Best-effort: send shutdown command before closing port
+    try
+        ShutdownCmd = rustbridge_protocol:encode_shutdown(NextId),
+        port_command(Port, ShutdownCmd)
+    catch
+        _:_ -> ok
+    end,
     catch port_close(Port),
     ok.
 

@@ -36,7 +36,7 @@ func Load(libraryPath string, opts ...Option) (*Plugin, error) {
 	pluginPtr := ffiCreate(lib.fnCreate)
 	if pluginPtr == nil {
 		lib.close()
-		return nil, &PluginError{Code: ErrorCodeInitFailed, Message: "plugin_create returned null"}
+		return nil, &PluginError{Code: ErrorCodeInitializationFailed, Message: "plugin_create returned null"}
 	}
 
 	configJSON, err := cfg.toJSON()
@@ -54,7 +54,7 @@ func Load(libraryPath string, opts ...Option) (*Plugin, error) {
 	handle := ffiInit(lib.fnInit, pluginPtr, configJSON, logCallbackPtr)
 	if handle == nil {
 		lib.close()
-		return nil, &PluginError{Code: ErrorCodeInitFailed, Message: "plugin_init returned null"}
+		return nil, &PluginError{Code: ErrorCodeInitializationFailed, Message: "plugin_init returned null"}
 	}
 
 	return &Plugin{

@@ -40,11 +40,11 @@ func TestIsPluginError___OtherError___ReturnsFalse(t *testing.T) {
 
 func TestErrorCode___String___AllCodesHaveNames(t *testing.T) {
 	codes := []ErrorCode{
-		ErrorCodeSuccess, ErrorCodeInvalidHandle, ErrorCodeNotReady,
-		ErrorCodeConcurrencyLimit, ErrorCodeInvalidInput, ErrorCodeSerializationError,
-		ErrorCodeUnknownMessageType, ErrorCodeTimeout, ErrorCodeShutdown,
-		ErrorCodeInternal, ErrorCodeConfigError, ErrorCodePanic,
-		ErrorCodeInitFailed, ErrorCodeTransportError,
+		ErrorCodeSuccess, ErrorCodeInvalidState, ErrorCodeInitializationFailed,
+		ErrorCodeShutdownFailed, ErrorCodeConfigError, ErrorCodeSerializationError,
+		ErrorCodeUnknownMessageType, ErrorCodeHandlerError, ErrorCodeRuntimeError,
+		ErrorCodeCancelled, ErrorCodeTimeout, ErrorCodeInternal,
+		ErrorCodeFfiError, ErrorCodeTooManyRequests,
 	}
 
 	for _, code := range codes {

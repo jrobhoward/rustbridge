@@ -107,14 +107,18 @@ encode_shutdown(Id) ->
 
 -spec decode_message(binary()) ->
     {response, non_neg_integer(), {ok, term()} | {error, {integer(), binary()}}}
-    | {log, #log_entry{}}.
+    | {log, #log_entry{}}
+    | {error, term()}.
 decode_message(JsonBin) ->
-    Map = json:decode(JsonBin),
-    case maps:get(<<"type">>, Map) of
-        <<"response">> ->
-            decode_response(Map);
-        <<"log">> ->
-            decode_log(Map)
+    try
+        Map = json:decode(JsonBin),
+        case maps:get(<<"type">>, Map) of
+            <<"response">> -> decode_response(Map);
+            <<"log">> -> decode_log(Map);
+            Other -> {error, {unknown_message_type, Other}}
+        end
+    catch
+        _:_ -> {error, {decode_failed, JsonBin}}
     end.
 
 %% ---------------------------------------------------------------------------

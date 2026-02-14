@@ -360,7 +360,7 @@ This checksum is computed by hashing the concatenation of all schema file checks
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `bundle_version` | string | Bundle format version (currently "1.0") |
+| `bundle_version` | string | Bundle format version ("1.0" or "1.1") |
 | `plugin.name` | string | Plugin identifier (lowercase, hyphens allowed) |
 | `plugin.version` | string | Semantic version (e.g., "1.0.0") |
 | `platforms` | object | Map of platform keys to variant info |

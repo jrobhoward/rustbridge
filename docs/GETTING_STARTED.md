@@ -187,6 +187,12 @@ Run it:
 cargo run --release
 ```
 
+### Go and Erlang (Tier 2)
+
+Go and Erlang consumers are set up manually (no `rustbridge new` template). See the language-specific guides:
+- [Go Consumer Guide](./using-plugins/GO.md)
+- [Erlang Consumer Guide](./using-plugins/ERLANG.md)
+
 ---
 
 ## What Just Happened?

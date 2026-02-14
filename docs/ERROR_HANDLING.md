@@ -13,9 +13,11 @@ This guide covers error handling best practices for rustbridge plugins, from Rus
 7. [Java/Kotlin Error Handling](#javakotlin-error-handling)
 8. [C# Error Handling](#c-error-handling)
 9. [Python Error Handling](#python-error-handling)
-10. [Testing Error Scenarios](#testing-error-scenarios)
-11. [Best Practices](#best-practices)
-12. [Common Patterns](#common-patterns)
+10. [Go Error Handling](#go-error-handling)
+11. [Erlang Error Handling](#erlang-error-handling)
+12. [Testing Error Scenarios](#testing-error-scenarios)
+13. [Best Practices](#best-practices)
+14. [Common Patterns](#common-patterns)
 
 ## Overview
 
@@ -592,15 +594,24 @@ if err != nil {
 
 ### ErrorCode Constants
 
-Go provides typed `ErrorCode` constants matching the Rust error codes:
+Go provides typed `ErrorCode` constants matching the Rust `PluginError::error_code()` mapping:
 
 | Constant | Code | Description |
 |----------|------|-------------|
 | `ErrorCodeSuccess` | 0 | Operation succeeded |
+| `ErrorCodeInvalidState` | 1 | Plugin lifecycle state mismatch |
+| `ErrorCodeInitializationFailed` | 2 | Failed during initialization |
+| `ErrorCodeShutdownFailed` | 3 | Failed during shutdown |
+| `ErrorCodeConfigError` | 4 | Invalid configuration |
+| `ErrorCodeSerializationError` | 5 | JSON serialize/deserialize failed |
 | `ErrorCodeUnknownMessageType` | 6 | Unrecognized type_tag |
-| `ErrorCodeInternal` | 9 | Internal plugin error |
-| `ErrorCodePanic` | 11 | Rust code panicked |
-| `ErrorCodeTransportError` | 13 | Binary transport not supported |
+| `ErrorCodeHandlerError` | 7 | Business logic error |
+| `ErrorCodeRuntimeError` | 8 | Async runtime error |
+| `ErrorCodeCancelled` | 9 | Request was cancelled |
+| `ErrorCodeTimeout` | 10 | Request timed out |
+| `ErrorCodeInternal` | 11 | Internal framework error (or panic) |
+| `ErrorCodeFfiError` | 12 | FFI boundary error |
+| `ErrorCodeTooManyRequests` | 13 | Concurrency limit exceeded |
 
 ### Testing Go Error Paths
 

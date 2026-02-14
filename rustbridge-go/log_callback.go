@@ -15,6 +15,9 @@ import (
 // It is called from a CGo callback, so it must not block for extended periods.
 type LogHandler func(level LogLevel, target string, message string)
 
+// globalLogHandler is the process-wide log handler. There is only one global
+// log handler per process. If multiple plugins are loaded with different
+// handlers, only the last one takes effect.
 var (
 	globalLogHandler LogHandler
 	logHandlerMu     sync.RWMutex

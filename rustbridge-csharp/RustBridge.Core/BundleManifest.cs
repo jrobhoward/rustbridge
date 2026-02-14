@@ -38,25 +38,25 @@ public class BundleManifest
     public Dictionary<string, SchemaInfo>? Schemas { get; set; }
 
     /// <summary>
-    /// Build metadata (v2.0+).
+    /// Build metadata (v1.0+).
     /// </summary>
     [JsonPropertyName("build_info")]
     public BuildInfo? BuildInfoData { get; set; }
 
     /// <summary>
-    /// SBOM information (v2.0+).
+    /// SBOM information (v1.0+).
     /// </summary>
     [JsonPropertyName("sbom")]
     public Sbom? SbomData { get; set; }
 
     /// <summary>
-    /// Combined schema checksum for validation (v2.0+).
+    /// Combined schema checksum for validation (v1.0+).
     /// </summary>
     [JsonPropertyName("schema_checksum")]
     public string? SchemaChecksum { get; set; }
 
     /// <summary>
-    /// Path to license notices file in bundle (v2.0+).
+    /// Path to license notices file in bundle (v1.0+).
     /// </summary>
     [JsonPropertyName("notices")]
     public string? Notices { get; set; }
@@ -83,6 +83,24 @@ public class BundleManifest
             return vi.BuildInfoData;
         }
         return BuildInfoData;
+    }
+
+    /// <summary>
+    /// Get the effective schema checksum for a platform/variant (v1.1).
+    /// Variant-level overrides top-level.
+    /// </summary>
+    /// <param name="platform">Platform string (e.g., "linux-x86_64").</param>
+    /// <param name="variant">Variant name (e.g., "release").</param>
+    /// <returns>Effective schema checksum, or null if neither set.</returns>
+    public string? GetEffectiveSchemaChecksum(string platform, string variant)
+    {
+        if (Platforms != null && Platforms.TryGetValue(platform, out var pi)
+            && pi.Variants != null && pi.Variants.TryGetValue(variant, out var vi)
+            && vi.SchemaChecksum != null)
+        {
+            return vi.SchemaChecksum;
+        }
+        return SchemaChecksum;
     }
 
     /// <summary>
@@ -211,7 +229,7 @@ public class BundleManifest
         public string? DefaultVariant { get; set; }
 
         /// <summary>
-        /// Map of variant name to VariantInfo (v2.0+).
+        /// Map of variant name to VariantInfo (v1.0+).
         /// </summary>
         [JsonPropertyName("variants")]
         public Dictionary<string, VariantInfo>? Variants { get; set; }
@@ -358,6 +376,12 @@ public class BundleManifest
         /// </summary>
         [JsonPropertyName("git")]
         public GitInfo? Git { get; set; }
+
+        /// <summary>
+        /// Custom key-value metadata.
+        /// </summary>
+        [JsonPropertyName("custom")]
+        public Dictionary<string, string>? Custom { get; set; }
     }
 
     /// <summary>

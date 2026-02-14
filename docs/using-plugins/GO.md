@@ -215,19 +215,19 @@ if err != nil {
 | Code | Constant | Description |
 |------|----------|-------------|
 | 0 | `ErrorCodeSuccess` | No error |
-| 1 | `ErrorCodeInvalidHandle` | Invalid plugin handle |
-| 2 | `ErrorCodeNotReady` | Plugin not in Active state |
-| 3 | `ErrorCodeConcurrencyLimit` | Max concurrent ops exceeded |
-| 4 | `ErrorCodeInvalidInput` | Malformed request data |
+| 1 | `ErrorCodeInvalidState` | Plugin lifecycle state mismatch |
+| 2 | `ErrorCodeInitializationFailed` | Plugin initialization failed |
+| 3 | `ErrorCodeShutdownFailed` | Failed during shutdown |
+| 4 | `ErrorCodeConfigError` | Invalid configuration |
 | 5 | `ErrorCodeSerializationError` | JSON marshal/unmarshal failure |
 | 6 | `ErrorCodeUnknownMessageType` | Unrecognized type tag |
-| 7 | `ErrorCodeTimeout` | Operation timed out |
-| 8 | `ErrorCodeShutdown` | Plugin is shutting down |
-| 9 | `ErrorCodeInternal` | Internal plugin error |
-| 10 | `ErrorCodeConfigError` | Configuration error |
-| 11 | `ErrorCodePanic` | Rust panic caught at FFI boundary |
-| 12 | `ErrorCodeInitFailed` | Plugin initialization failed |
-| 13 | `ErrorCodeTransportError` | Binary transport error |
+| 7 | `ErrorCodeHandlerError` | Business logic error |
+| 8 | `ErrorCodeRuntimeError` | Async runtime error |
+| 9 | `ErrorCodeCancelled` | Request was cancelled |
+| 10 | `ErrorCodeTimeout` | Operation timed out |
+| 11 | `ErrorCodeInternal` | Internal framework error (or panic) |
+| 12 | `ErrorCodeFfiError` | FFI boundary error |
+| 13 | `ErrorCodeTooManyRequests` | Concurrency limit exceeded |
 
 ## Concurrent Usage
 

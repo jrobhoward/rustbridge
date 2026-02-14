@@ -3,6 +3,7 @@ package rustbridge
 import (
 	"encoding/json"
 	"errors"
+	"os"
 	"sync"
 	"unsafe"
 )
@@ -10,24 +11,23 @@ import (
 // Plugin represents a loaded and initialized rustbridge plugin.
 // All methods are safe for concurrent use from multiple goroutines.
 type Plugin struct {
-	lib    *nativeLibrary
-	handle unsafe.Pointer
-	closed bool
-	mu     sync.RWMutex
+	lib        *nativeLibrary
+	handle     unsafe.Pointer
+	closed     bool
+	mu         sync.RWMutex
+	cleanupDir string
 }
 
 // Call sends a JSON request to the plugin and returns the response payload as a JSON string.
 func (p *Plugin) Call(typeTag string, request string) (string, error) {
 	p.mu.RLock()
+	defer p.mu.RUnlock()
+
 	if p.closed {
-		p.mu.RUnlock()
 		return "", errors.New("plugin is closed")
 	}
-	lib := p.lib
-	handle := p.handle
-	p.mu.RUnlock()
 
-	data, errCode := ffiCall(lib.fnCall, lib.fnFreeBuffer, handle, typeTag, request)
+	data, errCode := ffiCall(p.lib.fnCall, p.lib.fnFreeBuffer, p.handle, typeTag, request)
 
 	if len(data) == 0 {
 		if errCode != 0 {
@@ -105,6 +105,13 @@ func (p *Plugin) RejectedRequestCount() uint64 {
 
 // HasBinaryTransport returns true if the plugin supports binary transport.
 func (p *Plugin) HasBinaryTransport() bool {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	if p.closed {
+		return false
+	}
+
 	return p.lib.hasBinaryTransport()
 }
 
@@ -122,6 +129,10 @@ func (p *Plugin) Close() error {
 
 	ffiShutdown(p.lib.fnShutdown, p.handle)
 	p.lib.close()
+
+	if p.cleanupDir != "" {
+		os.RemoveAll(p.cleanupDir)
+	}
 
 	return nil
 }

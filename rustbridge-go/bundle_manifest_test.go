@@ -241,3 +241,164 @@ func TestPlatformInfo___ListVariantsEmpty___ReturnsRelease(t *testing.T) {
 		t.Errorf("ListVariants() = %v", result)
 	}
 }
+
+func TestBundleManifest___V11WithVariantBuildInfo___ParsesCorrectly(t *testing.T) {
+	manifestJSON, _ := json.Marshal(map[string]any{
+		"bundle_version": "1.1",
+		"plugin": map[string]any{
+			"name":    "test-plugin",
+			"version": "1.0.0",
+		},
+		"platforms": map[string]any{
+			"linux-x86_64": map[string]any{
+				"library":  "lib/linux-x86_64/libtest.so",
+				"checksum": "sha256:abc123",
+				"variants": map[string]any{
+					"release": map[string]any{
+						"library":  "lib/linux-x86_64/release/libtest.so",
+						"checksum": "sha256:release123",
+						"build_info": map[string]any{
+							"built_by": "GitHub Actions",
+							"built_at": "2026-02-14T10:00:00Z",
+							"host":     "x86_64-unknown-linux-gnu",
+							"compiler": "rustc 1.90.0",
+						},
+						"schema_checksum": "sha256:variant_schema_hash",
+					},
+				},
+			},
+		},
+		"build_info": map[string]any{
+			"built_by": "local dev",
+			"compiler": "rustc 1.89.0",
+		},
+		"schema_checksum": "sha256:top_level_schema_hash",
+	})
+
+	m, err := ParseManifest(manifestJSON)
+
+	if err != nil {
+		t.Fatalf("ParseManifest error: %v", err)
+	}
+	if m.BundleVersion != "1.1" {
+		t.Errorf("BundleVersion = %q, want 1.1", m.BundleVersion)
+	}
+	if m.BuildInfo == nil {
+		t.Fatal("top-level BuildInfo is nil")
+	}
+	if m.BuildInfo.BuiltBy != "local dev" {
+		t.Errorf("BuildInfo.BuiltBy = %q", m.BuildInfo.BuiltBy)
+	}
+	if m.SchemaChecksum != "sha256:top_level_schema_hash" {
+		t.Errorf("SchemaChecksum = %q", m.SchemaChecksum)
+	}
+	p := m.Platforms["linux-x86_64"]
+	v := p.Variants["release"]
+	if v.BuildInfo == nil {
+		t.Fatal("variant BuildInfo is nil")
+	}
+	if v.BuildInfo.BuiltBy != "GitHub Actions" {
+		t.Errorf("variant BuildInfo.BuiltBy = %q", v.BuildInfo.BuiltBy)
+	}
+	if v.SchemaChecksum != "sha256:variant_schema_hash" {
+		t.Errorf("variant SchemaChecksum = %q", v.SchemaChecksum)
+	}
+}
+
+func TestGetEffectiveBuildInfo___VariantOverridesTopLevel___ReturnsVariantBuildInfo(t *testing.T) {
+	m := &BundleManifest{
+		BundleVersion: "1.1",
+		Plugin:        PluginInfo{Name: "test", Version: "1.0.0"},
+		Platforms: map[string]*PlatformInfo{
+			"linux-x86_64": {
+				Library:  "lib.so",
+				Checksum: "sha256:abc",
+				Variants: map[string]*VariantInfo{
+					"release": {
+						Library:  "release.so",
+						Checksum: "sha256:release",
+						BuildInfo: &BuildInfo{
+							BuiltBy:  "CI",
+							Compiler: "rustc 1.90.0",
+						},
+					},
+				},
+			},
+		},
+		BuildInfo: &BuildInfo{
+			BuiltBy:  "local",
+			Compiler: "rustc 1.89.0",
+		},
+	}
+
+	result := m.GetEffectiveBuildInfo("linux-x86_64", "release")
+
+	if result == nil {
+		t.Fatal("GetEffectiveBuildInfo returned nil")
+	}
+	if result.BuiltBy != "CI" {
+		t.Errorf("BuiltBy = %q, want CI", result.BuiltBy)
+	}
+	if result.Compiler != "rustc 1.90.0" {
+		t.Errorf("Compiler = %q, want rustc 1.90.0", result.Compiler)
+	}
+}
+
+func TestGetEffectiveBuildInfo___NoVariantBuildInfo___FallsBackToTopLevel(t *testing.T) {
+	m := &BundleManifest{
+		BundleVersion: "1.1",
+		Plugin:        PluginInfo{Name: "test", Version: "1.0.0"},
+		Platforms: map[string]*PlatformInfo{
+			"linux-x86_64": {
+				Library:  "lib.so",
+				Checksum: "sha256:abc",
+				Variants: map[string]*VariantInfo{
+					"release": {
+						Library:  "release.so",
+						Checksum: "sha256:release",
+					},
+				},
+			},
+		},
+		BuildInfo: &BuildInfo{
+			BuiltBy:  "local",
+			Compiler: "rustc 1.89.0",
+		},
+	}
+
+	result := m.GetEffectiveBuildInfo("linux-x86_64", "release")
+
+	if result == nil {
+		t.Fatal("GetEffectiveBuildInfo returned nil")
+	}
+	if result.BuiltBy != "local" {
+		t.Errorf("BuiltBy = %q, want local", result.BuiltBy)
+	}
+}
+
+func TestGetEffectiveSchemaChecksum___VariantOverridesTopLevel___ReturnsVariantChecksum(t *testing.T) {
+	m := &BundleManifest{
+		BundleVersion:  "1.1",
+		Plugin:         PluginInfo{Name: "test", Version: "1.0.0"},
+		SchemaChecksum: "sha256:top_level",
+		Platforms: map[string]*PlatformInfo{
+			"linux-x86_64": {
+				Library:  "lib.so",
+				Checksum: "sha256:abc",
+				Variants: map[string]*VariantInfo{
+					"release": {
+						Library:        "release.so",
+						Checksum:       "sha256:release",
+						SchemaChecksum: "sha256:variant_level",
+					},
+				},
+			},
+		},
+	}
+
+	result := m.GetEffectiveSchemaChecksum("linux-x86_64", "release")
+
+	if result != "sha256:variant_level" {
+		t.Errorf("GetEffectiveSchemaChecksum = %q, want sha256:variant_level", result)
+	}
+}

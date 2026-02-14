@@ -62,19 +62,17 @@ func (r *SmallResponseRaw) ValueString() string {
 // The caller is responsible for interpreting the response bytes as the correct struct type.
 func (p *Plugin) CallRaw(messageID uint32, request unsafe.Pointer, requestSize int) ([]byte, error) {
 	p.mu.RLock()
+	defer p.mu.RUnlock()
+
 	if p.closed {
-		p.mu.RUnlock()
 		return nil, errors.New("plugin is closed")
 	}
-	lib := p.lib
-	handle := p.handle
-	p.mu.RUnlock()
 
-	if !lib.hasBinaryTransport() {
-		return nil, &PluginError{Code: ErrorCodeTransportError, Message: "binary transport not supported"}
+	if !p.lib.hasBinaryTransport() {
+		return nil, &PluginError{Code: ErrorCodeFfiError, Message: "binary transport not supported"}
 	}
 
-	data, errCode := ffiCallRaw(lib.fnCallRaw, lib.fnResponseFree, handle,
+	data, errCode := ffiCallRaw(p.lib.fnCallRaw, p.lib.fnResponseFree, p.handle,
 		messageID, request, requestSize)
 
 	if errCode != 0 {
