@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Erlang**: JSON and binary transport, log forwarding to OTP `logger`, bundle loading with signature verification
 - **Erlang**: EUnit and Common Test suites with full integration tests against hello-plugin
 - **Docs**: Erlang testing conventions (`docs/TESTING_ERLANG.md`)
+- **Erlang**: Benchmark suite (`rustbridge_bench_SUITE`) measuring JSON, binary, and concurrent call latency
+- **Docs**: Erlang benchmark results added to `docs/BENCHMARK_RESULTS.md`
 
 ### Changed
 - **Pre-commit**: Added Erlang change detection and `rebar3 eunit && rebar3 ct` step to `pre-commit.sh`

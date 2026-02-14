@@ -5,7 +5,7 @@
 
 ## Executive Summary
 
-RustBridge supports three host languages (C#, Java, Python) with two transport options (JSON and binary). This document provides benchmark data to help you make informed decisions, but **don't let raw numbers drive premature optimization**.
+RustBridge supports four host languages (C#, Java, Python, Erlang) with two transport options (JSON and binary). This document provides benchmark data to help you make informed decisions, but **don't let raw numbers drive premature optimization**.
 
 ### The Bottom Line
 
@@ -30,6 +30,7 @@ RustBridge supports three host languages (C#, Java, Python) with two transport o
 | **Linux x86** | C# | 259 ns | 2.38 μs | 9.2x |
 | **Linux x86** | Java FFM | 366 ns | 2.20 μs | 6.0x |
 | **Linux x86** | Python | 4.83 μs | 24.8 μs | 5.1x |
+| **Linux x86** | Erlang (Port) | 25.6 μs | 36.7 μs | 1.4x |
 | **Windows x86** | C# | 305 ns | 2.52 μs | 8.2x |
 | **Windows x86** | Java FFM | 667 ns | 3.26 μs | 4.9x |
 | **Windows x86** | Python | 5.66 μs | 27 μs | 4.8x |
@@ -38,8 +39,9 @@ RustBridge supports three host languages (C#, Java, Python) with two transport o
 
 1. **Apple Silicon is fast** - M1 achieves the lowest latencies across all languages
 2. **Linux outperforms Windows** on x86 by 15-45% depending on workload
-3. **Binary is 3-9x faster** than JSON, but this rarely matters in practice
+3. **Binary is 3-9x faster** than JSON for in-process FFI, but this rarely matters in practice
 4. **C# achieves lowest latency**, Java FFM is competitive, Python is adequate for most uses
+5. **Erlang uses Port IPC** (separate process) — higher per-call latency but excellent concurrent throughput via BEAM scheduling
 
 ---
 
@@ -181,6 +183,36 @@ Python has the highest latency due to interpreter overhead, but remains practica
 
 **Note:** Python performance varies significantly by platform. macOS M1 achieves 2-3x better performance than x86 platforms.
 
+### Erlang/OTP (27+)
+
+Erlang uses a **Port-based architecture** rather than in-process FFI. The plugin runs in a separate OS process and communicates via stdin/stdout with `{packet, 4}` framing and JSON wire protocol. This adds IPC overhead per call but provides crash isolation and natural OTP integration.
+
+| Platform | Binary | JSON |
+|----------|--------|------|
+| Linux x86 | 25.6 μs | 36.7 μs |
+
+**Throughput (ops/s):**
+| Platform | Binary | JSON |
+|----------|--------|------|
+| Linux x86 | 39K | 27K |
+
+**Concurrent Throughput (10 BEAM processes):**
+| Platform | JSON (ops/s) | Mean Latency |
+|----------|--------------|--------------|
+| Linux x86 | 96K | 10.4 μs |
+
+**Why Erlang numbers are higher than other languages:**
+
+The other consumers (C#, Java, Python) use **in-process FFI** — they call directly into the shared library within the same process. Erlang uses an **out-of-process Port** which adds:
+- Pipe write (Erlang → Rust port driver)
+- JSON decode + plugin call + JSON encode (in the port driver)
+- Pipe write (Rust → Erlang)
+- JSON decode (in Erlang)
+
+This is a deliberate trade-off: the Port approach gives crash isolation (a plugin crash doesn't take down the BEAM VM), clean OTP supervisor integration, and avoids the complexity of NIF-based FFI. For most applications, ~37 μs per call (27K ops/s sequential, 96K ops/s concurrent) is more than sufficient.
+
+**Note:** Erlang's binary transport speedup (1.4x) is smaller than other languages because binary data is base64-encoded in the JSON wire protocol. The performance benefit comes from skipping JSON serialization *inside the plugin*, not on the wire.
+
 ---
 
 ## Transport Comparison
@@ -192,6 +224,7 @@ Python has the highest latency due to interpreter overhead, but remains practica
 | C# | 7.9x | 9.2x | 8.2x |
 | Java FFM | 3.3x | 6.0x | 4.9x |
 | Python | 4.5x | 5.1x | 4.8x |
+| Erlang (Port) | — | 1.4x | — |
 
 ### Memory Allocation (C#)
 
@@ -243,6 +276,7 @@ Binary allocates **17x less memory**, which matters for GC-sensitive application
 | Maximum performance | C# (.NET 8+) | Lowest latency, excellent ARM support |
 | Enterprise/Server | Java FFM (JDK 22+) | Mature ecosystem, good performance |
 | Scripting/Automation | Python 3.10+ | Rapid development, adequate performance |
+| Fault-tolerant/Telecom | Erlang/OTP 27+ | Crash isolation, supervisor trees, hot code loading |
 | Cross-platform desktop | C# or Java | Both have excellent cross-platform support |
 
 ### Platform Selection
@@ -303,6 +337,15 @@ pip install -e ".[dev]"
 python -m pytest tests/test_benchmarks.py tests/test_binary_transport.py -v \
   --benchmark-only --benchmark-columns=mean,stddev,ops
 ```
+
+### Erlang Benchmarks
+
+```bash
+cd rustbridge-erlang
+rebar3 ct --suite rustbridge_bench_SUITE --verbose
+```
+
+Results are printed in the Common Test log output. The port driver and hello-plugin are built automatically by rebar3 pre-hooks.
 
 ---
 
