@@ -60,6 +60,7 @@ python -m pytest tests/test_log_level.py::test_log_level___debug___has_correct_v
 | Java | 21+ (22+ recommended) |
 | .NET | 8.0+ |
 | Python | 3.10+ |
+| Erlang/OTP | 27+ |
 
 **Note**: Java 21 requires `--enable-preview` flag in addition to `--enable-native-access=ALL-UNNAMED`. Java 22+ only needs `--enable-native-access=ALL-UNNAMED`.
 
@@ -163,6 +164,24 @@ python -m pytest tests/test_log_level.py -v         # Run tests matching pattern
 ```
 
 See [docs/TESTING_PYTHON.md](./docs/TESTING_PYTHON.md) for Python testing conventions.
+
+## Erlang Integration
+
+**Requires Erlang/OTP 27+ and rebar3.**
+
+The `rustbridge-erlang/` directory is an OTP application that communicates with plugins via an Erlang Port. A Rust binary (`rustbridge-port-driver`) bridges stdin/stdout to the plugin FFI.
+
+The `crates/rustbridge-port-driver/` crate is the Rust port driver binary.
+
+```bash
+# Erlang development (from rustbridge-erlang/)
+rebar3 compile                                      # Build (also builds port driver via pre-hook)
+rebar3 eunit                                        # Run unit tests (protocol, config, log)
+rebar3 ct                                           # Run integration tests (against hello-plugin)
+rebar3 ct --verbose                                 # Verbose integration tests
+```
+
+See [docs/TESTING_ERLANG.md](./docs/TESTING_ERLANG.md) for Erlang testing conventions.
 
 ## Rust Consumer Integration
 

@@ -1,0 +1,7 @@
+_build/
+_checkouts/
+rebar.lock
+erl_crash.dump
+*.beam
+*.ez
+priv/rustbridge-port-driver

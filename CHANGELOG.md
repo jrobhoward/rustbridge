@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Erlang**: Erlang/OTP consumer via Port-based architecture (`rustbridge-erlang/` OTP application + `rustbridge-port-driver` Rust binary)
+- **Erlang**: JSON and binary transport, log forwarding to OTP `logger`, bundle loading with signature verification
+- **Erlang**: EUnit and Common Test suites with full integration tests against hello-plugin
+- **Docs**: Erlang testing conventions (`docs/TESTING_ERLANG.md`)
+
+### Changed
+- **Pre-commit**: Added Erlang change detection and `rebar3 eunit && rebar3 ct` step to `pre-commit.sh`
+
 ## [0.9.1] - 2026-02-06
 
 ### Added

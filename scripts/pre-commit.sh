@@ -46,6 +46,7 @@ RUN_RUST_TESTS=true
 RUN_JAVA_TESTS=true
 RUN_CSHARP_TESTS=true
 RUN_PYTHON_TESTS=true
+RUN_ERLANG_TESTS=true
 RUN_RUST_FMT=true
 RUN_CARGO_DENY=true
 
@@ -134,6 +135,7 @@ if [ "$SMART_MODE" = true ]; then
         JAVA_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^rustbridge-java/' || true)
         CSHARP_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^rustbridge-csharp/' || true)
         PYTHON_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^rustbridge-python/' || true)
+        ERLANG_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^(rustbridge-erlang/|crates/rustbridge-port-driver/)' || true)
         SCRIPT_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^scripts/' || true)
         CONFIG_CHANGES=$(echo "$ALL_CHANGES" | grep -E '^(\.github/|rust-toolchain|clippy\.toml$)' || true)
         DOCS_ONLY=$(echo "$ALL_CHANGES" | grep -vE '\.(md|txt)$' | head -1 || true)
@@ -146,6 +148,7 @@ if [ "$SMART_MODE" = true ]; then
             RUN_JAVA_TESTS=true
             RUN_CSHARP_TESTS=true
             RUN_PYTHON_TESTS=true
+            RUN_ERLANG_TESTS=true
         elif [ -z "$DOCS_ONLY" ]; then
             # Only docs changed
             print_info "Only documentation changed - skipping tests"
@@ -153,6 +156,7 @@ if [ "$SMART_MODE" = true ]; then
             RUN_JAVA_TESTS=false
             RUN_CSHARP_TESTS=false
             RUN_PYTHON_TESTS=false
+            RUN_ERLANG_TESTS=false
             RUN_CARGO_DENY=false
         else
             # Selective testing based on what changed
@@ -194,7 +198,16 @@ if [ "$SMART_MODE" = true ]; then
                 [ $(echo "$PYTHON_CHANGES" | wc -l) -gt 5 ] && echo "    ... and more"
             fi
 
-            # Special case: Rust FFI changes should trigger Java/C#/Python tests
+            if [ -z "$ERLANG_CHANGES" ]; then
+                print_info "No Erlang changes detected - skipping Erlang tests"
+                RUN_ERLANG_TESTS=false
+            else
+                print_info "Erlang changes detected:"
+                echo "$ERLANG_CHANGES" | head -5 | sed 's/^/    /'
+                [ $(echo "$ERLANG_CHANGES" | wc -l) -gt 5 ] && echo "    ... and more"
+            fi
+
+            # Special case: Rust FFI changes should trigger Java/C#/Python/Erlang tests
             # because Java/C# tests are integration tests that use the native lib
             if [ "$RUN_RUST_TESTS" = true ]; then
                 FFI_CHANGES=$(echo "$RUST_CHANGES" | grep -E '(ffi|plugin_|FfiBuffer)' || true)
@@ -211,12 +224,16 @@ if [ "$SMART_MODE" = true ]; then
                         print_warning "FFI changes detected - enabling Python tests for integration coverage"
                         RUN_PYTHON_TESTS=true
                     fi
+                    if [ "$RUN_ERLANG_TESTS" = false ]; then
+                        print_warning "FFI changes detected - enabling Erlang tests for integration coverage"
+                        RUN_ERLANG_TESTS=true
+                    fi
                 fi
             fi
         fi
 
         echo ""
-        print_info "Test plan: Rust=$RUN_RUST_TESTS, Java=$RUN_JAVA_TESTS, C#=$RUN_CSHARP_TESTS, Python=$RUN_PYTHON_TESTS, Fmt=$RUN_RUST_FMT, Deny=$RUN_CARGO_DENY"
+        print_info "Test plan: Rust=$RUN_RUST_TESTS, Java=$RUN_JAVA_TESTS, C#=$RUN_CSHARP_TESTS, Python=$RUN_PYTHON_TESTS, Erlang=$RUN_ERLANG_TESTS, Fmt=$RUN_RUST_FMT, Deny=$RUN_CARGO_DENY"
         echo ""
     fi
 fi
@@ -274,6 +291,15 @@ if [ "$RUN_PYTHON_TESTS" = true ] && [ -d "rustbridge-python" ]; then
         RUN_PYTHON_TESTS=false
     else
         print_success "python3 found"
+    fi
+fi
+
+if [ "$RUN_ERLANG_TESTS" = true ] && [ -d "rustbridge-erlang" ]; then
+    if ! command_exists rebar3; then
+        print_warning "rebar3 not found. Erlang tests will be skipped."
+        RUN_ERLANG_TESTS=false
+    else
+        print_success "rebar3 found"
     fi
 fi
 
@@ -490,6 +516,36 @@ elif [ "$RUN_PYTHON_TESTS" = false ]; then
     echo ""
 else
     print_info "Skipping Python tests (not available)"
+    echo ""
+fi
+
+# ============================================================================
+# 9b. Erlang Tests
+# ============================================================================
+if [ "$RUN_ERLANG_TESTS" = true ] && [ -d "rustbridge-erlang" ] && command_exists rebar3; then
+    print_header "Running Erlang Tests"
+
+    cd rustbridge-erlang
+
+    if ! rebar3 eunit; then
+        print_error "Erlang EUnit tests failed!"
+        exit 1
+    fi
+    print_success "All Erlang EUnit tests passed"
+
+    if ! rebar3 ct; then
+        print_error "Erlang Common Test tests failed!"
+        exit 1
+    fi
+    print_success "All Erlang Common Test tests passed"
+
+    cd "$PROJECT_ROOT"
+    echo ""
+elif [ "$RUN_ERLANG_TESTS" = false ]; then
+    print_info "Skipping Erlang tests (no Erlang changes)"
+    echo ""
+else
+    print_info "Skipping Erlang tests (not available)"
     echo ""
 fi
 

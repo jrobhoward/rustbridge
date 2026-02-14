@@ -1320,6 +1320,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustbridge-port-driver"
+version = "0.9.1"
+dependencies = [
+ "base64",
+ "rustbridge-consumer",
+ "rustbridge-core",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "rustbridge-runtime"
 version = "0.9.1"
 dependencies = [
