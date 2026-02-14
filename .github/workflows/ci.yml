@@ -132,6 +132,10 @@ jobs:
 
       - name: Run consumer integration tests
         run: cargo test -p rustbridge-consumer -- --ignored
+        env:
+          LD_LIBRARY_PATH: ${{ github.workspace }}/target/release
+          DYLD_LIBRARY_PATH: ${{ github.workspace }}/target/release
+          PATH: ${{ github.workspace }}/target/release;${{ env.PATH }}
 
       - name: Run clippy
         run: cargo clippy --workspace --examples --tests -- -D warnings
