@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Docs**: Erlang testing conventions (`docs/TESTING_ERLANG.md`)
 - **Docs**: Go testing conventions (`docs/TESTING_GO.md`)
 - **Docs**: Erlang and Go benchmark results added to `docs/BENCHMARK_RESULTS.md`
+- **Docs**: Feature support matrix added to `docs/ARCHITECTURE.md` covering all 6 host languages
+- **Tests**: Rust consumer integration tests for binary transport (`call_raw`), rejected request count stress, `load_by_name`, and bundle verification
+- **Tests**: Go rejected request count stress test (`WithMaxConcurrentOps(1)`)
+- **Tests**: Erlang bundle loading integration test (`load_bundle___hello_plugin___is_active`)
 
 ### Changed
 - **Pre-commit**: Added Erlang and Go change detection and test steps to `pre-commit.sh`

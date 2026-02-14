@@ -669,6 +669,32 @@ rustbridge_plugin:shutdown(Plugin).
 
 **Tier 2** languages are expected to work and have documentation and tests, but not all OS + language permutations have been validated. Bug reports are welcome; fixes may be community-driven.
 
+### Feature Support Matrix
+
+All consumer languages implement the same core feature set. The Rust consumer uses `libloading` for direct in-process FFI. Java/Kotlin uses the Foreign Function & Memory API (FFM). C# uses P/Invoke. Python uses `ctypes`. Go uses CGo with `dlopen`. Erlang uses an OTP Port with a Rust port-driver binary.
+
+| Feature | Rust | Java/Kotlin | C# | Python | Go | Erlang |
+|---------|:----:|:-----------:|:--:|:------:|:--:|:------:|
+| JSON transport | Yes | Yes | Yes | Yes | Yes | Yes |
+| Binary transport | Yes | Yes | Yes | Yes | Yes | Yes |
+| Plugin config | Yes | Yes | Yes | Yes | Yes | Yes |
+| Bundle loading (.rbp) | Yes | Yes | Yes | Yes | Yes | Yes |
+| Bundle variant selection | Yes | Yes | Yes | Yes | Yes | Yes |
+| Signature verification (minisign) | Yes | Yes | Yes | Yes | Yes | Yes |
+| Logging callbacks | Yes | Yes | Yes | Yes | Yes | Yes |
+| Dynamic log level | Yes | Yes | Yes | Yes | Yes | Yes |
+| Lifecycle management | Yes | Yes | Yes | Yes | Yes | Yes |
+| Rejected request counting | Yes | Yes | Yes | Yes | Yes | Yes |
+| Typed call helpers | Yes | Yes | Yes | Yes | Yes | — |
+| Async / coroutine extensions | — | Yes (Kotlin) | — | — | — | — |
+| Auto-cleanup (Closeable / context manager / defer) | Drop | AutoCloseable | IDisposable | `with` statement | `defer Close()` | `gen_server` stop |
+| OTP supervisor integration | — | — | — | — | — | Yes |
+
+**Notes:**
+- "Typed call helpers" provide automatic serialization/deserialization of request and response types. Erlang uses raw JSON binaries.
+- Kotlin adds suspend function variants (`callAsync`, `callAsyncResult`) for coroutine integration. Other languages handle concurrency through threads or goroutines.
+- Erlang's Port-based architecture provides crash isolation — a plugin failure does not bring down the BEAM VM.
+
 ## Bundle Format (.rbp)
 
 ### Structure

@@ -24,8 +24,14 @@
     shutdown___explicit___state_becomes_stopped/1,
     set_log_level___changes_level___returns_ok/1,
     concurrent_calls___multiple_processes___all_succeed/1,
-    log_callback___receives_log_messages/1
+    log_callback___receives_log_messages/1,
+    load_bundle___hello_plugin___is_active/1
 ]).
+
+%% Note: rejected_request_count stress test is not applicable to the Erlang
+%% consumer. The Port-based architecture serializes all calls through a
+%% gen_server, so the plugin never sees concurrent requests and the
+%% concurrency limit cannot be exceeded from a single plugin instance.
 
 all() ->
     [
@@ -40,7 +46,8 @@ all() ->
         shutdown___explicit___state_becomes_stopped,
         set_log_level___changes_level___returns_ok,
         concurrent_calls___multiple_processes___all_succeed,
-        log_callback___receives_log_messages
+        log_callback___receives_log_messages,
+        load_bundle___hello_plugin___is_active
     ].
 
 init_per_suite(Config) ->
@@ -61,11 +68,26 @@ init_per_suite(Config) ->
         end,
     LibPath = filename:join([WorkspaceRoot, "target", "release", LibName]),
 
+    BundleCandidates = [
+        filename:join([WorkspaceRoot, "examples", "hello-plugin", "target", "bundle"]),
+        filename:join([WorkspaceRoot, "target", "bundle"])
+    ],
+    BundlePath = find_bundle(BundleCandidates),
+
     case filelib:is_file(LibPath) of
         true ->
-            [{lib_path, LibPath} | Config];
+            [{lib_path, LibPath}, {bundle_path, BundlePath} | Config];
         false ->
             {skip, {hello_plugin_not_found, LibPath}}
+    end.
+
+%% Search directories for a hello-plugin .rbp bundle.
+find_bundle([]) ->
+    undefined;
+find_bundle([Dir | Rest]) ->
+    case filelib:wildcard(filename:join(Dir, "hello-plugin-*.rbp")) of
+        [Path | _] -> Path;
+        [] -> find_bundle(Rest)
     end.
 
 %% Walk up the directory tree until we find rebar.config.
@@ -84,6 +106,14 @@ find_rebar_root(Dir) ->
 end_per_suite(_Config) ->
     ok.
 
+init_per_testcase(load_bundle___hello_plugin___is_active, Config) ->
+    case ?config(bundle_path, Config) of
+        undefined ->
+            {skip, bundle_not_found};
+        BundlePath ->
+            {ok, Pid} = rustbridge_plugin:start_link_bundle(BundlePath, #{}),
+            [{plugin, Pid} | Config]
+    end;
 init_per_testcase(log_callback___receives_log_messages, Config) ->
     %% Special setup: start plugin with a custom log handler
     LibPath = ?config(lib_path, Config),
@@ -249,3 +279,16 @@ log_callback___receives_log_messages(Config) ->
         %% This test verifies the callback mechanism works without crashing.
         ok
     end.
+
+load_bundle___hello_plugin___is_active(Config) ->
+    Plugin = ?config(plugin, Config),
+
+    {ok, active} = rustbridge_plugin:get_state(Plugin),
+
+    %% Verify we can make calls through the bundle-loaded plugin
+    {ok, Response} = rustbridge_plugin:call(
+        Plugin, <<"echo">>, <<"{\"message\": \"from bundle\"}">>, 10000
+    ),
+
+    Map = json:decode(Response),
+    <<"from bundle">> = maps:get(<<"message">>, Map).

@@ -237,6 +237,40 @@ func TestRejectedRequestCount___DefaultConfig___ReturnsZero(t *testing.T) {
 	}
 }
 
+func TestRejectedRequestCount___LowLimit___IncrementsUnderContention(t *testing.T) {
+	plugin := loadTestPlugin(t, WithMaxConcurrentOps(1))
+
+	var wg sync.WaitGroup
+	var errorCount atomic.Int64
+	goroutines := 8
+	callsPerGoroutine := 50
+
+	for i := 0; i < goroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < callsPerGoroutine; j++ {
+				_, err := plugin.Call("echo", `{"message": "flood"}`)
+				if err != nil {
+					errorCount.Add(1)
+				}
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	rejected := plugin.RejectedRequestCount()
+	errors := errorCount.Load()
+
+	if rejected == 0 {
+		t.Errorf("RejectedRequestCount() = 0, expected > 0 with max_concurrent_ops=1 and %d goroutines", goroutines)
+	}
+	if rejected != uint64(errors) {
+		t.Errorf("RejectedRequestCount() = %d, error count = %d, expected equal", rejected, errors)
+	}
+}
+
 func TestHasBinaryTransport___HelloPlugin___ReturnsTrue(t *testing.T) {
 	plugin := loadTestPlugin(t)
 
