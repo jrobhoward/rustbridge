@@ -167,7 +167,16 @@ fn NativePluginLoader___load_with_config___with_log_callback___receives_logs() {
     let plugin =
         NativePluginLoader::load_with_config(hello_plugin_path(), &config, Some(callback)).unwrap();
 
-    // Plugin startup generates log messages
+    // Make a call to ensure log messages are generated
+    let _response: EchoResponse = plugin
+        .call_typed(
+            "echo",
+            &EchoRequest {
+                message: "log test".to_string(),
+            },
+        )
+        .unwrap();
+
     assert!(log_count.load(Ordering::SeqCst) > 0);
     assert_eq!(plugin.state(), LifecycleState::Active);
 }
