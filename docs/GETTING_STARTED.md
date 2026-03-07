@@ -152,7 +152,7 @@ Add to `Cargo.toml`:
 
 ```toml
 [dependencies]
-rustbridge-consumer = "1.0.0"
+rustbridge-consumer = "1.0"
 ```
 
 Update `src/main.rs`:
