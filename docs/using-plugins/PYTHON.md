@@ -20,26 +20,7 @@ pip install rustbridge
 
 ## Local Development
 
-When working with rustbridge source code (not published to PyPI), use a virtual environment and install in editable mode:
-
-```bash
-# Create and activate virtual environment
-python -m venv .venv
-source .venv/bin/activate  # Linux/macOS
-# .venv\Scripts\activate   # Windows
-
-# Install rustbridge in editable mode
-cd /path/to/rustbridge/rustbridge-python
-pip install -e .
-```
-
-With development dependencies (pytest, mypy, etc.):
-
-```bash
-pip install -e ".[dev]"
-```
-
-Editable mode (`-e`) allows changes to the rustbridge Python code to take effect immediately without reinstalling.
+For building against rustbridge source instead of the published PyPI package, see the [Development Guide](../DEVELOPMENT.md#python).
 
 ## Loading a Plugin
 

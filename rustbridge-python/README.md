@@ -5,9 +5,14 @@ Python bindings for rustbridge - call Rust shared libraries from Python using ct
 ## Installation
 
 ```bash
-pip install .
+pip install rustbridge
+```
 
-# Or for development
+### Development
+
+To install from source for development:
+
+```bash
 pip install -e ".[dev]"
 ```
 

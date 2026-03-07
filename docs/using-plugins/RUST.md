@@ -26,17 +26,12 @@ Add `rustbridge-consumer` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rustbridge-consumer = "0.9"
+rustbridge-consumer = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 ```
 
-For local development with rustbridge source:
-
-```toml
-[dependencies]
-rustbridge-consumer = { path = "../rustbridge/crates/rustbridge-consumer" }
-```
+For building against rustbridge source instead of the published crate, see the [Development Guide](../DEVELOPMENT.md#rust).
 
 ## Loading a Plugin
 

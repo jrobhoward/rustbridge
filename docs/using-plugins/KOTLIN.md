@@ -81,12 +81,7 @@ The `rustbridge-kotlin` module provides idiomatic Kotlin extensions:
 
 ## Local Development
 
-For development against a local build of rustbridge (not the published version), publish to MavenLocal and add `mavenLocal()` before `mavenCentral()` in your build:
-
-```bash
-cd rustbridge-java
-./gradlew publishToMavenLocal
-```
+For building against rustbridge source instead of published packages, see the [Development Guide](../DEVELOPMENT.md#javakotlin).
 
 ## Loading a Plugin
 

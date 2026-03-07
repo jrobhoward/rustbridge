@@ -39,7 +39,7 @@ Allow the host to configure cache size at initialization.
 
 ## Prerequisites
 
-- Complete the [Install from Source](../../INSTALL.md) guide
+- Complete the [Installation](../../INSTALL.md) guide
 - Basic familiarity with Rust
 
 ## Time Estimate

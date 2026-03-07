@@ -2,6 +2,13 @@
 
 C# bindings for the RustBridge plugin framework.
 
+## Installation
+
+```bash
+dotnet add package RustBridge.Core
+dotnet add package RustBridge.Native
+```
+
 ## Requirements
 
 - .NET 8.0 SDK or later

@@ -8,11 +8,10 @@
 [![Python](https://img.shields.io/badge/python-3.10%2B-green.svg)](https://www.python.org)
 [![Go](https://img.shields.io/badge/go-1.21%2B_(tier--2)-lightblue.svg)](https://go.dev)
 [![Erlang](https://img.shields.io/badge/erlang%2FOTP-27%2B_(tier--2)-lightblue.svg)](https://www.erlang.org)
-
-> [!NOTE]
-> **Approaching 1.0** — Core components (bundle format, JSON transport, language bindings) should be stable. It's not
-> yet published to package registries (e.g. Maven Central, NuGet, PyPI), so rustbridge consumer libraries must be
-> installed from source.
+[![crates.io](https://img.shields.io/crates/v/rustbridge-cli.svg)](https://crates.io/crates/rustbridge-cli)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.jrobhoward.rustbridge/rustbridge-core.svg)](https://central.sonatype.com/namespace/io.github.jrobhoward.rustbridge)
+[![PyPI](https://img.shields.io/pypi/v/rustbridge.svg)](https://pypi.org/project/rustbridge/)
+[![NuGet](https://img.shields.io/nuget/v/RustBridge.Core.svg)](https://www.nuget.org/packages/RustBridge.Core)
 
 **rustbridge** lets you write shared library plugins in Rust that can be called from Java, Kotlin, C#, Python, Go, Erlang, or another version of Rust — without dealing with the C ABI directly.
 
@@ -100,7 +99,7 @@ Components planned for a 1.0 release:
 | C# Bindings       | Stable      |
 | Python Bindings   | Stable      |
 | Binary Transport  | Stable      |
-| Documentation     | In-progress |
+| Documentation     | Stable      |
 
 ## The .rbp Bundle
 
@@ -195,32 +194,23 @@ first plugin and call it from Java
 > **Note**: Rust consumers must be created as separate projects with `cargo new` to avoid workspace conflicts.
 > **Note**: Go and Erlang are **Tier 2** — expected to work, tested on Linux, but not all OS permutations validated. See [Architecture](https://github.com/jrobhoward/rustbridge/blob/main/docs/ARCHITECTURE.md#language-support-tiers) for tier definitions.
 
-## Install from Source
+## Installation
 
-rustbridge is not yet published to package registries. Install from source to get started.
-
-📖 **[Full Installation Guide](https://github.com/jrobhoward/rustbridge/blob/main/docs/INSTALL.md)** — Set up your
-workspace, install the CLI, and configure host language libraries.
-
-**Quick start:**
+Install the CLI and language libraries from published packages:
 
 ```bash
-# 1. Set up workspace (add to ~/.bashrc or ~/.zshrc)
-export RUSTBRIDGE_WORKSPACE="$HOME/rustbridge-workspace"
-mkdir -p $RUSTBRIDGE_WORKSPACE
-
-# 2. Clone and install CLI
-cd $RUSTBRIDGE_WORKSPACE
-git clone https://github.com/jrobhoward/rustbridge.git
-cd rustbridge
-cargo install --force --path crates/rustbridge-cli
-
-# 3. Verify
-rustbridge --version
+cargo install rustbridge-cli                                                # CLI (crates.io)
+pip install rustbridge                                                      # Python (PyPI)
+dotnet add package RustBridge.Core && dotnet add package RustBridge.Native   # C# (NuGet)
 ```
 
-See the [full guide](https://github.com/jrobhoward/rustbridge/blob/main/docs/INSTALL.md) for host language library
-setup (Java/Kotlin, C#, Python).
+Java/Kotlin dependencies are available on Maven Central as `io.github.jrobhoward.rustbridge:rustbridge-ffm:1.0.0`.
+
+📖 **[Full Installation Guide](https://github.com/jrobhoward/rustbridge/blob/main/docs/INSTALL.md)** — All languages
+and package managers.
+
+For contributors building from source, see the
+[Development Guide](https://github.com/jrobhoward/rustbridge/blob/main/docs/DEVELOPMENT.md).
 
 ## Contributing
 

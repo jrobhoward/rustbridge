@@ -23,7 +23,7 @@ pip install -r requirements.txt
 ## Install rustbridge Python Package
 
 ```bash
-pip install -e $RUSTBRIDGE_WORKSPACE/rustbridge/rustbridge-python
+pip install rustbridge
 ```
 
 ## Verify the Generated Consumer

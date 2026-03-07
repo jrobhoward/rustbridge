@@ -4,7 +4,7 @@ A minimal Python project template for consuming rustbridge plugins.
 
 ## Prerequisites
 
-- **Python 3.9+**
+- **Python 3.10+**
 - **A rustbridge plugin** - Your `.rbp` bundle file
 
 ## Quick Start
@@ -20,7 +20,7 @@ A minimal Python project template for consuming rustbridge plugins.
 
 3. **Install rustbridge Python library**:
    ```bash
-   pip install -e /path/to/rustbridge/rustbridge-python
+   pip install rustbridge
    ```
 
 4. **Add your plugin bundle** - Copy your `.rbp` file to the project root

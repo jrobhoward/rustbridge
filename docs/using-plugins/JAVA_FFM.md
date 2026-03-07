@@ -51,34 +51,7 @@ dependencies {
 
 ## Local Development
 
-For development against a local build of rustbridge (not the published version), publish to MavenLocal:
-
-```bash
-cd rustbridge-java
-./gradlew publishToMavenLocal
-```
-
-Then add `mavenLocal()` **before** `mavenCentral()` in your build:
-
-**Gradle (Kotlin DSL)**
-
-```kotlin
-repositories {
-    mavenLocal()  // Only needed for local development
-    mavenCentral()
-}
-```
-
-**Maven**
-
-```xml
-<repositories>
-    <repository>
-        <id>local</id>
-        <url>file://${user.home}/.m2/repository</url>
-    </repository>
-</repositories>
-```
+For building against rustbridge source instead of published packages, see the [Development Guide](../DEVELOPMENT.md#javakotlin).
 
 ## Loading a Plugin
 

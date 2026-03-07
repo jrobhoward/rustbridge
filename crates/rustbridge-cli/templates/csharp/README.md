@@ -4,35 +4,25 @@ A minimal .NET project template for consuming rustbridge plugins.
 
 ## Prerequisites
 
-- **.NET 6.0+** - SDK and runtime
+- **.NET 8.0+** - SDK and runtime
 - **A rustbridge plugin** - Your `.rbp` bundle file
 
 ## Quick Start
 
 1. **Copy this template** to your project location
-2. **Build rustbridge C# libraries**:
-   ```bash
-   cd /path/to/rustbridge/rustbridge-csharp
-   dotnet build
-   ```
-3. **Update project reference** in `RustBridgeConsumer.csproj` to point to your rustbridge location
-4. **Add your plugin bundle** - Copy your `.rbp` file to the project root
-5. **Update Program.cs** - Set `bundlePath` to your `.rbp` file
-6. **Run**:
+2. **Add your plugin bundle** - Copy your `.rbp` file to the project root
+3. **Update Program.cs** - Set `bundlePath` to your `.rbp` file
+4. **Run**:
    ```bash
    dotnet run
    ```
 
-## Using NuGet Packages
+Dependencies are resolved automatically from NuGet.
 
-When rustbridge is published to NuGet, replace the `<ProjectReference>` entries with:
+## Local Development
 
-```xml
-<ItemGroup>
-  <PackageReference Include="RustBridge.Core" Version="1.0.0" />
-  <PackageReference Include="RustBridge.Native" Version="1.0.0" />
-</ItemGroup>
-```
+For building against rustbridge source instead of NuGet packages, see the
+[Development Guide](https://github.com/jrobhoward/rustbridge/blob/main/docs/DEVELOPMENT.md#c).
 
 ## Documentation
 

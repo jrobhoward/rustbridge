@@ -17,11 +17,10 @@ guide walks you through creating a plugin, packaging it, and running it from you
 
 ## Prerequisites
 
-**Before starting this guide**, complete the [Install from Source](./INSTALL.md) guide:
+**Before starting this guide**, install the CLI and language libraries from the [Installation Guide](./INSTALL.md):
 
-1. Set up your workspace (`$RUSTBRIDGE_WORKSPACE` is used by this documentation so examples can easily be cut+paste)
-2. Clone the repository and install the CLI
-3. Install host language libraries for your target language(s)
+1. Install the CLI: `cargo install rustbridge-cli`
+2. Install language libraries for your target language(s)
 
 Verify your installation:
 
@@ -135,7 +134,7 @@ source .venv/bin/activate  # Linux/macOS
 # .venv\Scripts\activate   # Windows
 
 # Install rustbridge Python library
-pip install -e $RUSTBRIDGE_WORKSPACE/rustbridge/rustbridge-python
+pip install rustbridge
 
 python main.py
 ```
@@ -277,8 +276,8 @@ rustbridge new my-plugin --all              # Rust + all consumers
 
 The CLI isn't in your PATH. Either:
 
-- Run `cargo install --path crates/rustbridge-cli` again
-- Or use the full path: `/path/to/rustbridge/target/release/rustbridge`
+- Run `cargo install rustbridge-cli` to install from crates.io
+- Or run `cargo install --path crates/rustbridge-cli` if building from source
 
 ### "Plugin library not found" or "symbol not found"
 
@@ -311,20 +310,13 @@ tasks.withType<JavaExec> {
 Your bundle doesn't include a library for your OS/architecture. Rebuild with the correct platform flag (e.g.,
 `linux-x86_64`, `darwin-aarch64`).
 
-### C#: Project reference not found
+### C#: Package not found
 
-The C# template references rustbridge projects relative to where you cloned the repo. If paths don't match,
-update the `<ProjectReference>` paths in `RustBridgeConsumer.csproj`.
-
-### C#: Metadata file could not be found
-
-If you see errors like `Metadata file 'RustBridge.Core.dll' could not be found`, this typically occurs when
-RustBridge was previously built from a different path. Run `dotnet clean` in the `rustbridge-csharp/` directory,
-then rebuild your consumer:
+If NuGet can't resolve `RustBridge.Core` or `RustBridge.Native`, make sure you've run:
 
 ```bash
-cd $RUSTBRIDGE_WORKSPACE/rustbridge/rustbridge-csharp
-dotnet clean
-cd /path/to/your/consumer
-dotnet build
+dotnet add package RustBridge.Core
+dotnet add package RustBridge.Native
 ```
+
+If you're building from source instead, see the [Development Guide](./DEVELOPMENT.md) for local project reference setup.

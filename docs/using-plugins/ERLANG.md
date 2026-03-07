@@ -20,7 +20,7 @@ Add `rustbridge` as a dependency in your `rebar.config`:
 
 ```erlang
 {deps, [
-    {rustbridge, {git, "https://github.com/example/rustbridge.git", {branch, "main"}}}
+    {rustbridge, {git, "https://github.com/jrobhoward/rustbridge.git", {branch, "main"}}}
 ]}.
 ```
 
@@ -32,18 +32,7 @@ rebar3 compile
 
 ### Local Development
 
-When working with rustbridge source code directly:
-
-```bash
-cd rustbridge-erlang
-rebar3 compile
-```
-
-The pre-hooks in `rebar.config` handle building the Rust port driver automatically. The test profile also builds the example `hello-plugin`:
-
-```bash
-rebar3 ct
-```
+For building against rustbridge source instead of the git dependency, see the [Development Guide](../DEVELOPMENT.md#erlang).
 
 ## Architecture Note
 

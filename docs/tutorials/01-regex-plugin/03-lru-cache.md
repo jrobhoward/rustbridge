@@ -18,7 +18,7 @@ Edit `Cargo.toml`:
 
 ```toml
 [dependencies]
-rustbridge = "0.9"
+rustbridge = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 regex = "1.10"
 

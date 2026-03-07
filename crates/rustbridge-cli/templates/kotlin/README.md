@@ -16,19 +16,13 @@ A minimal Kotlin project template for consuming rustbridge plugins using FFM.
    cd ~/my-kotlin-app
    ```
 
-2. **Install rustbridge Java libraries** (if not published to Maven Central):
-   ```bash
-   cd /path/to/rustbridge/rustbridge-java
-   ./gradlew publishToMavenLocal
-   ```
+2. **Add your plugin bundle** - Copy your `.rbp` file to the project root
 
-3. **Add your plugin bundle** - Copy your `.rbp` file to the project root
-
-4. **Update Main.kt** - Edit `src/main/kotlin/com/example/Main.kt`:
+3. **Update Main.kt** - Edit `src/main/kotlin/com/example/Main.kt`:
    - Set `bundlePath` to your `.rbp` file
    - Define request/response data classes matching your plugin's API
 
-5. **Run**:
+4. **Run**:
    ```bash
    ./gradlew run
    ```

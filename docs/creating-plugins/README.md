@@ -57,12 +57,12 @@ crate-type = ["cdylib"]  # Required for FFI
 
 [dependencies]
 # rustbridge dependencies
-rustbridge-core = "0.9"
-rustbridge-transport = "0.9"
-rustbridge-ffi = "0.9"
-rustbridge-runtime = "0.9"
-rustbridge-logging = "0.9"
-rustbridge-macros = "0.9"
+rustbridge-core = "1.0"
+rustbridge-transport = "1.0"
+rustbridge-ffi = "1.0"
+rustbridge-runtime = "1.0"
+rustbridge-logging = "1.0"
+rustbridge-macros = "1.0"
 
 async-trait = "0.1"
 serde = { version = "1.0", features = ["derive"] }

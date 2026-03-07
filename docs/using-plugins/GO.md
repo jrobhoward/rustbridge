@@ -19,17 +19,7 @@ go get github.com/jrobhoward/rustbridge-go
 
 ### Local Development
 
-When working with rustbridge source code, use a replace directive in your `go.mod`:
-
-```go
-module myproject
-
-go 1.21
-
-require github.com/jrobhoward/rustbridge-go v0.0.0
-
-replace github.com/jrobhoward/rustbridge-go => ../rustbridge-go
-```
+For building against rustbridge source instead of the published module, see the [Development Guide](../DEVELOPMENT.md#go).
 
 ## Loading a Plugin
 

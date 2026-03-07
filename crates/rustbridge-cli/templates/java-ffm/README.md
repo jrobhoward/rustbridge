@@ -11,14 +11,9 @@ A minimal Java 21+ project template for consuming rustbridge plugins using FFM (
 ## Quick Start
 
 1. **Copy this template** to your project location
-2. **Install rustbridge Java libraries** (if not published to Maven Central):
-   ```bash
-   cd /path/to/rustbridge/rustbridge-java
-   ./gradlew publishToMavenLocal
-   ```
-3. **Add your plugin bundle** - Copy your `.rbp` file to the project root
-4. **Update Main.java** - Set `bundlePath` to your `.rbp` file
-5. **Run**:
+2. **Add your plugin bundle** - Copy your `.rbp` file to the project root
+3. **Update Main.java** - Set `bundlePath` to your `.rbp` file
+4. **Run**:
    ```bash
    ./gradlew run
    ```

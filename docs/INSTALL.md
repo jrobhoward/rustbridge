@@ -1,94 +1,95 @@
-# Install from Source
+# Installation
 
-rustbridge is not yet published to package registries. Install from source to get started.
-The tutorials/docs in this repo will make use of an environment variable (`RUSTBRIDGE_WORKSPACE`), so commands can be copied+pasted into a shell more easily.
+rustbridge is published to standard package registries. Install the CLI and language libraries for your target language(s).
 
-## Prerequisites
+## CLI
 
-- Rust 1.90+ installed
-- Java 21+ (for Java/Kotlin), .NET 8.0+ (for C#), or Python 3.10+
-
-## 1. Set Up Workspace
-
-Create a workspace directory for rustbridge and your projects.
-
-**Linux/macOS** - Add to your shell profile (`~/.bashrc`, `~/.zshrc`, or `~/.profile`):
+Install the rustbridge CLI from [crates.io](https://crates.io/crates/rustbridge-cli):
 
 ```bash
-export RUSTBRIDGE_WORKSPACE="$HOME/rustbridge-workspace"
-```
-
-Then reload your shell and create the directory:
-
-```bash
-source ~/.bashrc  # or ~/.zshrc
-mkdir -p $RUSTBRIDGE_WORKSPACE
-```
-
-**Windows** - Set in PowerShell (one-time):
-
-```powershell
-[Environment]::SetEnvironmentVariable("RUSTBRIDGE_WORKSPACE", "$HOME\rustbridge-workspace", "User")
-```
-
-Then open a new terminal and create the directory.
-
-## 2. Clone and Install the CLI
-
-```bash
-cd $RUSTBRIDGE_WORKSPACE
-git clone https://github.com/jrobhoward/rustbridge.git
-cd rustbridge
-cargo install --force --path crates/rustbridge-cli
+cargo install rustbridge-cli
 rustbridge --version  # Verify installation
 ```
 
-## 3. Install Host Language Libraries
-
-Choose your target language(s):
+## Language Libraries
 
 ### Java/Kotlin
 
-Add the dependency to your project's `build.gradle.kts`:
+Add the dependency from [Maven Central](https://central.sonatype.com/namespace/io.github.jrobhoward.rustbridge) to your `build.gradle.kts`:
 
 ```kotlin
 repositories {
     mavenCentral()
 }
 dependencies {
-    implementation("io.github.jrobhoward.rustbridge:rustbridge-ffm:1.0.0")  // Java 21+
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-ffm:1.0.0")       // Java 21+
+    // implementation("io.github.jrobhoward.rustbridge:rustbridge-kotlin:1.0.0")  // Optional: Kotlin extensions
 }
+```
+
+Or for Maven:
+
+```xml
+<dependency>
+    <groupId>io.github.jrobhoward.rustbridge</groupId>
+    <artifactId>rustbridge-ffm</artifactId>
+    <version>1.0.0</version>
+</dependency>
 ```
 
 ### C#
 
-Build and reference locally:
+Install from [NuGet](https://www.nuget.org/packages/RustBridge.Core):
 
 ```bash
-cd $RUSTBRIDGE_WORKSPACE/rustbridge/rustbridge-csharp
-dotnet build
+dotnet add package RustBridge.Core
+dotnet add package RustBridge.Native
 ```
-
-Reference the built DLLs in your project, or use a local NuGet source.
 
 ### Python
 
-Install in development mode:
+Install from [PyPI](https://pypi.org/project/rustbridge/):
 
 ```bash
-cd $RUSTBRIDGE_WORKSPACE/rustbridge/rustbridge-python
-pip install -e .
+pip install rustbridge
 ```
 
-## Verify Installation
+### Rust
 
-After completing the steps above, verify:
+Add from [crates.io](https://crates.io/crates/rustbridge-consumer):
 
 ```bash
-rustbridge --version
+cargo add rustbridge-consumer
 ```
 
-You should see version output (e.g., `rustbridge 1.0.0`).
+Or manually in `Cargo.toml`:
+
+```toml
+[dependencies]
+rustbridge-consumer = "1.0"
+```
+
+**Note**: Rust consumers must be created as separate projects with `cargo new` to avoid Cargo workspace conflicts.
+
+### Go
+
+```bash
+go get github.com/jrobhoward/rustbridge-go
+```
+
+### Erlang
+
+Add as a git dependency in `rebar.config` (not yet published to hex.pm):
+
+```erlang
+{deps, [
+    {rustbridge, {git, "https://github.com/jrobhoward/rustbridge.git", {branch, "main"}}}
+]}.
+```
+
+## Building from Source
+
+For contributors who want to build rustbridge from source, see the [Development Guide](./DEVELOPMENT.md).
 
 ## What's Next?
 

@@ -50,7 +50,7 @@ Compare debug vs release builds and measure cache effectiveness.
 
 ## Prerequisites
 
-- Complete the [Install from Source](../../INSTALL.md) guide (including Java/Kotlin libraries)
+- Complete the [Installation](../../INSTALL.md) guide (including Java/Kotlin libraries)
 - Your regex plugin bundle from Chapter 1
 - Basic familiarity with Kotlin/Gradle
 

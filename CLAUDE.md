@@ -224,6 +224,8 @@ See [docs/TESTING_RUST_CONSUMER.md](./docs/TESTING_RUST_CONSUMER.md) for Rust co
 
 ## Documentation
 
+- [docs/INSTALL.md](./docs/INSTALL.md) - Installation from published packages
+- [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) - Building from source for contributors
 - [docs/GETTING_STARTED.md](./docs/GETTING_STARTED.md) - Tutorial for creating your first plugin
 - [docs/CLI.md](./docs/CLI.md) - CLI reference (new, pack, promote, bundle, keygen, generate-header)
 - [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) - System architecture and design decisions

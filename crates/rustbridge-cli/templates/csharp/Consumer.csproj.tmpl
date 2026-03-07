@@ -8,24 +8,16 @@
     <RootNamespace>{{class-name}}</RootNamespace>
   </PropertyGroup>
 
-  <!--
-    Prerequisites:
-    This template expects rustbridge to be cloned at ~/rustbridge-workspace/rustbridge/
-    as described in docs/GETTING_STARTED.md. If you cloned rustbridge elsewhere,
-    update the paths below to match your setup.
-
-    When RustBridge packages are published to NuGet, you can replace the
-    ProjectReference items with PackageReference items instead.
-  -->
   <ItemGroup>
-    <ProjectReference Include="$(HOME)/rustbridge-workspace/rustbridge/rustbridge-csharp/RustBridge.Core/RustBridge.Core.csproj" />
-    <ProjectReference Include="$(HOME)/rustbridge-workspace/rustbridge/rustbridge-csharp/RustBridge.Native/RustBridge.Native.csproj" />
+    <PackageReference Include="RustBridge.Core" Version="1.0.0" />
+    <PackageReference Include="RustBridge.Native" Version="1.0.0" />
   </ItemGroup>
 
-  <!-- Or use NuGet packages when published:
+  <!-- For local development against rustbridge source, replace PackageReference
+       with ProjectReference. See docs/DEVELOPMENT.md for details.
   <ItemGroup>
-    <PackageReference Include="RustBridge.Core" Version="0.7.0" />
-    <PackageReference Include="RustBridge.Native" Version="0.7.0" />
+    <ProjectReference Include="/path/to/rustbridge/rustbridge-csharp/RustBridge.Core/RustBridge.Core.csproj" />
+    <ProjectReference Include="/path/to/rustbridge/rustbridge-csharp/RustBridge.Native/RustBridge.Native.csproj" />
   </ItemGroup>
   -->
 

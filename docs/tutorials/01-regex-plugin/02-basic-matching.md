@@ -8,7 +8,7 @@ Edit `Cargo.toml` to add the `regex` crate:
 
 ```toml
 [dependencies]
-rustbridge = "0.9"
+rustbridge = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 
 # Add this line

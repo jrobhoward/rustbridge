@@ -22,6 +22,9 @@ Thank you for your interest in contributing to rustbridge! This document provide
 
 ### Building
 
+> **Note**: Published packages on crates.io, Maven Central, PyPI, and NuGet are for consumers.
+> Contributors should build from source as described below. See the [Development Guide](./docs/DEVELOPMENT.md) for full setup instructions.
+
 ```bash
 # Build all Rust crates
 cargo build --workspace
