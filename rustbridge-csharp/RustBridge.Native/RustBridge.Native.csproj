@@ -9,7 +9,7 @@
 
     <!-- Package metadata -->
     <PackageId>RustBridge.Native</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Authors>RustBridge Contributors</Authors>
     <Description>P/Invoke bindings for RustBridge - load and call Rust plugins from .NET</Description>
     <PackageTags>rust;ffi;interop;plugin;pinvoke;native</PackageTags>

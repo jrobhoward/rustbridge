@@ -7,12 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-03-07
+
+### Fixed
+- **CLI**: Rust plugin template referenced `rustbridge = "0.8"` instead of `"1.0"` — scaffolded plugins pulled stale v0.8.1
+- **CLI**: C# consumer template used `ProjectReference` instead of NuGet `PackageReference`
+- **CLI**: Python consumer template had empty `requirements.txt` (comments only)
+- **C#**: NuGet packages contained stale assembly with version 0.8.0.0 (MSBuild incremental build cached old DLL)
+
 ### Changed
 - **Docs**: Update all documentation for published package registries (crates.io, Maven Central, PyPI, NuGet)
 - **Docs**: Add `docs/DEVELOPMENT.md` build-from-source guide for contributors
 - **Docs**: Rewrite `docs/INSTALL.md` to reference published packages as primary installation path
-- **Templates**: C# template now uses NuGet `PackageReference` by default instead of `ProjectReference`
-- **Templates**: Python template now uses `pip install rustbridge` from PyPI
 
 ## [1.0.0] - 2026-03-07
 
@@ -410,7 +416,8 @@ Initial public release.
 - No `.unwrap()` or `.expect()` in production code
 - Minisign signature verification for bundle integrity
 
-[Unreleased]: https://github.com/jrobhoward/rustbridge/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/jrobhoward/rustbridge/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/jrobhoward/rustbridge/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/jrobhoward/rustbridge/compare/v0.10.0...v1.0.0
 [0.10.0]: https://github.com/jrobhoward/rustbridge/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/jrobhoward/rustbridge/compare/v0.9.0...v0.9.1
