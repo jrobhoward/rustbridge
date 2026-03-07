@@ -167,7 +167,7 @@ with zipfile.ZipFile("json-plugin-0.1.0.rbp", "r") as zf:
       {
         "vendor": "CycloneDX",
         "name": "cargo-sbom",
-        "version": "0.10.0"
+        "version": "1.0.0"
       }
     ],
     "component": {

@@ -13,15 +13,6 @@ Complete the [project setup](./README.md#project-setup) from the chapter introdu
 5. Copy the bundle to `consumers/kotlin/`
 6. Copy a test image to `consumers/kotlin/`
 
-## Install rustbridge Java Libraries
-
-If you haven't already, install the Java libraries to Maven local:
-
-```bash
-cd $RUSTBRIDGE_WORKSPACE/rustbridge/rustbridge-java
-./gradlew publishToMavenLocal
-```
-
 ## Verify the Generated Consumer
 
 ```bash
@@ -467,14 +458,13 @@ plugins {
 }
 
 repositories {
-    mavenLocal()
     mavenCentral()
 }
 
 dependencies {
-    implementation("io.github.jrobhoward.rustbridge:rustbridge-core:0.10.0")
-    implementation("io.github.jrobhoward.rustbridge:rustbridge-ffm:0.10.0")
-    implementation("io.github.jrobhoward.rustbridge:rustbridge-kotlin:0.10.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-core:1.0.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-ffm:1.0.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-kotlin:1.0.0")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.2")
 }
 

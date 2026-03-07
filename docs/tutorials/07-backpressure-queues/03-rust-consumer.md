@@ -33,7 +33,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-rustbridge-consumer = "0.10.0"
+rustbridge-consumer = "1.0.0"
 crossbeam-channel = "0.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

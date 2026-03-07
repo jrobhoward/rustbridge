@@ -18,8 +18,8 @@ This guide walks you through using rustbridge plugins from Java using the Foreig
 
 ```kotlin
 dependencies {
-    implementation("io.github.jrobhoward.rustbridge:rustbridge-core:0.10.0")
-    implementation("io.github.jrobhoward.rustbridge:rustbridge-ffm:0.10.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-core:1.0.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-ffm:1.0.0")
 }
 ```
 
@@ -27,8 +27,8 @@ dependencies {
 
 ```groovy
 dependencies {
-    implementation 'io.github.jrobhoward.rustbridge:rustbridge-core:0.10.0'
-    implementation 'io.github.jrobhoward.rustbridge:rustbridge-ffm:0.10.0'
+    implementation 'io.github.jrobhoward.rustbridge:rustbridge-core:1.0.0'
+    implementation 'io.github.jrobhoward.rustbridge:rustbridge-ffm:1.0.0'
 }
 ```
 
@@ -39,32 +39,32 @@ dependencies {
     <dependency>
         <groupId>io.github.jrobhoward.rustbridge</groupId>
         <artifactId>rustbridge-core</artifactId>
-        <version>0.10.0</version>
+        <version>1.0.0</version>
     </dependency>
     <dependency>
         <groupId>io.github.jrobhoward.rustbridge</groupId>
         <artifactId>rustbridge-ffm</artifactId>
-        <version>0.10.0</version>
+        <version>1.0.0</version>
     </dependency>
 </dependencies>
 ```
 
 ## Local Development
 
-When working with rustbridge source code (not published to Maven Central), publish to MavenLocal first:
+For development against a local build of rustbridge (not the published version), publish to MavenLocal:
 
 ```bash
 cd rustbridge-java
 ./gradlew publishToMavenLocal
 ```
 
-Then add the `mavenLocal()` repository to your build:
+Then add `mavenLocal()` **before** `mavenCentral()` in your build:
 
 **Gradle (Kotlin DSL)**
 
 ```kotlin
 repositories {
-    mavenLocal()
+    mavenLocal()  // Only needed for local development
     mavenCentral()
 }
 ```

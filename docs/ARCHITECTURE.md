@@ -746,7 +746,7 @@ my-plugin-1.0.0.rbp (ZIP archive)
     "build_info": {
         "timestamp": "2025-01-30T12:00:00Z",
         "commit": "abc123",
-        "builder": "rustbridge-cli 0.10.0"
+        "builder": "rustbridge-cli 1.0.0"
     }
 }
 ```

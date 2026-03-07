@@ -16,8 +16,8 @@ This guide walks you through using rustbridge plugins from C# using P/Invoke.
 
 ```xml
 <ItemGroup>
-    <PackageReference Include="RustBridge.Core" Version="0.10.0" />
-    <PackageReference Include="RustBridge.Native" Version="0.10.0" />
+    <PackageReference Include="RustBridge.Core" Version="1.0.0" />
+    <PackageReference Include="RustBridge.Native" Version="1.0.0" />
 </ItemGroup>
 ```
 

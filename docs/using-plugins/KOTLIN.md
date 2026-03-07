@@ -26,14 +26,13 @@ application {
 }
 
 repositories {
-    mavenLocal()  // For local development (see below)
     mavenCentral()
 }
 
 dependencies {
-    implementation("io.github.jrobhoward.rustbridge:rustbridge-core:0.10.0")
-    implementation("io.github.jrobhoward.rustbridge:rustbridge-ffm:0.10.0")
-    implementation("io.github.jrobhoward.rustbridge:rustbridge-kotlin:0.10.0")  // Kotlin extensions
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-core:1.0.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-ffm:1.0.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-kotlin:1.0.0")  // Kotlin extensions
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.2")
 
     // Optional: for coroutine support
@@ -82,14 +81,12 @@ The `rustbridge-kotlin` module provides idiomatic Kotlin extensions:
 
 ## Local Development
 
-When working with rustbridge source code (not published to Maven Central), publish to MavenLocal first:
+For development against a local build of rustbridge (not the published version), publish to MavenLocal and add `mavenLocal()` before `mavenCentral()` in your build:
 
 ```bash
 cd rustbridge-java
 ./gradlew publishToMavenLocal
 ```
-
-The `mavenLocal()` repository in the build file above will then resolve the local artifacts.
 
 ## Loading a Plugin
 

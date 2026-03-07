@@ -34,7 +34,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-rustbridge-consumer = "0.10.0"
+rustbridge-consumer = "1.0.0"
 ```
 
 ## Define Binary Structs

@@ -11,7 +11,6 @@ application {
 }
 
 repositories {
-    mavenLocal()  // For local rustbridge development
     mavenCentral()
 }
 

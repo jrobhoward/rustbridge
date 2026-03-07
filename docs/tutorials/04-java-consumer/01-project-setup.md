@@ -46,16 +46,6 @@ cp ../../target/bundle/json-plugin-0.1.0.rbp .
 
 > **Note**: The bundle path is relative to the consumers/java-ffm directory.
 
-## Install rustbridge Java Libraries
-
-If you haven't already, install the Java libraries to Maven local:
-
-```bash
-cd $RUSTBRIDGE_WORKSPACE/rustbridge/rustbridge-java
-./gradlew publishToMavenLocal
-cd $RUSTBRIDGE_WORKSPACE/json-plugin/consumers/java-ffm
-```
-
 ## Examine build.gradle.kts
 
 The generated `build.gradle.kts` includes:
@@ -74,14 +64,13 @@ application {
 }
 
 repositories {
-    mavenLocal()  // For local rustbridge development
     mavenCentral()
 }
 
 dependencies {
     // rustbridge dependencies
-    implementation("io.github.jrobhoward.rustbridge:rustbridge-core:0.10.0")
-    implementation("io.github.jrobhoward.rustbridge:rustbridge-ffm:0.10.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-core:1.0.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-ffm:1.0.0")
 
     // JSON serialization
     implementation("com.google.code.gson:gson:2.10.1")
@@ -117,7 +106,7 @@ tasks.withType<JavaExec> {
 
 Key points:
 
-- **mavenLocal()**: Finds rustbridge libraries you installed
+- **mavenCentral()**: Resolves rustbridge libraries from Maven Central
 - **rustbridge-ffm**: Uses Java's Foreign Function & Memory API
 - **gson**: For JSON serialization (simpler than Jackson for Java)
 - **needsPreview**: Automatically detects Java 21 and adds `--enable-preview`

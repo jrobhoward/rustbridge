@@ -62,13 +62,12 @@ plugins {
 }
 
 repositories {
-    mavenLocal()  // For rustbridge libraries
     mavenCentral()
 }
 
 dependencies {
-    implementation("io.github.jrobhoward.rustbridge:rustbridge-core:0.10.0")
-    implementation("io.github.jrobhoward.rustbridge:rustbridge-ffm:0.10.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-core:1.0.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-ffm:1.0.0")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.2")
 }
 
@@ -88,7 +87,7 @@ tasks.withType<JavaExec> {
 
 Key points:
 
-- **mavenLocal()**: Finds rustbridge libraries you installed
+- **mavenCentral()**: Resolves rustbridge libraries from Maven Central
 - **rustbridge-ffm**: Uses FFM (Foreign Function & Memory API) for native access (Java 21+)
 - **jackson-module-kotlin**: For JSON serialization
 - **--enable-native-access**: Required JVM flag for FFM

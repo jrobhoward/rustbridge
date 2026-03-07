@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Java/Kotlin**: Rename Maven groupId and Java packages from `com.rustbridge` to `io.github.jrobhoward.rustbridge` for Maven Central publishing
+- **Java/Kotlin**: Published to Maven Central — consumers now use `mavenCentral()` instead of `mavenLocal()`
+- **All**: Version bump to 1.0.0 across all ecosystems (Rust, Java, C#, Python, Erlang)
+- **Docs**: Update all tutorials and guides to reference Maven Central and version 1.0.0
 
 ## [0.10.0] - 2026-02-14
 

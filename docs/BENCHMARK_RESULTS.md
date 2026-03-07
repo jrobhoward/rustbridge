@@ -1,6 +1,6 @@
 # RustBridge Benchmark Results
 
-**Version:** 0.10.0
+**Version:** 1.0.0
 **Updated:** 2026-02-13
 
 ## Executive Summary
@@ -362,7 +362,7 @@ cd rustbridge-java
 ./gradlew :rustbridge-benchmarks:jmhJar
 
 java --enable-native-access=ALL-UNNAMED \
-  -jar rustbridge-benchmarks/build/libs/rustbridge-benchmarks-0.10.0-jmh.jar \
+  -jar rustbridge-benchmarks/build/libs/rustbridge-benchmarks-1.0.0-jmh.jar \
   -f 2 -wi 3 -i 5
 ```
 
@@ -416,7 +416,7 @@ Results are printed in the Common Test log output. The port driver and hello-plu
 
 ## Historical Notes
 
-### Changes in v0.10.0
+### Changes in v1.0.0
 - **JNI Removed:** Java integration now uses FFM exclusively (Java 21+)
 - **Simplified Setup:** No native library compilation required for Java
 - **Performance Improved:** JDK 25 FFM is 28% faster than JDK 21 preview

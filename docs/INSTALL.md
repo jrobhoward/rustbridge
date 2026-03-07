@@ -49,21 +49,14 @@ Choose your target language(s):
 
 ### Java/Kotlin
 
-Build and publish to local Maven:
-
-```bash
-cd $RUSTBRIDGE_WORKSPACE/rustbridge/rustbridge-java
-./gradlew publishToMavenLocal
-```
-
-Then in your project's `build.gradle.kts`:
+Add the dependency to your project's `build.gradle.kts`:
 
 ```kotlin
 repositories {
-    mavenLocal()
+    mavenCentral()
 }
 dependencies {
-    implementation("io.github.jrobhoward.rustbridge:rustbridge-ffm:0.10.0")  // Java 21+
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-ffm:1.0.0")  // Java 21+
 }
 ```
 
@@ -95,7 +88,7 @@ After completing the steps above, verify:
 rustbridge --version
 ```
 
-You should see version output (e.g., `rustbridge 0.10.0`).
+You should see version output (e.g., `rustbridge 1.0.0`).
 
 ## What's Next?
 
