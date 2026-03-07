@@ -1,6 +1,6 @@
 {application, rustbridge, [
     {description, "Erlang consumer for rustbridge plugins"},
-    {vsn, "0.10.0"},
+    {vsn, "1.0.0"},
     {registered, []},
     {mod, {rustbridge_app, []}},
     {applications, [

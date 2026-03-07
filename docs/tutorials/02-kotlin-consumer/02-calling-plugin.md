@@ -9,8 +9,8 @@ Replace the contents of `src/main/kotlin/com/example/Main.kt`:
 ```kotlin
 package com.example
 
-import com.rustbridge.BundleLoader
-import com.rustbridge.ffm.FfmPluginLoader
+import io.github.jrobhoward.rustbridge.BundleLoader
+import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader
 
 fun main(args: Array<String>) {
     // Path to your plugin bundle
@@ -112,8 +112,8 @@ var request = """{"pattern": "[invalid", "text": "test"}"""
 Output:
 
 ```
-Exception in thread "main" com.rustbridge.PluginException: {"status":"error","error_code":7,"error_message":"handler error: Invalid regex pattern: regex parse error:\n    [invalid\n    ^\nerror: unclosed character class"}
-        at com.rustbridge.ffm.FfmPlugin.call(FfmPlugin.java:89)
+Exception in thread "main" io.github.jrobhoward.rustbridge.PluginException: {"status":"error","error_code":7,"error_message":"handler error: Invalid regex pattern: regex parse error:\n    [invalid\n    ^\nerror: unclosed character class"}
+        at io.github.jrobhoward.rustbridge.ffm.FfmPlugin.call(FfmPlugin.java:89)
         at com.example.MainKt.main(Main.kt:25)
 ```
 
@@ -124,7 +124,7 @@ Remove the invalid `var request` line and uncomment the original.
 To configure the cache size, pass a `PluginConfig` when loading:
 
 ```kotlin
-import com.rustbridge.PluginConfig
+import io.github.jrobhoward.rustbridge.PluginConfig
 
 // Create config with custom cache size
 val config = PluginConfig.defaults()

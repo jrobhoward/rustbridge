@@ -1,7 +1,7 @@
 package com.example
 
-import com.rustbridge.BundleLoader
-import com.rustbridge.ffm.FfmPluginLoader
+import io.github.jrobhoward.rustbridge.BundleLoader
+import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 
@@ -12,7 +12,7 @@ data class EchoResponse(val message: String, val length: Int)
 val mapper = jacksonObjectMapper()
 
 // Extension function for type-safe plugin calls
-inline fun <reified T> com.rustbridge.Plugin.callTyped(
+inline fun <reified T> io.github.jrobhoward.rustbridge.Plugin.callTyped(
     messageType: String,
     request: Any
 ): T {

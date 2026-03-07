@@ -2,11 +2,12 @@ plugins {
     java
     `java-library`
     `maven-publish`
+    signing
 }
 
 allprojects {
     group = "io.github.jrobhoward.rustbridge"
-    version = "0.10.0"
+    version = "1.0.0"
 
     repositories {
         mavenCentral()
@@ -16,7 +17,12 @@ allprojects {
 subprojects {
     apply(plugin = "java")
     apply(plugin = "java-library")
-    apply(plugin = "maven-publish")
+
+    val isPublished = project.name != "rustbridge-benchmarks"
+    if (isPublished) {
+        apply(plugin = "maven-publish")
+        apply(plugin = "signing")
+    }
 
     java {
         toolchain {
@@ -63,23 +69,58 @@ subprojects {
         testRuntimeOnly("org.slf4j:slf4j-simple:2.0.9")
     }
 
-    publishing {
-        publications {
-            create<MavenPublication>("maven") {
-                from(components["java"])
-                pom {
-                    licenses {
-                        license {
-                            name.set("MIT License")
-                            url.set("https://opensource.org/licenses/MIT")
+    if (isPublished) {
+        java {
+            withJavadocJar()
+            withSourcesJar()
+        }
+
+        publishing {
+            publications {
+                create<MavenPublication>("maven") {
+                    from(components["java"])
+                    pom {
+                        name.set(project.name)
+                        description.set("RustBridge - Rust shared libraries callable from Java/Kotlin")
+                        url.set("https://github.com/jrobhoward/rustbridge")
+
+                        licenses {
+                            license {
+                                name.set("MIT License")
+                                url.set("https://opensource.org/licenses/MIT")
+                            }
+                            license {
+                                name.set("Apache License, Version 2.0")
+                                url.set("https://www.apache.org/licenses/LICENSE-2.0")
+                            }
                         }
-                        license {
-                            name.set("Apache License, Version 2.0")
-                            url.set("https://www.apache.org/licenses/LICENSE-2.0")
+
+                        developers {
+                            developer {
+                                id.set("jrobhoward")
+                            }
+                        }
+
+                        scm {
+                            connection.set("scm:git:git://github.com/jrobhoward/rustbridge.git")
+                            developerConnection.set("scm:git:ssh://github.com/jrobhoward/rustbridge.git")
+                            url.set("https://github.com/jrobhoward/rustbridge")
                         }
                     }
                 }
             }
+
+            repositories {
+                maven {
+                    name = "staging"
+                    url = uri(layout.buildDirectory.dir("staging-deploy"))
+                }
+            }
+        }
+
+        signing {
+            useGpgCmd()
+            sign(publishing.publications["maven"])
         }
     }
 }

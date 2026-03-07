@@ -329,9 +329,9 @@ While panics won't crash the host application, they do:
 Errors from Rust become `PluginException` in Java:
 
 ```java
-import com.rustbridge.Plugin;
-import com.rustbridge.PluginException;
-import com.rustbridge.ffm.FfmPluginLoader;
+import io.github.jrobhoward.rustbridge.Plugin;
+import io.github.jrobhoward.rustbridge.PluginException;
+import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader;
 
 public class ErrorHandlingExample {
     public static void main(String[] args) {
@@ -370,8 +370,8 @@ public class ErrorHandlingExample {
 Kotlin's when expression makes error handling cleaner:
 
 ```kotlin
-import com.rustbridge.PluginException
-import com.rustbridge.ffm.FfmPluginLoader
+import io.github.jrobhoward.rustbridge.PluginException
+import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader
 
 fun main() {
     FfmPluginLoader.load("libmyplugin.so").use { plugin ->

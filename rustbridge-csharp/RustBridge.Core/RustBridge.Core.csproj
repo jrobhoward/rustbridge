@@ -8,12 +8,25 @@
 
     <!-- Package metadata -->
     <PackageId>RustBridge.Core</PackageId>
-    <Version>0.10.0</Version>
+    <Version>1.0.0</Version>
     <Authors>RustBridge Contributors</Authors>
     <Description>Core interfaces and types for RustBridge - a framework for calling Rust plugins from .NET</Description>
-    <PackageTags>rust;ffi;interop;plugin</PackageTags>
+    <PackageTags>rust;ffi;interop;plugin;native</PackageTags>
     <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/jrobhoward/rustbridge</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/jrobhoward/rustbridge</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+
+    <!-- Package generation -->
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.Text.Json" Version="8.0.5" />

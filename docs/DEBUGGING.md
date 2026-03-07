@@ -56,9 +56,9 @@ async fn handle_request(
 ### Java: Enable Debug Logging with Callback
 
 ```java
-import com.rustbridge.LogCallback;
-import com.rustbridge.PluginConfig;
-import com.rustbridge.ffm.FfmPluginLoader;
+import io.github.jrobhoward.rustbridge.LogCallback;
+import io.github.jrobhoward.rustbridge.PluginConfig;
+import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader;
 
 LogCallback callback = (level, target, message) -> {
     System.out.printf("[%s] %s: %s%n", level, target, message);

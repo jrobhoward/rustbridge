@@ -1,6 +1,6 @@
 [project]
 name = "rustbridge"
-version = "0.10.0"
+version = "1.0.0"
 description = "Python bindings for rustbridge - Rust shared libraries callable from Python"
 readme = "README.md"
 license = {text = "MIT OR Apache-2.0"}
@@ -9,7 +9,7 @@ authors = [
     { name = "RustBridge Authors" }
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
@@ -23,6 +23,13 @@ keywords = ["rust", "ffi", "plugin", "native"]
 dependencies = [
     "PyNaCl>=1.5.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/jrobhoward/rustbridge"
+Repository = "https://github.com/jrobhoward/rustbridge"
+Documentation = "https://github.com/jrobhoward/rustbridge/tree/main/docs"
+Issues = "https://github.com/jrobhoward/rustbridge/issues"
+Changelog = "https://github.com/jrobhoward/rustbridge/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [

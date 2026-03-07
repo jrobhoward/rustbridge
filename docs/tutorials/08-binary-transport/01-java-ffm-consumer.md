@@ -43,8 +43,8 @@ Look at `src/main/java/com/example/Main.java`:
 ```java
 package com.example;
 
-import com.rustbridge.BundleLoader;
-import com.rustbridge.ffm.FfmPluginLoader;
+import io.github.jrobhoward.rustbridge.BundleLoader;
+import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader;
 import com.google.gson.Gson;
 
 public class Main {
@@ -289,8 +289,8 @@ Replace `src/main/java/com/example/Main.java`:
 ```java
 package com.example;
 
-import com.rustbridge.BundleLoader;
-import com.rustbridge.ffm.FfmPluginLoader;
+import io.github.jrobhoward.rustbridge.BundleLoader;
+import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader;
 import com.example.ThumbnailStructs.ThumbnailResponse;
 
 import java.io.IOException;
@@ -444,8 +444,8 @@ repositories {
 }
 
 dependencies {
-    implementation("com.rustbridge:rustbridge-core:0.10.0")
-    implementation("com.rustbridge:rustbridge-ffm:0.10.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-core:0.10.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-ffm:0.10.0")
     implementation("com.google.code.gson:gson:2.11.0")
 }
 

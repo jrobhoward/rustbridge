@@ -19,7 +19,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.10.0"
+version = "1.0.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/jrobhoward/rustbridge"
@@ -27,15 +27,15 @@ rust-version = "1.90"
 
 [workspace.dependencies]
 # Internal crates
-rustbridge = { path = "crates/rustbridge", version = "0.10.0" }
-rustbridge-core = { path = "crates/rustbridge-core", version = "0.10.0" }
-rustbridge-transport = { path = "crates/rustbridge-transport", version = "0.10.0" }
-rustbridge-ffi = { path = "crates/rustbridge-ffi", version = "0.10.0" }
-rustbridge-runtime = { path = "crates/rustbridge-runtime", version = "0.10.0" }
-rustbridge-logging = { path = "crates/rustbridge-logging", version = "0.10.0" }
-rustbridge-macros = { path = "crates/rustbridge-macros", version = "0.10.0" }
-rustbridge-bundle = { path = "crates/rustbridge-bundle", version = "0.10.0" }
-rustbridge-consumer = { path = "crates/rustbridge-consumer", version = "0.10.0" }
+rustbridge = { path = "crates/rustbridge", version = "1.0.0" }
+rustbridge-core = { path = "crates/rustbridge-core", version = "1.0.0" }
+rustbridge-transport = { path = "crates/rustbridge-transport", version = "1.0.0" }
+rustbridge-ffi = { path = "crates/rustbridge-ffi", version = "1.0.0" }
+rustbridge-runtime = { path = "crates/rustbridge-runtime", version = "1.0.0" }
+rustbridge-logging = { path = "crates/rustbridge-logging", version = "1.0.0" }
+rustbridge-macros = { path = "crates/rustbridge-macros", version = "1.0.0" }
+rustbridge-bundle = { path = "crates/rustbridge-bundle", version = "1.0.0" }
+rustbridge-consumer = { path = "crates/rustbridge-consumer", version = "1.0.0" }
 
 # Dynamic loading
 libloading = "0.8"

@@ -512,7 +512,7 @@ dependencies = [
 
 [[package]]
 name = "rustbridge-bundle"
-version = "0.10.0"
+version = "1.0.0"
 dependencies = [
  "hex",
  "minisign",
@@ -525,7 +525,7 @@ dependencies = [
 
 [[package]]
 name = "rustbridge-consumer"
-version = "0.10.0"
+version = "1.0.0"
 dependencies = [
  "libloading",
  "rustbridge-bundle",
@@ -539,7 +539,7 @@ dependencies = [
 
 [[package]]
 name = "rustbridge-core"
-version = "0.10.0"
+version = "1.0.0"
 dependencies = [
  "async-trait",
  "serde",
@@ -549,7 +549,7 @@ dependencies = [
 
 [[package]]
 name = "rustbridge-port-driver"
-version = "0.10.0"
+version = "1.0.0"
 dependencies = [
  "base64",
  "rustbridge-consumer",
@@ -561,7 +561,7 @@ dependencies = [
 
 [[package]]
 name = "rustbridge-transport"
-version = "0.10.0"
+version = "1.0.0"
 dependencies = [
  "rustbridge-core",
  "serde",

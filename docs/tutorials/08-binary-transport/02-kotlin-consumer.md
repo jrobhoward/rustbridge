@@ -258,7 +258,7 @@ Create `src/main/kotlin/com/example/ThumbnailExtensions.kt`:
 ```kotlin
 package com.example
 
-import com.rustbridge.Plugin
+import io.github.jrobhoward.rustbridge.Plugin
 import java.lang.foreign.Arena
 import java.lang.foreign.MemorySegment
 import kotlin.time.Duration
@@ -351,8 +351,8 @@ Replace `src/main/kotlin/com/example/Main.kt`:
 ```kotlin
 package com.example
 
-import com.rustbridge.BundleLoader
-import com.rustbridge.ffm.FfmPluginLoader
+import io.github.jrobhoward.rustbridge.BundleLoader
+import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader
 import java.io.File
 import kotlin.time.Duration
 import kotlin.time.measureTime
@@ -472,9 +472,9 @@ repositories {
 }
 
 dependencies {
-    implementation("com.rustbridge:rustbridge-core:0.10.0")
-    implementation("com.rustbridge:rustbridge-ffm:0.10.0")
-    implementation("com.rustbridge:rustbridge-kotlin:0.10.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-core:0.10.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-ffm:0.10.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-kotlin:0.10.0")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.2")
 }
 

@@ -362,10 +362,10 @@ cd rustbridge-java
 ./gradlew :rustbridge-ffm:test
 
 # Run a specific test class
-./gradlew test --tests "com.rustbridge.ffm.PluginTest"
+./gradlew test --tests "io.github.jrobhoward.rustbridge.ffm.PluginTest"
 
 # Run a specific test method
-./gradlew test --tests "com.rustbridge.ffm.PluginTest.pluginConfig___fromEmptyJson___returnsDefaults"
+./gradlew test --tests "io.github.jrobhoward.rustbridge.ffm.PluginTest.pluginConfig___fromEmptyJson___returnsDefaults"
 
 # Run with output
 ./gradlew test --info

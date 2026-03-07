@@ -63,7 +63,7 @@ repositories {
     mavenLocal()
 }
 dependencies {
-    implementation("com.rustbridge:rustbridge-ffm:0.10.0")  // Java 21+
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-ffm:0.10.0")  // Java 21+
 }
 ```
 

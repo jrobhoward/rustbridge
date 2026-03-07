@@ -31,9 +31,9 @@ repositories {
 }
 
 dependencies {
-    implementation("com.rustbridge:rustbridge-core:0.10.0")
-    implementation("com.rustbridge:rustbridge-ffm:0.10.0")
-    implementation("com.rustbridge:rustbridge-kotlin:0.10.0")  // Kotlin extensions
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-core:0.10.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-ffm:0.10.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-kotlin:0.10.0")  // Kotlin extensions
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.2")
 
     // Optional: for coroutine support
@@ -96,8 +96,8 @@ The `mavenLocal()` repository in the build file above will then resolve the loca
 ### From Bundle (Recommended)
 
 ```kotlin
-import com.rustbridge.BundleLoader
-import com.rustbridge.ffm.FfmPluginLoader
+import io.github.jrobhoward.rustbridge.BundleLoader
+import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader
 
 fun main() {
     val bundleLoader = BundleLoader.builder()
@@ -119,7 +119,7 @@ fun main() {
 ### From Raw Library
 
 ```kotlin
-import com.rustbridge.ffm.FfmPluginLoader
+import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader
 
 val pluginPath = "target/release/libmyplugin.so"
 
@@ -134,7 +134,7 @@ FfmPluginLoader.load(pluginPath).use { plugin ->
 The `rustbridge-kotlin` module provides built-in type-safe extensions:
 
 ```kotlin
-import com.rustbridge.kotlin.call  // Extension functions
+import io.github.jrobhoward.rustbridge.kotlin.call  // Extension functions
 
 data class EchoRequest(val message: String)
 data class EchoResponse(val message: String, val length: Int)
@@ -174,8 +174,8 @@ val response: EchoResponse = plugin.callOrDefault("echo", request) { EchoRespons
 ### Using Java Builder
 
 ```kotlin
-import com.rustbridge.PluginConfig
-import com.rustbridge.LogLevel
+import io.github.jrobhoward.rustbridge.PluginConfig
+import io.github.jrobhoward.rustbridge.LogLevel
 
 val config = PluginConfig.defaults()
     .logLevel(LogLevel.DEBUG)
@@ -191,9 +191,9 @@ FfmPluginLoader.load(pluginPath, config).use { plugin ->
 ### Using Kotlin DSL (Recommended)
 
 ```kotlin
-import com.rustbridge.kotlin.pluginConfig
-import com.rustbridge.kotlin.sec
-import com.rustbridge.LogLevel
+import io.github.jrobhoward.rustbridge.kotlin.pluginConfig
+import io.github.jrobhoward.rustbridge.kotlin.sec
+import io.github.jrobhoward.rustbridge.LogLevel
 
 val config = pluginConfig {
     logLevel = LogLevel.DEBUG
@@ -212,7 +212,7 @@ val config = pluginConfig {
 ## Logging with Lambdas
 
 ```kotlin
-import com.rustbridge.LogCallback
+import io.github.jrobhoward.rustbridge.LogCallback
 
 val callback = LogCallback { level, target, message ->
     println("[$level] $target: $message")
@@ -228,8 +228,8 @@ FfmPluginLoader.load(pluginPath, config, callback).use { plugin ->
 The `rustbridge-kotlin` module provides built-in suspend functions:
 
 ```kotlin
-import com.rustbridge.kotlin.callAsync
-import com.rustbridge.kotlin.callAsyncResult
+import io.github.jrobhoward.rustbridge.kotlin.callAsync
+import io.github.jrobhoward.rustbridge.kotlin.callAsyncResult
 import kotlinx.coroutines.*
 
 // Usage
@@ -266,7 +266,7 @@ runBlocking {
 ## Error Handling
 
 ```kotlin
-import com.rustbridge.PluginException
+import io.github.jrobhoward.rustbridge.PluginException
 
 try {
     plugin.call("invalid.type", "{}")
@@ -285,8 +285,8 @@ try {
 The `rustbridge-kotlin` module provides a `PluginResult` sealed class:
 
 ```kotlin
-import com.rustbridge.kotlin.callSafe
-import com.rustbridge.kotlin.PluginResult
+import io.github.jrobhoward.rustbridge.kotlin.callSafe
+import io.github.jrobhoward.rustbridge.kotlin.PluginResult
 
 // Using built-in PluginResult
 val result: PluginResult<EchoResponse> = plugin.callSafe("echo", request)
@@ -342,9 +342,9 @@ fun Plugin.callBinaryEcho(message: String): Int {
 The `rustbridge-kotlin` module provides convenient lifecycle management:
 
 ```kotlin
-import com.rustbridge.kotlin.loadPlugin
-import com.rustbridge.kotlin.withPlugin
-import com.rustbridge.kotlin.lazyPlugin
+import io.github.jrobhoward.rustbridge.kotlin.loadPlugin
+import io.github.jrobhoward.rustbridge.kotlin.withPlugin
+import io.github.jrobhoward.rustbridge.kotlin.lazyPlugin
 
 // DSL-style loading
 val plugin = loadPlugin(pluginPath) {
@@ -373,9 +373,9 @@ val lazyPlugin by lazyPlugin(pluginPath) {
 ## Complete Example
 
 ```kotlin
-import com.rustbridge.*
-import com.rustbridge.ffm.FfmPluginLoader
-import com.rustbridge.kotlin.*
+import io.github.jrobhoward.rustbridge.*
+import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader
+import io.github.jrobhoward.rustbridge.kotlin.*
 import kotlinx.coroutines.*
 
 data class AddRequest(val a: Long, val b: Long)

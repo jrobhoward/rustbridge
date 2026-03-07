@@ -56,7 +56,7 @@ Add an extension function that handles serialization:
 ```kotlin
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.rustbridge.Plugin
+import io.github.jrobhoward.rustbridge.Plugin
 
 val mapper = jacksonObjectMapper()
 
@@ -76,10 +76,10 @@ inline fun <reified T> Plugin.callTyped(
 Now you can write:
 
 ```kotlin
-import com.rustbridge.BundleLoader
-import com.rustbridge.LogCallback
-import com.rustbridge.PluginConfig as RbPluginConfig
-import com.rustbridge.ffm.FfmPluginLoader
+import io.github.jrobhoward.rustbridge.BundleLoader
+import io.github.jrobhoward.rustbridge.LogCallback
+import io.github.jrobhoward.rustbridge.PluginConfig as RbPluginConfig
+import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader
 
 fun main(args: Array<String>) {
     val bundlePath = "regex-plugin-0.1.0.rbp"
@@ -139,12 +139,12 @@ package com.example
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.rustbridge.BundleLoader
-import com.rustbridge.LogCallback
-import com.rustbridge.LogLevel
-import com.rustbridge.Plugin
-import com.rustbridge.PluginConfig as RbPluginConfig
-import com.rustbridge.ffm.FfmPluginLoader
+import io.github.jrobhoward.rustbridge.BundleLoader
+import io.github.jrobhoward.rustbridge.LogCallback
+import io.github.jrobhoward.rustbridge.LogLevel
+import io.github.jrobhoward.rustbridge.Plugin
+import io.github.jrobhoward.rustbridge.PluginConfig as RbPluginConfig
+import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader
 
 // Data classes matching plugin message types
 data class MatchRequest(
@@ -257,7 +257,7 @@ Output:
 Type-safe calls also give better error handling:
 
 ```kotlin
-import com.rustbridge.PluginException
+import io.github.jrobhoward.rustbridge.PluginException
 
 try {
     val response = plugin.callTyped<MatchResponse>("match", request)

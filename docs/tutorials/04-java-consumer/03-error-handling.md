@@ -13,10 +13,10 @@ Update the `call` helper to handle errors:
 ```java
 package com.example;
 
-import com.rustbridge.BundleLoader;
-import com.rustbridge.Plugin;
-import com.rustbridge.PluginException;
-import com.rustbridge.ffm.FfmPluginLoader;
+import io.github.jrobhoward.rustbridge.BundleLoader;
+import io.github.jrobhoward.rustbridge.Plugin;
+import io.github.jrobhoward.rustbridge.PluginException;
+import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader;
 import com.google.gson.Gson;
 
 public class Main {
@@ -129,10 +129,10 @@ Here's the final `Main.java`:
 ```java
 package com.example;
 
-import com.rustbridge.BundleLoader;
-import com.rustbridge.Plugin;
-import com.rustbridge.PluginException;
-import com.rustbridge.ffm.FfmPluginLoader;
+import io.github.jrobhoward.rustbridge.BundleLoader;
+import io.github.jrobhoward.rustbridge.Plugin;
+import io.github.jrobhoward.rustbridge.PluginException;
+import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader;
 import com.google.gson.Gson;
 
 public class Main {

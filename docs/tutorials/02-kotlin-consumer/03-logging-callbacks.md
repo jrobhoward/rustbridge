@@ -23,11 +23,11 @@ Update your Main.kt to pass a log callback when loading the plugin:
 ```kotlin
 package com.example
 
-import com.rustbridge.BundleLoader
-import com.rustbridge.LogCallback
-import com.rustbridge.LogLevel
-import com.rustbridge.PluginConfig
-import com.rustbridge.ffm.FfmPluginLoader
+import io.github.jrobhoward.rustbridge.BundleLoader
+import io.github.jrobhoward.rustbridge.LogCallback
+import io.github.jrobhoward.rustbridge.LogLevel
+import io.github.jrobhoward.rustbridge.PluginConfig
+import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader
 import java.nio.file.Path
 
 fun main(args: Array<String>) {

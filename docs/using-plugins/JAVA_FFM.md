@@ -18,8 +18,8 @@ This guide walks you through using rustbridge plugins from Java using the Foreig
 
 ```kotlin
 dependencies {
-    implementation("com.rustbridge:rustbridge-core:0.10.0")
-    implementation("com.rustbridge:rustbridge-ffm:0.10.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-core:0.10.0")
+    implementation("io.github.jrobhoward.rustbridge:rustbridge-ffm:0.10.0")
 }
 ```
 
@@ -27,8 +27,8 @@ dependencies {
 
 ```groovy
 dependencies {
-    implementation 'com.rustbridge:rustbridge-core:0.10.0'
-    implementation 'com.rustbridge:rustbridge-ffm:0.10.0'
+    implementation 'io.github.jrobhoward.rustbridge:rustbridge-core:0.10.0'
+    implementation 'io.github.jrobhoward.rustbridge:rustbridge-ffm:0.10.0'
 }
 ```
 
@@ -37,12 +37,12 @@ dependencies {
 ```xml
 <dependencies>
     <dependency>
-        <groupId>com.rustbridge</groupId>
+        <groupId>io.github.jrobhoward.rustbridge</groupId>
         <artifactId>rustbridge-core</artifactId>
         <version>0.10.0</version>
     </dependency>
     <dependency>
-        <groupId>com.rustbridge</groupId>
+        <groupId>io.github.jrobhoward.rustbridge</groupId>
         <artifactId>rustbridge-ffm</artifactId>
         <version>0.10.0</version>
     </dependency>
@@ -85,10 +85,10 @@ repositories {
 ### From Bundle (Recommended)
 
 ```java
-import com.rustbridge.BundleLoader;
-import com.rustbridge.Plugin;
-import com.rustbridge.PluginConfig;
-import com.rustbridge.ffm.FfmPluginLoader;
+import io.github.jrobhoward.rustbridge.BundleLoader;
+import io.github.jrobhoward.rustbridge.Plugin;
+import io.github.jrobhoward.rustbridge.PluginConfig;
+import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader;
 import java.nio.file.Path;
 
 public class Example {
@@ -116,8 +116,8 @@ public class Example {
 ### From Raw Library
 
 ```java
-import com.rustbridge.Plugin;
-import com.rustbridge.ffm.FfmPluginLoader;
+import io.github.jrobhoward.rustbridge.Plugin;
+import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader;
 
 // Platform-specific path
 String pluginPath = "target/release/libmyplugin.so";  // Linux
@@ -158,8 +158,8 @@ try (Plugin plugin = FfmPluginLoader.load(pluginPath)) {
 ## Configuration
 
 ```java
-import com.rustbridge.PluginConfig;
-import com.rustbridge.LogLevel;
+import io.github.jrobhoward.rustbridge.PluginConfig;
+import io.github.jrobhoward.rustbridge.LogLevel;
 
 PluginConfig config = PluginConfig.defaults()
     .logLevel(LogLevel.DEBUG)           // Log level
@@ -177,7 +177,7 @@ try (Plugin plugin = FfmPluginLoader.load(pluginPath, config)) {
 Receive logs from the Rust plugin:
 
 ```java
-import com.rustbridge.LogCallback;
+import io.github.jrobhoward.rustbridge.LogCallback;
 
 LogCallback callback = (level, target, message) -> {
     System.out.printf("[%s] %s: %s%n", level, target, message);
@@ -243,7 +243,7 @@ try {
 ## Error Handling
 
 ```java
-import com.rustbridge.PluginException;
+import io.github.jrobhoward.rustbridge.PluginException;
 
 try {
     String response = plugin.call("invalid.type", "{}");
@@ -307,8 +307,8 @@ tasks.withType<JavaExec> {
 ## Complete Example
 
 ```java
-import com.rustbridge.*;
-import com.rustbridge.ffm.FfmPluginLoader;
+import io.github.jrobhoward.rustbridge.*;
+import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class CalculatorExample {
