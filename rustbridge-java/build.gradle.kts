@@ -5,7 +5,7 @@ plugins {
 }
 
 allprojects {
-    group = "com.rustbridge"
+    group = "io.github.jrobhoward.rustbridge"
     version = "0.10.0"
 
     repositories {
