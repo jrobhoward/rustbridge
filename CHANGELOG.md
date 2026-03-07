@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-03-07
+
 ### Changed
-- **Java/Kotlin**: Rename Maven groupId and Java packages from `com.rustbridge` to `io.github.jrobhoward.rustbridge` for Maven Central publishing
+- **Java/Kotlin**: Rename Maven groupId and Java packages from `com.rustbridge` to `io.github.jrobhoward.rustbridge`
 - **Java/Kotlin**: Published to Maven Central — consumers now use `mavenCentral()` instead of `mavenLocal()`
-- **All**: Version bump to 1.0.0 across all ecosystems (Rust, Java, C#, Python, Erlang)
+- **All**: First stable release — version 1.0.0 across all ecosystems (Rust, Java, C#, Python, Erlang)
 - **Docs**: Update all tutorials and guides to reference Maven Central and version 1.0.0
+- **Dependencies**: Upgrade workspace dependencies (zip 8.2, tokio 1.50, libloading 0.9, minisign 0.9, others)
 
 ## [0.10.0] - 2026-02-14
 
@@ -400,7 +403,8 @@ Initial public release.
 - No `.unwrap()` or `.expect()` in production code
 - Minisign signature verification for bundle integrity
 
-[Unreleased]: https://github.com/jrobhoward/rustbridge/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/jrobhoward/rustbridge/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/jrobhoward/rustbridge/compare/v0.10.0...v1.0.0
 [0.10.0]: https://github.com/jrobhoward/rustbridge/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/jrobhoward/rustbridge/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/jrobhoward/rustbridge/compare/v0.8.1...v0.9.0
