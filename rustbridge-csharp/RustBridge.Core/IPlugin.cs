@@ -76,4 +76,19 @@ public interface IPlugin : IDisposable
     TResponse CallRaw<TRequest, TResponse>(int messageId, TRequest request)
         where TRequest : unmanaged, IBinaryStruct
         where TResponse : unmanaged, IBinaryStruct;
+
+    /// <summary>
+    /// Call the plugin with a raw byte array request (variable-length binary transport).
+    /// <para>
+    /// This method bypasses JSON serialization for high-performance scenarios where
+    /// the response is variable-length (e.g., images, compressed data). Unlike
+    /// <see cref="CallRaw{TRequest,TResponse}"/>, this method does not validate
+    /// response size against a fixed struct — it returns all response bytes.
+    /// </para>
+    /// </summary>
+    /// <param name="messageId">The binary message ID (registered with register_binary_handler).</param>
+    /// <param name="request">The request as a byte array (header + optional payload).</param>
+    /// <returns>The response as a byte array.</returns>
+    /// <exception cref="PluginException">If the call fails.</exception>
+    byte[] CallRawBytes(int messageId, byte[] request);
 }

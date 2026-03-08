@@ -29,6 +29,73 @@ Length: 17
 
 ## Define Struct Layouts
 
+Create `src/main/kotlin/com/example/ThumbnailRequest.kt`:
+
+```kotlin
+package com.example
+
+import io.github.jrobhoward.rustbridge.ffm.BinaryStruct
+import java.lang.foreign.*
+
+/**
+ * Binary request for thumbnail creation.
+ *
+ * Contains a 24-byte header followed by variable-length image data.
+ * Extends BinaryStruct for use with FfmPlugin.callRawBytes().
+ */
+class ThumbnailRequest private constructor(
+    segment: MemorySegment,
+    private val totalSize: Long
+) : BinaryStruct(segment) {
+
+    override fun byteSize(): Long = totalSize
+
+    companion object {
+        const val HEADER_SIZE: Int = 24
+
+        // Output format constants
+        const val FORMAT_JPEG: Int = 0
+        const val FORMAT_PNG: Int = 1
+        const val FORMAT_WEBP: Int = 2
+
+        // Message ID for thumbnail creation
+        const val MSG_THUMBNAIL_CREATE: Int = 100
+
+        /**
+         * Create a thumbnail request with image data.
+         */
+        fun create(
+            arena: Arena,
+            targetWidth: Int,
+            targetHeight: Int,
+            outputFormat: Int,
+            quality: Int,
+            imageData: ByteArray
+        ): ThumbnailRequest {
+            val totalSize = HEADER_SIZE.toLong() + imageData.size
+            val segment = arena.allocate(totalSize)
+
+            // Set header fields
+            segment.set(ValueLayout.JAVA_BYTE, 0L, 1.toByte()) // version
+            segment.set(ValueLayout.JAVA_INT_UNALIGNED, 4L, targetWidth)
+            segment.set(ValueLayout.JAVA_INT_UNALIGNED, 8L, targetHeight)
+            segment.set(ValueLayout.JAVA_INT_UNALIGNED, 12L, outputFormat)
+            segment.set(ValueLayout.JAVA_INT_UNALIGNED, 16L, quality)
+            segment.set(ValueLayout.JAVA_INT_UNALIGNED, 20L, imageData.size)
+
+            // Copy image data after header
+            MemorySegment.copy(
+                imageData, 0,
+                segment, ValueLayout.JAVA_BYTE,
+                HEADER_SIZE.toLong(), imageData.size
+            )
+
+            return ThumbnailRequest(segment, totalSize)
+        }
+    }
+}
+```
+
 Create `src/main/kotlin/com/example/ThumbnailStructs.kt`:
 
 ```kotlin
@@ -38,94 +105,11 @@ import java.lang.foreign.*
 import java.lang.invoke.VarHandle
 
 /**
- * Binary struct layouts for thumbnail plugin.
+ * Response parsing for thumbnail plugin.
  *
- * These layouts must match the Rust #[repr(C)] structs exactly.
+ * Parses the ByteArray returned by callRawBytes() into a ThumbnailResponse.
  */
 object ThumbnailStructs {
-
-    // Message ID for thumbnail creation
-    const val MSG_THUMBNAIL_CREATE: Int = 100
-
-    // Output format constants
-    const val FORMAT_JPEG: Int = 0
-    const val FORMAT_PNG: Int = 1
-    const val FORMAT_WEBP: Int = 2
-
-    // ========================================================================
-    // ThumbnailRequestHeader (24 bytes)
-    // ========================================================================
-
-    /**
-     * Layout matching Rust ThumbnailRequestHeader:
-     *
-     *   Offset 0:  version (u8)
-     *   Offset 1:  _reserved (3 bytes)
-     *   Offset 4:  target_width (u32)
-     *   Offset 8:  target_height (u32)
-     *   Offset 12: output_format (u32)
-     *   Offset 16: quality (u32)
-     *   Offset 20: payload_size (u32)
-     *   Total: 24 bytes
-     */
-    val REQUEST_HEADER_LAYOUT: StructLayout = MemoryLayout.structLayout(
-        ValueLayout.JAVA_BYTE.withName("version"),
-        MemoryLayout.sequenceLayout(3, ValueLayout.JAVA_BYTE).withName("_reserved"),
-        ValueLayout.JAVA_INT_UNALIGNED.withName("target_width"),
-        ValueLayout.JAVA_INT_UNALIGNED.withName("target_height"),
-        ValueLayout.JAVA_INT_UNALIGNED.withName("output_format"),
-        ValueLayout.JAVA_INT_UNALIGNED.withName("quality"),
-        ValueLayout.JAVA_INT_UNALIGNED.withName("payload_size")
-    ).withName("ThumbnailRequestHeader")
-
-    val REQUEST_HEADER_SIZE: Long = REQUEST_HEADER_LAYOUT.byteSize() // 24
-
-    // VarHandles for request header fields
-    private val VH_REQ_VERSION: VarHandle =
-        REQUEST_HEADER_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("version"))
-    private val VH_REQ_TARGET_WIDTH: VarHandle =
-        REQUEST_HEADER_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("target_width"))
-    private val VH_REQ_TARGET_HEIGHT: VarHandle =
-        REQUEST_HEADER_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("target_height"))
-    private val VH_REQ_OUTPUT_FORMAT: VarHandle =
-        REQUEST_HEADER_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("output_format"))
-    private val VH_REQ_QUALITY: VarHandle =
-        REQUEST_HEADER_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("quality"))
-    private val VH_REQ_PAYLOAD_SIZE: VarHandle =
-        REQUEST_HEADER_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("payload_size"))
-
-    /**
-     * Create a thumbnail request with image data.
-     */
-    fun createRequest(
-        arena: Arena,
-        targetWidth: Int,
-        targetHeight: Int,
-        outputFormat: Int,
-        quality: Int,
-        imageData: ByteArray
-    ): MemorySegment {
-        // Allocate header + payload
-        val totalSize = REQUEST_HEADER_SIZE + imageData.size
-        val request = arena.allocate(totalSize)
-
-        // Set header fields
-        VH_REQ_VERSION.set(request, 0L, 1.toByte())
-        VH_REQ_TARGET_WIDTH.set(request, 0L, targetWidth)
-        VH_REQ_TARGET_HEIGHT.set(request, 0L, targetHeight)
-        VH_REQ_OUTPUT_FORMAT.set(request, 0L, outputFormat)
-        VH_REQ_QUALITY.set(request, 0L, quality)
-        VH_REQ_PAYLOAD_SIZE.set(request, 0L, imageData.size)
-
-        // Copy image data after header
-        MemorySegment.copy(
-            imageData, 0,
-            request, ValueLayout.JAVA_BYTE,
-            REQUEST_HEADER_SIZE, imageData.size
-        )
-
-        return request
-    }
 
     // ========================================================================
     // ThumbnailResponseHeader (20 bytes)
@@ -166,9 +150,12 @@ object ThumbnailStructs {
         RESPONSE_HEADER_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("payload_size"))
 
     /**
-     * Parse a thumbnail response from native memory.
+     * Parse a thumbnail response from a byte array.
      */
-    fun parseResponse(response: MemorySegment): ThumbnailResponse {
+    fun parseResponse(responseBytes: ByteArray): ThumbnailResponse {
+        // Wrap ByteArray as a MemorySegment for VarHandle access
+        val response = MemorySegment.ofArray(responseBytes)
+
         // Validate minimum size
         require(response.byteSize() >= RESPONSE_HEADER_SIZE) {
             "Response too small: ${response.byteSize()} bytes"
@@ -249,14 +236,16 @@ Create `src/main/kotlin/com/example/ThumbnailExtensions.kt`:
 ```kotlin
 package com.example
 
-import io.github.jrobhoward.rustbridge.Plugin
+import io.github.jrobhoward.rustbridge.ffm.FfmPlugin
 import java.lang.foreign.Arena
-import java.lang.foreign.MemorySegment
 import kotlin.time.Duration
 import kotlin.time.measureTimedValue
 
 /**
  * Extension functions for thumbnail plugin operations.
+ *
+ * These extend FfmPlugin (not Plugin) because callRawBytes()
+ * is specific to the FFM implementation.
  */
 
 /**
@@ -269,7 +258,7 @@ import kotlin.time.measureTimedValue
  * @param quality Quality 1-100 for JPEG/WebP (default: 85)
  * @return ThumbnailResponse with the generated thumbnail
  */
-fun Plugin.createThumbnail(
+fun FfmPlugin.createThumbnail(
     imageData: ByteArray,
     width: Int = 100,
     height: Int = 100,
@@ -277,23 +266,19 @@ fun Plugin.createThumbnail(
     quality: Int = 85
 ): ThumbnailResponse {
     Arena.ofConfined().use { arena ->
-        val request = ThumbnailStructs.createRequest(
+        val request = ThumbnailRequest.create(
             arena, width, height, format.value, quality, imageData
         )
 
-        val response = callRaw(ThumbnailStructs.MSG_THUMBNAIL_CREATE, request)
-        try {
-            return ThumbnailStructs.parseResponse(response)
-        } finally {
-            freeBuffer(response)
-        }
+        val responseBytes = callRawBytes(ThumbnailRequest.MSG_THUMBNAIL_CREATE, request)
+        return ThumbnailStructs.parseResponse(responseBytes)
     }
 }
 
 /**
  * Create a thumbnail and measure processing time.
  */
-fun Plugin.createThumbnailTimed(
+fun FfmPlugin.createThumbnailTimed(
     imageData: ByteArray,
     width: Int = 100,
     height: Int = 100,
@@ -309,7 +294,7 @@ fun Plugin.createThumbnailTimed(
 /**
  * Create thumbnails at multiple sizes.
  */
-fun Plugin.createThumbnailSizes(
+fun FfmPlugin.createThumbnailSizes(
     imageData: ByteArray,
     sizes: List<Pair<Int, Int>>,
     format: OutputFormat = OutputFormat.JPEG,
@@ -323,7 +308,7 @@ fun Plugin.createThumbnailSizes(
 /**
  * Create thumbnails at multiple quality levels.
  */
-fun Plugin.createThumbnailQualities(
+fun FfmPlugin.createThumbnailQualities(
     imageData: ByteArray,
     width: Int,
     height: Int,
@@ -343,9 +328,9 @@ Replace `src/main/kotlin/com/example/Main.kt`:
 package com.example
 
 import io.github.jrobhoward.rustbridge.BundleLoader
+import io.github.jrobhoward.rustbridge.ffm.FfmPlugin
 import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader
 import java.io.File
-import kotlin.time.Duration
 import kotlin.time.measureTime
 
 fun main() {
@@ -367,11 +352,13 @@ fun main() {
         .verifySignatures(false)
         .build()
 
-    FfmPluginLoader.load(bundleLoader.extractLibrary()).use { plugin ->
+    FfmPluginLoader.load(bundleLoader.extractLibrary().toString()).use { plugin ->
+        // Cast to FfmPlugin for binary transport access
+        val ffmPlugin = plugin as FfmPlugin
 
         // Demo 1: Basic thumbnail creation
         println("Demo 1: Create JPEG thumbnail (100x100)")
-        val (thumb1, time1) = plugin.createThumbnailTimed(
+        val (thumb1, time1) = ffmPlugin.createThumbnailTimed(
             imageData,
             width = 100,
             height = 100,
@@ -385,7 +372,7 @@ fun main() {
 
         // Demo 2: Proportional sizing
         println("\nDemo 2: Proportional sizing (width=200, height=0)")
-        val thumb2 = plugin.createThumbnail(
+        val thumb2 = ffmPlugin.createThumbnail(
             imageData,
             width = 200,
             height = 0,  // Proportional
@@ -398,7 +385,7 @@ fun main() {
         // Demo 3: Multiple sizes at once
         println("\nDemo 3: Multiple sizes")
         val sizes = listOf(50 to 50, 100 to 100, 150 to 150, 200 to 200)
-        val thumbs = plugin.createThumbnailSizes(imageData, sizes)
+        val thumbs = ffmPlugin.createThumbnailSizes(imageData, sizes)
         thumbs.forEach { thumb ->
             println("  ${thumb.dimensions}: ${thumb.thumbnailData.size} bytes")
         }
@@ -406,7 +393,7 @@ fun main() {
         // Demo 4: Quality comparison
         println("\nDemo 4: Quality comparison (JPEG)")
         val qualities = listOf(20, 50, 80, 95)
-        val qualityResults = plugin.createThumbnailQualities(imageData, 150, 150, qualities)
+        val qualityResults = ffmPlugin.createThumbnailQualities(imageData, 150, 150, qualities)
         qualityResults.forEach { (quality, thumb) ->
             println("  Quality $quality: ${thumb.thumbnailData.size} bytes (%.1f KB)".format(thumb.sizeKb))
             File("thumbnail-kt-q$quality.jpg").writeBytes(thumb.thumbnailData)
@@ -418,13 +405,13 @@ fun main() {
 
         // Warm up
         repeat(3) {
-            plugin.createThumbnail(imageData, 100, 100)
+            ffmPlugin.createThumbnail(imageData, 100, 100)
         }
 
         // Measure
         val totalTime = measureTime {
             repeat(iterations) {
-                plugin.createThumbnail(imageData, 100, 100)
+                ffmPlugin.createThumbnail(imageData, 100, 100)
             }
         }
 
@@ -437,7 +424,7 @@ fun main() {
         println("\nDemo 6: Format comparison (150x150)")
         for (format in OutputFormat.entries) {
             val quality = if (format == OutputFormat.PNG) 0 else 80
-            val (thumb, time) = plugin.createThumbnailTimed(
+            val (thumb, time) = ffmPlugin.createThumbnailTimed(
                 imageData, 150, 150, format, quality
             )
             println("  ${format.name}: ${thumb.thumbnailData.size} bytes in ${time.inWholeMilliseconds} ms")
@@ -532,13 +519,26 @@ Demo 6: Format comparison (150x150)
 
 ## Key Observations
 
+### BinaryStruct for Requests
+
+`ThumbnailRequest` extends `BinaryStruct` to work with `callRawBytes()`:
+
+```kotlin
+class ThumbnailRequest private constructor(
+    segment: MemorySegment,
+    private val totalSize: Long
+) : BinaryStruct(segment) {
+    override fun byteSize(): Long = totalSize
+}
+```
+
 ### Idiomatic Kotlin Patterns
 
-Extension functions make the API feel native to Kotlin:
+Extension functions on `FfmPlugin` make the API feel native to Kotlin:
 
 ```kotlin
 // Clean, expressive API
-val thumbnail = plugin.createThumbnail(
+val thumbnail = ffmPlugin.createThumbnail(
     imageData,
     width = 100,
     height = 100,
@@ -547,9 +547,23 @@ val thumbnail = plugin.createThumbnail(
 )
 
 // Timed version with destructuring
-val (result, duration) = plugin.createThumbnailTimed(imageData, 100, 100)
+val (result, duration) = ffmPlugin.createThumbnailTimed(imageData, 100, 100)
 println("Created ${result.dimensions} in ${duration.inWholeMilliseconds} ms")
 ```
+
+### Memory Management
+
+```kotlin
+Arena.ofConfined().use { arena ->
+    val request = ThumbnailRequest.create(arena, ...)
+    val responseBytes = ffmPlugin.callRawBytes(MSG_THUMBNAIL_CREATE, request)
+    // responseBytes is a managed Kotlin ByteArray — no manual freeing needed
+}
+```
+
+- **Arena**: Manages request memory lifetime (freed when `use` block exits)
+- **Response**: `callRawBytes()` returns a `ByteArray` managed by the JVM
+- **No manual freeing**: Native memory cleanup is handled internally by `callRawBytes()`
 
 ### Data Classes
 
@@ -585,23 +599,6 @@ enum class OutputFormat(val value: Int) {
 }
 ```
 
-### Arena with use()
-
-Kotlin's `use` extension ensures proper cleanup:
-
-```kotlin
-Arena.ofConfined().use { arena ->
-    val request = ThumbnailStructs.createRequest(arena, ...)
-    val response = plugin.callRaw(MSG_THUMBNAIL_CREATE, request)
-    try {
-        return ThumbnailStructs.parseResponse(response)
-    } finally {
-        plugin.freeBuffer(response)
-    }
-}
-// arena automatically closed here
-```
-
 ### Kotlin Time API
 
 Using `kotlin.time` for measurements:
@@ -611,7 +608,7 @@ import kotlin.time.measureTimedValue
 import kotlin.time.measureTime
 
 val (result, duration) = measureTimedValue {
-    plugin.createThumbnail(imageData, 100, 100)
+    ffmPlugin.createThumbnail(imageData, 100, 100)
 }
 println("Took ${duration.inWholeMilliseconds} ms")
 ```
@@ -626,7 +623,7 @@ require(imageData.isNotEmpty()) { "Image data cannot be empty" }
 
 // Safe parsing
 val result = runCatching {
-    plugin.createThumbnail(imageData, width, height)
+    ffmPlugin.createThumbnail(imageData, width, height)
 }.getOrElse { e ->
     println("Failed to create thumbnail: ${e.message}")
     null

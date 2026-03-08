@@ -269,7 +269,7 @@ public static class ThumbnailHelpers
         uint quality = 85)
     {
         var request = CreateRequest(width, height, format, quality, imageData);
-        var response = plugin.CallRaw(ThumbnailMessages.MSG_THUMBNAIL_CREATE, request);
+        var response = plugin.CallRawBytes((int)ThumbnailMessages.MSG_THUMBNAIL_CREATE, request);
         return ParseResponse(response);
     }
 

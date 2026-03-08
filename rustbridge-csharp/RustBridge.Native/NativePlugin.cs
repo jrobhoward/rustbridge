@@ -136,6 +136,63 @@ public sealed class NativePlugin : IPlugin
         }
     }
 
+    /// <inheritdoc/>
+    public byte[] CallRawBytes(int messageId, byte[] request)
+    {
+        ThrowIfDisposed();
+
+        if (!HasBinaryTransport)
+        {
+            throw new PluginException("Binary transport not supported by this plugin");
+        }
+
+        unsafe
+        {
+            fixed (byte* requestPtr = request)
+            {
+                var response = _library.PluginCallRaw!(
+                    _handle,
+                    messageId,
+                    (IntPtr)requestPtr,
+                    (nuint)request.Length
+                );
+
+                return ParseRawResponseToBytes(response);
+            }
+        }
+    }
+
+    private unsafe byte[] ParseRawResponseToBytes(NativeBindings.RbResponse response)
+    {
+        try
+        {
+            if (response.ErrorCode != 0)
+            {
+                var errorMessage = "Unknown error";
+                if (response.Data != IntPtr.Zero && response.Len > 0)
+                {
+                    errorMessage = Marshal.PtrToStringUTF8(response.Data, (int)response.Len) ?? errorMessage;
+                }
+                throw new PluginException((int)response.ErrorCode, errorMessage);
+            }
+
+            if (response.Data == IntPtr.Zero || response.Len == 0)
+            {
+                return Array.Empty<byte>();
+            }
+
+            // Copy response data to managed byte array (no size validation — variable-length)
+            var result = new byte[(int)response.Len];
+            Marshal.Copy(response.Data, result, 0, (int)response.Len);
+
+            return result;
+        }
+        finally
+        {
+            FreeRawResponse(response);
+        }
+    }
+
     private unsafe TResponse ParseRawResponse<TResponse>(NativeBindings.RbResponse response)
         where TResponse : unmanaged, IBinaryStruct
     {

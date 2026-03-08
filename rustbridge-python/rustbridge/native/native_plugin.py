@@ -227,6 +227,62 @@ class NativePlugin:
             # Free the response
             self._library.rb_response_free(rb_response)
 
+    def call_raw_bytes(
+        self,
+        message_id: int,
+        request: bytes,
+    ) -> bytes:
+        """
+        Make a binary call to the plugin with raw bytes.
+
+        Unlike ``call_raw`` which returns a fixed-size ctypes Structure,
+        this method returns raw bytes of any length. This is useful for
+        variable-length responses such as images or compressed data.
+
+        Args:
+            message_id: Numeric message identifier (registered with register_binary_handler).
+            request: Request bytes (header + optional payload).
+
+        Returns:
+            Response bytes from the plugin.
+
+        Raises:
+            PluginException: If the call fails or binary transport is not supported.
+
+        Example:
+            ```python
+            # Build request (header struct + image bytes)
+            request = bytes(header) + image_data
+            response_bytes = plugin.call_raw_bytes(100, request)
+            ```
+        """
+        self._throw_if_disposed()
+
+        if not self._library.has_binary_transport:
+            raise PluginException("Binary transport not supported by this library")
+
+        # Create ctypes array from bytes
+        request_array = (ctypes.c_uint8 * len(request))(*request)
+        request_ptr = c_void_p(ctypes.addressof(request_array))
+        request_size = len(request)
+
+        # Make the raw call
+        rb_response = self._library.plugin_call_raw(
+            self._handle, message_id, request_ptr, request_size
+        )
+
+        try:
+            # Check for errors
+            if rb_response.is_error():
+                error_message = rb_response.get_error_message() or "Unknown error"
+                raise PluginException(error_message, rb_response.error_code)
+
+            # Return raw bytes (no size validation — variable-length)
+            return rb_response.get_bytes()
+        finally:
+            # Free the response
+            self._library.rb_response_free(rb_response)
+
     @property
     def has_binary_transport(self) -> bool:
         """

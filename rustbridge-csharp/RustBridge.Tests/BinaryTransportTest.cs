@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using RustBridge.Native;
 
@@ -151,6 +152,77 @@ public class BinaryTransportTest : IDisposable
             Assert.Equal(SmallResponseRaw.CurrentVersion, response.Version);
             Assert.Equal((byte)(i % 2), response.CacheHit);
         }
+    }
+
+    // ==================== CallRawBytes Tests ====================
+
+    [SkippableFact]
+    public void CallRawBytes___SmallBenchmark___ReturnsValidResponse()
+    {
+        SkipIfPluginNotAvailable();
+
+        var request = SmallRequestRaw.Create("test_key", 0x01);
+
+        // Serialize struct to byte array
+        var requestBytes = new byte[request.ByteSize];
+        unsafe
+        {
+            fixed (byte* ptr = requestBytes)
+            {
+                Buffer.MemoryCopy(
+                    Unsafe.AsPointer(ref request),
+                    ptr,
+                    requestBytes.Length,
+                    request.ByteSize
+                );
+            }
+        }
+
+        var responseBytes = _plugin!.CallRawBytes(MsgBenchSmall, requestBytes);
+
+        Assert.True(responseBytes.Length > 0, "Response should not be empty");
+
+        // Parse response bytes back into struct
+        Assert.True(responseBytes.Length >= 80, $"Response should be at least 80 bytes, got {responseBytes.Length}");
+        SmallResponseRaw response;
+        unsafe
+        {
+            fixed (byte* ptr = responseBytes)
+            {
+                response = *(SmallResponseRaw*)ptr;
+            }
+        }
+
+        Assert.Equal(SmallResponseRaw.CurrentVersion, response.Version);
+        Assert.True(response.ValueLen > 0);
+        Assert.Equal(3600u, response.TtlSeconds);
+        Assert.Equal(1, response.CacheHit);
+    }
+
+    [SkippableFact]
+    public void CallRawBytes___UnknownMessageId___ThrowsPluginException()
+    {
+        SkipIfPluginNotAvailable();
+
+        var request = SmallRequestRaw.Create("test", 0);
+        var requestBytes = new byte[request.ByteSize];
+        unsafe
+        {
+            fixed (byte* ptr = requestBytes)
+            {
+                Buffer.MemoryCopy(
+                    Unsafe.AsPointer(ref request),
+                    ptr,
+                    requestBytes.Length,
+                    request.ByteSize
+                );
+            }
+        }
+
+        var ex = Assert.Throws<PluginException>(() =>
+            _plugin!.CallRawBytes(999, requestBytes));
+
+        Assert.Contains("Unknown message ID", ex.Message);
     }
 
     // ==================== Binary Struct Types ====================

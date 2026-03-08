@@ -334,7 +334,7 @@ def create_thumbnail(
         ThumbnailResponse: The generated thumbnail
     """
     request = create_request(width, height, output_format, quality, image_data)
-    response = plugin.call_raw(MSG_THUMBNAIL_CREATE, request)
+    response = plugin.call_raw_bytes(MSG_THUMBNAIL_CREATE, request)
     return parse_response(response)
 
 
@@ -722,19 +722,20 @@ except ValueError as e:
 
 You've now implemented binary transport in all four languages:
 
-| Language | Struct System | Memory Management | Key Classes |
-|----------|--------------|-------------------|-------------|
-| Java FFM | StructLayout | Arena, freeBuffer() | MemorySegment, VarHandle |
-| Kotlin | StructLayout | Arena, use{} | MemorySegment, extension functions |
-| C# | StructLayout | Marshal, fixed | Marshal.StructureToPtr |
-| Python | ctypes.Structure | Automatic (bytes copy) | Structure, from_buffer_copy |
+| Language | Struct System | Memory Management | Key API |
+|----------|--------------|-------------------|---------|
+| Java FFM | BinaryStruct + StructLayout | Arena (request), JVM (response) | `ffmPlugin.callRawBytes(id, request)` |
+| Kotlin | BinaryStruct + StructLayout | Arena + use{} (request), JVM (response) | `ffmPlugin.callRawBytes(id, request)` |
+| C# | StructLayout | Marshal, fixed | `plugin.CallRawBytes(id, request)` |
+| Python | ctypes.Structure | Automatic (bytes copy) | `plugin.call_raw_bytes(id, request)` |
+| Rust | #[repr(C)] | Owned Vec\<u8\> | `plugin.call_raw(id, &request)` |
 
 The pattern is consistent across languages:
 1. Define struct layouts matching Rust `#[repr(C)]`
 2. Create request: header bytes + payload bytes
-3. Call `call_raw()` with message ID and request
+3. Call `callRawBytes()` / `call_raw_bytes()` / `call_raw()` with message ID and request
 4. Parse response: read header, validate, extract payload
-5. Free native memory if required (FFM, Kotlin)
+5. Response memory is managed automatically (no manual freeing needed)
 
 ## Next Steps
 

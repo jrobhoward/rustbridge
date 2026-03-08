@@ -188,6 +188,45 @@ class TestBinaryTransport:
             assert plugin.has_binary_transport is True
 
 
+class TestBinaryTransportBytes:
+    """Tests for variable-length binary transport (call_raw_bytes)."""
+
+    def test_call_raw_bytes___small_benchmark___returns_valid_response(
+        self, hello_plugin_path: Path, skip_if_no_plugin: None
+    ) -> None:
+        """Test call_raw_bytes with small benchmark struct."""
+        with NativePluginLoader.load(str(hello_plugin_path)) as plugin:
+            request = SmallRequestRaw.create("test_key", 0x01)
+
+            response_bytes = plugin.call_raw_bytes(MSG_BENCH_SMALL, bytes(request))
+
+            assert len(response_bytes) > 0, "Response should not be empty"
+            assert len(response_bytes) >= sizeof(SmallResponseRaw), (
+                f"Response should be at least {sizeof(SmallResponseRaw)} bytes, "
+                f"got {len(response_bytes)}"
+            )
+
+            # Parse response bytes back into struct
+            response = SmallResponseRaw.from_buffer_copy(
+                response_bytes[: sizeof(SmallResponseRaw)]
+            )
+
+            assert response.version == SmallResponseRaw.CURRENT_VERSION
+            assert response.value_len > 0
+            assert response.ttl_seconds == 3600
+            assert response.cache_hit == 1  # flags & 1 != 0
+
+    def test_call_raw_bytes___unknown_message_id___raises_exception(
+        self, hello_plugin_path: Path, skip_if_no_plugin: None
+    ) -> None:
+        """Test that unknown message ID raises exception with call_raw_bytes."""
+        with NativePluginLoader.load(str(hello_plugin_path)) as plugin:
+            request = SmallRequestRaw.create("test", 0)
+
+            with pytest.raises(PluginException, match="Unknown message ID"):
+                plugin.call_raw_bytes(999, bytes(request))
+
+
 class TestBinaryTransportBenchmark:
     """Benchmark tests comparing JSON vs binary transport."""
 

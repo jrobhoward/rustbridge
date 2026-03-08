@@ -47,7 +47,7 @@ public class Main {
             .verifySignatures(false)
             .build();
 
-        try (var plugin = FfmPluginLoader.load(bundleLoader.extractLibrary())) {
+        try (var plugin = FfmPluginLoader.load(bundleLoader.extractLibrary().toString())) {
             // JSON call example
             var request = new Gson().toJson(new EchoRequest("Hello from Java FFM!"));
             var response = plugin.call("echo", request);
@@ -64,77 +64,57 @@ public class Main {
 Key points:
 - `FfmPluginLoader.load()` uses Java 21+ FFM for native access
 - JSON calls work the same as other language bindings
-- FFM enables direct memory access for binary transport
+- `FfmPlugin` provides `callRawBytes()` for binary transport
 
 ## Define Struct Layouts
 
-Create `src/main/java/com/example/ThumbnailStructs.java`:
+Create `src/main/java/com/example/ThumbnailRequest.java`:
 
 ```java
 package com.example;
 
+import io.github.jrobhoward.rustbridge.ffm.BinaryStruct;
+
 import java.lang.foreign.*;
-import java.lang.invoke.VarHandle;
-import java.nio.charset.StandardCharsets;
 
 /**
- * Binary struct layouts for thumbnail plugin.
+ * Binary request for thumbnail creation.
  *
- * These layouts must match the Rust #[repr(C)] structs exactly.
+ * Contains a 24-byte header followed by variable-length image data.
+ * Extends BinaryStruct for use with FfmPlugin.callRawBytes().
+ *
+ * Header layout (24 bytes):
+ *   Offset 0:  version (u8)
+ *   Offset 1:  _reserved (3 bytes)
+ *   Offset 4:  target_width (u32)
+ *   Offset 8:  target_height (u32)
+ *   Offset 12: output_format (u32)
+ *   Offset 16: quality (u32)
+ *   Offset 20: payload_size (u32)
  */
-public final class ThumbnailStructs {
+public class ThumbnailRequest extends BinaryStruct {
 
-    private ThumbnailStructs() {} // Utility class
-
-    // Message ID for thumbnail creation
-    public static final int MSG_THUMBNAIL_CREATE = 100;
+    public static final int HEADER_SIZE = 24;
 
     // Output format constants
     public static final int FORMAT_JPEG = 0;
     public static final int FORMAT_PNG = 1;
     public static final int FORMAT_WEBP = 2;
 
-    // ========================================================================
-    // ThumbnailRequestHeader (24 bytes)
-    // ========================================================================
+    // Message ID for thumbnail creation
+    public static final int MSG_THUMBNAIL_CREATE = 100;
 
-    /**
-     * Layout matching Rust ThumbnailRequestHeader:
-     *
-     *   Offset 0:  version (u8)
-     *   Offset 1:  _reserved (3 bytes)
-     *   Offset 4:  target_width (u32)
-     *   Offset 8:  target_height (u32)
-     *   Offset 12: output_format (u32)
-     *   Offset 16: quality (u32)
-     *   Offset 20: payload_size (u32)
-     *   Total: 24 bytes
-     */
-    public static final StructLayout REQUEST_HEADER_LAYOUT = MemoryLayout.structLayout(
-        ValueLayout.JAVA_BYTE.withName("version"),
-        MemoryLayout.sequenceLayout(3, ValueLayout.JAVA_BYTE).withName("_reserved"),
-        ValueLayout.JAVA_INT_UNALIGNED.withName("target_width"),
-        ValueLayout.JAVA_INT_UNALIGNED.withName("target_height"),
-        ValueLayout.JAVA_INT_UNALIGNED.withName("output_format"),
-        ValueLayout.JAVA_INT_UNALIGNED.withName("quality"),
-        ValueLayout.JAVA_INT_UNALIGNED.withName("payload_size")
-    ).withName("ThumbnailRequestHeader");
+    private final long totalSize;
 
-    public static final long REQUEST_HEADER_SIZE = REQUEST_HEADER_LAYOUT.byteSize(); // 24
+    private ThumbnailRequest(MemorySegment segment, long totalSize) {
+        super(segment);
+        this.totalSize = totalSize;
+    }
 
-    // VarHandles for request header fields
-    private static final VarHandle VH_REQ_VERSION =
-        REQUEST_HEADER_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("version"));
-    private static final VarHandle VH_REQ_TARGET_WIDTH =
-        REQUEST_HEADER_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("target_width"));
-    private static final VarHandle VH_REQ_TARGET_HEIGHT =
-        REQUEST_HEADER_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("target_height"));
-    private static final VarHandle VH_REQ_OUTPUT_FORMAT =
-        REQUEST_HEADER_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("output_format"));
-    private static final VarHandle VH_REQ_QUALITY =
-        REQUEST_HEADER_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("quality"));
-    private static final VarHandle VH_REQ_PAYLOAD_SIZE =
-        REQUEST_HEADER_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("payload_size"));
+    @Override
+    public long byteSize() {
+        return totalSize;
+    }
 
     /**
      * Create a thumbnail request with image data.
@@ -145,9 +125,9 @@ public final class ThumbnailStructs {
      * @param outputFormat FORMAT_JPEG, FORMAT_PNG, or FORMAT_WEBP
      * @param quality Quality 1-100 (for JPEG/WebP)
      * @param imageData Raw image bytes
-     * @return MemorySegment containing header + image data
+     * @return ThumbnailRequest ready for callRawBytes()
      */
-    public static MemorySegment createRequest(
+    public static ThumbnailRequest create(
             Arena arena,
             int targetWidth,
             int targetHeight,
@@ -155,24 +135,42 @@ public final class ThumbnailStructs {
             int quality,
             byte[] imageData) {
 
-        // Allocate header + payload
-        long totalSize = REQUEST_HEADER_SIZE + imageData.length;
-        MemorySegment request = arena.allocate(totalSize);
+        long totalSize = HEADER_SIZE + imageData.length;
+        MemorySegment segment = arena.allocate(totalSize);
 
         // Set header fields
-        VH_REQ_VERSION.set(request, 0L, (byte) 1);
-        VH_REQ_TARGET_WIDTH.set(request, 0L, targetWidth);
-        VH_REQ_TARGET_HEIGHT.set(request, 0L, targetHeight);
-        VH_REQ_OUTPUT_FORMAT.set(request, 0L, outputFormat);
-        VH_REQ_QUALITY.set(request, 0L, quality);
-        VH_REQ_PAYLOAD_SIZE.set(request, 0L, imageData.length);
+        segment.set(ValueLayout.JAVA_BYTE, 0, (byte) 1);  // version
+        segment.set(ValueLayout.JAVA_INT_UNALIGNED, 4, targetWidth);
+        segment.set(ValueLayout.JAVA_INT_UNALIGNED, 8, targetHeight);
+        segment.set(ValueLayout.JAVA_INT_UNALIGNED, 12, outputFormat);
+        segment.set(ValueLayout.JAVA_INT_UNALIGNED, 16, quality);
+        segment.set(ValueLayout.JAVA_INT_UNALIGNED, 20, imageData.length);
 
         // Copy image data after header
-        MemorySegment.copy(imageData, 0, request, ValueLayout.JAVA_BYTE,
-            REQUEST_HEADER_SIZE, imageData.length);
+        MemorySegment.copy(imageData, 0, segment, ValueLayout.JAVA_BYTE,
+            HEADER_SIZE, imageData.length);
 
-        return request;
+        return new ThumbnailRequest(segment, totalSize);
     }
+}
+```
+
+Create `src/main/java/com/example/ThumbnailStructs.java`:
+
+```java
+package com.example;
+
+import java.lang.foreign.*;
+import java.lang.invoke.VarHandle;
+
+/**
+ * Response parsing for thumbnail plugin.
+ *
+ * Parses the byte[] returned by callRawBytes() into a ThumbnailResponse.
+ */
+public final class ThumbnailStructs {
+
+    private ThumbnailStructs() {} // Utility class
 
     // ========================================================================
     // ThumbnailResponseHeader (20 bytes)
@@ -223,21 +221,24 @@ public final class ThumbnailStructs {
     ) {
         public String formatName() {
             return switch (format) {
-                case FORMAT_JPEG -> "JPEG";
-                case FORMAT_PNG -> "PNG";
-                case FORMAT_WEBP -> "WebP";
+                case ThumbnailRequest.FORMAT_JPEG -> "JPEG";
+                case ThumbnailRequest.FORMAT_PNG -> "PNG";
+                case ThumbnailRequest.FORMAT_WEBP -> "WebP";
                 default -> "Unknown";
             };
         }
     }
 
     /**
-     * Parse a thumbnail response from native memory.
+     * Parse a thumbnail response from a byte array.
      *
-     * @param response MemorySegment containing response data
+     * @param responseBytes byte[] returned by callRawBytes()
      * @return Parsed ThumbnailResponse
      */
-    public static ThumbnailResponse parseResponse(MemorySegment response) {
+    public static ThumbnailResponse parseResponse(byte[] responseBytes) {
+        // Wrap byte[] as a MemorySegment for VarHandle access
+        MemorySegment response = MemorySegment.ofArray(responseBytes);
+
         // Validate minimum size
         if (response.byteSize() < RESPONSE_HEADER_SIZE) {
             throw new IllegalArgumentException(
@@ -281,6 +282,7 @@ Replace `src/main/java/com/example/Main.java`:
 package com.example;
 
 import io.github.jrobhoward.rustbridge.BundleLoader;
+import io.github.jrobhoward.rustbridge.ffm.FfmPlugin;
 import io.github.jrobhoward.rustbridge.ffm.FfmPluginLoader;
 import com.example.ThumbnailStructs.ThumbnailResponse;
 
@@ -289,7 +291,7 @@ import java.lang.foreign.Arena;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static com.example.ThumbnailStructs.*;
+import static com.example.ThumbnailRequest.*;
 
 public class Main {
 
@@ -308,12 +310,14 @@ public class Main {
             .verifySignatures(false)
             .build();
 
-        try (var plugin = FfmPluginLoader.load(bundleLoader.extractLibrary())) {
+        try (var plugin = FfmPluginLoader.load(bundleLoader.extractLibrary().toString())) {
+            // Cast to FfmPlugin for binary transport access
+            FfmPlugin ffmPlugin = (FfmPlugin) plugin;
 
             // Demo 1: Create JPEG thumbnail
             System.out.println("Demo 1: Create JPEG thumbnail (100x100)");
             try (Arena arena = Arena.ofConfined()) {
-                var request = createRequest(
+                var request = ThumbnailRequest.create(
                     arena,
                     100,           // target width
                     100,           // target height
@@ -323,10 +327,10 @@ public class Main {
                 );
 
                 long startTime = System.nanoTime();
-                var responseSegment = plugin.callRaw(MSG_THUMBNAIL_CREATE, request);
+                byte[] responseBytes = ffmPlugin.callRawBytes(MSG_THUMBNAIL_CREATE, request);
                 long elapsed = System.nanoTime() - startTime;
 
-                ThumbnailResponse response = parseResponse(responseSegment);
+                ThumbnailResponse response = ThumbnailStructs.parseResponse(responseBytes);
 
                 System.out.printf("  Thumbnail: %dx%d %s (%d bytes)%n",
                     response.width(), response.height(),
@@ -336,15 +340,12 @@ public class Main {
                 // Save the thumbnail
                 saveThumbnail(response.thumbnailData(), "thumbnail-100x100.jpg");
                 System.out.println("  Saved: thumbnail-100x100.jpg");
-
-                // Free native memory
-                plugin.freeBuffer(responseSegment);
             }
 
             // Demo 2: Create PNG thumbnail (different dimensions)
             System.out.println("\nDemo 2: Create PNG thumbnail (200x0 = proportional height)");
             try (Arena arena = Arena.ofConfined()) {
-                var request = createRequest(
+                var request = ThumbnailRequest.create(
                     arena,
                     200,           // target width
                     0,             // 0 = calculate proportionally
@@ -354,10 +355,10 @@ public class Main {
                 );
 
                 long startTime = System.nanoTime();
-                var responseSegment = plugin.callRaw(MSG_THUMBNAIL_CREATE, request);
+                byte[] responseBytes = ffmPlugin.callRawBytes(MSG_THUMBNAIL_CREATE, request);
                 long elapsed = System.nanoTime() - startTime;
 
-                ThumbnailResponse response = parseResponse(responseSegment);
+                ThumbnailResponse response = ThumbnailStructs.parseResponse(responseBytes);
 
                 System.out.printf("  Thumbnail: %dx%d %s (%d bytes)%n",
                     response.width(), response.height(),
@@ -366,8 +367,6 @@ public class Main {
 
                 saveThumbnail(response.thumbnailData(), "thumbnail-200xN.png");
                 System.out.println("  Saved: thumbnail-200xN.png");
-
-                plugin.freeBuffer(responseSegment);
             }
 
             // Demo 3: Performance comparison
@@ -375,23 +374,21 @@ public class Main {
             int iterations = 10;
 
             try (Arena arena = Arena.ofConfined()) {
-                var request = createRequest(
+                var request = ThumbnailRequest.create(
                     arena, 100, 100, FORMAT_JPEG, 80, imageData
                 );
 
                 // Warm up
                 for (int i = 0; i < 3; i++) {
-                    var resp = plugin.callRaw(MSG_THUMBNAIL_CREATE, request);
-                    plugin.freeBuffer(resp);
+                    ffmPlugin.callRawBytes(MSG_THUMBNAIL_CREATE, request);
                 }
 
                 // Measure
                 long totalTime = 0;
                 for (int i = 0; i < iterations; i++) {
                     long start = System.nanoTime();
-                    var resp = plugin.callRaw(MSG_THUMBNAIL_CREATE, request);
+                    ffmPlugin.callRawBytes(MSG_THUMBNAIL_CREATE, request);
                     totalTime += System.nanoTime() - start;
-                    plugin.freeBuffer(resp);
                 }
 
                 double avgMs = (totalTime / iterations) / 1_000_000.0;
@@ -498,50 +495,51 @@ You can view them with any image viewer to verify correct resizing.
 
 ## Key Observations
 
-### Struct Layout Precision
+### BinaryStruct for Requests
 
-The FFM StructLayout must exactly match the Rust struct:
+The `ThumbnailRequest` extends `BinaryStruct`, which wraps a `MemorySegment`:
 
 ```java
-public static final StructLayout REQUEST_HEADER_LAYOUT = MemoryLayout.structLayout(
-    ValueLayout.JAVA_BYTE.withName("version"),           // 1 byte
-    MemoryLayout.sequenceLayout(3, ValueLayout.JAVA_BYTE).withName("_reserved"), // 3 bytes
-    ValueLayout.JAVA_INT_UNALIGNED.withName("target_width"),  // 4 bytes
-    // ...
-);
+public class ThumbnailRequest extends BinaryStruct {
+    public static ThumbnailRequest create(Arena arena, ...) {
+        MemorySegment segment = arena.allocate(totalSize);
+        // Populate header + image data
+        return new ThumbnailRequest(segment, totalSize);
+    }
+}
 ```
 
 Key points:
-- `JAVA_INT_UNALIGNED` for fields not on natural alignment
-- `sequenceLayout(3, JAVA_BYTE)` for the `_reserved` array
-- Total size must be 24 bytes for request, 20 for response
+- `BinaryStruct` is the required type for `callRawBytes()`
+- The segment contains header bytes + variable-length payload
+- Arena manages request memory lifetime
 
 ### Memory Management
 
 ```java
 try (Arena arena = Arena.ofConfined()) {
-    var request = createRequest(arena, ...);
-    var response = plugin.callRaw(MSG_THUMBNAIL_CREATE, request);
-    // Process response...
-    plugin.freeBuffer(response);  // Free native memory!
+    var request = ThumbnailRequest.create(arena, ...);
+    byte[] responseBytes = ffmPlugin.callRawBytes(MSG_THUMBNAIL_CREATE, request);
+    ThumbnailResponse response = ThumbnailStructs.parseResponse(responseBytes);
+    // responseBytes is a managed Java byte[] — no manual freeing needed
 }
 ```
 
 - **Arena**: Manages request memory lifetime (freed when arena closes)
-- **Response**: Allocated by Rust, must be freed with `freeBuffer()`
-- **Copy early**: Copy response data to Java arrays before freeing
+- **Response**: `callRawBytes()` returns a Java `byte[]` — memory is managed by the JVM
+- **No manual freeing**: Unlike raw FFI calls, `callRawBytes()` handles native memory cleanup internally
 
 ### VarHandle Access
 
-VarHandles provide type-safe field access:
+VarHandles provide type-safe field access for parsing responses:
 
 ```java
-private static final VarHandle VH_REQ_VERSION =
-    REQUEST_HEADER_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("version"));
+private static final VarHandle VH_RESP_VERSION =
+    RESPONSE_HEADER_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("version"));
 
-// Usage:
-VH_REQ_VERSION.set(request, 0L, (byte) 1);
-byte version = (byte) VH_REQ_VERSION.get(response, 0L);
+// Usage with byte[] via MemorySegment.ofArray():
+MemorySegment response = MemorySegment.ofArray(responseBytes);
+byte version = (byte) VH_RESP_VERSION.get(response, 0L);
 ```
 
 ## Error Handling
@@ -550,8 +548,8 @@ Handle common errors:
 
 ```java
 try {
-    var response = plugin.callRaw(MSG_THUMBNAIL_CREATE, request);
-    // Check for error in response...
+    byte[] responseBytes = ffmPlugin.callRawBytes(MSG_THUMBNAIL_CREATE, request);
+    ThumbnailResponse response = ThumbnailStructs.parseResponse(responseBytes);
 } catch (PluginException e) {
     if (e.getErrorCode() == 2) {
         System.err.println("Invalid request format");
