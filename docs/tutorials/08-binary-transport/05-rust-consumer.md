@@ -208,7 +208,7 @@ fn main() -> ConsumerResult<()> {
     println!("=== Binary Transport Demo (Rust) ===\n");
 
     // Load the plugin from bundle
-    let bundle_path = "../thumbnail-plugin/thumbnail-plugin-0.1.0.rbp";
+    let bundle_path = "../thumbnail-plugin/target/bundle/thumbnail-plugin-0.1.0.rbp";
     let image_path = "test-image.jpg";
 
     // Load the test image

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **C#**: Add `CallRawBytes` for variable-length binary transport (NuGet 1.0.2)
+- **Python**: Add `call_raw_bytes` for variable-length binary transport (PyPI 1.0.1)
+- **Docs**: Fix error code table in Java consumer tutorial (code 7, not 3)
+- **Docs**: Fix schemars version in production bundles tutorial (1.x, not 0.8)
+- **Docs**: Fix Kotlin version in binary transport tutorial (2.3.0, not 2.0.0)
+- **Docs**: Fix Rust consumer bundle paths in backpressure and binary transport tutorials
+
 ## [1.0.1] - 2026-03-07
 
 ### Fixed

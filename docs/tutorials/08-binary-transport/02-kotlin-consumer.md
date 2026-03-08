@@ -440,7 +440,7 @@ fun main() {
 
 ```kotlin
 plugins {
-    kotlin("jvm") version "2.0.0"
+    kotlin("jvm") version "2.3.0"
     application
 }
 

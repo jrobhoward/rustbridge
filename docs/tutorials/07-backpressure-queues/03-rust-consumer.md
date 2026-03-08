@@ -236,7 +236,7 @@ fn main() -> ConsumerResult<()> {
     println!("=== Synchronized Plugin Demo (Rust) ===\n");
 
     // Load the plugin from bundle
-    let bundle_path = "../sync-demo/sync-demo-0.1.0.rbp";
+    let bundle_path = "../sync-demo/target/bundle/sync-demo-0.1.0.rbp";
     let plugin = NativePluginLoader::load_bundle(bundle_path)?;
 
     // Wrap with synchronized access (queue size = 5 for demo)

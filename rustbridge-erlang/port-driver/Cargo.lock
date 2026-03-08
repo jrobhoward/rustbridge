@@ -494,7 +494,7 @@ dependencies = [
 
 [[package]]
 name = "rustbridge-bundle"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "hex",
  "minisign",
@@ -507,7 +507,7 @@ dependencies = [
 
 [[package]]
 name = "rustbridge-consumer"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "libloading",
  "rustbridge-bundle",
@@ -521,7 +521,7 @@ dependencies = [
 
 [[package]]
 name = "rustbridge-core"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "async-trait",
  "serde",
@@ -543,7 +543,7 @@ dependencies = [
 
 [[package]]
 name = "rustbridge-transport"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "rustbridge-core",
  "serde",

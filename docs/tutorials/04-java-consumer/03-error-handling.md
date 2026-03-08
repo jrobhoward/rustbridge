@@ -86,7 +86,7 @@ Success:
 
 Attempting to prettify invalid JSON...
 Plugin error: Invalid JSON: expected value at line 1 column 2
-Error code: 3
+Error code: 7
 ```
 
 ## Error Codes
@@ -95,11 +95,13 @@ The `PluginException` includes an error code that maps to rustbridge error types
 
 | Code | Error Type                         |
 |------|------------------------------------|
-| 1    | Initialization error               |
-| 2    | Unknown message type               |
-| 3    | Handler error (your custom errors) |
-| 4    | Serialization error                |
-| 5    | Shutdown error                     |
+| 1    | Invalid state                      |
+| 2    | Initialization error               |
+| 3    | Shutdown error                     |
+| 4    | Configuration error                |
+| 5    | Serialization error                |
+| 6    | Unknown message type               |
+| 7    | Handler error (your custom errors) |
 
 ## Graceful Error Handling
 

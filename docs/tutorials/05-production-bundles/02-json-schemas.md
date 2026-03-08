@@ -27,7 +27,7 @@ This adds to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-schemars = "0.8"
+schemars = "1"
 ```
 
 ### Step 2: Derive JsonSchema on Message Types
