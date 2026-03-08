@@ -10,6 +10,9 @@ published. See [docs/VERSIONING.md](./docs/VERSIONING.md) for the full versionin
 
 ## [Unreleased]
 
+### Fixed
+- **Rust**: Fix flaky `ffi_log_callback` tests in `rustbridge-consumer` caused by shared global state race condition
+
 ## 2026-03-08
 
 **Published:** C# NuGet 1.0.2, Python PyPI 1.0.1

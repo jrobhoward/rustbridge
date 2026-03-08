@@ -30,6 +30,7 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 
 [dev-dependencies]
+serial_test = "3"
 tempfile = "3.26"
 tokio = { workspace = true }
 

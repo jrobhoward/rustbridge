@@ -578,6 +578,7 @@ mod tests {
     #![allow(clippy::unwrap_used)]
 
     use super::*;
+    use serial_test::serial;
     use std::ffi::CString;
 
     #[test]
@@ -613,6 +614,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn ffi_log_callback___no_callback_set___does_not_panic() {
         // Clear any existing callback
         set_log_callback(None);
@@ -628,6 +630,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn ffi_log_callback___with_callback___invokes_callback() {
         use std::sync::Arc;
         use std::sync::atomic::{AtomicBool, Ordering};
@@ -658,6 +661,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn ffi_log_callback___null_pointers___uses_empty_strings() {
         use std::sync::Arc;
         use std::sync::atomic::{AtomicBool, Ordering};
