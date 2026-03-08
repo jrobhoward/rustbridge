@@ -124,13 +124,29 @@ pub fn run(name: &str, path: Option<String>, options: NewOptions) -> Result<()> 
     let project_path = Path::new(&project_dir);
     let ctx = TemplateContext::new(name);
 
+    // If directory exists and consumer flags are set, add consumers to existing project
+    if project_path.exists() && options.has_consumers() {
+        println!("Adding consumers to existing project: {name}");
+        println!("Directory: {project_dir}");
+
+        let consumers_dir = project_path.join("consumers");
+        create_consumers(&consumers_dir, &ctx, &options)?;
+
+        print_consumer_next_steps(&project_dir, &ctx, &options);
+        return Ok(());
+    }
+
+    // Check if directory already exists (no consumer flags = full project creation)
+    if project_path.exists() {
+        anyhow::bail!(
+            "Directory already exists: {project_dir}\n\
+             Hint: To add consumers to an existing project, pass a consumer flag \
+             (e.g., --kotlin, --java-ffm, --csharp, --python, --all)"
+        );
+    }
+
     println!("Creating new rustbridge plugin: {name}");
     println!("Directory: {project_dir}");
-
-    // Check if directory already exists
-    if project_path.exists() {
-        anyhow::bail!("Directory already exists: {project_dir}");
-    }
 
     // Create Rust plugin at root
     create_rust_plugin(project_path, &ctx)?;
@@ -138,22 +154,51 @@ pub fn run(name: &str, path: Option<String>, options: NewOptions) -> Result<()> 
     // Create consumers/ subdirectory if any consumer is requested
     if options.has_consumers() {
         let consumers_dir = project_path.join("consumers");
-
-        if options.kotlin {
-            create_kotlin_consumer(&consumers_dir, &ctx)?;
-        }
-        if options.java_ffm {
-            create_java_ffm_consumer(&consumers_dir, &ctx)?;
-        }
-        if options.csharp {
-            create_csharp_consumer(&consumers_dir, &ctx)?;
-        }
-        if options.python {
-            create_python_consumer(&consumers_dir, &ctx)?;
-        }
+        create_consumers(&consumers_dir, &ctx, &options)?;
     }
 
     print_next_steps(&project_dir, &ctx, &options);
+    Ok(())
+}
+
+/// Create consumer projects based on options
+fn create_consumers(
+    consumers_dir: &Path,
+    ctx: &TemplateContext,
+    options: &NewOptions,
+) -> Result<()> {
+    if options.kotlin {
+        let target = consumers_dir.join("kotlin");
+        if target.exists() {
+            println!("  Skipped consumers/kotlin (already exists)");
+        } else {
+            create_kotlin_consumer(consumers_dir, ctx)?;
+        }
+    }
+    if options.java_ffm {
+        let target = consumers_dir.join("java-ffm");
+        if target.exists() {
+            println!("  Skipped consumers/java-ffm (already exists)");
+        } else {
+            create_java_ffm_consumer(consumers_dir, ctx)?;
+        }
+    }
+    if options.csharp {
+        let target = consumers_dir.join("csharp");
+        if target.exists() {
+            println!("  Skipped consumers/csharp (already exists)");
+        } else {
+            create_csharp_consumer(consumers_dir, ctx)?;
+        }
+    }
+    if options.python {
+        let target = consumers_dir.join("python");
+        if target.exists() {
+            println!("  Skipped consumers/python (already exists)");
+        } else {
+            create_python_consumer(consumers_dir, ctx)?;
+        }
+    }
     Ok(())
 }
 
@@ -337,6 +382,16 @@ fn create_python_consumer(consumers_dir: &Path, ctx: &TemplateContext) -> Result
 // Next Steps
 // ============================================================================
 
+fn print_consumer_next_steps(project_dir: &str, ctx: &TemplateContext, options: &NewOptions) {
+    println!("\nConsumers added successfully!\n");
+    println!("Next steps:");
+    println!("  cd {project_dir}");
+    println!("  cargo build --release");
+    println!("  rustbridge pack --no-sign");
+
+    print_consumer_instructions(ctx, options);
+}
+
 fn print_next_steps(project_dir: &str, ctx: &TemplateContext, options: &NewOptions) {
     println!("\nProject created successfully!\n");
     println!("Next steps:");
@@ -344,6 +399,10 @@ fn print_next_steps(project_dir: &str, ctx: &TemplateContext, options: &NewOptio
     println!("  cargo build --release");
     println!("  rustbridge pack --no-sign");
 
+    print_consumer_instructions(ctx, options);
+}
+
+fn print_consumer_instructions(ctx: &TemplateContext, options: &NewOptions) {
     if options.kotlin {
         println!("\nKotlin consumer:");
         println!("  cd consumers/kotlin");

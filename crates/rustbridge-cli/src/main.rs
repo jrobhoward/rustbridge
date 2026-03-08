@@ -105,12 +105,12 @@ enum Commands {
         #[arg(long)]
         no_sign: bool,
 
-        /// Auto-generate JSON Schema from Rust source file and embed in bundle (dev mode only)
+        /// Auto-generate JSON Schema from Rust source file and embed in bundle
         /// Example: --schema-source src/messages.rs:schema.json
         #[arg(long, value_name = "SOURCE:NAME")]
         schema_source: Option<String>,
 
-        /// Auto-generate C header from Rust source file and embed in bundle (dev mode only)
+        /// Auto-generate C header from Rust source file and embed in bundle
         /// Example: --header-source src/binary_messages.rs:messages.h
         #[arg(long, value_name = "SOURCE:NAME")]
         header_source: Option<String>,

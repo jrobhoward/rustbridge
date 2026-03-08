@@ -136,66 +136,66 @@ The generated `messages.json` will look like:
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "definitions": {
-    "ValidateRequest": {
-      "type": "object",
-      "description": "Request to validate a JSON string",
-      "properties": {
-        "json": {
-          "type": "string",
-          "description": "The string to validate as JSON"
-        }
-      },
-      "required": [
-        "json"
-      ]
-    },
-    "ValidateResponse": {
-      "type": "object",
-      "description": "Response indicating whether the JSON is valid",
-      "properties": {
-        "valid": {
-          "type": "boolean",
-          "description": "True if the input is valid JSON"
-        }
-      },
-      "required": [
-        "valid"
-      ]
-    },
     "PrettifyRequest": {
-      "type": "object",
       "description": "Request to pretty-print a JSON string",
       "properties": {
-        "json": {
-          "type": "string",
-          "description": "The JSON string to format"
-        },
         "indent": {
-          "type": "integer",
-          "format": "uint",
-          "description": "Number of spaces for indentation (default: 2)"
+          "$ref": "#/definitions/usize"
+        },
+        "json": {
+          "type": "string"
         }
       },
       "required": [
-        "json"
-      ]
+        "json",
+        "indent"
+      ],
+      "type": "object"
     },
     "PrettifyResponse": {
-      "type": "object",
       "description": "Response containing the formatted JSON",
       "properties": {
         "result": {
-          "type": "string",
-          "description": "The pretty-printed JSON string"
+          "type": "string"
         }
       },
       "required": [
         "result"
-      ]
+      ],
+      "type": "object"
+    },
+    "ValidateRequest": {
+      "description": "Request to validate a JSON string",
+      "properties": {
+        "json": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "json"
+      ],
+      "type": "object"
+    },
+    "ValidateResponse": {
+      "description": "Response indicating whether the JSON is valid",
+      "properties": {
+        "valid": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "valid"
+      ],
+      "type": "object"
     }
   }
 }
 ```
+
+> **Note**: The `indent` field appears as `required` even though it has `#[serde(default)]` because
+> schemars doesn't automatically detect serde defaults. To mark it optional in the schema, add
+> `#[schemars(default)]` alongside `#[serde(default)]`. The `usize` type appears as a `$ref`
+> rather than an inline integer type.
 
 ## Extract Schema from Bundle
 
