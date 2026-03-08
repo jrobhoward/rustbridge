@@ -67,6 +67,27 @@ python -m pytest tests/test_log_level.py::test_log_level___debug___has_correct_v
 
 Use `cargo msrv verify` when adding Rust dependencies.
 
+## Versioning
+
+Each language ecosystem is versioned independently. There is no lock-step version across ecosystems.
+
+| Ecosystem | Registry | Version source |
+|-----------|----------|----------------|
+| Rust (12 crates) | crates.io | `Cargo.toml` workspace version (all crates share one version) |
+| Java/Kotlin | Maven Central | `rustbridge-java/build.gradle.kts` `allprojects { version }` |
+| C# | NuGet | `RustBridge.Core.csproj` and `RustBridge.Native.csproj` `<Version>` |
+| Python | PyPI | `rustbridge-python/pyproject.toml` `version` |
+| Erlang | hex.pm | `rustbridge-erlang/src/rustbridge.app.src` `{vsn, ...}` |
+| Go | Go modules | Git tags (no version in `go.mod`) |
+
+**Key rules:**
+- All 12 Rust workspace crates are always versioned in lock-step via `[workspace.package] version` in the root `Cargo.toml`.
+- Bump only the ecosystems that actually changed. Don't publish empty releases.
+- When updating CLI templates (`crates/rustbridge-cli/templates/`), use the latest published version for each ecosystem's package references.
+- CHANGELOG entries use ecosystem prefixes (`**C#**:`, `**Python**:`, `**Rust**:`, etc.) and release headers list which packages were published.
+
+See [docs/VERSIONING.md](./docs/VERSIONING.md) for the full policy.
+
 ## Architecture Overview
 
 ```
@@ -236,3 +257,4 @@ See [docs/TESTING_RUST_CONSUMER.md](./docs/TESTING_RUST_CONSUMER.md) for Rust co
 - [docs/PLUGIN_LIFECYCLE.md](./docs/PLUGIN_LIFECYCLE.md) - Plugin lifecycle and resource cleanup
 - [docs/ERROR_HANDLING.md](./docs/ERROR_HANDLING.md) - Error types and FFI error codes
 - [docs/DEBUGGING.md](./docs/DEBUGGING.md) - Debugging techniques
+- [docs/VERSIONING.md](./docs/VERSIONING.md) - Versioning policy and release process

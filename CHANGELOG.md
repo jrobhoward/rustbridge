@@ -2,10 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+Each ecosystem (Rust, Java/Kotlin, C#, Python, Erlang, Go) is versioned independently.
+Entries are tagged with ecosystem prefixes. Release headers list which packages were
+published. See [docs/VERSIONING.md](./docs/VERSIONING.md) for the full versioning policy.
 
 ## [Unreleased]
+
+## 2026-03-08
+
+**Published:** C# NuGet 1.0.2, Python PyPI 1.0.1
 
 ### Fixed
 - **C#**: Add `CallRawBytes` for variable-length binary transport (NuGet 1.0.2)
@@ -14,8 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Docs**: Fix schemars version in production bundles tutorial (1.x, not 0.8)
 - **Docs**: Fix Kotlin version in binary transport tutorial (2.3.0, not 2.0.0)
 - **Docs**: Fix Rust consumer bundle paths in backpressure and binary transport tutorials
+- **Docs**: Fix NuGet version references in C# tutorial and language guide (1.0.2)
 
-## [1.0.1] - 2026-03-07
+## 2026-03-07 — Rust 1.0.1
+
+**Published:** Rust crates 1.0.1 (crates.io), rustbridge-cli 1.0.1
 
 ### Fixed
 - **CLI**: Rust plugin template referenced `rustbridge = "0.8"` instead of `"1.0"` — scaffolded plugins pulled stale v0.8.1
@@ -28,7 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Docs**: Add `docs/DEVELOPMENT.md` build-from-source guide for contributors
 - **Docs**: Rewrite `docs/INSTALL.md` to reference published packages as primary installation path
 
-## [1.0.0] - 2026-03-07
+## 2026-03-07 — 1.0.0 (all ecosystems)
+
+**Published:** All ecosystems at 1.0.0 — Rust (crates.io), Java/Kotlin (Maven Central), C# (NuGet), Python (PyPI), Erlang (hex.pm)
 
 ### Changed
 - **Java/Kotlin**: Rename Maven groupId and Java packages from `com.rustbridge` to `io.github.jrobhoward.rustbridge`
@@ -425,8 +437,6 @@ Initial public release.
 - Minisign signature verification for bundle integrity
 
 [Unreleased]: https://github.com/jrobhoward/rustbridge/compare/v1.0.1...HEAD
-[1.0.1]: https://github.com/jrobhoward/rustbridge/compare/v1.0.0...v1.0.1
-[1.0.0]: https://github.com/jrobhoward/rustbridge/compare/v0.10.0...v1.0.0
 [0.10.0]: https://github.com/jrobhoward/rustbridge/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/jrobhoward/rustbridge/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/jrobhoward/rustbridge/compare/v0.8.1...v0.9.0
