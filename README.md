@@ -219,7 +219,7 @@ guidelines.
 
 **Quick start:**
 
-1. Check [docs/TASKS.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/TASKS.md) for open tasks
+1. Check the [issue tracker](https://github.com/jrobhoward/rustbridge/issues) for open tasks
 2. Read [docs/SKILLS.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/SKILLS.md) for coding conventions
 3. Read [docs/TESTING.md](https://github.com/jrobhoward/rustbridge/blob/main/docs/TESTING.md) for testing guidelines
 
