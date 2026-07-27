@@ -1,43 +1,114 @@
 # cargo-deny configuration
 # https://embarkstudios.github.io/cargo-deny/
+#
+# Two questions this file answers, checked in CI (`cargo deny check`):
+#
+#   1. Does anything in the dependency graph have a security advisory?
+#   2. Is every dependency under a licence we can ship?
+#
+# rustbridge is dual-licensed MIT OR Apache-2.0 and is distributed as 12 crates
+# on crates.io plus compiled shared libraries inside `.rbp` bundles. A licence
+# problem arriving transitively is therefore a problem for every downstream
+# plugin author, not just for this repo.
+#
+# CI runs this on every push/PR *and* on the Monday schedule. The two failure
+# modes are different: a PR that adds a vulnerable or copyleft dependency should
+# be blocked at review time, and the schedule catches an advisory published
+# against a dependency that hasn't changed — the tree can go red without a
+# single commit, which is the whole point of an advisory database.
+#
+# Scope note: `rustbridge-erlang/port-driver` is deliberately outside the Cargo
+# workspace (see the root Cargo.toml `exclude`), so it is NOT covered here. If
+# that crate grows a non-trivial dependency graph it needs its own check.
+
+[graph]
+# The six platforms rustbridge supports. These mirror the `Platform` enum in
+# `crates/rustbridge-bundle/src/platform.rs` — keep the two lists in sync.
+#
+# Without this, cargo-deny evaluates every target in the graph and reports on
+# crates that can never be built here, and the result can drift depending on
+# which runner evaluates it.
+targets = [
+    { triple = "x86_64-unknown-linux-gnu" },
+    { triple = "aarch64-unknown-linux-gnu" },
+    { triple = "x86_64-apple-darwin" },
+    { triple = "aarch64-apple-darwin" },
+    { triple = "x86_64-pc-windows-msvc" },
+    { triple = "aarch64-pc-windows-msvc" },
+]
+# Optional dependencies of workspace members still count: a user who enables a
+# feature gets its graph too.
+all-features = true
 
 [advisories]
 # The path where the advisory database is cloned/fetched into
 db-path = "~/.cargo/advisory-db"
 # The url(s) of the advisory databases to use
 db-urls = ["https://github.com/rustsec/advisory-db"]
-# The lint level for crates that have been yanked from their source registry
+# Vulnerabilities always fail. The rest are policy choices:
+#   - yanked: a yanked crate in a committed lock file is a supply-chain smell
+#     worth fixing deliberately.
+#   - unmaintained: limited to direct workspace dependencies. Judging a
+#     transitive crate unmaintained is upstream's call to make, not ours, and
+#     failing CI over it would mean blocking on someone else's release.
+#   - unsound: same reasoning, same scope.
 yanked = "deny"
-# Scope of unmaintained advisories (all, workspace, transitive, none)
-unmaintained = "none"
-# Scope of unsound advisories (all, workspace, transitive, none)
+unmaintained = "workspace"
 unsound = "workspace"
-# Advisory IDs to ignore
+# Advisories consciously accepted, each with a rationale and a link. Empty is
+# the goal; an entry here is a decision, not a snooze button.
 ignore = []
 
 [licenses]
-# List of explicitly allowed licenses
 # SPDX 2.3 license identifiers: https://spdx.org/licenses/
+#
+# Deliberately absent, and the reason this is an allow-list rather than a
+# deny-list: LGPL-*, GPL-*, AGPL-*, CDDL-*, EPL-*, SSPL-*, BUSL-*. A new
+# copyleft licence appearing in the wild is excluded by omission, with no edit
+# needed here. If a dependency needs one, that is a decision to take explicitly
+# in a PR that edits this list and says why — not something to discover after
+# publishing to six registries.
 allow = [
-    "ISC",
     "MIT",
     "Apache-2.0",
     "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
     "BSD-3-Clause",  # Permissive, commonly used by crypto crates
-    "Unlicense",  # Permissive, essentially public domain
+    "ISC",
     "Zlib",  # Permissive, OSI approved, used by compression libraries
     "bzip2-1.0.6",  # Permissive, bzip2 license, used by compression libraries
     "CC0-1.0",  # Public domain dedication, FSF Free/Libre
+    "Unlicense",  # Permissive, essentially public domain
     "MIT-0",  # MIT No Attribution, OSI approved
-    "MPL-2.0",  # Mozilla Public License 2.0, OSI approved, used by dirs crate
+    "0BSD",
+    "BSL-1.0",
+
+    # The one non-permissive entry, and the only conscious exception in this
+    # file. MPL-2.0 is weak (file-level) copyleft: it obliges anyone who
+    # *modifies an MPL-licensed file* to publish that file's source, and imposes
+    # nothing on code that merely links it. rustbridge and its users only ever
+    # link it, so it does not reach plugin source or `.rbp` payloads.
+    #
+    # In the graph via: option-ext <- dirs-sys <- dirs <- rustbridge-cli.
+    # It is a build/CLI-side path, not something linked into shipped plugins.
+    # If option-ext ever leaves the tree, drop this entry rather than leaving it
+    # pre-approved.
+    "MPL-2.0",
 ]
-# List of explicitly disallowed licenses
-# Copyleft licenses that could affect distribution
+# The default (0.8) accepts a fuzzy text match against a known licence. These
+# are legal terms; require a near-exact match instead.
+confidence-threshold = 0.93
+# Several entries above aren't in the graph today. They are pre-approved rather
+# than reactive: each is unambiguously permissive, so a routine dependency
+# addition shouldn't red CI and prompt a rushed edit to a licensing policy.
+unused-allowed-license = "allow"
+# Per-crate escape hatches, narrower than adding to `allow` above.
+# unicode-ident's expression is `(MIT OR Apache-2.0) AND Unicode-3.0` — the AND
+# makes Unicode-3.0 mandatory rather than one of several options. It is a
+# permissive data licence, scoped here to the one crate that needs it.
 exceptions = [
     { allow = ["Unicode-3.0"], crate = "unicode-ident" },
 ]
-# The confidence threshold for license detection (0.0 - 1.0)
-confidence-threshold = 0.8
 
 # Clarify licenses for crates with ambiguous or missing metadata
 # [[licenses.clarify]]
@@ -52,15 +123,20 @@ ignore = false
 registries = []
 
 [bans]
-# Lint level for when multiple versions of the same crate are detected
+# Duplicate versions warn rather than fail: a workspace this wide routinely
+# carries two versions of a low-level crate mid-migration. That is an upstream
+# timing issue, not something to fail a security check over — but it is worth
+# seeing in the log.
 multiple-versions = "warn"
-# Lint level for when a crate version requirement is `*`
-wildcards = "allow"
+# A `*` version requirement is a real supply-chain hole (any future version is
+# pre-accepted), and crates.io rejects it on publish anyway. Fail here, where
+# the error is cheap.
+wildcards = "deny"
 # The graph highlighting used when creating dotgraphs for crates with multiple versions
 highlight = "all"
 # List of crates that are allowed to have multiple versions
 allow = []
-# List of explicitly disallowed crates
+# Nothing is banned outright today. This is the place for "never link X".
 deny = []
 # Certain crates/versions that should be skipped when doing duplicate detection
 skip = []
@@ -68,9 +144,9 @@ skip = []
 skip-tree = []
 
 [sources]
-# Lint level for what to happen when a crate from a crate registry that is not in the allow list is encountered
+# Everything must come from crates.io. A git or alternate-registry dependency
+# sneaking in is exactly the supply-chain change this check should surface.
 unknown-registry = "deny"
-# Lint level for what to happen when a crate from a git repository that is not in the allow list is encountered
 unknown-git = "deny"
 # List of URLs for allowed crate registries. Defaults to the crates.io index
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]

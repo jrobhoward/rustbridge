@@ -5,6 +5,21 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+  # Manual trigger, for re-running a red schedule without an empty commit.
+  workflow_dispatch:
+  # Mondays 06:00 UTC. Every job below runs on this schedule, not just
+  # `security`, because both halves rot without a commit: an advisory can be
+  # published against an unchanged dependency, and the runner toolchains
+  # (Rust stable, JDK, .NET, Python, Go, OTP) move underneath us between
+  # releases. rustbridge ships to six registries, so "nobody pushed this month"
+  # must not mean "nobody checked this month".
+  #
+  # A failure here is a notification, not a gate — GitHub emails the workflow's
+  # last editor. Note that GitHub disables scheduled workflows after 60 days of
+  # repository inactivity, which is exactly when this is most useful; re-enable
+  # it from the Actions tab if that happens.
+  schedule:
+    - cron: '0 6 * * 1'
 
 env:
   RUST_BACKTRACE: 1
@@ -101,14 +116,46 @@ jobs:
             rustbridge-erlang/_build/test/logs/**
           retention-days: 7
 
-  # Test on multiple platforms
+  # Test on multiple platforms.
+  #
+  # The matrix mirrors the `Platform` enum in
+  # `crates/rustbridge-bundle/src/platform.rs` as closely as GitHub's runner
+  # fleet allows:
+  #
+  #   linux-x86_64    ubuntu-latest
+  #   linux-aarch64   ubuntu-24.04-arm
+  #   darwin-aarch64  macos-latest      (Apple silicon since the label moved)
+  #   windows-x86_64  windows-latest
+  #   windows-aarch64 windows-11-arm
+  #   darwin-x86_64   NOT COVERED — see note below
+  #
+  # Architecture matters here in a way it doesn't for a pure-Rust library:
+  # this is an FFI project, so struct layout, alignment, and calling
+  # conventions differ across architectures. The sharpest edge is `c_char`,
+  # which is *signed* on x86_64 and *unsigned* on aarch64 — any `as i8`/`as u8`
+  # on an FFI string is a latent per-architecture bug that only an aarch64
+  # runner will catch.
+  #
+  # The two `-arm` labels are free for public repositories. They are Rust-only
+  # here on purpose: the polyglot `validate` job installs five external
+  # toolchains, and the ARM images are the least reliable place to do that.
+  #
+  # darwin-x86_64: GitHub retired the Intel `macos-13` image, so Intel macOS
+  # has no coverage. If you still ship a darwin-x86_64 slice in `.rbp` bundles,
+  # check the current Intel runner label in GitHub's runner-images repo and add
+  # it here — don't assume `macos-13` still resolves.
   test-matrix:
     name: Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+          - macos-latest
+          - windows-latest
+          - windows-11-arm
 
     steps:
       - name: Checkout code
@@ -124,11 +171,35 @@ jobs:
         with:
           cache-on-failure: true
 
+      # Confirms the runner is the architecture the label promises. GitHub can
+      # change the hardware behind a label without notice — `macos-latest`
+      # silently became Apple silicon — and a matrix that has quietly collapsed
+      # onto one architecture still passes. Diagnostic only; never fails the job.
+      - name: Runner architecture
+        continue-on-error: true
+        run: |
+          uname -a || true
+          rustc --version --verbose
+
       - name: Run Rust tests
         run: cargo test --workspace --verbose
 
       - name: Build examples
         run: cargo build --release -p hello-plugin
+
+      # The point of an ARM job for a bundle-producing project: prove the
+      # artifact that would go into a `.rbp` really is the architecture its
+      # platform key claims. A silently-x86_64 binary filed under
+      # `linux-aarch64` is the failure this catches.
+      - name: Inspect built library architecture
+        continue-on-error: true
+        shell: bash
+        run: |
+          find target/release -maxdepth 1 -name 'libhello_plugin.*' \
+            -o -maxdepth 1 -name 'hello_plugin.dll' | while read -r lib; do
+            echo "== $lib"
+            file "$lib" 2>/dev/null || echo "(file(1) unavailable)"
+          done
 
       - name: Run consumer integration tests
         shell: bash

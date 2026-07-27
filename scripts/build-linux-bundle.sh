@@ -199,27 +199,22 @@ print_success "Rust targets configured"
 # Configure cross-compilation linker
 # ============================================================================
 
-CARGO_CONFIG_DIR="$REPO_ROOT/.cargo"
-CARGO_CONFIG_FILE="$CARGO_CONFIG_DIR/config.toml"
-LINKER_CONFIG='[target.aarch64-unknown-linux-gnu]
-linker = "aarch64-linux-gnu-gcc"'
+# Passed as an environment variable on the one cross-compiling `cargo build`
+# below, rather than written into `.cargo/config.toml`.
+#
+# A committed `[target.aarch64-unknown-linux-gnu] linker = ...` applies whenever
+# that triple is built — including *natively*, on an aarch64 Linux host, where
+# the host target and this triple are the same thing. Such a host has plain
+# `gcc`, not the `aarch64-linux-gnu-gcc` cross wrapper, so the config breaks
+# native ARM64 builds (this is what broke the ubuntu-24.04-arm CI job). Cargo
+# has no "only when host != target" conditional, so the config must not be
+# ambient.
+#
+# CARGO_TARGET_<TRIPLE>_LINKER is the env-var form of the same setting; scoping
+# it to a single command confines it to the cross build that needs it.
+ARM64_LINKER_ENV="CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc"
 
-# Check if config already has the linker setting
-if [ -f "$CARGO_CONFIG_FILE" ]; then
-    if ! grep -q "aarch64-unknown-linux-gnu" "$CARGO_CONFIG_FILE"; then
-        print_step "Adding ARM64 linker to .cargo/config.toml..."
-        echo "" >> "$CARGO_CONFIG_FILE"
-        echo "$LINKER_CONFIG" >> "$CARGO_CONFIG_FILE"
-        print_success "Linker configuration added"
-    else
-        print_success "Linker already configured"
-    fi
-else
-    print_step "Creating .cargo/config.toml with ARM64 linker..."
-    mkdir -p "$CARGO_CONFIG_DIR"
-    echo "$LINKER_CONFIG" > "$CARGO_CONFIG_FILE"
-    print_success "Linker configuration created"
-fi
+print_success "ARM64 cross-linker will be set for the ARM64 build only"
 
 # ============================================================================
 # Determine plugin info
@@ -288,7 +283,8 @@ print_success "Built x86_64 library: $X86_LIB"
 
 print_step "Building for aarch64-unknown-linux-gnu..."
 
-cargo build --release -p "$PLUGIN_CRATE" --target aarch64-unknown-linux-gnu
+env "$ARM64_LINKER_ENV" \
+    cargo build --release -p "$PLUGIN_CRATE" --target aarch64-unknown-linux-gnu
 
 ARM64_LIB="target/aarch64-unknown-linux-gnu/release/$LIB_NAME"
 if [ ! -f "$ARM64_LIB" ]; then

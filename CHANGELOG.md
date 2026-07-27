@@ -10,8 +10,20 @@ published. See [docs/VERSIONING.md](./docs/VERSIONING.md) for the full versionin
 
 ## [Unreleased]
 
+### Security
+- **Rust**: Update `anyhow` 1.0.102 → 1.0.104 for unsoundness in `Error::downcast_mut()` (RUSTSEC advisory; `rustbridge-cli` does not call `downcast_mut`, so there was no practical exposure)
+- **Rust**: Update `crossbeam-epoch` 0.9.18 → 0.9.20 for invalid pointer dereference in the `fmt::Pointer` impl for `Atomic`/`Shared` (RUSTSEC-2026-0204; reached only via `criterion`, a dev-dependency)
+
 ### Fixed
 - **Rust**: Fix flaky `ffi_log_callback` tests in `rustbridge-consumer` caused by shared global state race condition
+- **Build**: Remove committed `.cargo/config.toml` pinning the `aarch64-unknown-linux-gnu` linker to `aarch64-linux-gnu-gcc`. Cargo applies a `[target.<triple>]` block whenever that triple is built — including natively on ARM64 Linux, where the cross wrapper is absent — so the config broke native ARM64 builds (Graviton, ARM CI runners, ARM64 containers)
+- **Build**: `scripts/build-linux-bundle.sh` no longer writes the cross-linker into the repository's `.cargo/config.toml`; it sets `CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER` on the ARM64 build only
+- **Docs**: Cross-compilation tutorial taught the same pattern to plugin authors; it now scopes the linker to the cross build and explains why a committed config breaks native ARM64 consumers
+
+### Changed
+- **CI**: Add `linux-aarch64` (`ubuntu-24.04-arm`) and `windows-aarch64` (`windows-11-arm`) to the Rust test matrix. Architecture coverage matters for an FFI project — `c_char` is signed on x86_64 and unsigned on aarch64. Note `darwin-x86_64` remains uncovered — `macos-latest` is Apple silicon, and no Intel macOS runner is currently in the matrix
+- **CI**: Add weekly (Mondays 06:00 UTC) and manual `workflow_dispatch` triggers. An advisory can be published against an unchanged dependency, and the five external toolchains drift between releases, so the tree can go red with no commit
+- **Build**: Harden `deny.toml` — pin the six supported target triples to match the `Platform` enum, enable `unmaintained` advisories for workspace dependencies (previously disabled entirely), raise the licence-detection confidence threshold to 0.93, and deny wildcard version requirements. The one non-permissive allowance, `MPL-2.0` (via `option-ext`), now records why it is acceptable
 
 ## 2026-03-08
 

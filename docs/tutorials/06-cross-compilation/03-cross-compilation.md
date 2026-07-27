@@ -44,21 +44,32 @@ sudo apt install gcc-aarch64-linux-gnu
 rustup target add aarch64-unknown-linux-gnu
 ```
 
-Configure Cargo to use the cross-linker. Create or edit `.cargo/config.toml` in your project:
-
-```bash
-mkdir -p .cargo
-cat > .cargo/config.toml << 'EOF'
-[target.aarch64-unknown-linux-gnu]
-linker = "aarch64-linux-gnu-gcc"
-EOF
-```
-
 ## Step 3: Build for ARM64
 
+Point Cargo at the cross-linker for this build only:
+
 ```bash
-cargo build --release --target aarch64-unknown-linux-gnu
+CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
+    cargo build --release --target aarch64-unknown-linux-gnu
 ```
+
+> **Why an environment variable and not `.cargo/config.toml`?**
+>
+> The equivalent config block:
+> ```toml
+> [target.aarch64-unknown-linux-gnu]
+> linker = "aarch64-linux-gnu-gcc"
+> ```
+> applies whenever that triple is built — including *natively*, on an ARM64
+> Linux machine, where it is the host target. Such a machine has plain `gcc`,
+> not the `aarch64-linux-gnu-gcc` cross wrapper, so a committed config breaks
+> native ARM64 builds for anyone who checks out your project on ARM hardware
+> (an ARM CI runner, a Graviton box, an ARM64 container). Cargo has no
+> "only when cross-compiling" conditional, so keep the setting out of the
+> committed config and scope it to the command that needs it.
+>
+> If you prefer the config file for local convenience, add `.cargo/config.toml`
+> to `.gitignore` so it stays a machine-local choice.
 
 The ARM64 library is at `target/aarch64-unknown-linux-gnu/release/libjson_plugin.so`.
 
