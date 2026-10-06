@@ -49,7 +49,8 @@ pub use builder::BundleBuilder;
 pub use error::BundleError;
 pub use loader::BundleLoader;
 pub use manifest::{
-    BuildInfo, GitInfo, Manifest, PlatformInfo, PluginInfo, Sbom, SchemaInfo, VariantInfo,
+    BuildInfo, ComponentInfo, GitInfo, Manifest, PlatformInfo, PluginInfo, Sbom, SchemaInfo,
+    VariantInfo,
 };
 pub use platform::Platform;
 
@@ -64,6 +65,13 @@ pub const BUNDLE_VERSION: &str = "1.0";
 
 /// Bundle format version 1.1 (variant-level metadata).
 pub const BUNDLE_VERSION_1_1: &str = "1.1";
+
+/// Bundle format version 1.2 (WebAssembly components and manifest extensions).
+///
+/// A 1.2 manifest may carry the `wasm32-wasip2` platform, a `component`
+/// entry on a variant, and top-level extension sections that 1.2 readers keep
+/// as they are.
+pub const BUNDLE_VERSION_1_2: &str = "1.2";
 
 /// Manifest file name within the bundle.
 pub const MANIFEST_FILE: &str = "manifest.json";

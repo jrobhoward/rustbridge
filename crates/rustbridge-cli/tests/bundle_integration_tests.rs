@@ -233,6 +233,7 @@ mod manifest_edge_cases {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
         variants.insert(
@@ -245,6 +246,7 @@ mod manifest_edge_cases {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
         manifest
@@ -276,6 +278,7 @@ mod manifest_edge_cases {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
         variants.insert(
@@ -288,6 +291,7 @@ mod manifest_edge_cases {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
         manifest
@@ -314,6 +318,7 @@ mod manifest_edge_cases {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
         variants.insert(
@@ -326,6 +331,7 @@ mod manifest_edge_cases {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
         manifest
@@ -352,6 +358,7 @@ mod manifest_edge_cases {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
         manifest
@@ -378,6 +385,7 @@ mod manifest_edge_cases {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
         manifest
@@ -404,6 +412,7 @@ mod manifest_edge_cases {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
         manifest
@@ -430,6 +439,7 @@ mod manifest_edge_cases {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
         variants.insert(
@@ -442,6 +452,7 @@ mod manifest_edge_cases {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
         manifest

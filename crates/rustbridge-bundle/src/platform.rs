@@ -4,8 +4,16 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// Supported platform targets.
+///
+/// Native targets carry a shared library for one OS and architecture.
+/// `wasm32-wasip2` carries a WebAssembly component (bundle format 1.2) that
+/// is not loaded through the C ABI; see [`Platform::is_native`].
+///
+/// The enum is `#[non_exhaustive]`: new targets (for example a later WASI
+/// version) are added without a breaking change.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[non_exhaustive]
 pub enum Platform {
     /// Linux on x86_64.
     LinuxX86_64,
@@ -19,6 +27,9 @@ pub enum Platform {
     WindowsX86_64,
     /// Windows on ARM64.
     WindowsAarch64,
+    /// WebAssembly component for WASI 0.2 (bundle format 1.2).
+    #[serde(rename = "wasm32-wasip2")]
+    Wasm32Wasip2,
 }
 
 impl Platform {
@@ -49,6 +60,7 @@ impl Platform {
             Self::DarwinAarch64 => "darwin-aarch64",
             Self::WindowsX86_64 => "windows-x86_64",
             Self::WindowsAarch64 => "windows-aarch64",
+            Self::Wasm32Wasip2 => "wasm32-wasip2",
         }
     }
 
@@ -62,6 +74,7 @@ impl Platform {
             "darwin-aarch64" => Some(Self::DarwinAarch64),
             "windows-x86_64" => Some(Self::WindowsX86_64),
             "windows-aarch64" => Some(Self::WindowsAarch64),
+            "wasm32-wasip2" => Some(Self::Wasm32Wasip2),
             _ => None,
         }
     }
@@ -73,6 +86,7 @@ impl Platform {
             Self::LinuxX86_64 | Self::LinuxAarch64 => "so",
             Self::DarwinX86_64 | Self::DarwinAarch64 => "dylib",
             Self::WindowsX86_64 | Self::WindowsAarch64 => "dll",
+            Self::Wasm32Wasip2 => "wasm",
         }
     }
 
@@ -82,7 +96,7 @@ impl Platform {
         match self {
             Self::LinuxX86_64 | Self::LinuxAarch64 => "lib",
             Self::DarwinX86_64 | Self::DarwinAarch64 => "lib",
-            Self::WindowsX86_64 | Self::WindowsAarch64 => "",
+            Self::WindowsX86_64 | Self::WindowsAarch64 | Self::Wasm32Wasip2 => "",
         }
     }
 
@@ -116,12 +130,34 @@ impl Platform {
             Self::DarwinAarch64 => "aarch64-apple-darwin",
             Self::WindowsX86_64 => "x86_64-pc-windows-msvc",
             Self::WindowsAarch64 => "aarch64-pc-windows-msvc",
+            Self::Wasm32Wasip2 => "wasm32-wasip2",
         }
     }
 
-    /// Get all supported platforms.
+    /// Whether this platform carries a native shared library loaded through
+    /// the C ABI. `false` for WebAssembly targets.
+    #[must_use]
+    pub fn is_native(&self) -> bool {
+        !matches!(self, Self::Wasm32Wasip2)
+    }
+
+    /// Get all supported platforms, native and WebAssembly.
     #[must_use]
     pub fn all() -> &'static [Platform] {
+        &[
+            Self::LinuxX86_64,
+            Self::LinuxAarch64,
+            Self::DarwinX86_64,
+            Self::DarwinAarch64,
+            Self::WindowsX86_64,
+            Self::WindowsAarch64,
+            Self::Wasm32Wasip2,
+        ]
+    }
+
+    /// Get the native platforms only (those [`Platform::current`] can return).
+    #[must_use]
+    pub fn native() -> &'static [Platform] {
         &[
             Self::LinuxX86_64,
             Self::LinuxAarch64,
@@ -192,7 +228,35 @@ mod tests {
     }
 
     #[test]
-    fn Platform___all___returns_six_platforms() {
-        assert_eq!(Platform::all().len(), 6);
+    fn Platform___all___returns_seven_platforms() {
+        assert_eq!(Platform::all().len(), 7);
+    }
+
+    #[test]
+    fn Platform___native___excludes_wasm() {
+        assert_eq!(Platform::native().len(), 6);
+        assert!(Platform::native().iter().all(Platform::is_native));
+    }
+
+    #[test]
+    fn Platform___wasm32_wasip2___round_trips_and_formats() {
+        let platform = Platform::parse("wasm32-wasip2");
+
+        assert_eq!(platform, Some(Platform::Wasm32Wasip2));
+        assert_eq!(Platform::Wasm32Wasip2.as_str(), "wasm32-wasip2");
+        assert_eq!(Platform::Wasm32Wasip2.library_name("app"), "app.wasm");
+        assert_eq!(Platform::Wasm32Wasip2.rust_target(), "wasm32-wasip2");
+        assert!(!Platform::Wasm32Wasip2.is_native());
+    }
+
+    #[test]
+    fn Platform___serde___uses_platform_key() {
+        let json = serde_json::to_string(&Platform::Wasm32Wasip2).unwrap();
+
+        assert_eq!(json, "\"wasm32-wasip2\"");
+        assert_eq!(
+            serde_json::from_str::<Platform>(&json).unwrap(),
+            Platform::Wasm32Wasip2
+        );
     }
 }

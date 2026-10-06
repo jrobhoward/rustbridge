@@ -57,6 +57,11 @@ pub enum BundleError {
     #[error("Signature verification failed: {0}")]
     SignatureVerificationFailed(String),
 
+    /// A file has no checksum in the manifest's `files` map, so it cannot be
+    /// verified.
+    #[error("No checksum recorded for {0}")]
+    Unverified(String),
+
     /// No public key available for verification.
     #[error("No public key available for signature verification")]
     NoPublicKey,

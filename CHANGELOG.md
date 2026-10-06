@@ -10,6 +10,20 @@ published. See [docs/VERSIONING.md](./docs/VERSIONING.md) for the full versionin
 
 ## [Unreleased]
 
+### Added
+- **Rust**: Bundle format 1.2 in `rustbridge-bundle`: a `wasm32-wasip2` platform for WebAssembly components, an optional `component: { world }` on variants, and top-level extension sections that round-trip instead of being dropped (`Manifest::extensions`, `extension`, `set_extension`, `BundleBuilder::with_extension`). Native bundles are still written as 1.0, so existing loaders in every ecosystem keep working
+- **Rust**: A signed `files` checksum map in 1.2 manifests: `BundleBuilder::add_checksummed_bytes` records a file's SHA-256, and `BundleLoader::read_file_verified` reads it back checked. Files outside `lib/` and `schema/` (an app's data files) can now be verified as far as the manifest's signature
+- **Rust**: `BundleBuilder::add_component` / `add_component_variant` add a component with its checksum and signature and raise the bundle to 1.2
+- **Rust**: `BundleLoader::read_variant` returns a variant's checksum-verified bytes in memory; `read_variant_verified` also checks the manifest and library signatures against caller-supplied trusted keys
+- **Rust**: `BundleLoader::verify_manifest_signature_trusted` verifies against operator-trusted keys and ignores the bundle's own `public_key`, which proves integrity but not authorship
+
+### Changed
+- **Rust**: `rustbridge-bundle` builds `zip` with Deflate only (no bzip2, lzma, zstd, ppmd or AES). Bundles have always been written with Deflate; dropping the other codecs shrinks the dependency graph and the code that parses untrusted archives. A bundle repacked by an external tool with another codec no longer opens
+
+### Changed (breaking)
+- **Rust**: `Platform` is now `#[non_exhaustive]` and has a `Wasm32Wasip2` variant; exhaustive matches on it need a wildcard arm. `Platform::all()` includes it; `Platform::native()` and `Platform::is_native()` cover native targets only
+- **Rust**: `VariantInfo` has a new `component` field and `Manifest` a new `extensions` field, so struct literals need them (`component: None`, `extensions: BTreeMap::new()`)
+
 ### Security
 - **Rust**: Update `anyhow` 1.0.102 → 1.0.104 for unsoundness in `Error::downcast_mut()` (RUSTSEC advisory; `rustbridge-cli` does not call `downcast_mut`, so there was no practical exposure)
 - **Rust**: Update `crossbeam-epoch` 0.9.18 → 0.9.20 for invalid pointer dereference in the `fmt::Pointer` impl for `Atomic`/`Shared` (RUSTSEC-2026-0204; reached only via `criterion`, a dev-dependency)

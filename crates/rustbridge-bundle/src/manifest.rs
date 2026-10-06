@@ -4,9 +4,11 @@
 //! and available API messages. Supports multi-variant builds (release, debug, etc.)
 //! with the `release` variant being mandatory and the implicit default.
 
-use crate::{BUNDLE_VERSION, BUNDLE_VERSION_1_1, BundleError, BundleResult, Platform};
+use crate::{
+    BUNDLE_VERSION, BUNDLE_VERSION_1_1, BUNDLE_VERSION_1_2, BundleError, BundleResult, Platform,
+};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 /// Bundle manifest - the main descriptor for a plugin bundle.
 ///
@@ -53,6 +55,22 @@ pub struct Manifest {
     /// Schema files embedded in the bundle.
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     pub schemas: HashMap<String, SchemaInfo>,
+
+    /// SHA-256 checksums of additional files (v1.2), by archive path, as
+    /// `sha256:<hex>`. The manifest is signed, so a file listed here can be
+    /// read with [`crate::BundleLoader::read_file_verified`] and trusted as
+    /// far as the manifest is.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub files: BTreeMap<String, String>,
+
+    /// Top-level sections this crate does not model (v1.2), keyed by name.
+    ///
+    /// Tools that build on the bundle format (for example an application
+    /// server's deployment section) store their own sections here. They are
+    /// kept on parse and written back on serialization, so a manifest
+    /// round-trips without losing them.
+    #[serde(flatten)]
+    pub extensions: BTreeMap<String, serde_json::Value>,
 }
 
 /// Plugin metadata.
@@ -106,6 +124,7 @@ impl PlatformInfo {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
         Self { variants }
@@ -190,6 +209,20 @@ pub struct VariantInfo {
     /// Schema files specific to this variant (v1.1).
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     pub schemas: HashMap<String, SchemaInfo>,
+
+    /// WebAssembly component metadata (v1.2). Present only on WebAssembly
+    /// platforms such as `wasm32-wasip2`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub component: Option<ComponentInfo>,
+}
+
+/// WebAssembly component metadata for a variant (v1.2).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ComponentInfo {
+    /// The WIT world the component targets, with package and version
+    /// (e.g., `"paddock:runtime/app@0.1.0"`). A host uses it to pick the
+    /// matching set of imports.
+    pub world: String,
 }
 
 /// Build information (all fields optional).
@@ -265,6 +298,22 @@ pub struct Sbom {
     pub spdx: Option<String>,
 }
 
+/// Field names of [`Manifest`] itself; an extension may not reuse one, or
+/// serialization would write the key twice.
+const RESERVED_MANIFEST_KEYS: &[&str] = &[
+    "bundle_version",
+    "plugin",
+    "platforms",
+    "build_info",
+    "sbom",
+    "schema_checksum",
+    "notices",
+    "license_file",
+    "public_key",
+    "schemas",
+    "files",
+];
+
 /// Check if a variant name is valid.
 ///
 /// Valid variant names are lowercase alphanumeric with hyphens.
@@ -327,6 +376,8 @@ impl Manifest {
             license_file: None,
             public_key: None,
             schemas: HashMap::new(),
+            files: BTreeMap::new(),
+            extensions: BTreeMap::new(),
         }
     }
 
@@ -349,6 +400,7 @@ impl Manifest {
                     sbom: None,
                     schema_checksum: None,
                     schemas: HashMap::new(),
+                    component: None,
                 },
             );
         } else {
@@ -390,6 +442,7 @@ impl Manifest {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
     }
@@ -397,6 +450,46 @@ impl Manifest {
     /// Set the public key for signature verification.
     pub fn set_public_key(&mut self, public_key: String) {
         self.public_key = Some(public_key);
+    }
+
+    /// Add a WebAssembly component as a variant of a platform (v1.2).
+    ///
+    /// Like [`Manifest::add_platform_variant`], and also records the WIT
+    /// world the component targets. Raises `bundle_version` to 1.2.
+    pub fn add_component_variant(
+        &mut self,
+        platform: Platform,
+        variant: &str,
+        library_path: &str,
+        checksum: &str,
+        world: &str,
+    ) {
+        self.add_platform_variant(platform, variant, library_path, checksum, None);
+        if let Some(info) = self
+            .platforms
+            .get_mut(platform.as_str())
+            .and_then(|p| p.variants.get_mut(variant))
+        {
+            info.component = Some(ComponentInfo {
+                world: world.to_string(),
+            });
+        }
+        self.bundle_version = BUNDLE_VERSION_1_2.to_string();
+    }
+
+    /// Get an extension section by name (v1.2).
+    #[must_use]
+    pub fn extension(&self, name: &str) -> Option<&serde_json::Value> {
+        self.extensions.get(name)
+    }
+
+    /// Set an extension section, replacing any previous value (v1.2).
+    ///
+    /// Raises `bundle_version` to 1.2. The name must not be one of the
+    /// manifest's own field names; [`Manifest::validate`] rejects that.
+    pub fn set_extension(&mut self, name: &str, value: serde_json::Value) {
+        self.extensions.insert(name.to_string(), value);
+        self.bundle_version = BUNDLE_VERSION_1_2.to_string();
     }
 
     /// Add a schema file to the manifest.
@@ -594,10 +687,47 @@ impl Manifest {
             ));
         }
 
-        if self.bundle_version != BUNDLE_VERSION && self.bundle_version != BUNDLE_VERSION_1_1 {
+        let is_1_2 = self.bundle_version == BUNDLE_VERSION_1_2;
+        if self.bundle_version != BUNDLE_VERSION
+            && self.bundle_version != BUNDLE_VERSION_1_1
+            && !is_1_2
+        {
             return Err(BundleError::InvalidManifest(format!(
-                "unsupported bundle_version '{}' (expected '{}' or '{}')",
-                self.bundle_version, BUNDLE_VERSION, BUNDLE_VERSION_1_1,
+                "unsupported bundle_version '{}' (expected '{}', '{}' or '{}')",
+                self.bundle_version, BUNDLE_VERSION, BUNDLE_VERSION_1_1, BUNDLE_VERSION_1_2,
+            )));
+        }
+
+        if !self.files.is_empty() && !is_1_2 {
+            return Err(BundleError::InvalidManifest(format!(
+                "files requires bundle_version '{BUNDLE_VERSION_1_2}'"
+            )));
+        }
+        for (path, checksum) in &self.files {
+            if path.is_empty()
+                || path.starts_with('/')
+                || path
+                    .split('/')
+                    .any(|seg| seg.is_empty() || seg == "." || seg == "..")
+            {
+                return Err(BundleError::InvalidManifest(format!(
+                    "files: '{path}' is not a relative archive path"
+                )));
+            }
+            if !checksum.starts_with("sha256:") {
+                return Err(BundleError::InvalidManifest(format!(
+                    "files: checksum of '{path}' must start with 'sha256:'"
+                )));
+            }
+        }
+
+        if let Some(name) = self
+            .extensions
+            .keys()
+            .find(|name| RESERVED_MANIFEST_KEYS.contains(&name.as_str()))
+        {
+            return Err(BundleError::InvalidManifest(format!(
+                "extension '{name}' uses a reserved manifest field name"
             )));
         }
 
@@ -624,9 +754,15 @@ impl Manifest {
 
         // Validate each platform
         for (key, info) in &self.platforms {
-            if Platform::parse(key).is_none() {
+            let Some(platform) = Platform::parse(key) else {
                 return Err(BundleError::InvalidManifest(format!(
                     "unknown platform: {key}"
+                )));
+            };
+
+            if !platform.is_native() && !is_1_2 {
+                return Err(BundleError::InvalidManifest(format!(
+                    "platform {key} requires bundle_version '{BUNDLE_VERSION_1_2}'"
                 )));
             }
 
@@ -670,6 +806,20 @@ impl Manifest {
                     return Err(BundleError::InvalidManifest(format!(
                         "platform {key}, variant {variant_name}: checksum must start with 'sha256:'"
                     )));
+                }
+
+                if let Some(component) = &variant_info.component {
+                    if platform.is_native() {
+                        return Err(BundleError::InvalidManifest(format!(
+                            "platform {key}, variant {variant_name}: \
+                             component is only allowed on WebAssembly platforms"
+                        )));
+                    }
+                    if component.world.is_empty() {
+                        return Err(BundleError::InvalidManifest(format!(
+                            "platform {key}, variant {variant_name}: component.world is required"
+                        )));
+                    }
                 }
             }
         }
@@ -781,6 +931,7 @@ mod tests {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
         manifest
@@ -822,6 +973,7 @@ mod tests {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
         manifest
@@ -853,6 +1005,7 @@ mod tests {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
         manifest
@@ -884,6 +1037,7 @@ mod tests {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
         manifest
@@ -915,6 +1069,7 @@ mod tests {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
         variants.insert(
@@ -927,6 +1082,7 @@ mod tests {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
         manifest
@@ -959,6 +1115,7 @@ mod tests {
     #[test]
     fn Manifest___validate___accepts_all_platforms() {
         let mut manifest = Manifest::new("all-platforms", "1.0.0");
+        manifest.bundle_version = BUNDLE_VERSION_1_2.to_string();
         for platform in Platform::all() {
             manifest.add_platform(
                 *platform,
@@ -968,7 +1125,7 @@ mod tests {
         }
 
         assert!(manifest.validate().is_ok());
-        assert_eq!(manifest.supported_platforms().len(), 6);
+        assert_eq!(manifest.supported_platforms().len(), 7);
     }
 
     #[test]
@@ -1271,6 +1428,7 @@ mod tests {
                 sbom: None,
                 schema_checksum: None,
                 schemas: HashMap::new(),
+                component: None,
             },
         );
 
@@ -1504,5 +1662,206 @@ mod tests {
         assert!(vi.sbom.is_none());
         assert!(vi.schema_checksum.is_none());
         assert!(vi.schemas.is_empty());
+    }
+
+    // --- v1.2: components and extensions ---
+
+    fn component_manifest() -> Manifest {
+        let mut manifest = Manifest::new("app", "1.0.0");
+        manifest.add_component_variant(
+            Platform::Wasm32Wasip2,
+            "release",
+            "lib/wasm32-wasip2/release/app.wasm",
+            "abc123",
+            "paddock:runtime/app@0.1.0",
+        );
+        manifest
+    }
+
+    #[test]
+    fn Manifest___add_component_variant___sets_component_and_version_1_2() {
+        let manifest = component_manifest();
+
+        assert_eq!(manifest.bundle_version, BUNDLE_VERSION_1_2);
+        let variant = manifest
+            .get_release_variant(Platform::Wasm32Wasip2)
+            .unwrap();
+        assert_eq!(
+            variant.component,
+            Some(ComponentInfo {
+                world: "paddock:runtime/app@0.1.0".to_string()
+            })
+        );
+        assert!(manifest.validate().is_ok());
+    }
+
+    #[test]
+    fn Manifest___validate___wasm_platform_before_1_2___returns_error() {
+        let mut manifest = component_manifest();
+        manifest.bundle_version = BUNDLE_VERSION_1_1.to_string();
+
+        let result = manifest.validate();
+
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("requires bundle_version '1.2'")
+        );
+    }
+
+    #[test]
+    fn Manifest___validate___component_on_native_platform___returns_error() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/linux-x86_64/libtest.so", "abc");
+        manifest
+            .platforms
+            .get_mut("linux-x86_64")
+            .unwrap()
+            .variants
+            .get_mut("release")
+            .unwrap()
+            .component = Some(ComponentInfo {
+            world: "w:w/w".to_string(),
+        });
+
+        let result = manifest.validate();
+
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("only allowed on WebAssembly")
+        );
+    }
+
+    #[test]
+    fn Manifest___validate___empty_component_world___returns_error() {
+        let mut manifest = Manifest::new("app", "1.0.0");
+        manifest.add_component_variant(Platform::Wasm32Wasip2, "release", "lib/a.wasm", "abc", "");
+
+        let result = manifest.validate();
+
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("component.world is required")
+        );
+    }
+
+    #[test]
+    fn Manifest___validate___extension_with_reserved_name___returns_error() {
+        let mut manifest = component_manifest();
+        manifest.set_extension("plugin", serde_json::json!({}));
+
+        let result = manifest.validate();
+
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("reserved manifest field name")
+        );
+    }
+
+    #[test]
+    fn Manifest___json_roundtrip___preserves_component_and_extensions() {
+        let mut manifest = component_manifest();
+        manifest.set_extension(
+            "appserver",
+            serde_json::json!({ "limits": { "memory": 64 } }),
+        );
+
+        let json = manifest.to_json().unwrap();
+        let parsed = Manifest::from_json(&json).unwrap();
+
+        assert_eq!(parsed.extensions, manifest.extensions);
+        assert_eq!(
+            parsed
+                .get_release_variant(Platform::Wasm32Wasip2)
+                .unwrap()
+                .component,
+            manifest
+                .get_release_variant(Platform::Wasm32Wasip2)
+                .unwrap()
+                .component
+        );
+        assert!(parsed.validate().is_ok());
+    }
+
+    #[test]
+    fn Manifest___from_json___unknown_top_level_section___kept_as_extension() {
+        let json = r#"{
+            "bundle_version": "1.0",
+            "plugin": { "name": "p", "version": "1.0.0" },
+            "platforms": {
+                "linux-x86_64": {
+                    "variants": {
+                        "release": { "library": "lib/libp.so", "checksum": "sha256:abc" }
+                    }
+                }
+            },
+            "future_section": { "x": 1 }
+        }"#;
+
+        let manifest = Manifest::from_json(json).unwrap();
+
+        assert_eq!(
+            manifest.extension("future_section"),
+            Some(&serde_json::json!({ "x": 1 }))
+        );
+        assert!(manifest.validate().is_ok());
+        assert!(manifest.to_json().unwrap().contains("future_section"));
+    }
+
+    #[test]
+    fn Manifest___validate___accepts_bundle_version_1_2() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/linux-x86_64/libtest.so", "abc");
+        manifest.bundle_version = BUNDLE_VERSION_1_2.to_string();
+
+        assert!(manifest.validate().is_ok());
+    }
+
+    #[test]
+    fn Manifest___validate___files_with_bad_path_or_checksum___returns_error() {
+        let mut bad_path = component_manifest();
+        bad_path
+            .files
+            .insert("../escape".into(), "sha256:00".into());
+        let mut bad_sum = component_manifest();
+        bad_sum.files.insert("priv/a".into(), "md5:00".into());
+
+        assert!(
+            bad_path
+                .validate()
+                .unwrap_err()
+                .to_string()
+                .contains("relative archive path")
+        );
+        assert!(
+            bad_sum
+                .validate()
+                .unwrap_err()
+                .to_string()
+                .contains("sha256")
+        );
+    }
+
+    #[test]
+    fn Manifest___validate___files_before_1_2___returns_error() {
+        let mut manifest = Manifest::new("test", "1.0.0");
+        manifest.add_platform(Platform::LinuxX86_64, "lib/linux-x86_64/libtest.so", "abc");
+        manifest.files.insert("docs/a".into(), "sha256:00".into());
+
+        let result = manifest.validate();
+
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("files requires bundle_version")
+        );
     }
 }

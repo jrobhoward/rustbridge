@@ -3,7 +3,7 @@
 //! The [`BundleLoader`] provides functionality to load and extract plugin bundles.
 
 use crate::builder::verify_sha256;
-use crate::{BundleError, BundleResult, MANIFEST_FILE, Manifest, Platform};
+use crate::{BundleError, BundleResult, MANIFEST_FILE, Manifest, Platform, VariantInfo};
 use std::fs::{self, File};
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -96,40 +96,26 @@ impl BundleLoader {
         variant: &str,
         output_dir: P,
     ) -> BundleResult<PathBuf> {
-        let output_dir = output_dir.as_ref();
+        let library_path = self.variant_info(platform, variant)?.library.clone();
+        let contents = self.read_variant(platform, variant)?;
 
-        // Get platform info from manifest
-        let platform_info = self.manifest.get_platform(platform).ok_or_else(|| {
-            BundleError::UnsupportedPlatform(format!(
-                "Platform {} not found in bundle",
-                platform.as_str()
-            ))
-        })?;
+        write_library(output_dir.as_ref(), &library_path, &contents)
+    }
 
-        // Get the specific variant
-        let variant_info =
-            platform_info
-                .variant(variant)
-                .ok_or_else(|| BundleError::VariantNotFound {
-                    platform: platform.as_str().to_string(),
-                    variant: variant.to_string(),
-                })?;
-
+    /// Read a variant's library (or component) into memory.
+    ///
+    /// The bytes are checked against the checksum in the manifest. No
+    /// signature is checked; use [`BundleLoader::read_variant_verified`] for
+    /// that.
+    pub fn read_variant(&mut self, platform: Platform, variant: &str) -> BundleResult<Vec<u8>> {
+        let variant_info = self.variant_info(platform, variant)?;
         let library_path = variant_info.library.clone();
         let expected_checksum = variant_info.checksum.clone();
 
-        // Read the library from the archive
-        let contents = {
-            let mut library_file = self.archive.by_name(&library_path).map_err(|_| {
-                BundleError::MissingFile(format!("Library not found in bundle: {library_path}"))
-            })?;
+        let contents = self.read_file(&library_path).map_err(|_| {
+            BundleError::MissingFile(format!("Library not found in bundle: {library_path}"))
+        })?;
 
-            let mut contents = Vec::new();
-            library_file.read_to_end(&mut contents)?;
-            contents
-        };
-
-        // Verify checksum
         if !verify_sha256(&contents, &expected_checksum) {
             let actual = crate::builder::compute_sha256(&contents);
             return Err(BundleError::ChecksumMismatch {
@@ -139,31 +125,93 @@ impl BundleLoader {
             });
         }
 
-        // Create output directory
-        fs::create_dir_all(output_dir)?;
-
-        // Determine output filename
-        let file_name = Path::new(&library_path)
-            .file_name()
-            .ok_or_else(|| BundleError::InvalidManifest("Invalid library path".to_string()))?;
-
-        let output_path = output_dir.join(file_name);
-
-        // Write the library file
-        fs::write(&output_path, &contents)?;
-
-        // Set executable permissions on Unix
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let mut perms = fs::metadata(&output_path)?.permissions();
-            perms.set_mode(0o755);
-            fs::set_permissions(&output_path, perms)?;
-        }
-
-        Ok(output_path)
+        Ok(contents)
     }
 
+    /// Read a variant's library (or component) into memory, verified against
+    /// operator-trusted keys.
+    ///
+    /// Checks, in order: the manifest signature against `trusted_keys`, the
+    /// checksum, and the library signature against the key that verified the
+    /// manifest. The manifest's own `public_key` is never used, so a bundle
+    /// cannot vouch for itself.
+    ///
+    /// Returns [`BundleError::NoPublicKey`] when `trusted_keys` is empty and
+    /// [`BundleError::SignatureVerificationFailed`] when the bundle is
+    /// unsigned or no trusted key verifies it.
+    pub fn read_variant_verified(
+        &mut self,
+        platform: Platform,
+        variant: &str,
+        trusted_keys: &[&str],
+    ) -> BundleResult<Vec<u8>> {
+        let key_index = self.verify_manifest_signature_trusted(trusted_keys)?;
+        let library_path = self.variant_info(platform, variant)?.library.clone();
+        let contents = self.read_variant(platform, variant)?;
+        self.verify_library_signature_with_key(
+            &library_path,
+            &contents,
+            Some(trusted_keys[key_index]),
+        )?;
+        Ok(contents)
+    }
+
+    /// Verify the manifest signature against operator-trusted keys.
+    ///
+    /// Tries each key in turn and returns the index of the first one that
+    /// verifies the signature. The manifest's own `public_key` is ignored:
+    /// a key carried inside the bundle proves integrity, not authorship.
+    pub fn verify_manifest_signature_trusted(
+        &mut self,
+        trusted_keys: &[&str],
+    ) -> BundleResult<usize> {
+        if trusted_keys.is_empty() {
+            return Err(BundleError::NoPublicKey);
+        }
+
+        let manifest_data = self.read_file(MANIFEST_FILE)?;
+        let signature = self.read_signature(MANIFEST_FILE)?;
+
+        trusted_keys
+            .iter()
+            .position(|key| verify_minisign_signature(key, &manifest_data, &signature).is_ok())
+            .ok_or_else(|| {
+                BundleError::SignatureVerificationFailed(
+                    "manifest is not signed by any trusted key".to_string(),
+                )
+            })
+    }
+
+    /// Look up a variant in the manifest.
+    fn variant_info(&self, platform: Platform, variant: &str) -> BundleResult<&VariantInfo> {
+        self.manifest
+            .get_platform(platform)
+            .ok_or_else(|| {
+                BundleError::UnsupportedPlatform(format!(
+                    "Platform {} not found in bundle",
+                    platform.as_str()
+                ))
+            })?
+            .variant(variant)
+            .ok_or_else(|| BundleError::VariantNotFound {
+                platform: platform.as_str().to_string(),
+                variant: variant.to_string(),
+            })
+    }
+
+    /// Read the minisign signature stored next to `path`.
+    fn read_signature(&mut self, path: &str) -> BundleResult<String> {
+        let sig_path = format!("{path}.minisig");
+        if !self.has_file(&sig_path) {
+            return Err(BundleError::SignatureVerificationFailed(format!(
+                "bundle is not signed: {sig_path} is missing"
+            )));
+        }
+        let sig_data = self.read_file(&sig_path)?;
+        String::from_utf8(sig_data).map_err(|e| {
+            BundleError::SignatureVerificationFailed(format!("Invalid signature encoding: {e}"))
+        })
+    }
     /// List all available variants for a platform.
     #[must_use]
     pub fn list_variants(&self, platform: Platform) -> Vec<&str> {
@@ -229,6 +277,31 @@ impl BundleLoader {
         Ok(contents)
     }
 
+    /// Read a file listed in the manifest's `files` map (v1.2), checked
+    /// against its recorded checksum. Verify the manifest's signature first
+    /// for the checksum to mean anything.
+    ///
+    /// Returns [`BundleError::Unverified`] for a file the map does not list
+    /// and [`BundleError::ChecksumMismatch`] for one whose contents differ.
+    pub fn read_file_verified(&mut self, path: &str) -> BundleResult<Vec<u8>> {
+        let expected = self
+            .manifest
+            .files
+            .get(path)
+            .cloned()
+            .ok_or_else(|| BundleError::Unverified(path.to_string()))?;
+        let contents = self.read_file(path)?;
+        if !verify_sha256(&contents, &expected) {
+            let actual = crate::builder::compute_sha256(&contents);
+            return Err(BundleError::ChecksumMismatch {
+                path: path.to_string(),
+                expected,
+                actual: format!("sha256:{actual}"),
+            });
+        }
+        Ok(contents)
+    }
+
     /// Read a file from the bundle as a string.
     pub fn read_file_string(&mut self, path: &str) -> BundleResult<String> {
         let mut file = self
@@ -271,6 +344,10 @@ impl BundleLoader {
     ///
     /// Returns Ok(()) if verification succeeds, or an error if it fails.
     /// If no public key is available, returns `BundleError::NoPublicKey`.
+    ///
+    /// This uses the `public_key` inside the manifest, which proves the
+    /// bundle was not altered after signing but not who signed it. To check
+    /// authorship, use [`BundleLoader::verify_manifest_signature_trusted`].
     pub fn verify_manifest_signature(&mut self) -> BundleResult<()> {
         self.verify_manifest_signature_with_key(None)
     }
@@ -364,69 +441,40 @@ impl BundleLoader {
             self.verify_manifest_signature_with_key(public_key_override)?;
         }
 
-        let output_dir = output_dir.as_ref();
-
-        // Get platform info from manifest
-        let platform_info = self.manifest.get_platform(platform).ok_or_else(|| {
-            BundleError::UnsupportedPlatform(format!(
-                "Platform {} not found in bundle",
-                platform.as_str()
-            ))
-        })?;
-
-        // Get the release variant
-        let variant_info = platform_info
-            .release()
-            .ok_or_else(|| BundleError::VariantNotFound {
-                platform: platform.as_str().to_string(),
-                variant: "release".to_string(),
-            })?;
-
-        let library_path = variant_info.library.clone();
-        let expected_checksum = variant_info.checksum.clone();
-
-        // Read the library from the archive
-        let contents = self.read_file(&library_path)?;
-
-        // Verify checksum
-        if !verify_sha256(&contents, &expected_checksum) {
-            let actual = crate::builder::compute_sha256(&contents);
-            return Err(BundleError::ChecksumMismatch {
-                path: library_path,
-                expected: expected_checksum,
-                actual: format!("sha256:{actual}"),
-            });
-        }
+        let library_path = self.variant_info(platform, "release")?.library.clone();
+        let contents = self.read_variant(platform, "release")?;
 
         // Verify library signature if requested
         if verify_signature {
             self.verify_library_signature_with_key(&library_path, &contents, public_key_override)?;
         }
 
-        // Create output directory
-        fs::create_dir_all(output_dir)?;
-
-        // Determine output filename
-        let file_name = Path::new(&library_path)
-            .file_name()
-            .ok_or_else(|| BundleError::InvalidManifest("Invalid library path".to_string()))?;
-
-        let output_path = output_dir.join(file_name);
-
-        // Write the library file
-        fs::write(&output_path, &contents)?;
-
-        // Set executable permissions on Unix
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let mut perms = fs::metadata(&output_path)?.permissions();
-            perms.set_mode(0o755);
-            fs::set_permissions(&output_path, perms)?;
-        }
-
-        Ok(output_path)
+        write_library(output_dir.as_ref(), &library_path, &contents)
     }
+}
+
+/// Write library bytes into `output_dir`, named after the file in the bundle.
+fn write_library(output_dir: &Path, library_path: &str, contents: &[u8]) -> BundleResult<PathBuf> {
+    fs::create_dir_all(output_dir)?;
+
+    let file_name = Path::new(library_path)
+        .file_name()
+        .ok_or_else(|| BundleError::InvalidManifest("Invalid library path".to_string()))?;
+
+    let output_path = output_dir.join(file_name);
+
+    fs::write(&output_path, contents)?;
+
+    // Set executable permissions on Unix
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = fs::metadata(&output_path)?.permissions();
+        perms.set_mode(0o755);
+        fs::set_permissions(&output_path, perms)?;
+    }
+
+    Ok(output_path)
 }
 
 /// Verify a minisign signature.
@@ -846,5 +894,237 @@ mod tests {
             loader.read_file_string("schema/messages.h").unwrap(),
             "#pragma once"
         );
+    }
+
+    // --- v1.2: components, in-memory reads, trusted keys ---
+
+    const WORLD: &str = "paddock:runtime/app@0.1.0";
+
+    fn create_component_bundle(temp_dir: &TempDir, signing: Option<&minisign::KeyPair>) -> PathBuf {
+        let bundle_path = temp_dir.path().join("component.rbp");
+        let component_path = temp_dir.path().join("app.wasm");
+        fs::write(&component_path, b"\0asm fake component").unwrap();
+
+        let mut builder = BundleBuilder::new(Manifest::new("app", "1.0.0"))
+            .add_component(Platform::Wasm32Wasip2, &component_path, WORLD)
+            .unwrap()
+            .with_extension("appserver", serde_json::json!({ "kind": "app" }));
+        if let Some(keypair) = signing {
+            builder = builder.with_signing_key(keypair.pk.to_base64(), keypair.sk.clone());
+        }
+        builder.write(&bundle_path).unwrap();
+
+        bundle_path
+    }
+
+    #[test]
+    fn BundleLoader___open___component_bundle___keeps_component_and_extension() {
+        let temp_dir = TempDir::new().unwrap();
+        let bundle_path = create_component_bundle(&temp_dir, None);
+
+        let loader = BundleLoader::open(&bundle_path).unwrap();
+
+        let manifest = loader.manifest();
+        assert_eq!(manifest.bundle_version, crate::BUNDLE_VERSION_1_2);
+        let variant = manifest
+            .get_release_variant(Platform::Wasm32Wasip2)
+            .unwrap();
+        assert_eq!(variant.component.as_ref().unwrap().world, WORLD);
+        assert_eq!(variant.library, "lib/wasm32-wasip2/release/app.wasm");
+        assert_eq!(
+            manifest.extension("appserver"),
+            Some(&serde_json::json!({ "kind": "app" }))
+        );
+    }
+
+    #[test]
+    fn BundleLoader___read_variant___valid_checksum___returns_bytes() {
+        let temp_dir = TempDir::new().unwrap();
+        let bundle_path = create_component_bundle(&temp_dir, None);
+        let mut loader = BundleLoader::open(&bundle_path).unwrap();
+
+        let bytes = loader
+            .read_variant(Platform::Wasm32Wasip2, "release")
+            .unwrap();
+
+        assert_eq!(bytes, b"\0asm fake component");
+    }
+
+    #[test]
+    fn BundleLoader___read_variant___checksum_mismatch___returns_error() {
+        let temp_dir = TempDir::new().unwrap();
+        let bundle_path = temp_dir.path().join("bad.rbp");
+        let path = "lib/wasm32-wasip2/release/app.wasm";
+        let mut manifest = Manifest::new("app", "1.0.0");
+        manifest.add_component_variant(
+            Platform::Wasm32Wasip2,
+            "release",
+            path,
+            &compute_sha256(b"original"),
+            WORLD,
+        );
+        BundleBuilder::new(manifest)
+            .add_bytes(path, b"tampered".to_vec())
+            .write(&bundle_path)
+            .unwrap();
+        let mut loader = BundleLoader::open(&bundle_path).unwrap();
+
+        let result = loader.read_variant(Platform::Wasm32Wasip2, "release");
+
+        assert!(matches!(result, Err(BundleError::ChecksumMismatch { .. })));
+    }
+
+    #[test]
+    fn BundleLoader___read_variant___unknown_variant___returns_variant_not_found() {
+        let temp_dir = TempDir::new().unwrap();
+        let bundle_path = create_component_bundle(&temp_dir, None);
+        let mut loader = BundleLoader::open(&bundle_path).unwrap();
+
+        let result = loader.read_variant(Platform::Wasm32Wasip2, "debug");
+
+        assert!(matches!(result, Err(BundleError::VariantNotFound { .. })));
+    }
+
+    #[test]
+    fn BundleLoader___read_variant_verified___trusted_key___returns_bytes() {
+        let temp_dir = TempDir::new().unwrap();
+        let keypair = minisign::KeyPair::generate_unencrypted_keypair().unwrap();
+        let bundle_path = create_component_bundle(&temp_dir, Some(&keypair));
+        let mut loader = BundleLoader::open(&bundle_path).unwrap();
+        let trusted = keypair.pk.to_base64();
+
+        let bytes = loader
+            .read_variant_verified(Platform::Wasm32Wasip2, "release", &[&trusted])
+            .unwrap();
+
+        assert_eq!(bytes, b"\0asm fake component");
+    }
+
+    #[test]
+    fn BundleLoader___read_variant_verified___signed_by_untrusted_key___returns_error() {
+        let temp_dir = TempDir::new().unwrap();
+        let signer = minisign::KeyPair::generate_unencrypted_keypair().unwrap();
+        let operator = minisign::KeyPair::generate_unencrypted_keypair().unwrap();
+        let bundle_path = create_component_bundle(&temp_dir, Some(&signer));
+        let mut loader = BundleLoader::open(&bundle_path).unwrap();
+        let trusted = operator.pk.to_base64();
+
+        let result = loader.read_variant_verified(Platform::Wasm32Wasip2, "release", &[&trusted]);
+
+        assert!(matches!(
+            result,
+            Err(BundleError::SignatureVerificationFailed(_))
+        ));
+    }
+
+    #[test]
+    fn BundleLoader___read_variant_verified___unsigned_bundle___returns_error() {
+        let temp_dir = TempDir::new().unwrap();
+        let operator = minisign::KeyPair::generate_unencrypted_keypair().unwrap();
+        let bundle_path = create_component_bundle(&temp_dir, None);
+        let mut loader = BundleLoader::open(&bundle_path).unwrap();
+        let trusted = operator.pk.to_base64();
+
+        let result = loader.read_variant_verified(Platform::Wasm32Wasip2, "release", &[&trusted]);
+
+        match result {
+            Err(BundleError::SignatureVerificationFailed(msg)) => {
+                assert!(msg.contains("not signed"));
+            }
+            other => panic!("expected SignatureVerificationFailed, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn BundleLoader___read_variant_verified___no_trusted_keys___returns_no_public_key() {
+        let temp_dir = TempDir::new().unwrap();
+        let keypair = minisign::KeyPair::generate_unencrypted_keypair().unwrap();
+        let bundle_path = create_component_bundle(&temp_dir, Some(&keypair));
+        let mut loader = BundleLoader::open(&bundle_path).unwrap();
+
+        let result = loader.read_variant_verified(Platform::Wasm32Wasip2, "release", &[]);
+
+        assert!(matches!(result, Err(BundleError::NoPublicKey)));
+    }
+
+    #[test]
+    fn BundleLoader___verify_manifest_signature_trusted___second_key_matches___returns_its_index() {
+        let temp_dir = TempDir::new().unwrap();
+        let signer = minisign::KeyPair::generate_unencrypted_keypair().unwrap();
+        let other = minisign::KeyPair::generate_unencrypted_keypair().unwrap();
+        let bundle_path = create_component_bundle(&temp_dir, Some(&signer));
+        let mut loader = BundleLoader::open(&bundle_path).unwrap();
+        let keys = [other.pk.to_base64(), signer.pk.to_base64()];
+
+        let index = loader
+            .verify_manifest_signature_trusted(&[&keys[0], &keys[1]])
+            .unwrap();
+
+        assert_eq!(index, 1);
+    }
+
+    #[test]
+    fn BundleLoader___read_file_verified___listed_file___returns_contents() {
+        let temp_dir = TempDir::new().unwrap();
+        let path = temp_dir.path().join("files.rbp");
+        BundleBuilder::new(Manifest::new("app", "1.0.0"))
+            .add_component(
+                Platform::Wasm32Wasip2,
+                {
+                    let p = temp_dir.path().join("a.wasm");
+                    fs::write(&p, b"\0asm").unwrap();
+                    p
+                },
+                "w:w/w@0.1.0",
+            )
+            .unwrap()
+            .add_checksummed_bytes("priv/data.txt", b"hello".to_vec())
+            .write(&path)
+            .unwrap();
+        let mut loader = BundleLoader::open(&path).unwrap();
+
+        let contents = loader.read_file_verified("priv/data.txt").unwrap();
+
+        assert_eq!(contents, b"hello");
+        assert!(loader.manifest().files["priv/data.txt"].starts_with("sha256:"));
+    }
+
+    #[test]
+    fn BundleLoader___read_file_verified___unlisted_file___unverified() {
+        let temp_dir = TempDir::new().unwrap();
+        let bundle_path = create_test_bundle(&temp_dir);
+        let mut loader = BundleLoader::open(&bundle_path).unwrap();
+
+        let result = loader.read_file_verified("schema/messages.h");
+
+        assert!(matches!(result, Err(BundleError::Unverified(_))));
+    }
+
+    #[test]
+    fn BundleLoader___read_file_verified___contents_differ___checksum_mismatch() {
+        let temp_dir = TempDir::new().unwrap();
+        let path = temp_dir.path().join("tampered.rbp");
+        let mut manifest = Manifest::new("app", "1.0.0");
+        manifest.add_component_variant(
+            Platform::Wasm32Wasip2,
+            "release",
+            "lib/a.wasm",
+            &compute_sha256(b"\0asm"),
+            "w:w/w@0.1.0",
+        );
+        manifest.files.insert(
+            "priv/x".into(),
+            format!("sha256:{}", compute_sha256(b"original")),
+        );
+        BundleBuilder::new(manifest)
+            .add_bytes("lib/a.wasm", b"\0asm".to_vec())
+            .add_bytes("priv/x", b"changed".to_vec())
+            .write(&path)
+            .unwrap();
+        let mut loader = BundleLoader::open(&path).unwrap();
+
+        let result = loader.read_file_verified("priv/x");
+
+        assert!(matches!(result, Err(BundleError::ChecksumMismatch { .. })));
     }
 }

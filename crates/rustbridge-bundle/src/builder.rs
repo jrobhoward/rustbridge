@@ -183,6 +183,77 @@ impl BundleBuilder {
         Ok(self)
     }
 
+    /// Add a WebAssembly component to the bundle as the release variant of
+    /// `platform` (v1.2).
+    ///
+    /// `world` is the WIT world the component targets, with package and
+    /// version (e.g., `"paddock:runtime/app@0.1.0"`). Raises the manifest's
+    /// `bundle_version` to 1.2. The component is signed like a library when
+    /// a signing key is set.
+    pub fn add_component<P: AsRef<Path>>(
+        self,
+        platform: Platform,
+        component_path: P,
+        world: &str,
+    ) -> BundleResult<Self> {
+        self.add_component_variant(platform, "release", component_path, world)
+    }
+
+    /// Add a WebAssembly component as a named variant of `platform` (v1.2).
+    ///
+    /// See [`BundleBuilder::add_component`]. Returns
+    /// [`BundleError::UnsupportedPlatform`] for a native platform.
+    pub fn add_component_variant<P: AsRef<Path>>(
+        mut self,
+        platform: Platform,
+        variant: &str,
+        component_path: P,
+        world: &str,
+    ) -> BundleResult<Self> {
+        if platform.is_native() {
+            return Err(BundleError::UnsupportedPlatform(format!(
+                "{platform} is a native platform; components need a WebAssembly platform"
+            )));
+        }
+
+        let component_path = component_path.as_ref();
+        let contents = fs::read(component_path).map_err(|e| {
+            BundleError::LibraryNotFound(format!("{}: {}", component_path.display(), e))
+        })?;
+        let checksum = compute_sha256(&contents);
+
+        let file_name = component_path
+            .file_name()
+            .ok_or_else(|| {
+                BundleError::InvalidManifest(format!(
+                    "Invalid component path: {}",
+                    component_path.display()
+                ))
+            })?
+            .to_string_lossy();
+        let archive_path = format!("lib/{}/{}/{}", platform.as_str(), variant, file_name);
+
+        self.manifest
+            .add_component_variant(platform, variant, &archive_path, &checksum, world);
+
+        self.files.push(BundleFile {
+            archive_path,
+            contents,
+        });
+
+        Ok(self)
+    }
+
+    /// Set a top-level manifest extension section (v1.2).
+    ///
+    /// Raises the manifest's `bundle_version` to 1.2. See
+    /// [`Manifest::set_extension`].
+    #[must_use]
+    pub fn with_extension(mut self, name: &str, value: serde_json::Value) -> Self {
+        self.manifest.set_extension(name, value);
+        self
+    }
+
     /// Add a schema file to the bundle.
     ///
     /// Schema files are stored in the `schema/` directory within the bundle.
@@ -259,6 +330,24 @@ impl BundleBuilder {
         });
 
         Ok(self)
+    }
+
+    /// Add a file whose SHA-256 checksum is recorded in the manifest's
+    /// `files` map (v1.2), so a reader can verify it with
+    /// [`crate::BundleLoader::read_file_verified`]. Raises the manifest's
+    /// `bundle_version` to 1.2.
+    #[must_use]
+    pub fn add_checksummed_bytes(mut self, archive_path: &str, contents: Vec<u8>) -> Self {
+        let checksum = compute_sha256(&contents);
+        self.manifest
+            .files
+            .insert(archive_path.to_string(), format!("sha256:{checksum}"));
+        self.manifest.bundle_version = crate::BUNDLE_VERSION_1_2.to_string();
+        self.files.push(BundleFile {
+            archive_path: archive_path.to_string(),
+            contents,
+        });
+        self
     }
 
     /// Add raw bytes as a file in the bundle.
@@ -963,5 +1052,51 @@ mod tests {
         let result = BundleBuilder::new(manifest).add_license_file("/nonexistent/LICENSE");
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn BundleBuilder___add_component___native_platform___returns_error() {
+        let temp_dir = TempDir::new().unwrap();
+        let path = temp_dir.path().join("app.wasm");
+        fs::write(&path, b"\0asm").unwrap();
+
+        let result = BundleBuilder::new(Manifest::new("app", "1.0.0")).add_component(
+            Platform::LinuxX86_64,
+            &path,
+            "paddock:runtime/app@0.1.0",
+        );
+
+        assert!(matches!(result, Err(BundleError::UnsupportedPlatform(_))));
+    }
+
+    #[test]
+    fn BundleBuilder___with_extension___raises_version_and_stores_section() {
+        let builder = BundleBuilder::new(Manifest::new("app", "1.0.0"))
+            .with_extension("appserver", serde_json::json!({ "a": 1 }));
+
+        assert_eq!(builder.manifest().bundle_version, crate::BUNDLE_VERSION_1_2);
+        assert_eq!(
+            builder.manifest().extension("appserver"),
+            Some(&serde_json::json!({ "a": 1 }))
+        );
+    }
+
+    #[test]
+    fn BundleBuilder___add_component___signed___writes_component_signature() {
+        let temp_dir = TempDir::new().unwrap();
+        let path = temp_dir.path().join("app.wasm");
+        let bundle_path = temp_dir.path().join("app.rbp");
+        fs::write(&path, b"\0asm").unwrap();
+        let keypair = minisign::KeyPair::generate_unencrypted_keypair().unwrap();
+
+        BundleBuilder::new(Manifest::new("app", "1.0.0"))
+            .with_signing_key(keypair.pk.to_base64(), keypair.sk)
+            .add_component(Platform::Wasm32Wasip2, &path, "paddock:runtime/app@0.1.0")
+            .unwrap()
+            .write(&bundle_path)
+            .unwrap();
+
+        let loader = crate::BundleLoader::open(&bundle_path).unwrap();
+        assert!(loader.has_file("lib/wasm32-wasip2/release/app.wasm.minisig"));
     }
 }
