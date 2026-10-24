@@ -314,11 +314,13 @@ impl BundleLoader {
         Ok(contents)
     }
 
-    /// List all files in the bundle.
+    /// List all files in the bundle. An entry whose name cannot be decoded
+    /// is left out.
     #[must_use]
     pub fn list_files(&self) -> Vec<String> {
         (0..self.archive.len())
-            .filter_map(|i| self.archive.name_for_index(i).map(String::from))
+            .filter_map(|i| self.archive.name_for_index(i)?.ok())
+            .map(std::borrow::Cow::into_owned)
             .collect()
     }
 

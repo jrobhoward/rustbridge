@@ -74,7 +74,7 @@ dashmap = "6.1"
 # Archive handling
 # Bundles are written with Deflate only, so the other codecs (bzip2, lzma,
 # zstd, ppmd) and AES are left out: less code parsing untrusted archives.
-zip = { version = "8.2", default-features = false, features = ["deflate"] }
+zip = { version = "9", default-features = false, features = ["deflate"] }
 sha2 = "0.10"
 hex = "0.4"
 
