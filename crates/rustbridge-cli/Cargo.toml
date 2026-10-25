@@ -26,7 +26,7 @@ anyhow = { workspace = true }
 syn = { workspace = true }
 quote = { workspace = true }
 cc = "1.2"
-minisign = "0.9"
+minisign = "0.10"
 rpassword = "7.4"
 tempfile = "3.26"
 dirs = "6.0"

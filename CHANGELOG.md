@@ -19,6 +19,7 @@ published. See [docs/VERSIONING.md](./docs/VERSIONING.md) for the full versionin
 
 ### Changed
 - **Rust**: `rustbridge-bundle` builds `zip` with Deflate only (no bzip2, lzma, zstd, ppmd or AES). Bundles have always been written with Deflate; dropping the other codecs shrinks the dependency graph and the code that parses untrusted archives. A bundle repacked by an external tool with another codec no longer opens
+- **Rust**: minisign 0.10 in `rustbridge-bundle` and `rustbridge-cli`. The API and the key and signature formats are unchanged; 0.10 replaces unsafe byte copies with safe code
 
 ### Changed (breaking)
 - **Rust**: `Platform` is now `#[non_exhaustive]` and has a `Wasm32Wasip2` variant; exhaustive matches on it need a wildcard arm. `Platform::all()` includes it; `Platform::native()` and `Platform::is_native()` cover native targets only
